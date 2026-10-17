@@ -154,3 +154,48 @@ Acceptance for Phase 0, with numbers reported:
 
 ### First reply I expect from you
 A short plan for Phase 1 with the scene graph, the performance approach and the risks. Then start building straight away. Don't wait for my approval unless something is genuinely ambiguous.
+
+---
+
+## Workstream A — The architecture pass (originally given to a design subagent; do it yourself, in this session)
+
+The current airport (`spec.json`) was generated quickly by `gen_airport.py` after the design subagent stalled. It works and it validates, but it is a planner's layout, not yet a piece of architecture. Do this pass **before or alongside Phase 1** so the 3D build has a design worth rendering. Keep `spec.json`'s schema (section 4 of build.md) so the game keeps working: regenerate with the scripts, never hand-edit thousands of coordinates.
+
+**Your role:** lead architect and airport planner. Combine the rigour of a top airport planning consultancy (ICAO Annex 14 geometry, runway capacity, stand planning, taxi flows) with the formal ambition of the best parametric studio in the world: fluid continuous forms, one sweeping roof, daylight brought deep inside, structure and circulation as one gesture. The design is original. Put no real firm's name, logo or branding in any output.
+
+**Hold these (already decided):**
+- Site south-west of Nagpur; six parallel 09/27 runways in two triples; west flow; end-around taxiways with no runway crossings.
+- The traffic numbers in build.md §3; the design peak of about 260 movements an hour.
+- The name Zero Mile International (ZMI), and the "seven-lobed Nagpur orange" hall with an oculus over the Zero Mile marker. Refine it, don't replace it.
+
+**Improve these:**
+1. **The roof as one gesture.** The Hall, the Mall and all six concourses currently read as separate shapes. Design a single continuous roof surface that flows from the Hall lobes into the spine and out along each pier, like a river delta or the veins of a leaf. Express it as a parametric surface: a height field or NURBS-like lofts along the circulation centrelines. Write it to `spec.json` as `roof: {centrelines, widths, heights, skylights[]}` so Phase 1 can extrude it in Three.js.
+2. **Heat-first environmental design for 47 °C.**
+   - Skylight density tuned by orientation (north light only).
+   - Deep shading overhangs on the east and west curtain walls.
+   - A thermal-mass floor, a displacement ventilation strategy, and monsoon rainwater harvesting in the valleys of the roof.
+   - Put the numbers in `design.md`: roof area, skylight ratio, estimated solar gain reduction. Mark estimates as estimates.
+3. **Transfers as the main event.**
+   - Re-plan the Mall so a domestic-to-domestic transfer is under 12 minutes door to door and international-to-domestic is under 35, including immigration.
+   - Draw the transfer journey as a coloured path on the masterplan.
+   - Check the walking distances, APM headways and station capacities with a short calculation in `design.md`.
+4. **Pier length vs walking distance.** Today's piers are 600 m with reserve apron beyond. Decide the phase 2 extension (or satellite concourses linked by the APM) that takes the airport to 260M passengers. Show phase 1 and phase 2 on the masterplan.
+5. **Stand mix.** Push code E/F capability to at least 25% of stands. Add MARS stands (one stand that takes either one widebody or two narrowbodies). Mark swing gates explicitly. Re-run the validator.
+6. **Airside smarts.** Write each of these up with its capacity effect:
+   - Dual parallel taxiways on the midfield sides, with explicit one-way flags.
+   - De-icing is not needed here, but heat-related hold pads near the 4,500 m runway are.
+   - Remote holding bays for aircraft that have no gate yet.
+   - A second rapid-exit set for widebodies.
+7. **Landside.** Integrate high-speed rail (a Mumbai–Nagpur corridor station under the Hall), a Nagpur Metro extension, Samruddhi Expressway ramps, kerbs sized for peak-hour passengers, and a "forecourt as a public square" under the leading edge of the roof.
+8. **Deliverables:**
+   - An updated `gen_airport.py` and `spec.json`, with the validator passing (print its output).
+   - `design.md`: 1,200 to 1,800 words, plain direct English, no hype, with the capacity maths shown and the phasing story told as the game's four levels (Bengaluru moves in, then Hyderabad, then Mumbai, then Delhi).
+   - Drawings for a dark UI (`#0f1417` background, Barlow Condensed / Barlow): a new `masterplan.svg` (phase 1 and 2, transfer path, north arrow, scale bar, legend) and `roof.svg` (roof plan with skylight field and structure).
+   - A **section drawing** `section.svg` through the Hall and one pier, showing the roof shell, skylights, the APM tunnel and the forecourt, with heat and air flow arrows.
+   - An **exploded axonometric** `axo.svg` of the Hall's structure.
+   - Then rebuild with `build.py`, check every drawing in the game's "The airport" tab with a headless screenshot, and commit.
+
+**Working rules:**
+- Save files as you produce them. Never sit on unsaved work.
+- Keep a `progress.md` updated as you go, so a restart loses nothing.
+- If a decision is genuinely ambiguous, pick the option that makes the game better and say so in `design.md`.

@@ -1,0 +1,66 @@
+
+<div id="app">
+  <div id="zoomBox" class="hud panel" role="group" aria-label="Map zoom"><button id="zIn" title="Zoom in (+)">+</button><button id="zOut" title="Zoom out (−)">−</button><button id="zFit" title="Show the whole airport (F)">Fit</button></div>
+  <canvas id="map" aria-label="Live map of the hub: six parallel runways, the terminal and concourses, and every aircraft"></canvas>
+
+  <header id="top" class="hud panel">
+    <div class="lvl"><span class="code" id="lvCode">LEVEL 1</span><span class="nm" id="lvName">Opening day</span></div>
+    <div><div id="clock">06:00</div><div id="left">90 min left</div></div>
+    <div class="speeds" role="group" aria-label="Simulation speed">
+      <button id="spP" data-s="0" title="Pause (space)">Pause</button>
+      <button data-s="1" class="on" title="1 real second = 20 airport seconds">1×</button>
+      <button data-s="2">2×</button>
+      <button data-s="4">4×</button>
+    </div>
+    <div id="kpis">
+      <div class="kpi" id="kMov" title="Take-offs and landings so far, against this level's target."><div class="k">Movements</div><div class="v">0</div></div>
+      <div class="kpi" id="kRate" title="Movements in the last 30 minutes, scaled to an hour. This is the number the world record is measured in."><div class="k">Per hour</div><div class="v">0</div></div>
+      <div class="kpi" id="kOtp" title="On time: share of departures airborne within 25 minutes of their scheduled pushback (15 minutes plus a 10 minute taxi)."><div class="k">On time</div><div class="v">—</div></div>
+      <div class="kpi" id="kCnx" title="Connections: share of transfer passengers who reached their next flight before it pushed back."><div class="k">Connections</div><div class="v">—</div></div>
+      <div class="kpi" id="kSafe" title="Safety. Drops when an incident goes wrong. Below 70 the level fails."><div class="k">Safety</div><div class="v">100</div></div>
+    </div>
+    <div id="ticker"><span class="src">AOCC</span> Hub control is yours.</div>
+  </header>
+
+  <section id="wave" class="hud panel" aria-label="Bank chart: scheduled arrivals and departures against runway capacity">
+    <div class="whead">
+      <b>Bank chart</b>
+      <span class="lg"><i style="background:var(--arr)"></i>Arrivals due</span>
+      <span class="lg"><i style="background:var(--dep)"></i>Departures due</span>
+      <span class="lg" style="color:var(--arr)"><s></s>Landing capacity</span>
+      <span class="lg" style="color:var(--dep)"><s></s>Take-off capacity</span>
+      <span id="wCounts"></span>
+    </div>
+    <canvas id="wcv" aria-label="Bars per five minutes: arrivals above the line, departures below. Dashed lines show what your runway setup can handle."></canvas>
+  </section>
+
+  <aside id="rail">
+    <section id="rwys" class="panel" aria-label="Runway desk">
+      <div class="ph">Runway desk <span id="rwSum">ARR 1 · DEP 1</span></div>
+      <div id="rwRows"></div>
+    </section>
+    <section id="incs" class="panel" aria-label="Incidents waiting for you">
+      <div class="ph">Incidents <span id="incCount">0 open</span></div>
+      <div id="incList"></div>
+    </section>
+    <section id="tabs" class="panel">
+      <div class="tabbar" role="tablist">
+        <button class="on" data-tab="late">At risk<span class="c" id="lateCount"></span></button>
+        <button data-tab="coach">Coach</button>
+        <button data-tab="terms">Terms</button>
+      </div>
+      <div class="tabbody" id="tabLate"></div>
+      <div class="tabbody" id="tabCoach" hidden><div id="coachList"></div></div>
+      <div class="tabbody" id="tabTerms" hidden><div id="gloss"></div></div>
+    </section>
+  </aside>
+
+  <aside id="toast" class="hud panel" hidden aria-live="polite">
+    <header><span class="dirsign">Coach</span><button class="x" id="tX" aria-label="Dismiss">×</button></header>
+    <div class="cbody"><h4 id="tT"></h4><div id="tD"></div></div>
+  </aside>
+
+  <aside id="pop" class="panel" hidden aria-live="polite"><button class="x" id="popX" aria-label="Close">×</button><div id="popBody"></div></aside>
+
+  <div id="overlay"><div class="sheet" id="sheet"></div></div>
+</div>

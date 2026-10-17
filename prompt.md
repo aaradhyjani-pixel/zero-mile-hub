@@ -8,7 +8,7 @@ Paste everything below the line into a new Claude conversation, together with `b
 
 You are taking over a browser game I've been building with Claude. Read `build.md` first: it explains the project, the decisions so far and how the current 2D version works. `hub.html` is the current playable build, a single self-contained file.
 
-**The project.** A speculative mega-airport near Nagpur, at India's geographic centre (the Zero Mile stone). It merges Ahmedabad, Mumbai and Bengaluru airports into one hub. It carries the combined traffic of Delhi, Mumbai, Bengaluru and Hyderabad: about 3,630 movements a day and 209 million passengers a year, roughly 1.7 times Atlanta. The airport was designed in a fluid, parametric language (one continuous roof, daylight deep inside, short transfer walks). The geometry lives in `spec.json`, which is embedded in `hub.html`.
+**The project.** A speculative mega-airport near Nagpur, at India's geographic centre (the Zero Mile stone). **Its core concept is a merger: Ahmedabad (SVPIA), Mumbai (CSMIA) and Bengaluru (KIA) close and combine into this one airport, and their design DNA must live inside the new building (see Workstream A0).** It carries the combined traffic of Delhi, Mumbai, Bengaluru and Hyderabad: about 3,630 movements a day and 209 million passengers a year, roughly 1.7 times Atlanta. The airport was designed in a fluid, parametric language (one continuous roof, daylight deep inside, short transfer walks). The geometry lives in `spec.json`, which is embedded in `hub.html`.
 
 **What I want now:** make it 3D, much more fun and much more interesting, without losing what already works: the runway desk, the bank chart, map incidents with countdown rings, and levels that build up as cities migrate in.
 
@@ -161,6 +161,47 @@ A short plan for Phase 1 with the scene graph, the performance approach and the 
 
 The current airport (`spec.json`) was generated quickly by `gen_airport.py` after the design subagent stalled. It works and it validates, but it is a planner's layout, not yet a piece of architecture. Do this pass **before or alongside Phase 1** so the 3D build has a design worth rendering. Keep `spec.json`'s schema (section 4 of build.md) so the game keeps working: regenerate with the scripts, never hand-edit thousands of coordinates.
 
+### A0. Design DNA: this airport is a merger, and the building has to show it (most important design change)
+
+ZMI is not a generic mega-hub sized for four cities' traffic. **It is three airports merged into one: Ahmedabad's Sardar Vallabhbhai Patel International (SVPIA, AMD), Mumbai's Chhatrapati Shivaji Maharaj International (CSMIA, BOM) and Bengaluru's Kempegowda International (KIA, BLR).** The traffic of Delhi, Mumbai, Bengaluru and Hyderabad is only the capacity target. The *identity* comes from the three merged airports. A passenger who knew any of them should walk into ZMI and recognise something of home.
+
+First research each airport's architecture properly with web search: who designed which terminal, the roof and column ideas, the materials, the art programme, the landscape, the regional references. Verify every claim and cite sources in `design.md`. Then weave the three into one design, so the result reads as a single building rather than three themed zones bolted together. Starting points to verify and build on:
+
+- **Mumbai (CSMIA Terminal 2):**
+  - The peacock-inspired roof, with coffered columns that open into the roof like feathers and skylights in the coffers.
+  - The huge art programme along the departures route (the "Jaya He" museum).
+  - A white-and-gold, ceremonial interior.
+  - *Carry into ZMI:* the column and coffer language of the Mall, where the column heads branch into the roof's skylight field, and an art spine along the transfer route.
+- **Bengaluru (KIA Terminal 2):**
+  - The "terminal in a garden" idea: indoor-outdoor planting, hanging gardens, bamboo-clad ceilings, green walls, a calm and soft material palette, the Garden City reference.
+  - *Carry into ZMI:* gardens under the oculus of the Zero Mile Hall and in the valleys of the roof, and courtyard gardens at each concourse junction. Bamboo or timber-look soffits soften the roof and help with heat.
+- **Ahmedabad (SVPIA):**
+  - Ahmedabad is India's first UNESCO World Heritage City.
+  - Carved stone jaali screens: the Sidi Saiyyed tree-of-life window is the city's emblem.
+  - Gujarat's stepwells (Adalaj, Rani ki Vav), with water, shade and descending terraces.
+  - The pols, Uttarayan kites, and Sardar Patel's legacy as the unifier of India.
+
+  That last one is a *strong* story for an airport whose whole idea is unification at the country's centre.
+  - *Carry into ZMI:* jaali-patterned shading screens on every sun-facing curtain wall, which double as the heat strategy.
+  - A stepwell-like sunken forecourt and arrivals court that collects monsoon water and stays cool.
+  - A Sardar Patel "unity" reference at the Zero Mile marker.
+
+**How to merge them, not collage them:**
+- The roof is one continuous shell (A1). Its *structure* speaks Mumbai: branching columns and coffers. Its *underside and gardens* speak Bengaluru. Its *edges and screens* speak Ahmedabad: jaali, shade, water.
+- Map the merger onto the plan:
+  - Three of the seven lobes of the Zero Mile Hall become the "gateways" of the three merged airports.
+  - Each lobe's check-in hall carries that city's materials and art.
+  - All three meet under the oculus at the Zero Mile marker: three cities joined at India's centre.
+- Concourses can take a lead identity (for example, the international piers carry Mumbai's ceremonial language and the domestic piers Bengaluru's garden calm). The connective tissue (the Mall, the APM stations, the transfer route) blends all three.
+- Write a one-paragraph "what a passenger from Ahmedabad, Mumbai or Bengaluru recognises" note in `design.md`.
+- **Respect the originals.** Reference ideas, motifs and materials; don't copy any specific building, artwork or logo. Credit the original architects in `design.md` (as context, not branding).
+
+**Reflect the merger in the game too:**
+- The menu and "The airport" tab say plainly that ZMI merges AMD, BOM and BLR.
+- Level briefings mention which old airport is closing as its airlines move in. Add a short "last flight out of the old airport" moment at the start of the relevant level.
+- The drawings (masterplan, roof, section, axo) label where each airport's DNA lives.
+- In Phase 1 (3D), the jaali screens, the branching coffered columns, the garden courts and the stepwell forecourt are the hero details to model.
+
 **Your role:** lead architect and airport planner. Combine the rigour of a top airport planning consultancy (ICAO Annex 14 geometry, runway capacity, stand planning, taxi flows) with the formal ambition of the best parametric studio in the world: fluid continuous forms, one sweeping roof, daylight brought deep inside, structure and circulation as one gesture. The design is original. Put no real firm's name, logo or branding in any output.
 
 **Hold these (already decided):**
@@ -169,7 +210,7 @@ The current airport (`spec.json`) was generated quickly by `gen_airport.py` afte
 - The name Zero Mile International (ZMI), and the "seven-lobed Nagpur orange" hall with an oculus over the Zero Mile marker. Refine it, don't replace it.
 
 **Improve these:**
-1. **The roof as one gesture.** The Hall, the Mall and all six concourses currently read as separate shapes. Design a single continuous roof surface that flows from the Hall lobes into the spine and out along each pier, like a river delta or the veins of a leaf. Express it as a parametric surface: a height field or NURBS-like lofts along the circulation centrelines. Write it to `spec.json` as `roof: {centrelines, widths, heights, skylights[]}` so Phase 1 can extrude it in Three.js.
+1. **(A1) The roof as one gesture.** The Hall, the Mall and all six concourses currently read as separate shapes. Design a single continuous roof surface that flows from the Hall lobes into the spine and out along each pier, like a river delta or the veins of a leaf. Express it as a parametric surface: a height field or NURBS-like lofts along the circulation centrelines. Write it to `spec.json` as `roof: {centrelines, widths, heights, skylights[]}` so Phase 1 can extrude it in Three.js.
 2. **Heat-first environmental design for 47 °C.**
    - Skylight density tuned by orientation (north light only).
    - Deep shading overhangs on the east and west curtain walls.

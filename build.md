@@ -5,7 +5,7 @@ Read this first if you are a new Claude picking up the project. It covers what t
 ## 1. What this is
 A browser airport-operations game. The player runs **Zero Mile International (ZMI)**, a speculative mega-hub on a greenfield site south-west of Nagpur (between Butibori and the start of the Samruddhi Expressway), at India's geographic centre (the Zero Mile stone).
 
-Brief from the owner, Aaradhy: merge Ahmedabad (SVPIA), Mumbai (CSMIA) and Bengaluru (KIA) into one airport near Nagpur, designed "with the capabilities of a world-class parametric studio" (the Beijing Daxing kind), then simulate it with the combined traffic of Delhi, Mumbai, Bengaluru and Hyderabad. He originally named the site "Dakchung", which couldn't be found; the Nagpur greenfield site was assumed and he can correct it.
+Brief from the owner, Aaradhy: **merge Ahmedabad (SVPIA), Mumbai (CSMIA) and Bengaluru (KIA) into one airport near Nagpur. The merger is the core concept: design elements from all three must show up in the new building (not done yet, see prompt.md Workstream A0).** The airport is designed "with the capabilities of a world-class parametric studio" (the Beijing Daxing kind), then simulate it with the combined traffic of Delhi, Mumbai, Bengaluru and Hyderabad. He originally named the site "Dakchung", which couldn't be found; the Nagpur greenfield site was assumed and he can correct it.
 
 - Live, private Claude artifact: https://claude.ai/artifact/HMhKa2ib5rtPbMEpDqDNd1
 - GitHub repo and Pages URL: see the README in the repo.
@@ -134,7 +134,8 @@ The lazy runs fail mostly because incidents time out. A player who handles incid
    - Departure runway choice sometimes piles everyone onto 27L. Tune the `assignDep` cost.
 2. Lineup/hold geometry is simplified (a straight line from the hold to the threshold). Taxiways can carry head-on traffic (`blocked()` only stops same-direction followers).
 3. Mobile layout is basic (the rail stacks below the map; the bank chart is hidden).
-4. Ideas in `prompt.md`: 3D, build mode, weather radar, ATC voice, terminal crowd simulation.
+4. **Top design priority:** the current geometry does not yet express the merger of SVPIA, CSMIA and KIA. prompt.md Workstream A0 says how (Mumbai's peacock coffered columns and art spine; Bengaluru's terminal-in-a-garden and bamboo; Ahmedabad's jaali screens, stepwell forecourt and Sardar Patel unity story).
+5. Ideas in `prompt.md`: 3D, build mode, weather radar, ATC voice, terminal crowd simulation.
 
 ## 8. Deploy
 - **Claude artifact:** publish `hub.html` with the Artifact tool. Republishing the same file path keeps the URL.

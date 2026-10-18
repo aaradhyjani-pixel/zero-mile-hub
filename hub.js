@@ -2402,7 +2402,7 @@ function frame(ms){
   // while a cinematic runs the coach card folds down to its title (#app.cine), and its timer waits until the shot is over
   {const on=!!(CINE||(SUM&&SUM.cine));if(on!==!!frame.cine){frame.cine=on;$('#app').classList.toggle('cine',on);toastRoom();}}
   if(pf)PERFM.p1=performance.now();
-  if(V3.on){try{draw3D(ms/1000,dtR);}catch(err){console.error(err);}}else{try{draw(ms/1000);}catch(err){console.error(err);}}
+  if(V3.on){try{draw3D(ms/1000,dtR);}catch(err){console.error(err);if(!window.__v3err&&typeof v3ErrBanner==='function')v3ErrBanner(err);}}else{try{draw(ms/1000);}catch(err){console.error(err);}}
   if(pf)PERFM.p2=performance.now();
   // (toastRoom reads layout, so it goes first, while the page is still laid out from the last frame; hud() then writes)
   hudT+=dtR;if(hudT>0.25&&LV){hudT=0;try{toastRoom();hud();}catch(err){console.error(err);}try{drawWave();}catch(err){console.error(err);}}

@@ -33,6 +33,10 @@ const TIERS=[{name:'High',ao:true,bloom:true,pr:1.5},{name:'Medium',ao:false,blo
 const HAZE_K=0.5,HAZE_H=400;
 const ENV_K=0.5;   // sky light scale in the environment map (keeps a ~3:1 sun to sky ratio, so shadows read)
 
+// when 3D cannot start the game stays on the 2D map; say why on screen (and keep it for a bug report), instead of failing quietly
+function v3ErrBanner(err){try{const m=String(err&&(err.stack||err.message)||err).split('\n').slice(0,3).join(' | ').slice(0,420);window.__v3err=m;
+  let d=document.getElementById('v3err');if(!d){d=document.createElement('div');d.id='v3err';d.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:70;max-width:760px;padding:10px 16px;border-radius:8px;background:rgba(10,13,16,.96);border:1px solid #ff4d3f;color:#fff;font:600 13px/1.4 ui-monospace,Menlo,monospace;cursor:pointer';d.title='click to dismiss';d.onclick=()=>d.remove();document.body.appendChild(d);}
+  d.textContent='3D view could not start: '+m;}catch(e){}}
 function init3D(){
   if(V3.ready||V3.failed||V3.loading)return;V3.loading=true;
   const ADD=[['Sky','objects/Sky.js'],['EffectComposer','postprocessing/EffectComposer.js'],['RenderPass','postprocessing/RenderPass.js'],
@@ -44,7 +48,7 @@ function init3D(){
       if(Object.keys(ad).length<ADD.length)console.warn('3D: some addons did not load',ADD.map(a=>a[0]).filter(k=>!ad[k]));
       build3D(THREE,ad);
     })
-  ).catch(err=>{V3.failed=true;V3.loading=false;console.warn('3D view unavailable, staying on the 2D map:',err&&err.message);V3.waiters.splice(0).forEach(w=>w(false));});
+  ).catch(err=>{V3.failed=true;V3.loading=false;console.warn('3D view unavailable, staying on the 2D map:',err&&err.message);v3ErrBanner(err);V3.waiters.splice(0).forEach(w=>w(false));});
 }
 function build3D(THREE,ad){
   Z.THREE=THREE;Z.addons=ad;

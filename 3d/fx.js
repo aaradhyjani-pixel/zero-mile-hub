@@ -91,10 +91,10 @@ Z3MOD.fx = function (Z) {
   const DT = 0.25;
   function bakeShow(it) {
     const cx = num(it.cx, -700), cy = num(it.cy, 0), R = clamp(num(it.r, 3000), 1600, 3200);
-    const V = 160, H0 = 110, RHO = 480, HW = 650, RL = clamp(R * 0.28, 600, 950), RP = 420, RB = 520;
+    const V = 160, H0 = 110, RHO = 480, HW = 650, RL = clamp(R * 0.25, 600, 850), RP = 420, RB = 700;
     const xA0 = cx - R, xA1 = cx + 0.75 * R, yN = cy - 2 * RHO, xW = cx - 0.65 * R, xP = cx - RP;
     const segs = []; const add = (d, f) => segs.push([d, f]);
-    const tB = Math.PI * RHO / V * 1.3, tD = TAU * RL / 135, tF1 = Math.PI / 2 * RP / V * 1.1, tF2 = 5, CL = 650;
+    const tB = Math.PI * RHO / V * 1.3, tD = TAU * RL / 170, tF1 = Math.PI / 2 * RP / V * 1.1, tF2 = 5, CL = 650;
     add(1.75 * R / V, (t, o) => o.set(xA0 + V * t, H0, cy));
     add(tB, (t, o) => { const th = Math.PI * t / tB; o.set(xA1 + RHO * Math.sin(th), H0 + HW * Math.sin(th) ** 2, cy - RHO * (1 - Math.cos(th))); });
     add((xA1 - cx) / V, (t, o) => o.set(xA1 - V * t, H0, yN));
@@ -164,7 +164,7 @@ Z3MOD.fx = function (Z) {
   const lin1 = (A, NS, x) => { let k = Math.floor(x), f = x - k; if (k < 0) { k = 0; f = 0; } if (k > NS - 2) { k = NS - 2; f = 1; } return A[k] + (A[k + 1] - A[k]) * f; };
 
   // smoke: one camera-facing ribbon per jet, 48 segments over the last LIFE sim seconds, rebuilt every frame from the paths
-  const NT = 80, LIFE = 26, TV = NT + 1;
+  const NT = 90, LIFE = 30, TV = NT + 1;
   const trGeo = new THREE.BufferGeometry();
   const trPos = new Float32Array(NJ * TV * 2 * 3), trTan = new Float32Array(NJ * TV * 2 * 3), trD = new Float32Array(NJ * TV * 2 * 4), trCol = new Float32Array(NJ * TV * 2 * 3);
   const trPA = new THREE.BufferAttribute(trPos, 3).setUsage(THREE.DynamicDrawUsage), trTA = new THREE.BufferAttribute(trTan, 3).setUsage(THREE.DynamicDrawUsage), trDA = new THREE.BufferAttribute(trD, 4).setUsage(THREE.DynamicDrawUsage);
@@ -192,15 +192,16 @@ float fh(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float vn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(fh(i), fh(i + vec2(1.0, 0.0)), f.x), mix(fh(i + vec2(0.0, 1.0)), fh(i + vec2(1.0, 1.0)), f.x), f.y); }
 void main() {
   float s = vSide, prof = max(1.0 - s * s, 0.0);
-  vec2 q = vec2(vEmit * 1.6, s * 1.2 + vEmit * 0.37);
-  float n = vn(q) * 0.55 + vn(q * 2.3 + 7.1) * 0.3 + vn(q * 5.3 + 3.3) * 0.15;
-  float d = prof * (0.5 + n);
-  float a = vA * smoothstep(0.1, 0.75, d);
+  // billows: noise anchored to the emission time (puffs stay where they were made), coarse lumps plus fine fray at the edges
+  vec2 q = vec2(vEmit * 3.2, s * 1.4 + vEmit * 0.53);
+  float n = vn(q) * 0.5 + vn(q * 2.1 + 7.1) * 0.3 + vn(q * 4.7 + 3.3) * 0.2;
+  float d = pow(prof, 0.75) * (0.3 + 1.05 * n);
+  float a = min(1.0, vA * smoothstep(0.1, 0.8, d) * (0.8 + 0.35 * n));
   if (a < 0.004) discard;
   vec3 V = normalize(vV), S = normalize(vS);
-  vec3 N = normalize(S * s + V * sqrt(prof));
-  float wrap = clamp(0.4 + 0.6 * dot(N, uSunDir), 0.0, 1.0);
-  vec3 col = vCol * (uSunCol * wrap + mix(uAmbB, uAmbT, 0.5 + 0.5 * N.y)) * (0.86 + 0.28 * n);
+  vec3 N = normalize(S * s * 0.8 + V * sqrt(prof) + vec3(0.0, (n - 0.5) * 0.6, 0.0));
+  float wrap = clamp(0.5 + 0.5 * dot(N, uSunDir), 0.0, 1.0);
+  vec3 col = vCol * (uSunCol * wrap + mix(uAmbB, uAmbT, 0.5 + 0.5 * N.y)) * (0.8 + 0.35 * n);
   col += vCol * uSunCol * pow(max(dot(-V, uSunDir), 0.0), 8.0) * 0.5 * (1.0 - prof * 0.6);
   gl_FragColor = vec4(col, a);
   #include <tonemapping_fragment>
@@ -238,7 +239,7 @@ void main() {
         _p.x += wx * a + wob * a * 0.5; _p.y -= 0.5 * a; _p.z += wz * a + Math.cos(se * 1.1 + i) * a * 0.4;
         trPos[o * 3] = _p.x; trPos[o * 3 + 1] = _p.y; trPos[o * 3 + 2] = _p.z; trPos[o * 3 + 3] = _p.x; trPos[o * 3 + 4] = _p.y; trPos[o * 3 + 5] = _p.z;
         const on = se < 0 ? 0 : lin1(J.SM, B.NS, se / DT);
-        const al = fade * on * Math.pow(1 - a / LIFE, 1.25) * sstep(0, 0.35, a) * 0.92, hw = S * (0.9 + 8.5 * (1 - Math.exp(-a / 2.5)) + 0.45 * a);
+        const al = fade * on * Math.pow(1 - a / LIFE, 1.25) * sstep(0, 0.35, a) * 0.92, hw = S * (1.0 + 10 * (1 - Math.exp(-a / 2.5)) + 0.5 * a);
         trD[o * 4] = -1; trD[o * 4 + 1] = al; trD[o * 4 + 2] = se; trD[o * 4 + 3] = hw; trD[o * 4 + 4] = 1; trD[o * 4 + 5] = al; trD[o * 4 + 6] = se; trD[o * 4 + 7] = hw; }
       for (let j = 0; j < TV; j++) { const a = (i * TV + Math.max(0, j - 1)) * 6, b = (i * TV + Math.min(NT, j + 1)) * 6, o = (i * TV + j) * 6;
         let tx = trPos[a] - trPos[b], ty = trPos[a + 1] - trPos[b + 1], tz = trPos[a + 2] - trPos[b + 2]; const l = Math.hypot(tx, ty, tz) || 1; tx /= l; ty /= l; tz /= l;

@@ -81,8 +81,11 @@ Note: the original plan was a separate "architect" subagent. It stalled (no file
 | `build.py` | Assembles `hub.html`: head + body + `<template id="planTpl">` (masterplan.svg) + `<script type="application/json" id="specData">` + `window.__DESIGN` (design-section.html with roof.svg inlined) + hub.js. |
 | `design-section.html` | The "The airport" tab content. |
 | `run.py` | Headless Playwright playtest: `python3 run.py <level 1-4> <expert\|lazy>`. Prints KPIs and a RESULT JSON, saves screenshots `L{n}{e\|l}_{T}.png`. The expert autopilot enumerates runway configs to match the next 20 minutes of demand and resolves incidents. |
+| `tools/fastbot.py` | Faster bot with the same planner: `python3 tools/fastbot.py hub.html <expert\|handler\|lazy>`. It always plays level 3 (`startLevel(3)` is hard-coded), so make a copy and change that call to bot any other level. One run takes about a minute. |
 | `gen_airport.py` / `gen_drawings.py` | Geometry, validator and drawings. |
 | `prompt.md` | Brief for the 3D version. |
+
+Bots in a cloud container: Chromium is already in `/opt/pw-browsers` (chromium-1194), and `python -m playwright install` can't replace it. If a plain `pip install playwright` pulls a newer version, the bots exit with "Executable doesn't exist". Pin the matching version instead: `pip install playwright==1.56.0`.
 
 Build: `python3 gen_airport.py && python3 gen_drawings.py && python3 build.py` produces `hub.html`. Copy it to `site/index.html` for deployment.
 

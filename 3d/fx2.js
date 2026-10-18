@@ -396,96 +396,208 @@ vec3 fxCol(vec3 P,float reg,float t){
   KS.add('kites');
 
   // =====================================================================================================
-  // THE INAUGURATION RIBBON: red satin across the runway on two gold posts, big bows; snaps, halves flutter down, petals burst
+  // THE INAUGURATION RIBBON: wide red satin with gold edging on tall gold posts, three big glossy bows. On cutAt a pair of giant
+  // ceremonial scissors drops in and snips it, the halves fall like cloth, and marigold petals and confetti spray up and drift.
+  // One dynamic mesh (strip + bows + posts + scissors, per-vertex satin/gold/steel) and one instanced petal mesh: two draws.
   // =====================================================================================================
   const RB = (() => {
-    const NS = 40, nStrip = 2 * (NS + 1) * 2;
-    // bow template (local, unit size): two flat loops, a knot and two tails; band width along x
-    const bp = [], bn = [], bi = [];
-    const band = (pts, wid) => {   // pts: [[y,z,ny,nz],...] a ribbon band, width along x
-      const b0 = bp.length / 3;
-      for (const q of pts) { bp.push(-wid, q[0], q[1], wid, q[0], q[1]); bn.push(0, q[2], q[3], 0, q[2], q[3]); }
-      for (let i = 0; i < pts.length - 1; i++) { const a = b0 + i * 2; bi.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    const NS = 56, ROWV = [0, 0.07, 0.075, 0.925, 0.93, 1], ROWM = [1, 1, 0, 0, 1, 1], NR = ROWV.length;
+    const tp = [], tn = [], tm = [], tw = [], ti = [];   // template: position, normal, material, flutter weight; index
+    const M4 = new THREE.Matrix4(), M3 = new THREE.Matrix3(), V = new THREE.Vector3();
+    const addGeo = (geo, m, mat, fw) => {   // a THREE geometry, transformed by m, appended to the template
+      const g = geo.index ? geo : geo, p = g.attributes.position, n = g.attributes.normal, b = tp.length / 3; M3.getNormalMatrix(m);
+      for (let i = 0; i < p.count; i++) { V.fromBufferAttribute(p, i).applyMatrix4(m); tp.push(V.x, V.y, V.z); V.fromBufferAttribute(n, i).applyMatrix3(M3).normalize(); tn.push(V.x, V.y, V.z); tm.push(mat); tw.push(fw || 0); }
+      if (g.index) for (let i = 0; i < g.index.count; i++) ti.push(b + g.index.getX(i)); else for (let i = 0; i < p.count; i++) ti.push(b + i);
     };
-    for (const sz of [-1, 1]) { const L = []; for (let i = 0; i <= 16; i++) { const t = i / 16 * Math.PI * 2, y = Math.sin(t) * 0.17, z = sz * (0.2 + Math.cos(t + Math.PI) * 0.2); L.push([y, z, Math.sin(t), -sz * Math.cos(t)]); } band(L, 0.09); }
-    band([[0.07, -0.05, 0, -1], [-0.07, -0.05, 0, -1]], 0.1); band([[0.07, 0.05, 0, 1], [-0.07, 0.05, 0, 1]], 0.1);
-    for (const sz of [-1, 1]) band([[0, 0, 0, sz], [-0.2, sz * 0.08, 0, sz], [-0.42, sz * 0.12, 0, sz], [-0.6, sz * 0.2, 0, sz]], 0.07);
-    const box = new THREE.BoxGeometry(1, 1, 1); const xp = box.attributes.position.array, xn = box.attributes.normal.array, xi = box.index.array;
-    const nBow = bp.length / 3, nBox = xp.length / 3, NV = nStrip + 3 * nBow + 2 * nBox + 2 * nBox;
-    const pos = new Float32Array(NV * 3), nor = new Float32Array(NV * 3), col = new Float32Array(NV * 3), idx = [];
-    const RED = new THREE.Color('#c8102e'), GOLD = new THREE.Color('#d4a017'), RED2 = new THREE.Color('#9e0b22');
-    let v = 0;
-    // strip: half h (0 west.., 1), columns 0..NS, rows top/bottom
-    for (let h = 0; h < 2; h++) { for (let c = 0; c <= NS; c++) for (let r = 0; r < 2; r++) { nor[v * 3] = 1; const k = r ? RED2 : RED; col[v * 3] = k.r; col[v * 3 + 1] = k.g; col[v * 3 + 2] = k.b; v++; }
-      const b0 = h * (NS + 1) * 2; for (let c = 0; c < NS; c++) { const a = b0 + c * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } }
-    v = nStrip;   // the strip uses 2 halves x (NS+1) columns x 2 rows
-    const bowAt = [], boxAt = [];
-    for (let b = 0; b < 3; b++) { bowAt.push(v); for (let i = 0; i < nBow; i++) { nor.set(bn.slice(i * 3, i * 3 + 3), (v + i) * 3); col[(v + i) * 3] = RED.r; col[(v + i) * 3 + 1] = RED.g; col[(v + i) * 3 + 2] = RED.b; } for (const i of bi) idx.push(v + i); v += nBow; }
-    for (let b = 0; b < 4; b++) { boxAt.push(v); const k = b < 2 ? GOLD : new THREE.Color('#f2f0ea'); for (let i = 0; i < nBox; i++) { nor.set(xn.slice(i * 3, i * 3 + 3), (v + i) * 3); col[(v + i) * 3] = k.r; col[(v + i) * 3 + 1] = k.g; col[(v + i) * 3 + 2] = k.b; } for (const i of xi) idx.push(v + i); v += nBox; }
+    // a band: centre points C[i], width directions W[i], widths w[i], bulge along B[i]; three columns (edge, crown, edge)
+    const addBand = (C, W, w, Bv, bulge, mat, fw) => {
+      const g = new THREE.BufferGeometry(), P = [], I = [], m = C.length;
+      for (let i = 0; i < m; i++) for (let j = 0; j < 3; j++) { const s = (j - 1) * 0.5 * w[i], k = j === 1 ? bulge : 0; P.push(C[i][0] + W[i][0] * s + Bv[i][0] * k, C[i][1] + W[i][1] * s + Bv[i][1] * k, C[i][2] + W[i][2] * s + Bv[i][2] * k); }
+      for (let i = 0; i < m - 1; i++) for (let j = 0; j < 2; j++) { const a = i * 3 + j; I.push(a, a + 1, a + 3, a + 1, a + 4, a + 3); }
+      g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setIndex(I); g.computeVertexNormals();
+      const b = tp.length / 3; addGeo(g, M4.identity(), mat, 0); if (fw) for (let i = 0; i < m * 3; i++) tw[b + i] = fw(Math.floor(i / 3) / (m - 1), i % 3);
+    };
+    const T0 = () => tp.length / 3, I0 = () => ti.length;
+    // ---- the bow (unit: about 1 across, facing +x; loops along +-z, tails down) ----
+    const bowV0 = T0(), bowI0 = I0();
+    for (const s of [-1, 1]) {
+      const D = [0, 0.3, s], dl = Math.hypot(0.3, 1); D[1] /= dl; D[2] /= dl;
+      const Wd = [0, D[2] * s, -D[1] * s], C = [], W = [], w = [], Bv = [], NL = 30, L = 0.5, puff = 0.17;
+      for (let i = 0; i <= NL; i++) {
+        const th = i / NL * Math.PI * 2, out = L * (1 - Math.cos(th)) / 2, xb = puff * Math.sin(th) * (0.55 + 0.45 * (1 - Math.cos(th)) / 2);
+        const sag = -0.05 * Math.sin(th / 2) * Math.sin(th / 2);
+        C.push([xb, D[1] * out + sag, D[2] * out]); W.push(Wd); w.push(0.1 + 0.3 * Math.pow(Math.sin(th / 2), 0.8));
+        const rx = Math.sin(th), ro = -Math.cos(th); const bl = Math.hypot(rx, ro) || 1; Bv.push([rx / bl, D[1] * ro / bl, D[2] * ro / bl]);
+      }
+      addBand(C, W, w, Bv, 0.035, 0, null);
+      // tail with a swallow-tail (V) cut
+      const Ct = [], Wt = [], wt = [], Bt = [], NT = 10;
+      for (let i = 0; i <= NT; i++) { const t = i / NT; Ct.push([0.02 + 0.03 * Math.sin(t * 4), -0.06 - 0.62 * t, s * (0.05 + 0.2 * t)]); const tz = 0.2, ty = -0.62, tl = Math.hypot(tz, ty); Wt.push([0, s * tz / tl, -ty / tl * 1]); wt.push(0.26 - 0.03 * t); Bt.push([1, 0, 0]); }
+      addBand(Ct, Wt, wt, Bt, 0.012, 0, (t, j) => t * t * (j === 1 ? 0.8 : 1));
+      // pull the crown of the last tail row up to make the V notch
+      const last = tp.length - 3 * 3 + 3; tp[last + 1] += 0.09;
+    }
+    { const sp = new THREE.SphereGeometry(1, 14, 10); addGeo(sp, M4.compose(V.set(0.03, 0, 0), new THREE.Quaternion(), new THREE.Vector3(0.09, 0.12, 0.11)), 0); }
+    const bowV1 = T0(), bowI1 = I0();
+    // ---- the gold post (unit height 1) ----
+    { const cyl = (r0, r1, h, y, seg) => { const g = new THREE.CylinderGeometry(r0, r1, h, seg || 20); addGeo(g, M4.makeTranslation(0, y + h / 2, 0), 1); };
+      cyl(0.026, 0.03, 0.92, 0.06); cyl(0.13, 0.15, 0.035, 0); cyl(0.085, 0.11, 0.04, 0.035); cyl(0.045, 0.06, 0.05, 0.075);
+      const tor = new THREE.TorusGeometry(0.04, 0.012, 8, 20); tor.rotateX(Math.PI / 2); addGeo(tor, M4.makeTranslation(0, 0.86, 0), 1); addGeo(tor, M4.makeTranslation(0, 0.97, 0), 1);
+      const sp = new THREE.SphereGeometry(0.065, 18, 12); addGeo(sp, M4.makeTranslation(0, 1.04, 0), 1);
+      const cn = new THREE.ConeGeometry(0.03, 0.09, 14); addGeo(cn, M4.makeTranslation(0, 1.13, 0), 1); }
+    const postV1 = T0(), postI1 = I0();
+    // ---- one half of the ceremonial scissors (unit: about 1 long, pivot at the origin, blade plane xy; the other half is mirrored) ----
+    { const bl = new THREE.BoxGeometry(1, 1, 1, 1, 8, 1), p = bl.attributes.position;
+      for (let i = 0; i < p.count; i++) { const y = p.getY(i) + 0.5, t = y, wdt = 0.085 * (1 - 0.9 * Math.pow(t, 1.3)); p.setXYZ(i, (p.getX(i) + 0.5) * wdt, -0.66 * t, p.getZ(i) * (p.getX(i) > 0 ? 0.004 : 0.02) + 0.012); }
+      bl.computeVertexNormals(); addGeo(bl.toNonIndexed(), M4.identity(), 2);
+      const sh = new THREE.CylinderGeometry(0.018, 0.024, 1, 10); const a = Math.atan2(0.1, 0.26); addGeo(sh, M4.compose(V.set(-0.05, 0.14, 0.012), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), a), new THREE.Vector3(1, 0.28, 1)), 1);
+      const tor = new THREE.TorusGeometry(0.085, 0.02, 10, 24); addGeo(tor, M4.compose(V.set(-0.12, 0.36, 0.012), new THREE.Quaternion(), new THREE.Vector3(1, 1.25, 1)), 1);
+      const pv = new THREE.CylinderGeometry(0.03, 0.03, 0.05, 16); pv.rotateX(Math.PI / 2); addGeo(pv, M4.makeTranslation(0, 0, 0.02), 1); }
+    const sciV1 = T0(), sciI1 = I0();
+    const nBow = bowV1 - bowV0, nPost = postV1 - bowV1, nSci = sciV1 - postV1;
+    const nStrip = 2 * (NS + 1) * NR, NV = nStrip + 3 * nBow + 2 * nPost + 2 * nSci;
+    const pos = new Float32Array(NV * 3), nor = new Float32Array(NV * 3), mat = new Float32Array(NV), idx = [];
+    for (let h = 0; h < 2; h++) { const b0 = h * (NS + 1) * NR;
+      for (let c = 0; c <= NS; c++) for (let r = 0; r < NR; r++) mat[b0 + c * NR + r] = ROWM[r];
+      for (let c = 0; c < NS; c++) for (let r = 0; r < NR - 1; r++) { const a = b0 + c * NR + r; idx.push(a, a + 1, a + NR, a + 1, a + NR + 1, a + NR); } }
+    const parts = [];   // [vertex start in the buffer, template v0, count, index start in the template, index count]
+    let v = nStrip;
+    const place = (tv0, tv1, ti0, ti1) => { const at = v; for (let i = 0; i < tv1 - tv0; i++) mat[at + i] = tm[tv0 + i]; for (let i = ti0; i < ti1; i++) idx.push(ti[i] - tv0 + at); parts.push([at, tv0, tv1 - tv0]); v += tv1 - tv0; return parts.length - 1; };
+    const bows = [place(bowV0, bowV1, bowI0, bowI1), place(bowV0, bowV1, bowI0, bowI1), place(bowV0, bowV1, bowI0, bowI1)];
+    const posts = [place(bowV1, postV1, bowI1, postI1), place(bowV1, postV1, bowI1, postI1)];
+    const scis = [place(postV1, sciV1, postI1, sciI1), place(postV1, sciV1, postI1, sciI1)];
+    const TP = new Float32Array(tp), TN = new Float32Array(tn), TW = new Float32Array(tw);
     const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage)); g.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    g.setIndex(idx); g.setDrawRange(0, idx.length);
-    const mesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.32, metalness: 0.15, envMapIntensity: 1.2 }));
-    mesh.frustumCulled = false; mesh.visible = false; root.add(mesh);
-    // marigold petals
-    const PN = 360, pg = new THREE.BufferGeometry();
-    pg.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0.5, 0.15, 0.05, 1, 0, 0, 0.5, -0.15, 0.05], 3)); pg.setIndex([0, 1, 2, 0, 2, 3]); pg.computeVertexNormals();
-    const petals = new THREE.InstancedMesh(pg, new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide, roughness: 0.6, emissive: 0x401000 }), PN);
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage)); g.setAttribute('normal', new THREE.BufferAttribute(nor, 3).setUsage(THREE.DynamicDrawUsage));
+    g.setAttribute('aMat', new THREE.BufferAttribute(mat, 1)); g.setIndex(idx);
+    const sciCount = idx.length, sciStart = idx.length - (sciI1 - postI1) * 2;   // the scissors are the last indices: drop them from the draw range when idle
+    const M = new THREE.MeshPhysicalMaterial({ color: 0xffffff, side: THREE.DoubleSide, roughness: 0.4, metalness: 0, envMapIntensity: 1.1,
+      sheen: 1, sheenRoughness: 0.38, sheenColor: new THREE.Color(0.85, 0.12, 0.16), clearcoat: 0.3, clearcoatRoughness: 0.18 });
+    M.onBeforeCompile = sh => {
+      sh.vertexShader = 'attribute float aMat;varying float vMat;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvMat=aMat;');
+      sh.fragmentShader = 'varying float vMat;\n' + sh.fragmentShader
+        .replace('vec4 diffuseColor = vec4( diffuse, opacity );', 'float fxM=floor(vMat+0.5);vec4 diffuseColor=vec4(fxM<0.5?vec3(0.62,0.012,0.03):fxM<1.5?vec3(1.0,0.66,0.22):vec3(0.82,0.84,0.88),opacity);')
+        .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor=fxM<0.5?0.36:fxM<1.5?0.2:0.12;')
+        .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor=fxM<0.5?0.0:1.0;')
+        .replace('#include <lights_physical_fragment>', '#include <lights_physical_fragment>\n#ifdef USE_SHEEN\nmaterial.sheenColor*=fxM<0.5?1.:0.;\n#endif\n#ifdef USE_CLEARCOAT\nmaterial.clearcoat*=fxM<0.5?1.:0.;\n#endif');
+    };
+    const mesh = new THREE.Mesh(g, M); mesh.frustumCulled = false; mesh.visible = false; root.add(mesh);
+    // marigold petals and confetti: a gently cupped petal; confetti are the same shape, squarer, instanced and coloured
+    const PN = 1100, pg = new THREE.BufferGeometry(), PP = [];
+    for (let i = 0; i <= 2; i++) for (let j = 0; j <= 2; j++) { const x = i / 2 - 0.5, y = (j / 2 - 0.5) * (i === 1 ? 0.62 : 0.42); PP.push(x, y, 0.16 * (y * y * 6 + x * x)); }
+    pg.setAttribute('position', new THREE.Float32BufferAttribute(PP, 3)); pg.setIndex([0, 3, 1, 1, 3, 4, 1, 4, 2, 2, 4, 5, 3, 6, 4, 4, 6, 7, 4, 7, 5, 5, 7, 8]); pg.computeVertexNormals();
+    const pm = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.05 });
+    pm.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('vec3 totalEmissiveRadiance = emissive;', 'vec3 totalEmissiveRadiance = vColor*0.32;'); };
+    const petals = new THREE.InstancedMesh(pg, pm, PN);
     petals.frustumCulled = false; petals.count = 0; petals.instanceMatrix.setUsage(THREE.DynamicDrawUsage); root.add(petals);
-    const PC = ['#ff8c00', '#ffa500', '#ffb000', '#ff7a00', '#ffc400', '#e85d04', '#d00000'];
-    const pr = new Float32Array(PN * 6); { const Rr = mulberry(7); for (let i = 0; i < PN; i++) { for (let j = 0; j < 6; j++) pr[i * 6 + j] = Rr(); petals.setColorAt(i, _c.set(PC[i % PC.length])); } }
-    return { mesh, pos, NS, bp, nBow, bowAt, boxAt, xp, nBox, petals, pr, PN };
+    const PC = ['#ff8c00', '#ffa000', '#ffb300', '#ff7b00', '#ffc400', '#f57c00', '#ffd000', '#ff9500', '#ffe14d', '#ff6a00'];
+    const pr = new Float32Array(PN * 8); { const Rr = mulberry(7); for (let i = 0; i < PN; i++) { for (let j = 0; j < 8; j++) pr[i * 8 + j] = Rr(); petals.setColorAt(i, _c.set(PC[i % PC.length]).multiplyScalar(1.15)); } }
+    return { mesh, g, pos, nor, NS, NR, ROWV, nStrip, parts, bows, posts, scis, TP, TN, TW, sciStart, sciCount, petals, pr, PN };
   })();
+  const _n3 = new THREE.Matrix3(), _rq = new THREE.Quaternion(), _ra = new THREE.Vector3();
+  // write a template part into the dynamic buffer through the matrix _m (with an optional flutter offset along x)
+  function rbPart(pi, flut, now) {
+    const [at, t0, n] = RB.parts[pi], P = RB.pos, N = RB.nor, TP = RB.TP, TN = RB.TN, TW = RB.TW, e = _m.elements; _n3.getNormalMatrix(_m);
+    const ne = _n3.elements;
+    for (let i = 0; i < n; i++) {
+      const s = (t0 + i) * 3, d = (at + i) * 3, f = flut ? TW[t0 + i] * flut * Math.sin(now * 5.3 + TP[s + 1] * 9 + pi) : 0;
+      const x = TP[s] + f, y = TP[s + 1], z = TP[s + 2] + f * 0.4;
+      P[d] = e[0] * x + e[4] * y + e[8] * z + e[12]; P[d + 1] = e[1] * x + e[5] * y + e[9] * z + e[13]; P[d + 2] = e[2] * x + e[6] * y + e[10] * z + e[14];
+      const nx = TN[s], ny = TN[s + 1], nz = TN[s + 2];
+      let a = ne[0] * nx + ne[3] * ny + ne[6] * nz, b = ne[1] * nx + ne[4] * ny + ne[7] * nz, c = ne[2] * nx + ne[5] * ny + ne[8] * nz; const l = Math.hypot(a, b, c) || 1;
+      N[d] = a / l; N[d + 1] = b / l; N[d + 2] = c / l;
+    }
+  }
+  const RB_SNIP = 11;   // sim seconds after cutAt when the blades meet
   function ribbonUpdate(list, dt, now) {
     const it = list[0]; if (!it) { RB.mesh.visible = false; RB.petals.count = 0; RB.petals.visible = false; return; }
-    const T = Z.T, kr = clamp(Z.camDist / 110, 1, 60), w = it.w || 75, P = RB.pos, NS = RB.NS;
-    const fade = smooth(it.t0, it.t0 + 4, T) * (1 - smooth(it.t1 - 25, it.t1 - 2, T)), cut = it.cutAt != null && T >= it.cutAt, tau = cut ? T - it.cutAt : 0;
-    const hp = 1.25 * Math.max(1, kr * 0.7), rw = 0.32 * kr * Math.max(0.05, fade), sag = Math.min(w * 0.04, 0.6 * hp);
-    const ox = it.x, oz = it.y, wind = Z.atmo && Z.atmo.wind ? Z.atmo.wind.speed || 4 : 4;
+    const T = Z.T, k = clamp(Z.camDist / 60, 1, 30), w = it.w || 75, P = RB.pos, NS = RB.NS, NR = RB.NR;
+    const fade = smooth(it.t0, it.t0 + 4, T) * (1 - smooth(it.t1 - 25, it.t1 - 2, T)), fk = Math.max(0.02, fade);
+    const tau = it.cutAt != null ? T - it.cutAt : -1, cut = tau >= RB_SNIP, tf = cut ? (tau - RB_SNIP) / 10 : 0;   // tf: seconds of fall at cinematic speed
+    const kS = 1 + 1.6 * smooth(2500, 9000, Z.camDist), PH = 2.9 * k * fk * kS, RH = 0.6 * k * fk * kS * kS, yc = PH * 0.74 - RH * 0.5, sag = Math.min(w * 0.03, 0.3 * PH);
+    const ox = it.x, oz = it.y, wind = Z.atmo && Z.atmo.wind ? Z.atmo.wind.speed || 4 : 4, gy = 0.06 * k;
+    // ---- the satin strip: two halves from each post to the centre ----
     let v = 0;
     for (let h = 0; h < 2; h++) {
-      const sgn = h ? 1 : -1;   // post at z = sgn*w, free end toward the centre
+      const sgn = h ? 1 : -1;
       for (let c = 0; c <= NS; c++) {
-        const u = c / NS;                       // 0 at the post .. 1 at the centre
-        const zz = sgn * w * (1 - u), sg = sag * (1 - Math.pow(1 - u, 2));
-        let fu = 0; if (cut) fu = smooth(0, 1, (tau - (1 - u) * 3) / 9);
-        const rec = cut ? 0.14 * u * smooth(0, 4, tau) : 0;
-        const z = oz + zz * (1 - rec);
-        const fl = Math.sin(now * (2.5 + wind * 0.25) + u * 9 + h * 2) * (0.04 + 0.03 * u) * kr * (1 - 0.7 * fu);
-        const curl = cut ? Math.sin(u * 13 + h) * 0.9 * kr * fu * u : 0;
-        const yB = mix(hp - sg - rw, 0.08 * kr, fu), phi = fu * Math.PI * 0.5;
-        const xb = ox + fl + curl;
-        P[v * 3] = xb + Math.sin(phi) * rw; P[v * 3 + 1] = yB + Math.cos(phi) * rw; P[v * 3 + 2] = z; v++;
-        P[v * 3] = xb; P[v * 3 + 1] = yB; P[v * 3 + 2] = z; v++;
+        const u = c / NS, s = u * w;
+        // intact: a shallow catenary, a slow travelling twist so the satin catches the light
+        const yI = yc - sag * (1 - (1 - u) * (1 - u)), thI = 0.22 * Math.sin(now * 1.3 + u * 7 + h * 1.7) * u * (1 - u) * 4 + 0.08 * Math.sin(now * 2.1 + u * 15);
+        let x = ox + Math.sin(now * (1.6 + wind * 0.15) + u * 6 + h * 2) * 0.05 * k * u, y = yI, z = oz + sgn * w * (1 - u), th = thI;
+        if (cut) {   // falls free-end first, flutters, and lies on the runway hanging from the post
+          const f = clamp((tf - (1 - u) * 0.35) / (0.9 + 0.5 * (1 - u)), 0, 1), fe = f * f * (3 - 2 * f), mid = Math.sin(f * Math.PI);
+          const Lh = yc, lie = Math.max(0, s - Lh) * 0.82;
+          const yF = s < Lh ? yc - s : gy + 0.25 * k * Math.max(0, Math.sin(s * 0.35 / k + h)) * (1 - smooth(0, 6, tf) * 0.7);
+          const zF = s < Lh ? oz + sgn * w : oz + sgn * (w - lie);
+          const xF = ox + (s < Lh ? 0 : Math.sin(s * 0.18 / k + h * 2) * 1.2 * k);
+          x = mix(x, xF, fe) + mid * Math.sin(now * 6.5 + u * 11 + h) * 1.4 * k * u;
+          y = mix(yI, yF, fe) + mid * Math.sin(now * 8 + u * 14) * 0.5 * k;
+          z = mix(z, zF, fe); th = mix(thI, Math.PI * 0.5, fe) + mid * 1.6 * Math.sin(now * 5 + u * 9 + h * 3);
+        }
+        const sx = Math.sin(th), sy = Math.cos(th);
+        for (let r = 0; r < NR; r++) {
+          const q = (RB.ROWV[r] - 0.5) * RH, cup = (RB.ROWV[r] - 0.5) * (RB.ROWV[r] - 0.5) * 0.25 * RH;
+          P[v * 3] = x + sx * q + sy * cup; P[v * 3 + 1] = y + sy * q - sx * cup; P[v * 3 + 2] = z; v++;
+        }
       }
     }
-    // bows: two at the posts, one in the middle (falls with the cut)
-    const bs = 3.2 * kr * Math.max(0.05, fade);
-    for (let b = 0; b < 3; b++) {
-      const at = RB.bowAt[b], bz = b === 2 ? 0 : (b ? w : -w), cy = b === 2 ? mix(hp - sag, 0.25 * bs, smooth(0, 8, tau)) : hp - rw * 0.5;
-      const sq = b === 2 && cut ? Math.max(0.05, 1 - smooth(40, 120, tau)) : 1;
-      for (let i = 0; i < RB.nBow; i++) { P[(at + i) * 3] = ox + RB.bp[i * 3] * bs * sq; P[(at + i) * 3 + 1] = cy + RB.bp[i * 3 + 1] * bs * sq; P[(at + i) * 3 + 2] = oz + bz + RB.bp[i * 3 + 2] * bs * sq; }
+    // strip normals from the grid (no allocations)
+    const N = RB.nor;
+    for (let h = 0; h < 2; h++) { const b0 = h * (NS + 1) * NR;
+      for (let c = 0; c <= NS; c++) for (let r = 0; r < NR; r++) {
+        const i = b0 + c * NR + r, a = b0 + Math.max(0, c - 1) * NR + r, b = b0 + Math.min(NS, c + 1) * NR + r, d = b0 + c * NR + Math.max(0, r - 1), e2 = b0 + c * NR + Math.min(NR - 1, r + 1);
+        const tx = P[b * 3] - P[a * 3], ty = P[b * 3 + 1] - P[a * 3 + 1], tz = P[b * 3 + 2] - P[a * 3 + 2], bx = P[e2 * 3] - P[d * 3], by = P[e2 * 3 + 1] - P[d * 3 + 1], bz = P[e2 * 3 + 2] - P[d * 3 + 2];
+        let nx = by * tz - bz * ty, ny = bz * tx - bx * tz, nz = bx * ty - by * tx; const l = Math.hypot(nx, ny, nz) || 1; N[i * 3] = nx / l; N[i * 3 + 1] = ny / l; N[i * 3 + 2] = nz / l;
+      } }
+    // ---- the posts and their bows ----
+    const BS = 1.55 * k * fk * kS;
+    for (let b = 0; b < 2; b++) {
+      const pz = oz + (b ? w : -w);
+      _q.identity(); _v.set(ox, 0, pz); _s.set(PH / 1.0, PH, PH); _m.compose(_v, _q, _s); rbPart(RB.posts[b], 0, now);
+      _e.set(0.06 * Math.sin(now * 1.1 + b), b ? 0.12 : -0.12, 0); _q.setFromEuler(_e); _v.set(ox + 0.04 * PH, yc + RH * 0.1, pz); _s.setScalar(BS); _m.compose(_v, _q, _s); rbPart(RB.bows[b], 0.05 + 0.05 * (wind / 8), now);
     }
-    // gold posts and their white bases
-    for (let b = 0; b < 4; b++) {
-      const at = RB.boxAt[b], bz = (b & 1) ? w : -w, base = b >= 2, sx = (base ? 0.5 : 0.12) * Math.max(1, kr * 0.7) * Math.max(0.05, fade), sy = base ? 0.12 * Math.max(1, kr * 0.7) : hp * 1.05;
-      for (let i = 0; i < RB.nBox; i++) { P[(at + i) * 3] = ox + RB.xp[i * 3] * sx; P[(at + i) * 3 + 1] = (RB.xp[i * 3 + 1] + 0.5) * sy; P[(at + i) * 3 + 2] = oz + bz + RB.xp[i * 3 + 2] * sx; }
+    // the centre bow: rides the ribbon, then drops and tumbles onto the runway
+    { const f = cut ? clamp(tf / 0.8, 0, 1) : 0, fe = f * f;
+      _e.set(fe * 1.45 + 0.05 * Math.sin(now * 1.4), 0.15 * Math.sin(now * 0.7) * (1 - f), Math.sin(f * Math.PI) * 0.8, 'XYZ'); _q.setFromEuler(_e);
+      _v.set(ox + fe * 0.4 * BS, mix(yc - sag + RH * 0.1, gy + 0.12 * BS, fe), oz); _s.setScalar(BS * 1.15 * (cut ? 1 - smooth(60, 120, tau) * 0.6 : 1)); _m.compose(_v, _q, _s); rbPart(RB.bows[2], 0.06, now); }
+    // ---- the scissors: drop in, open, snip, lift away ----
+    const sci = tau >= 0 && tau < 42;
+    if (sci) {
+      const cp = Z.camera.position, ca = Math.atan2(cp.z - oz, cp.x - ox), SL = 4.6 * k, pop = smooth(0, 4, tau), out = smooth(26, 40, tau), sc = SL * (pop * (1 + 0.12 * Math.sin(clamp(tau / 4, 0, 1) * Math.PI)) * (1 - out) + 0.001);
+      const open = tau < 8 ? 0.62 * smooth(1, 6, tau) : tau < RB_SNIP ? 0.62 * (1 - smooth(8, RB_SNIP, tau)) : 0.3 * smooth(RB_SNIP + 2, RB_SNIP + 9, tau);
+      const lift = (1 - pop) * 6 * k + smooth(RB_SNIP + 6, 40, tau) * 4 * k;
+      const ycut = yc - sag;
+      _e.set(-0.2, Math.PI * 0.5 - ca - 0.75 + 0.1 * Math.sin(now * 0.8), 0.05 * Math.sin(now * 1.3), 'YXZ'); _rq.setFromEuler(_e);
+      const fx = Math.cos(ca) * 0.55 * BS, fz = Math.sin(ca) * 0.55 * BS;
+      for (let hh = 0; hh < 2; hh++) {
+        _q.setFromAxisAngle(_ra.set(0, 0, 1), hh ? -open : open); _q.premultiply(_rq);
+        _v.set(ox + fx, ycut + RH * 0.5 + 0.1 * SL + lift, oz + fz); _s.set(hh ? -sc : sc, sc, hh ? -sc : sc); _m.compose(_v, _q, _s); rbPart(RB.scis[hh], 0, now);
+      }
     }
-    RB.mesh.geometry.attributes.position.needsUpdate = true; RB.mesh.visible = fade > 0.01;
-    // the petal burst
+    RB.g.setDrawRange(0, sci ? RB.sciCount : RB.sciStart);
+    RB.g.attributes.position.needsUpdate = true; RB.g.attributes.normal.needsUpdate = true; RB.mesh.visible = fade > 0.01;
+    // ---- the petal and confetti burst ----
     let n = 0;
     if (cut && tau < 150) {
-      const pr = RB.pr, ks = kr, wx = Z.atmo && Z.atmo.wind ? Math.cos(Z.atmo.wind.dir) : 1, wz = Z.atmo && Z.atmo.wind ? Math.sin(Z.atmo.wind.dir) : 0;
+      const pr = RB.pr, kp = clamp(Z.camDist / 60, 1, 30), ps = clamp(Z.camDist * 0.0034, 0.07, 36);
+      const wx = Z.atmo && Z.atmo.wind ? Math.cos(Z.atmo.wind.dir) : 1, wz = Z.atmo && Z.atmo.wind ? Math.sin(Z.atmo.wind.dir) : 0, ycut = yc - sag;
+      const life = 1 - smooth(95, 145, tau);
       for (let i = 0; i < RB.PN; i++) {
-        const r0 = pr[i * 6], r1 = pr[i * 6 + 1], r2 = pr[i * 6 + 2], r3 = pr[i * 6 + 3], r4 = pr[i * 6 + 4], r5 = pr[i * 6 + 5];
-        const t = Math.max(0, tau - r5 * 2); if (t <= 0) continue;
-        const a = r0 * Math.PI * 2, out = (1 - Math.exp(-t / 3)) * (4 + 10 * r1) * ks, drift = t * (0.15 + 0.25 * r2) * ks;
-        const up = (1 - Math.exp(-t / 2.5)) * (3 + 5 * r3) * ks - t * 0.035 * ks * (0.5 + r4);
-        const y = Math.max(0.05 * ks, hp + up + Math.sin(now * 2 + i) * 0.2 * ks);
-        _v.set(ox + Math.cos(a) * out * 0.6 + wx * drift + Math.sin(now * 1.3 + i) * 0.3 * ks, y, oz + Math.sin(a) * out + wz * drift);
-        _e.set(now * (2 + r1 * 3) + i, now * (1 + r2 * 2), now * (1.5 + r3) + i * 2); _q.setFromEuler(_e);
-        const sc = 0.16 * Math.max(ks, 2.5) * (0.7 + r4 * 0.6) * (1 - smooth(100, 148, tau)) * (y <= 0.051 * ks ? 0.8 : 1);
-        _s.set(sc, sc, sc); _m.compose(_v, _q, _s); RB.petals.setMatrixAt(n++, _m);
+        const o = i * 8, r0 = pr[o], r1 = pr[o + 1], r2 = pr[o + 2], r3 = pr[o + 3], r4 = pr[o + 4], r5 = pr[o + 5], r6 = pr[o + 6], r7 = pr[o + 7];
+        const t = tf - r5 * 0.25; if (t <= 0) continue;
+        const conf = r6 > 0.68, td = conf ? 0.45 : 0.32, vt = (conf ? 1.6 : 1.0) * (0.7 + 0.6 * r4);
+        const a = r0 * Math.PI * 2, vh = (2.5 + 8 * r1 * r1) * kp, vy = (7 + 11 * r3) * kp, ex = 1 - Math.exp(-t / td);
+        const hx = Math.cos(a) * vh * td * ex, hz = Math.sin(a) * vh * td * ex * 1.3;
+        const y = Math.max(gy * 0.5, ycut + (vy + vt * kp) * td * ex - vt * kp * t);
+        const dr = t * (0.5 + 0.6 * r2) * kp * (y > gy ? 1 : 0.3), sw = Math.sin(now * (1.5 + r7 * 2) + i) * 0.35 * kp;
+        _v.set(ox + hx + wx * dr + sw, y, oz + hz + wz * dr + Math.cos(now * (1.2 + r2) + i) * 0.3 * kp);
+        const landed = y <= gy * 0.5 + 0.001;
+        if (landed) _e.set(Math.PI * 0.5, r0 * 6, 0); else _e.set(now * (2 + r1 * 4) + i, now * (1 + r2 * 3), now * (1.5 + r3 * 2) + i * 2);
+        _q.setFromEuler(_e);
+        const sc = ps * (0.7 + 0.6 * r4) * life * smooth(0, 0.08, t);
+        if (conf) _s.set(sc * 0.75, sc * 0.75, sc); else _s.set(sc, sc * 0.9, sc);
+        _m.compose(_v, _q, _s); RB.petals.setMatrixAt(n++, _m);
       }
     }
     RB.petals.count = n; RB.petals.visible = n > 0; if (n) RB.petals.instanceMatrix.needsUpdate = true;

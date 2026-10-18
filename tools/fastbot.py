@@ -1,7 +1,7 @@
-"""Synchronous bot (same planner as run.py's expert, via HUB.ff): python fastbot.py <hub.html> <expert|handler|lazy> [js_before_start] [crash]"""
+"""Synchronous bot (same planner as run.py's expert, via HUB.ff): LVL=<1-4> python fastbot.py <hub.html> <expert|handler|lazy> [js_before_start] [crash]"""
 import asyncio, sys, json, os, re
 from playwright.async_api import async_playwright
-HUB, MODE = sys.argv[1], sys.argv[2]; PRE = sys.argv[3] if len(sys.argv) > 3 else ''
+HUB, MODE = sys.argv[1], sys.argv[2]; PRE = sys.argv[3] if len(sys.argv) > 3 else ''; LVL = int(os.environ.get('LVL', '3'))
 src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'run.py')).read(); AUTO = re.search(r"AUTO = '''(.*?)'''", src, re.S).group(1)
 async def main():
     async with async_playwright() as p:
@@ -10,7 +10,7 @@ async def main():
         await pg.goto('file://' + os.path.abspath(HUB)); await pg.wait_for_timeout(800)
         await pg.evaluate("window.HUB.view('2d')")
         if PRE: await pg.evaluate(PRE)
-        await pg.evaluate('window.HUB.startLevel(3)'); await pg.evaluate('window.HUB.pause()')
+        await pg.evaluate(f'window.HUB.startLevel({LVL})'); await pg.evaluate('window.HUB.pause()')
         tl = []
         while True:
             if MODE == 'expert': await pg.evaluate(AUTO)

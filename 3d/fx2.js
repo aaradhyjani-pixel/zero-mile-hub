@@ -396,10 +396,107 @@ vec3 fxCol(vec3 P,float reg,float t){
   KS.add('kites');
 
   // =====================================================================================================
+  // THE INAUGURATION RIBBON: red satin across the runway on two gold posts, big bows; snaps, halves flutter down, petals burst
+  // =====================================================================================================
+  const RB = (() => {
+    const NS = 40, nStrip = 2 * (NS + 1) * 2;
+    // bow template (local, unit size): two flat loops, a knot and two tails; band width along x
+    const bp = [], bn = [], bi = [];
+    const band = (pts, wid) => {   // pts: [[y,z,ny,nz],...] a ribbon band, width along x
+      const b0 = bp.length / 3;
+      for (const q of pts) { bp.push(-wid, q[0], q[1], wid, q[0], q[1]); bn.push(0, q[2], q[3], 0, q[2], q[3]); }
+      for (let i = 0; i < pts.length - 1; i++) { const a = b0 + i * 2; bi.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    };
+    for (const sz of [-1, 1]) { const L = []; for (let i = 0; i <= 16; i++) { const t = i / 16 * Math.PI * 2, y = Math.sin(t) * 0.17, z = sz * (0.2 + Math.cos(t + Math.PI) * 0.2); L.push([y, z, Math.sin(t), -sz * Math.cos(t)]); } band(L, 0.09); }
+    band([[0.07, -0.05, 0, -1], [-0.07, -0.05, 0, -1]], 0.1); band([[0.07, 0.05, 0, 1], [-0.07, 0.05, 0, 1]], 0.1);
+    for (const sz of [-1, 1]) band([[0, 0, 0, sz], [-0.2, sz * 0.08, 0, sz], [-0.42, sz * 0.12, 0, sz], [-0.6, sz * 0.2, 0, sz]], 0.07);
+    const box = new THREE.BoxGeometry(1, 1, 1); const xp = box.attributes.position.array, xn = box.attributes.normal.array, xi = box.index.array;
+    const nBow = bp.length / 3, nBox = xp.length / 3, NV = nStrip + 3 * nBow + 2 * nBox + 2 * nBox;
+    const pos = new Float32Array(NV * 3), nor = new Float32Array(NV * 3), col = new Float32Array(NV * 3), idx = [];
+    const RED = new THREE.Color('#c8102e'), GOLD = new THREE.Color('#d4a017'), RED2 = new THREE.Color('#9e0b22');
+    let v = 0;
+    // strip: half h (0 west.., 1), columns 0..NS, rows top/bottom
+    for (let h = 0; h < 2; h++) { for (let c = 0; c <= NS; c++) for (let r = 0; r < 2; r++) { nor[v * 3] = 1; const k = r ? RED2 : RED; col[v * 3] = k.r; col[v * 3 + 1] = k.g; col[v * 3 + 2] = k.b; v++; }
+      const b0 = h * (NS + 1) * 2; for (let c = 0; c < NS; c++) { const a = b0 + c * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } }
+    v = nStrip;   // the strip uses 2 halves x (NS+1) columns x 2 rows
+    const bowAt = [], boxAt = [];
+    for (let b = 0; b < 3; b++) { bowAt.push(v); for (let i = 0; i < nBow; i++) { nor.set(bn.slice(i * 3, i * 3 + 3), (v + i) * 3); col[(v + i) * 3] = RED.r; col[(v + i) * 3 + 1] = RED.g; col[(v + i) * 3 + 2] = RED.b; } for (const i of bi) idx.push(v + i); v += nBow; }
+    for (let b = 0; b < 4; b++) { boxAt.push(v); const k = b < 2 ? GOLD : new THREE.Color('#f2f0ea'); for (let i = 0; i < nBox; i++) { nor.set(xn.slice(i * 3, i * 3 + 3), (v + i) * 3); col[(v + i) * 3] = k.r; col[(v + i) * 3 + 1] = k.g; col[(v + i) * 3 + 2] = k.b; } for (const i of xi) idx.push(v + i); v += nBox; }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage)); g.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    g.setIndex(idx); g.setDrawRange(0, idx.length);
+    const mesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.32, metalness: 0.15, envMapIntensity: 1.2 }));
+    mesh.frustumCulled = false; mesh.visible = false; root.add(mesh);
+    // marigold petals
+    const PN = 360, pg = new THREE.BufferGeometry();
+    pg.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0.5, 0.15, 0.05, 1, 0, 0, 0.5, -0.15, 0.05], 3)); pg.setIndex([0, 1, 2, 0, 2, 3]); pg.computeVertexNormals();
+    const petals = new THREE.InstancedMesh(pg, new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide, roughness: 0.6, emissive: 0x401000 }), PN);
+    petals.frustumCulled = false; petals.count = 0; petals.instanceMatrix.setUsage(THREE.DynamicDrawUsage); root.add(petals);
+    const PC = ['#ff8c00', '#ffa500', '#ffb000', '#ff7a00', '#ffc400', '#e85d04', '#d00000'];
+    const pr = new Float32Array(PN * 6); { const Rr = mulberry(7); for (let i = 0; i < PN; i++) { for (let j = 0; j < 6; j++) pr[i * 6 + j] = Rr(); petals.setColorAt(i, _c.set(PC[i % PC.length])); } }
+    return { mesh, pos, NS, bp, nBow, bowAt, boxAt, xp, nBox, petals, pr, PN };
+  })();
+  function ribbonUpdate(list, dt, now) {
+    const it = list[0]; if (!it) { RB.mesh.visible = false; RB.petals.count = 0; RB.petals.visible = false; return; }
+    const T = Z.T, kr = clamp(Z.camDist / 110, 1, 60), w = it.w || 75, P = RB.pos, NS = RB.NS;
+    const fade = smooth(it.t0, it.t0 + 4, T) * (1 - smooth(it.t1 - 25, it.t1 - 2, T)), cut = it.cutAt != null && T >= it.cutAt, tau = cut ? T - it.cutAt : 0;
+    const hp = 1.25 * Math.max(1, kr * 0.7), rw = 0.32 * kr * Math.max(0.05, fade), sag = Math.min(w * 0.04, 0.6 * hp);
+    const ox = it.x, oz = it.y, wind = Z.atmo && Z.atmo.wind ? Z.atmo.wind.speed || 4 : 4;
+    let v = 0;
+    for (let h = 0; h < 2; h++) {
+      const sgn = h ? 1 : -1;   // post at z = sgn*w, free end toward the centre
+      for (let c = 0; c <= NS; c++) {
+        const u = c / NS;                       // 0 at the post .. 1 at the centre
+        const zz = sgn * w * (1 - u), sg = sag * (1 - Math.pow(1 - u, 2));
+        let fu = 0; if (cut) fu = smooth(0, 1, (tau - (1 - u) * 3) / 9);
+        const rec = cut ? 0.14 * u * smooth(0, 4, tau) : 0;
+        const z = oz + zz * (1 - rec);
+        const fl = Math.sin(now * (2.5 + wind * 0.25) + u * 9 + h * 2) * (0.04 + 0.03 * u) * kr * (1 - 0.7 * fu);
+        const curl = cut ? Math.sin(u * 13 + h) * 0.9 * kr * fu * u : 0;
+        const yB = mix(hp - sg - rw, 0.08 * kr, fu), phi = fu * Math.PI * 0.5;
+        const xb = ox + fl + curl;
+        P[v * 3] = xb + Math.sin(phi) * rw; P[v * 3 + 1] = yB + Math.cos(phi) * rw; P[v * 3 + 2] = z; v++;
+        P[v * 3] = xb; P[v * 3 + 1] = yB; P[v * 3 + 2] = z; v++;
+      }
+    }
+    // bows: two at the posts, one in the middle (falls with the cut)
+    const bs = 3.2 * kr * Math.max(0.05, fade);
+    for (let b = 0; b < 3; b++) {
+      const at = RB.bowAt[b], bz = b === 2 ? 0 : (b ? w : -w), cy = b === 2 ? mix(hp - sag, 0.25 * bs, smooth(0, 8, tau)) : hp - rw * 0.5;
+      const sq = b === 2 && cut ? Math.max(0.05, 1 - smooth(40, 120, tau)) : 1;
+      for (let i = 0; i < RB.nBow; i++) { P[(at + i) * 3] = ox + RB.bp[i * 3] * bs * sq; P[(at + i) * 3 + 1] = cy + RB.bp[i * 3 + 1] * bs * sq; P[(at + i) * 3 + 2] = oz + bz + RB.bp[i * 3 + 2] * bs * sq; }
+    }
+    // gold posts and their white bases
+    for (let b = 0; b < 4; b++) {
+      const at = RB.boxAt[b], bz = (b & 1) ? w : -w, base = b >= 2, sx = (base ? 0.5 : 0.12) * Math.max(1, kr * 0.7) * Math.max(0.05, fade), sy = base ? 0.12 * Math.max(1, kr * 0.7) : hp * 1.05;
+      for (let i = 0; i < RB.nBox; i++) { P[(at + i) * 3] = ox + RB.xp[i * 3] * sx; P[(at + i) * 3 + 1] = (RB.xp[i * 3 + 1] + 0.5) * sy; P[(at + i) * 3 + 2] = oz + bz + RB.xp[i * 3 + 2] * sx; }
+    }
+    RB.mesh.geometry.attributes.position.needsUpdate = true; RB.mesh.visible = fade > 0.01;
+    // the petal burst
+    let n = 0;
+    if (cut && tau < 150) {
+      const pr = RB.pr, ks = kr, wx = Z.atmo && Z.atmo.wind ? Math.cos(Z.atmo.wind.dir) : 1, wz = Z.atmo && Z.atmo.wind ? Math.sin(Z.atmo.wind.dir) : 0;
+      for (let i = 0; i < RB.PN; i++) {
+        const r0 = pr[i * 6], r1 = pr[i * 6 + 1], r2 = pr[i * 6 + 2], r3 = pr[i * 6 + 3], r4 = pr[i * 6 + 4], r5 = pr[i * 6 + 5];
+        const t = Math.max(0, tau - r5 * 2); if (t <= 0) continue;
+        const a = r0 * Math.PI * 2, out = (1 - Math.exp(-t / 3)) * (4 + 10 * r1) * ks, drift = t * (0.15 + 0.25 * r2) * ks;
+        const up = (1 - Math.exp(-t / 2.5)) * (3 + 5 * r3) * ks - t * 0.035 * ks * (0.5 + r4);
+        const y = Math.max(0.05 * ks, hp + up + Math.sin(now * 2 + i) * 0.2 * ks);
+        _v.set(ox + Math.cos(a) * out * 0.6 + wx * drift + Math.sin(now * 1.3 + i) * 0.3 * ks, y, oz + Math.sin(a) * out + wz * drift);
+        _e.set(now * (2 + r1 * 3) + i, now * (1 + r2 * 2), now * (1.5 + r3) + i * 2); _q.setFromEuler(_e);
+        const sc = 0.16 * Math.max(ks, 2.5) * (0.7 + r4 * 0.6) * (1 - smooth(100, 148, tau)) * (y <= 0.051 * ks ? 0.8 : 1);
+        _s.set(sc, sc, sc); _m.compose(_v, _q, _s); RB.petals.setMatrixAt(n++, _m);
+      }
+    }
+    RB.petals.count = n; RB.petals.visible = n > 0; if (n) RB.petals.instanceMatrix.needsUpdate = true;
+  }
+  KS.add('ribbon');
+
+  // =====================================================================================================
   // per frame
   // =====================================================================================================
   let lastT = null;
-  const L = { tiger: [], kites: [] };
+  const L = { tiger: [], kites: [], ribbon: [] };
   return {
     update(dt, now) {
       const fx = Z.fx || [], T = Z.T;
@@ -411,6 +508,7 @@ vec3 fxCol(vec3 P,float reg,float t){
       nBlob = 0;
       tigerUpdate(L.tiger, dt, now, dTs);
       kitesUpdate(L.kites, dt, now);
+      ribbonUpdate(L.ribbon, dt, now);
       blobs.count = nBlob; blobs.visible = nBlob > 0;
       if (nBlob) { blobs.instanceMatrix.needsUpdate = true; blobOp.needsUpdate = true; }
     },

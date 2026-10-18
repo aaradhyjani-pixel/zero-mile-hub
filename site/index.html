@@ -2505,8 +2505,9 @@ STORY.lastball={len:900,start(c){
   c.sixFn=(cc=>{radio('PA','SIX! INDIA WIN THE WORLD CUP!');logE('India won the World Cup off the last ball.');
     for(const o of CONC)if(o.open!==false)floater(o.cx,o.cy,0,'SIX! 🏏','#ffd23f');radio('RAMP','The whole apron is honking. The tower has joined in. So has a fire tender.');
     if(cc.pa)for(const f of flights)if(f.state==='at_gate'&&f.readyAt>T){f.readyAt=Math.max(T,f.readyAt-240);}FXV.push({kind:'fireworks',id:'six',x:procC.x,y:procC.y,t0:T,t1:T+200});
-    const f=flights.find(o=>o.state==='push')||flights.find(o=>o.state==='at_gate'&&o.kind==='dep');
-    const b=['LAST BALL · SIX TO WIN','SIX! India win the World Cup','IN-DI-A! IN-DI-A! 🏆',icos('🏏')+FLAG_IN+icos('🏆')];if(f)cinema(f,b,{ms:6500});else flashBanner(b);
+    // the cut goes to the fireworks over the terminal, seen from above them so they burst against the field, not the sky
+    const b=['LAST BALL · SIX TO WIN','SIX! India win the World Cup','IN-DI-A! IN-DI-A! 🏆',icos('🏏')+FLAG_IN+icos('🏆')];
+    cinema(null,b,{view:{tx:procC.x,ty:procC.y,dist:2200,pitch:0.22,yaw:0.4},at:[procC.x,procC.y],track:orbitShot({x:procC.x,y:procC.y,h:320,dist:1350,pitch:0.1,yaw:0.4,rate:0.035,right:330}),ms:8000});
     guard([cc.pa?'The crews are back. They are running.':'They are back. Slowly. Smiling.','Who is honking? … Fine. Honk. 📣'],WHO.tower);});c.len=4000;
 },tick(c){if(c.six&&T>=c.six&&!c.sixed){c.sixed=true;c.sixFn(c);}}};
 
@@ -2574,7 +2575,7 @@ STORY.surya={len:3000,start(c){const open=RW.filter(r=>!r.locked);if(!open.lengt
   const cx=RW.reduce((a,r)=>a+(r.x0+r.x1)/2,0)/RW.length,cy=RW.reduce((a,r)=>a+r.y,0)/RW.length;
   const pick=o=>{const t=o.s;takeRunways(open,t,240,0,'Surya Kiran display','Air display');FXV.push({kind:'flypast',id:'surya',t0:t,t1:t+240,cx,cy,r:4200});c.at=t;
     c.lines.push([t-c.E,()=>{guard(['Zero Mile, Surya Kiran leader. Nine Hawks, running in.',"How's the josh? 🇮🇳"],WHO.surya);
-      cinema(null,['SURYA KIRAN · IAF AEROBATIC TEAM','Nine Hawks open Zero Mile',"How's the josh? High, sir! 🇮🇳",icos('✈️')+FLAG_IN+icos('✈️')],{view:{tx:cx,ty:cy+600,dist:7000,pitch:0.42,yaw:0.5},at:[cx,cy],ms:9000});}]);
+      cinema(null,['SURYA KIRAN · IAF AEROBATIC TEAM','Nine Hawks open Zero Mile',"How's the josh? High, sir! 🇮🇳",icos('✈️')+FLAG_IN+icos('✈️')],{view:{tx:cx-1500,ty:cy,dist:4200,pitch:0.3,yaw:0.5},at:[cx,cy],track:chaseFlypast(),speed:0.15,until:t+38});}]);
     c.lines.push([t-c.E+240,'TWR','Surya Kiran, beautiful. All runways back to normal. The josh remains high.']);};
   guard(['Sir, the Surya Kiran team will open the airport.','Every runway stops for 4 minutes. You choose when. ✈️'],WHO.surya);
   const best=opts.reduce((a,b)=>b.n<a.n?b:a);
@@ -3939,9 +3940,13 @@ function camUpdate(dt){
     if(!running){C3.t.yaw+=dt*0.035;C3.t.dist=Math.max(C3.t.dist,8000);}
     if(CINE&&CINE.o.track&&C3.t.dist<CINE.o.view.dist*3){const p=CINE.o.track();if(p){C3.t.tx=p[0];C3.t.ty=p[1];}}   // a cinematic keeps its moving subject in frame (until the player zooms out)
     const ke=C3.intro>0?1-Math.exp(-dt*1.6):k;if(C3.intro>0)C3.intro-=dt;
-    for(const key of ['tx','ty','dist','yaw','pitch'])C3[key]+=(C3.t[key]-C3[key])*ke;
-    const cp=Math.cos(C3.pitch);cam.position.set(C3.tx+Math.sin(C3.yaw)*cp*C3.dist,Math.sin(C3.pitch)*C3.dist,C3.ty+Math.cos(C3.yaw)*cp*C3.dist);
-    cam.fov+=(42-cam.fov)*k;cam.lookAt(C3.tx,0,C3.ty);Z.kEx=clamp(C3.dist/2600,1,3.4);Z.camDist=C3.dist;focus=[C3.tx,C3.ty];
+    // a cinematic can drive the orbit itself (o.track: the flypast, the fireworks), aiming th metres above the ground;
+    // it cuts straight to the shot and holds it exactly (no easing lag on a fast target), then eases home after
+    const tr=CINE&&CINE.o.track?CINE.o.track():null;
+    for(const key of ['tx','ty','dist','yaw','pitch']){if(tr)C3[key]=C3.t[key]=tr[key];else C3[key]+=(C3.t[key]-C3[key])*ke;}
+    C3.th=tr?tr.th||0:(C3.th||0)*(1-ke);
+    const cp=Math.cos(C3.pitch);cam.position.set(C3.tx+Math.sin(C3.yaw)*cp*C3.dist,C3.th+Math.sin(C3.pitch)*C3.dist,C3.ty+Math.cos(C3.yaw)*cp*C3.dist);
+    if(tr)cam.fov=42;else cam.fov+=(42-cam.fov)*k;cam.lookAt(C3.tx,C3.th,C3.ty);Z.kEx=clamp(C3.dist/2600,1,3.4);Z.camDist=C3.dist;focus=[C3.tx,C3.ty];
     // a near plane that follows the camera height keeps depth precision (and AO) clean in the strategic view
     cam.near=clamp((cam.position.y-1500)*0.35,4,1500);
   }else if(V3.mode==='tower'){
@@ -3963,6 +3968,18 @@ function camUpdate(dt){
   cam.updateProjectionMatrix();cam.updateMatrixWorld();
   if(focus)shadowFit(focus);
 }
+// camera tracks for set-piece cinematics (cinema's o.track). The flypast: ride alongside the formation like a chase
+// plane, behind its right wing and a little above, so it flies left to right with its three smoke trails streaming
+// back across the open left of the screen; aimed a little ahead of and above it, so it sits left of and below the
+// centre, clear of the banner and the speech bubble. A point in the sky (the fireworks): a slow orbit, th metres up.
+function chaseFlypast(){let hx=null,hz=0;return()=>{const m=Z.mods.fx,q=m&&m.focus?m.focus(T):null;if(!q)return null;
+  if(hx==null){hx=q.fx;hz=q.fz;}else if(q.fh>0.3){const l=Math.hypot(hx+(q.fx-hx)*0.15,hz+(q.fz-hz)*0.15)||1;hx=(hx+(q.fx-hx)*0.15)/l;hz=(hz+(q.fz-hz)*0.15)/l;}
+  const d=clamp(180+q.r*1.6,180,1600),ox=-hx*0.5-hz*0.87,oz=-hz*0.5+hx*0.87;
+  return{tx:q.x+hx*d*0.2,ty:q.z+hz*d*0.2,th:q.y,dist:d,yaw:Math.atan2(ox,oz),pitch:0.15};};}
+// o: {x,y} the point, h its height, dist, pitch, yaw, rate (rad/s), right: metres to aim right of it, so it sits left
+// of the centre, clear of the banner and the speech bubble
+function orbitShot(o){const t0=performance.now();return()=>{const yaw=o.yaw+(performance.now()-t0)/1000*(o.rate||0),k=o.right||0;
+  return{tx:o.x+Math.cos(yaw)*k,ty:o.y-Math.sin(yaw)*k,th:o.h||0,dist:o.dist,pitch:o.pitch,yaw};};}
 // one shadow map fitted to the visible ground (light-space bounds of the view footprint), sizes quantised and the
 // origin snapped to whole texels so panning doesn't make shadow edges crawl; the light direction only re-aims when
 // the sun has moved by more than ~0.15 degrees
@@ -4029,18 +4046,53 @@ function clampC3(){C3.t.tx=clamp(C3.t.tx,EXT.x0-6000,EXT.x1+9000);C3.t.ty=clamp(
 function cam3Intro(){if(!V3.ready)return;setCam('map');Object.assign(C3,{tx:-1500,ty:2500,dist:24000,yaw:C3.yaw%(2*Math.PI)-0.9,pitch:0.42});Object.assign(C3.t,{tx:-700,ty:0,dist:10500,yaw:0,pitch:0.92});C3.intro=3.2;}
 function cam3Fit(){setCam('map');Object.assign(C3.t,{tx:-700,ty:0,dist:10500,yaw:0,pitch:0.92});}
 
+// screen rectangles the signs keep clear of: the cards floating over the map (re-read 4 times a second, not per frame)
+function hudRects(now){
+  if(V3.blk&&Math.abs(now-V3.blkT)<0.25)return V3.blk;V3.blkT=now;const a=cv.getBoundingClientRect(),L=[];
+  for(const s of ['#zoomBox','#camLbl','#vipBanner.on','#guard.on','#toast','#pop','#kiteChip','#wedChip','#fogTag','#stopBtn']){const e=document.querySelector(s);if(!e||e.hidden)continue;
+    const r=e.getBoundingClientRect();if(r.width>0&&r.height>0)L.push({x:r.left-a.left-4,y:r.top-a.top-4,w:r.width+8,h:r.height+8});}
+  return V3.blk=L;}
+const ovl=(a,b,m)=>a.x<b.x+b.w+m&&a.x+a.w+m>b.x&&a.y<b.y+b.h+m&&a.y+a.h+m>b.y;
+// is a sign rectangle off the free map area, under a card, or on top of a sign already placed?
+function signHit(rc,blk,taken){const g=cam.region||{L:0,R:VW,Tp:0,B:VH};
+  if(rc.x<g.L+2||rc.x+rc.w>g.R-2||rc.y<g.Tp+2||rc.y+rc.h>g.B-2)return true;
+  for(const b of blk)if(ovl(rc,b,0))return true;if(taken)for(const b of taken)if(ovl(rc,b,3))return true;return false;}
+// runway signs never collide and never hide under the HUD: the selected runway's sign goes first, then the closed
+// ones, then the nearest (a sign already up keeps its place over one that isn't). Each takes the first clear spot
+// along its runway (last frame's spot first, so signs don't hop; above the runway, else below it), in full, then
+// shortened ("28L · MIXED", then "28L"); with no clear spot it is left out (the runway desk still says it all).
+// Low cameras graze the field, where signs stack up along the horizon: they fade out there (the selected runway's stays).
+const RWA=[0.18,0.5,0.82,0.34,0.66,0.06,0.94,0.26,0.42,0.58,0.74];
+function rwSigns3D(blk,taken){
+  const cp=Z.camera.position;ctx.font='700 12px Barlow Condensed, Arial Narrow, sans-serif';
+  const L=RW.map(r=>{const s=rwSign(r);return{r,s,pri:(r===selRw?0:s.col==='#ff4d3f'?1:r.locked?3:2)*1e6+Math.hypot(cp.x-(r.x0+r.x1)/2,cp.z-r.y)+(r._sOn?0:6000)};}).sort((a,b)=>a.pri-b.pri);
+  rwSigns=[];
+  for(const o of L){const r=o.r,txt=[`${r.short} · ${o.s.lbl}`,`${r.short} · ${o.s.lbl.split(' · ')[0]}`,r.short];
+    const ord=RWA.map((_,i)=>i);if(r._sa!=null){ord.splice(r._sa,1);ord.unshift(r._sa);}
+    let put=null;r._sOn=false;
+    // camera elevation over the runway's middle, in degrees: below ~1.5 the sign is a smear on the horizon, so it goes
+    const ex=r.x0+r.len*0.5,el=Math.atan2(cp.y,Math.hypot(cp.x-ex,cp.z-r.y))/D2R,fa=r===selRw?clamp((el-0.5)/2,0.8,1):clamp((el-1.5)/3,0,1);
+    if(fa<0.1)continue;
+    for(let ti=0;ti<3&&!put;ti++){if(ti&&txt[ti]===txt[ti-1])continue;const w=ctx.measureText(txt[ti]).width+12;
+      for(const ai of ord){const x=r.x0+r.len*RWA[ai],p=proj(x,r.y,0);if(!p)continue;
+        for(const dy of [-16,16]){const rc={x:p.X-w/2,y:p.Y+dy-9,w,h:18};if(!signHit(rc,blk,taken)){put={p,dy,t:txt[ti],ai,x};break;}}if(put)break;}}
+    if(!put)continue;r._sa=put.ai;r._sOn=true;
+    const rect=signText(put.p.X,put.p.Y+put.dy,put.t,(r.locked?0.6:1)*fa,o.s.col);rect.r=r;rwSigns.push(rect);taken.push(rect);}
+}
 // the overlay: incident markers, runway signs, stack signs, tags and MAYDAY beacons, drawn on the 2D canvas
 function drawOverlay3D(now){
-  screenT();ctx.clearRect(0,0,VW,VH);
-  for(const st of STACKS){const n=flights.filter(f=>f.state==='holding'&&f.stack===st);if(!n.length)continue;const p=proj(st.x,st.y,2600*AIR_K);if(p)signText(p.X,p.Y-40,`STACK ${st.id} · ${n.length}`,0.95,n.some(f=>f.minFuel)?'#ff4d3f':'#f4c430');}
-  rwSigns=[];for(const r of RW){const p=proj(r.x0+r.len*0.18,r.y,0);if(!p)continue;const s=rwSign(r);const rect=signText(p.X,p.Y-16,`${r.short} · ${s.lbl}`,r.locked?.6:1,s.col);rect.r=r;rwSigns.push(rect);}
+  screenT();ctx.clearRect(0,0,VW,VH);const blk=hudRects(now),taken=[];
+  for(const st of STACKS){const n=flights.filter(f=>f.state==='holding'&&f.stack===st);if(!n.length)continue;const p=proj(st.x,st.y,2600*AIR_K);if(!p)continue;
+    const t=`STACK ${st.id} · ${n.length}`;ctx.font='700 12px Barlow Condensed, Arial Narrow, sans-serif';const w=ctx.measureText(t).width+12;if(signHit({x:p.X-w/2,y:p.Y-49,w,h:18},blk))continue;
+    taken.push(signText(p.X,p.Y-40,t,0.95,n.some(f=>f.minFuel)?'#ff4d3f':'#f4c430'));}
+  rwSigns3D(blk,taken);
   for(const f of flights){if(!f.mayday||f.landT!=null||f.sx==null)continue;const X=f.sx,Y=f.sy,pp=(now*1.4)%1;ctx.strokeStyle=`rgba(255,77,63,${1-pp})`;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(X,Y,10+pp*28,0,7);ctx.stroke();signText(X,Y-30,`MAYDAY ${fl(f)}`,1,'#ff4d3f');}
   for(const I of incidents){const q=incPos(I);const p=proj(q.x,q.y,I.f?altM(I.f):0);if(!p){I.sx=null;continue;}
     // a ground subject (a story's animal, crowd or set) is drawn at about 2 m times the characters' view scale (fx2 charScale)
     let up=0;if(!I.f){const t=proj(q.x,q.y,2.2*clamp(Z.camDist/80,1,160));if(t)up=p.Y-t.Y;}incMark(ctx,I,p.X,p.Y,now,up);}
   drawMarks(ctx,(x,y,a)=>proj(x,y,a*AIR_K),now,Z.fxKinds);
   const tagged=new Set();if(selected)tagged.add(selected);if(hover)tagged.add(hover);
-  if(V3.mode==='map'&&Z.camDist<2200){const cp=Z.camera.position,cand=[];for(const f of flights){if(f.sx!=null&&['approach','rollout','lineup','roll','nogate','climb','hp'].includes(f.state)&&f.sx>40&&f.sx<VW-40&&f.sy>40&&f.sy<VH-40)cand.push([Math.hypot(cp.x-f.x,cp.z-f.y),f]);}
+  if(V3.mode==='map'&&Z.camDist<2200&&!(CINE&&CINE.o.track)){const cp=Z.camera.position,cand=[];for(const f of flights){if(f.sx!=null&&['approach','rollout','lineup','roll','nogate','climb','hp'].includes(f.state)&&f.sx>40&&f.sx<VW-40&&f.sy>40&&f.sy<VH-40)cand.push([Math.hypot(cp.x-f.x,cp.z-f.y),f]);}
     cand.sort((a,b)=>a[0]-b[0]);for(const c of cand.slice(0,6))tagged.add(c[1]);}
   for(const f of tagged)if(f.sx!=null)drawTag(f);
   if(selected&&selected.sx!=null){ctx.strokeStyle='#f4c430';ctx.lineWidth=2;ctx.beginPath();ctx.arc(selected.sx,selected.sy,Math.max(10,selected.sr+5),0,7);ctx.stroke();}
@@ -6253,7 +6305,7 @@ Z3MOD.fx = function (Z) {
   const trU = THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uSunDir: { value: new THREE.Vector3(0, 1, 0) }, uSunCol: { value: new THREE.Color(1, 1, 1) }, uAmbT: { value: new THREE.Color(0.3, 0.34, 0.4) }, uAmbB: { value: new THREE.Color(0.2, 0.19, 0.16) } }]);
   const trMat = new THREE.ShaderMaterial({ uniforms: trU, transparent: true, depthWrite: false, fog: true, side: THREE.DoubleSide,
     vertexShader: `attribute vec3 aTan; attribute vec4 aD; attribute vec3 aCol;
-varying vec3 vCol, vV, vS; varying float vSide, vA, vEmit;
+varying vec3 vCol, vV, vS; varying float vSide, vA, vEmit, vNear;
 #include <fog_pars_vertex>
 void main() {
   vec3 P = position; vec3 V = normalize(cameraPosition - P); vec3 T = aTan;
@@ -6261,20 +6313,24 @@ void main() {
   P += S * aD.x * aD.w;
   vec4 mvPosition = viewMatrix * vec4(P, 1.0); gl_Position = projectionMatrix * mvPosition;
   vCol = aCol; vSide = aD.x; vA = aD.y; vEmit = aD.z; vV = V; vS = S;
+  vNear = length(cameraPosition - P) / max(aD.w, 1.0);   // camera distance in trail half-widths
   #include <fog_vertex>
 }`,
     fragmentShader: `uniform vec3 uSunDir, uSunCol, uAmbT, uAmbB;
-varying vec3 vCol, vV, vS; varying float vSide, vA, vEmit;
+varying vec3 vCol, vV, vS; varying float vSide, vA, vEmit, vNear;
 #include <fog_pars_fragment>
 float fh(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 float vn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(fh(i), fh(i + vec2(1.0, 0.0)), f.x), mix(fh(i + vec2(0.0, 1.0)), fh(i + vec2(1.0, 1.0)), f.x), f.y); }
 void main() {
-  float s = vSide, prof = max(1.0 - s * s, 0.0);
+  float s = vSide;
   // billows: noise anchored to the emission time (puffs stay where they were made), coarse lumps plus fine fray at the edges
   vec2 q = vec2(vEmit * 3.2, s * 1.4 + vEmit * 0.53);
   float n = vn(q) * 0.5 + vn(q * 2.1 + 7.1) * 0.3 + vn(q * 4.7 + 3.3) * 0.2;
-  float d = pow(prof, 0.75) * (0.3 + 1.05 * n);
-  float a = min(1.0, vA * smoothstep(0.1, 0.8, d) * (0.8 + 0.35 * n));
+  // a soft tube, not a ribbon: the radius swells and pinches with slow noise, the rim frays, and the opacity is the
+  // optical depth through a gaussian core, so the edge melts into the sky from any side (no cut-off at the strip's edge)
+  float r = abs(s) / (0.62 + 0.34 * vn(vec2(vEmit * 0.85, 3.7))) + (n - 0.5) * 0.32, prof = max(1.0 - r * r, 0.0);
+  float a = vA * (1.0 - exp(-exp(-2.6 * r * r) * (0.55 + 0.9 * n) * 2.3)) * smoothstep(1.0, 0.72, abs(s));
+  a *= smoothstep(1.2, 4.5, vNear);   // a trail within a few widths of the camera is a wall of smoke: thin it out
   if (a < 0.004) discard;
   vec3 V = normalize(vV), S = normalize(vS);
   vec3 N = normalize(S * s * 0.8 + V * sqrt(prof) + vec3(0.0, (n - 0.5) * 0.6, 0.0));
@@ -6294,13 +6350,14 @@ void main() {
     const x = s / DT, wF = 1 - sstep(B.sB - 1, B.sB + 1.5, s) * (1 - sstep(B.sG - 6, B.sG - 0.5, s));
     cr(B.J[i].A, B.NS, x, o); if (i && wF > 0 && S !== 1) { cr(B.J[0].A, B.NS, x, _p0); o.x += (o.x - _p0.x) * (S - 1) * wF; o.y += (o.y - _p0.y) * (S - 1) * wF; o.z += (o.z - _p0.z) * (S - 1) * wF; }
     return o; };
+  const bakeFor = it => { const kk = show.k; if (!show.bake || show.bake.id !== it.id || kk[0] !== it.t0 || kk[1] !== it.t1 || kk[2] !== it.cx || kk[3] !== it.cy || kk[4] !== it.r) {
+      show.bake = bakeShow(it); kk[0] = it.t0; kk[1] = it.t1; kk[2] = it.cx; kk[3] = it.cy; kk[4] = it.r; } return show.bake; };
   function updFlypast(it, dt, T) {
-    const kk = show.k; if (!show.bake || show.bake.id !== it.id || kk[0] !== it.t0 || kk[1] !== it.t1 || kk[2] !== it.cx || kk[3] !== it.cy || kk[4] !== it.r) {
-      show.bake = bakeShow(it); kk[0] = it.t0; kk[1] = it.t1; kk[2] = it.cx; kk[3] = it.cy; kk[4] = it.r; }
-    const B = show.bake, D = Math.max(30, it.t1 - it.t0), kT = B.TEND / D, s = (T - it.t0) * kT, cam = Z.camera.position;
+    const B = bakeFor(it), D = Math.max(30, it.t1 - it.t0), kT = B.TEND / D, s = (T - it.t0) * kT, cam = Z.camera.position;
     const fade = sstep(0, 2.5, s);   // the smoke outlives the display: after t1 it just ages away
     jetAt(B, 0, s, 1, _p); const St = clamp(cam.distanceTo(_p) / 2100, 1, 5);
-    show.S = show.S + (St - show.S) * (1 - Math.exp(-Math.min(dt, 0.1) * 4)); const S = Z.fxDbg && Z.fxDbg.jetS ? Z.fxDbg.jetS : show.S;   // fxDbg: inspection hook
+    // the scale eases with zooming, but a camera cut (the cinematic, a follow camera) snaps it: no giant jets shrinking
+    show.S = St > show.S * 1.6 || St < show.S / 1.6 ? St : show.S + (St - show.S) * (1 - Math.exp(-Math.min(dt, 0.1) * 4)); const S = Z.fxDbg && Z.fxDbg.jetS ? Z.fxDbg.jetS : show.S;   // fxDbg: inspection hook
     // jets
     const js = S * sstep(0, 1.5, s) * (1 - sstep(B.TEND - 2.5, B.TEND, s));
     for (let i = 0; i < NJ; i++) { const x = s / DT, J = B.J[i];
@@ -6318,7 +6375,7 @@ void main() {
         _p.x += wx * a + wob * a * 0.5; _p.y -= 0.5 * a; _p.z += wz * a + Math.cos(se * 1.1 + i) * a * 0.4;
         trPos[o * 3] = _p.x; trPos[o * 3 + 1] = _p.y; trPos[o * 3 + 2] = _p.z; trPos[o * 3 + 3] = _p.x; trPos[o * 3 + 4] = _p.y; trPos[o * 3 + 5] = _p.z;
         const on = se < 0 || se > B.TEND - 1 ? 0 : lin1(J.SM, B.NS, se / DT);
-        const al = fade * on * Math.pow(1 - a / LIFE, 1.25) * sstep(0, 0.35, a) * 0.92, hw = S * (1.0 + 10 * (1 - Math.exp(-a / 2.5)) + 0.5 * a);
+        const al = fade * on * Math.pow(1 - a / LIFE, 1.25) * sstep(0, 0.35, a) * 0.92, hw = S * (1.3 + 12.5 * (1 - Math.exp(-a / 2.5)) + 0.6 * a);
         trD[o * 4] = -1; trD[o * 4 + 1] = al; trD[o * 4 + 2] = se; trD[o * 4 + 3] = hw; trD[o * 4 + 4] = 1; trD[o * 4 + 5] = al; trD[o * 4 + 6] = se; trD[o * 4 + 7] = hw; }
       for (let j = 0; j < TV; j++) { const a = (i * TV + Math.max(0, j - 1)) * 6, b = (i * TV + Math.min(NT, j + 1)) * 6, o = (i * TV + j) * 6;
         let tx = trPos[a] - trPos[b], ty = trPos[a + 1] - trPos[b + 1], tz = trPos[a + 2] - trPos[b + 2]; const l = Math.hypot(tx, ty, tz) || 1; tx /= l; ty /= l; tz /= l;
@@ -6554,6 +6611,17 @@ void main() {
   let lastT = -1;
   return {
     state: () => ({ troop: troopS, show, walk: !!walkIM }),
+    // where the flypast is at sim time T, for the cinematic camera (hub3d's chase): the formation's centre (true scale),
+    // the lead's horizontal heading and the formation's spread in metres; null when no display is on
+    focus(T) {
+      let it = null; for (const o of Z.fx || []) if (o && o.kind === 'flypast' && T >= o.t0 - 1 && T <= o.t1 + 1) { it = o; break; }
+      if (!it) return null;
+      const B = bakeFor(it), s = clamp((T - it.t0) * B.TEND / Math.max(30, it.t1 - it.t0), 0, B.TEND), P = [];
+      let x = 0, y = 0, z = 0; for (let i = 0; i < NJ; i++) { const p = jetAt(B, i, s, 1, new THREE.Vector3()); P.push(p); x += p.x; y += p.y; z += p.z; }
+      x /= NJ; y /= NJ; z /= NJ; let r = 0; for (const p of P) r = Math.max(r, Math.hypot(p.x - x, p.y - y, p.z - z));
+      const f = lin(B.J[0].F, B.NS, s / DT, new THREE.Vector3()), h = Math.hypot(f.x, f.z);
+      return { x, y, z, fx: h > 1e-3 ? f.x / h : 1, fz: h > 1e-3 ? f.z / h : 0, fh: h, r };
+    },
     update(dt, now) {
       const list = Z.fx, T = Z.T; let fly = null, mk = null;
       if (list && list.length) for (const it of list) { if (!it) continue;
@@ -7305,13 +7373,13 @@ vec3 fxCol(vec3 P,float reg,float t){
     g.setAttribute('aA', new THREE.InstancedBufferAttribute(A, 4)); g.setAttribute('aB', new THREE.InstancedBufferAttribute(B, 4)); g.instanceCount = n;
     // uC: show centre (bursts), uG: launch site on open ground (rockets, gerbs), uR: burst scale with camera distance, uSm: smoke alpha
     const U = { uTime: { value: 0 }, uC: { value: new THREE.Vector3() }, uG: { value: new THREE.Vector3() }, uFade: { value: 0 }, uK: { value: 1 }, uR: { value: 1 }, uSm: { value: 1 },
-      uPix: { value: 0.001 }, uWind: { value: new THREE.Vector2(3, 0) } };
+      uPix: { value: 0.001 }, uWind: { value: new THREE.Vector2(3, 0) }, uDay: { value: 0 } };
     // Colours stay at or below ~1.1 with the secondary channels near zero, so ACES and bloom keep them saffron, green and gold;
     // only the burst flash (and a white shell's first 0.15 s) goes HDR and carries the bloom.
     const mat = new THREE.ShaderMaterial({ uniforms: U, transparent: true, depthWrite: false, depthTest: true,
       blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
       blendSrcAlpha: THREE.OneFactor, blendDstAlpha: THREE.OneMinusSrcAlphaFactor,
-      vertexShader: `uniform float uTime,uFade,uK,uPix,uR,uSm;uniform vec3 uC,uG;uniform vec2 uWind;attribute vec4 aA,aB;
+      vertexShader: `uniform float uTime,uFade,uK,uPix,uR,uSm,uDay;uniform vec3 uC,uG;uniform vec2 uWind;attribute vec4 aA,aB;
         varying vec2 vUv;varying vec3 vCol;varying float vA,vT,vSeed,vHot;
         float h1(float x){return fract(sin(x*78.233)*43758.5453);}
         const float PER=0.62,RISE=1.25;const float CYC=${S}.*PER;
@@ -7335,10 +7403,10 @@ vec3 fxCol(vec3 P,float reg,float t){
           float type=aA.x,s=aA.y,j=aA.z,r=aA.w;vec3 d=aB.xyz;float r2=aB.w;
           vec3 p=uC,pp=uC;float w=1.,a=0.;vec3 col=vec3(1.);float vt=0.;vHot=0.;
           vec3 bp,g0;float kind,ci,age;
-          if(type<1.5){                                   // shell smoke: burst puffs (0) and rocket trail (1)
+          if(type<1.5){                                   // shell smoke: burst puffs (0) and rocket trail (1); denser, deeper-coloured by day
             shell(s,bp,g0,kind,ci,age);vt=1.;
             if(type<0.5){float t=age-RISE-.05;a=t>0.?.55*smoothstep(0.,.35,t)*exp(-t/5.):0.;
-              col=mix(vec3(.78,.76,.74),smokeCol(ci,d),.85);
+              col=mix(vec3(.78,.76,.74),smokeCol(ci,d),.85+.15*uDay)*(1.-.12*uDay);a*=1.+.6*uDay;
               p=bp+d*(80.+55.*r)*uR*(1.-exp(-t*1.6))-vec3(0.,4.*t,0.)+vec3(uWind.x,0.,uWind.y)*t*2.2;w=((32.+26.*r)*(.55+.45*min(t,3.)/3.)+t*5.)*uR;}
             else{float te=j*RISE*.92,t=age-te;float f=j;f=1.-(1.-f)*(1.-f);
               a=t>0.?.42*exp(-t/3.)*smoothstep(0.,.15,t):0.;col=vec3(.84,.83,.81);
@@ -7378,14 +7446,16 @@ vec3 fxCol(vec3 P,float reg,float t){
             c=mix(m1.xyz,m0.xyz,position.y*.5+.5);c.xy+=sd*position.x*w+dr*position.y*w;vUv=position.xy;vCol=col;}
           gl_Position=vA>.002?projectionMatrix*vec4(c,1.):vec4(2.,2.,2.,1.);
         }`,
-      fragmentShader: `varying vec2 vUv;varying vec3 vCol;varying float vA,vT,vSeed,vHot;
+      fragmentShader: `uniform float uDay;varying vec2 vUv;varying vec3 vCol;varying float vA,vT,vSeed,vHot;
         ${GLSL_NOISE}
         void main(){
           if(vT>1.5){float r=length(vUv);float a=vA*(exp(-r*r*6.)+.35*exp(-r*r*2.));if(a<.003)discard;gl_FragColor=vec4(vCol*a,a*.3);}
           else if(vT>.5){float n=fx2n(vUv*2.2+vSeed)*.6+fx2n(vUv*5.1-vSeed)*.4;float m=smoothstep(1.,.25,length(vUv)+(n-.5)*.7);float a=m*vA;
             if(a<.004)discard;gl_FragColor=vec4(vCol*a,a);}
-          else{float y=vUv.y*.5+.5,x=vUv.x;float core=exp(-x*x*3.5);float along=pow(y,1.6)*(1.-smoothstep(.93,1.,y)*.5);float a=min(1.,vA*core*along*1.4);
-            if(a<.003)discard;gl_FragColor=vec4((vCol+vec3(vHot*1.2*core))*a,a*.88);}
+          else{float y=vUv.y*.5+.5,x=vUv.x;float core=exp(-x*x*mix(3.5,6.,uDay));float along=pow(y,1.6)*(1.-smoothstep(.93,1.,y)*.5);float a=min(1.,vA*core*along*mix(1.4,2.4,uDay));
+            // daylight: a soft dark rim around each streak (alpha only) so the colour holds against a bright field or haze
+            float rim=min(.4,vA*along*exp(-x*x*1.5)*.5)*uDay;
+            if(a<.003&&rim<.003)discard;gl_FragColor=vec4((vCol+vec3(vHot*1.2*core))*a,max(a*.88,rim));}
         }` });
     const mesh = new THREE.Mesh(g, mat); mesh.frustumCulled = false; mesh.visible = false; root.add(mesh);
     return { mesh, U };
@@ -7416,7 +7486,8 @@ vec3 fxCol(vec3 P,float reg,float t){
     FW.U.uTime.value = now; FW.U.uC.value.set(it.x, 0, it.y); FW.U.uG.value.set(st.x, 0, st.y); FW.U.uFade.value = f; FW.U.uK.value = clamp(cd / 1500, 1, 7);
     FW.U.uR.value = mix(1, 2.2, sS); FW.U.uSm.value = mix(1, 0.5, sS);
     const wd = Z.atmo && Z.atmo.wind; if (wd) FW.U.uWind.value.set(Math.cos(wd.dir) * (wd.speed || 3), Math.sin(wd.dir) * (wd.speed || 3));
-    FW.U.uPix.value = 2 / (Z.camera.projectionMatrix.elements[5] * Z.renderer.domElement.height) * mix(1.3, 2.5, sS);   // spark half-width floor in pixels
+    const day = clamp(1 - (Z.nightF || 0) * 1.6, 0, 1); FW.U.uDay.value = day;   // daylight: fatter, denser sparks (see the shader)
+    FW.U.uPix.value = 2 / (Z.camera.projectionMatrix.elements[5] * Z.renderer.domElement.height) * mix(1.3, 2.5, sS) * (1 + 0.9 * day);   // spark half-width floor in pixels
     FW.mesh.visible = f > 0.01;
   }
   KS.add('fireworks');

@@ -341,9 +341,13 @@ function camUpdate(dt){
     if(!running){C3.t.yaw+=dt*0.035;C3.t.dist=Math.max(C3.t.dist,8000);}
     if(CINE&&CINE.o.track&&C3.t.dist<CINE.o.view.dist*3){const p=CINE.o.track();if(p){C3.t.tx=p[0];C3.t.ty=p[1];}}   // a cinematic keeps its moving subject in frame (until the player zooms out)
     const ke=C3.intro>0?1-Math.exp(-dt*1.6):k;if(C3.intro>0)C3.intro-=dt;
-    for(const key of ['tx','ty','dist','yaw','pitch'])C3[key]+=(C3.t[key]-C3[key])*ke;
-    const cp=Math.cos(C3.pitch);cam.position.set(C3.tx+Math.sin(C3.yaw)*cp*C3.dist,Math.sin(C3.pitch)*C3.dist,C3.ty+Math.cos(C3.yaw)*cp*C3.dist);
-    cam.fov+=(42-cam.fov)*k;cam.lookAt(C3.tx,0,C3.ty);Z.kEx=clamp(C3.dist/2600,1,3.4);Z.camDist=C3.dist;focus=[C3.tx,C3.ty];
+    // a cinematic can drive the orbit itself (o.track: the flypast, the fireworks), aiming th metres above the ground;
+    // it cuts straight to the shot and holds it exactly (no easing lag on a fast target), then eases home after
+    const tr=CINE&&CINE.o.track?CINE.o.track():null;
+    for(const key of ['tx','ty','dist','yaw','pitch']){if(tr)C3[key]=C3.t[key]=tr[key];else C3[key]+=(C3.t[key]-C3[key])*ke;}
+    C3.th=tr?tr.th||0:(C3.th||0)*(1-ke);
+    const cp=Math.cos(C3.pitch);cam.position.set(C3.tx+Math.sin(C3.yaw)*cp*C3.dist,C3.th+Math.sin(C3.pitch)*C3.dist,C3.ty+Math.cos(C3.yaw)*cp*C3.dist);
+    if(tr)cam.fov=42;else cam.fov+=(42-cam.fov)*k;cam.lookAt(C3.tx,C3.th,C3.ty);Z.kEx=clamp(C3.dist/2600,1,3.4);Z.camDist=C3.dist;focus=[C3.tx,C3.ty];
     // a near plane that follows the camera height keeps depth precision (and AO) clean in the strategic view
     cam.near=clamp((cam.position.y-1500)*0.35,4,1500);
   }else if(V3.mode==='tower'){
@@ -365,6 +369,18 @@ function camUpdate(dt){
   cam.updateProjectionMatrix();cam.updateMatrixWorld();
   if(focus)shadowFit(focus);
 }
+// camera tracks for set-piece cinematics (cinema's o.track). The flypast: ride alongside the formation like a chase
+// plane, behind its right wing and a little above, so it flies left to right with its three smoke trails streaming
+// back across the open left of the screen; aimed a little ahead of and above it, so it sits left of and below the
+// centre, clear of the banner and the speech bubble. A point in the sky (the fireworks): a slow orbit, th metres up.
+function chaseFlypast(){let hx=null,hz=0;return()=>{const m=Z.mods.fx,q=m&&m.focus?m.focus(T):null;if(!q)return null;
+  if(hx==null){hx=q.fx;hz=q.fz;}else if(q.fh>0.3){const l=Math.hypot(hx+(q.fx-hx)*0.15,hz+(q.fz-hz)*0.15)||1;hx=(hx+(q.fx-hx)*0.15)/l;hz=(hz+(q.fz-hz)*0.15)/l;}
+  const d=clamp(180+q.r*1.6,180,1600),ox=-hx*0.5-hz*0.87,oz=-hz*0.5+hx*0.87;
+  return{tx:q.x+hx*d*0.2,ty:q.z+hz*d*0.2,th:q.y,dist:d,yaw:Math.atan2(ox,oz),pitch:0.15};};}
+// o: {x,y} the point, h its height, dist, pitch, yaw, rate (rad/s), right: metres to aim right of it, so it sits left
+// of the centre, clear of the banner and the speech bubble
+function orbitShot(o){const t0=performance.now();return()=>{const yaw=o.yaw+(performance.now()-t0)/1000*(o.rate||0),k=o.right||0;
+  return{tx:o.x+Math.cos(yaw)*k,ty:o.y-Math.sin(yaw)*k,th:o.h||0,dist:o.dist,pitch:o.pitch,yaw};};}
 // one shadow map fitted to the visible ground (light-space bounds of the view footprint), sizes quantised and the
 // origin snapped to whole texels so panning doesn't make shadow edges crawl; the light direction only re-aims when
 // the sun has moved by more than ~0.15 degrees
@@ -431,18 +447,53 @@ function clampC3(){C3.t.tx=clamp(C3.t.tx,EXT.x0-6000,EXT.x1+9000);C3.t.ty=clamp(
 function cam3Intro(){if(!V3.ready)return;setCam('map');Object.assign(C3,{tx:-1500,ty:2500,dist:24000,yaw:C3.yaw%(2*Math.PI)-0.9,pitch:0.42});Object.assign(C3.t,{tx:-700,ty:0,dist:10500,yaw:0,pitch:0.92});C3.intro=3.2;}
 function cam3Fit(){setCam('map');Object.assign(C3.t,{tx:-700,ty:0,dist:10500,yaw:0,pitch:0.92});}
 
+// screen rectangles the signs keep clear of: the cards floating over the map (re-read 4 times a second, not per frame)
+function hudRects(now){
+  if(V3.blk&&Math.abs(now-V3.blkT)<0.25)return V3.blk;V3.blkT=now;const a=cv.getBoundingClientRect(),L=[];
+  for(const s of ['#zoomBox','#camLbl','#vipBanner.on','#guard.on','#toast','#pop','#kiteChip','#wedChip','#fogTag','#stopBtn']){const e=document.querySelector(s);if(!e||e.hidden)continue;
+    const r=e.getBoundingClientRect();if(r.width>0&&r.height>0)L.push({x:r.left-a.left-4,y:r.top-a.top-4,w:r.width+8,h:r.height+8});}
+  return V3.blk=L;}
+const ovl=(a,b,m)=>a.x<b.x+b.w+m&&a.x+a.w+m>b.x&&a.y<b.y+b.h+m&&a.y+a.h+m>b.y;
+// is a sign rectangle off the free map area, under a card, or on top of a sign already placed?
+function signHit(rc,blk,taken){const g=cam.region||{L:0,R:VW,Tp:0,B:VH};
+  if(rc.x<g.L+2||rc.x+rc.w>g.R-2||rc.y<g.Tp+2||rc.y+rc.h>g.B-2)return true;
+  for(const b of blk)if(ovl(rc,b,0))return true;if(taken)for(const b of taken)if(ovl(rc,b,3))return true;return false;}
+// runway signs never collide and never hide under the HUD: the selected runway's sign goes first, then the closed
+// ones, then the nearest (a sign already up keeps its place over one that isn't). Each takes the first clear spot
+// along its runway (last frame's spot first, so signs don't hop; above the runway, else below it), in full, then
+// shortened ("28L · MIXED", then "28L"); with no clear spot it is left out (the runway desk still says it all).
+// Low cameras graze the field, where signs stack up along the horizon: they fade out there (the selected runway's stays).
+const RWA=[0.18,0.5,0.82,0.34,0.66,0.06,0.94,0.26,0.42,0.58,0.74];
+function rwSigns3D(blk,taken){
+  const cp=Z.camera.position;ctx.font='700 12px Barlow Condensed, Arial Narrow, sans-serif';
+  const L=RW.map(r=>{const s=rwSign(r);return{r,s,pri:(r===selRw?0:s.col==='#ff4d3f'?1:r.locked?3:2)*1e6+Math.hypot(cp.x-(r.x0+r.x1)/2,cp.z-r.y)+(r._sOn?0:6000)};}).sort((a,b)=>a.pri-b.pri);
+  rwSigns=[];
+  for(const o of L){const r=o.r,txt=[`${r.short} · ${o.s.lbl}`,`${r.short} · ${o.s.lbl.split(' · ')[0]}`,r.short];
+    const ord=RWA.map((_,i)=>i);if(r._sa!=null){ord.splice(r._sa,1);ord.unshift(r._sa);}
+    let put=null;r._sOn=false;
+    // camera elevation over the runway's middle, in degrees: below ~1.5 the sign is a smear on the horizon, so it goes
+    const ex=r.x0+r.len*0.5,el=Math.atan2(cp.y,Math.hypot(cp.x-ex,cp.z-r.y))/D2R,fa=r===selRw?clamp((el-0.5)/2,0.8,1):clamp((el-1.5)/3,0,1);
+    if(fa<0.1)continue;
+    for(let ti=0;ti<3&&!put;ti++){if(ti&&txt[ti]===txt[ti-1])continue;const w=ctx.measureText(txt[ti]).width+12;
+      for(const ai of ord){const x=r.x0+r.len*RWA[ai],p=proj(x,r.y,0);if(!p)continue;
+        for(const dy of [-16,16]){const rc={x:p.X-w/2,y:p.Y+dy-9,w,h:18};if(!signHit(rc,blk,taken)){put={p,dy,t:txt[ti],ai,x};break;}}if(put)break;}}
+    if(!put)continue;r._sa=put.ai;r._sOn=true;
+    const rect=signText(put.p.X,put.p.Y+put.dy,put.t,(r.locked?0.6:1)*fa,o.s.col);rect.r=r;rwSigns.push(rect);taken.push(rect);}
+}
 // the overlay: incident markers, runway signs, stack signs, tags and MAYDAY beacons, drawn on the 2D canvas
 function drawOverlay3D(now){
-  screenT();ctx.clearRect(0,0,VW,VH);
-  for(const st of STACKS){const n=flights.filter(f=>f.state==='holding'&&f.stack===st);if(!n.length)continue;const p=proj(st.x,st.y,2600*AIR_K);if(p)signText(p.X,p.Y-40,`STACK ${st.id} · ${n.length}`,0.95,n.some(f=>f.minFuel)?'#ff4d3f':'#f4c430');}
-  rwSigns=[];for(const r of RW){const p=proj(r.x0+r.len*0.18,r.y,0);if(!p)continue;const s=rwSign(r);const rect=signText(p.X,p.Y-16,`${r.short} · ${s.lbl}`,r.locked?.6:1,s.col);rect.r=r;rwSigns.push(rect);}
+  screenT();ctx.clearRect(0,0,VW,VH);const blk=hudRects(now),taken=[];
+  for(const st of STACKS){const n=flights.filter(f=>f.state==='holding'&&f.stack===st);if(!n.length)continue;const p=proj(st.x,st.y,2600*AIR_K);if(!p)continue;
+    const t=`STACK ${st.id} · ${n.length}`;ctx.font='700 12px Barlow Condensed, Arial Narrow, sans-serif';const w=ctx.measureText(t).width+12;if(signHit({x:p.X-w/2,y:p.Y-49,w,h:18},blk))continue;
+    taken.push(signText(p.X,p.Y-40,t,0.95,n.some(f=>f.minFuel)?'#ff4d3f':'#f4c430'));}
+  rwSigns3D(blk,taken);
   for(const f of flights){if(!f.mayday||f.landT!=null||f.sx==null)continue;const X=f.sx,Y=f.sy,pp=(now*1.4)%1;ctx.strokeStyle=`rgba(255,77,63,${1-pp})`;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(X,Y,10+pp*28,0,7);ctx.stroke();signText(X,Y-30,`MAYDAY ${fl(f)}`,1,'#ff4d3f');}
   for(const I of incidents){const q=incPos(I);const p=proj(q.x,q.y,I.f?altM(I.f):0);if(!p){I.sx=null;continue;}
     // a ground subject (a story's animal, crowd or set) is drawn at about 2 m times the characters' view scale (fx2 charScale)
     let up=0;if(!I.f){const t=proj(q.x,q.y,2.2*clamp(Z.camDist/80,1,160));if(t)up=p.Y-t.Y;}incMark(ctx,I,p.X,p.Y,now,up);}
   drawMarks(ctx,(x,y,a)=>proj(x,y,a*AIR_K),now,Z.fxKinds);
   const tagged=new Set();if(selected)tagged.add(selected);if(hover)tagged.add(hover);
-  if(V3.mode==='map'&&Z.camDist<2200){const cp=Z.camera.position,cand=[];for(const f of flights){if(f.sx!=null&&['approach','rollout','lineup','roll','nogate','climb','hp'].includes(f.state)&&f.sx>40&&f.sx<VW-40&&f.sy>40&&f.sy<VH-40)cand.push([Math.hypot(cp.x-f.x,cp.z-f.y),f]);}
+  if(V3.mode==='map'&&Z.camDist<2200&&!(CINE&&CINE.o.track)){const cp=Z.camera.position,cand=[];for(const f of flights){if(f.sx!=null&&['approach','rollout','lineup','roll','nogate','climb','hp'].includes(f.state)&&f.sx>40&&f.sx<VW-40&&f.sy>40&&f.sy<VH-40)cand.push([Math.hypot(cp.x-f.x,cp.z-f.y),f]);}
     cand.sort((a,b)=>a[0]-b[0]);for(const c of cand.slice(0,6))tagged.add(c[1]);}
   for(const f of tagged)if(f.sx!=null)drawTag(f);
   if(selected&&selected.sx!=null){ctx.strokeStyle='#f4c430';ctx.lineWidth=2;ctx.beginPath();ctx.arc(selected.sx,selected.sy,Math.max(10,selected.sr+5),0,7);ctx.stroke();}

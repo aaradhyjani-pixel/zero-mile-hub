@@ -175,7 +175,7 @@ Z3MOD.fx = function (Z) {
   const trU = THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uSunDir: { value: new THREE.Vector3(0, 1, 0) }, uSunCol: { value: new THREE.Color(1, 1, 1) }, uAmbT: { value: new THREE.Color(0.3, 0.34, 0.4) }, uAmbB: { value: new THREE.Color(0.2, 0.19, 0.16) } }]);
   const trMat = new THREE.ShaderMaterial({ uniforms: trU, transparent: true, depthWrite: false, fog: true, side: THREE.DoubleSide,
     vertexShader: `attribute vec3 aTan; attribute vec4 aD; attribute vec3 aCol;
-varying vec3 vCol, vV, vS; varying float vSide, vA, vEmit;
+varying vec3 vCol, vV, vS; varying float vSide, vA, vEmit, vNear;
 #include <fog_pars_vertex>
 void main() {
   vec3 P = position; vec3 V = normalize(cameraPosition - P); vec3 T = aTan;
@@ -183,20 +183,24 @@ void main() {
   P += S * aD.x * aD.w;
   vec4 mvPosition = viewMatrix * vec4(P, 1.0); gl_Position = projectionMatrix * mvPosition;
   vCol = aCol; vSide = aD.x; vA = aD.y; vEmit = aD.z; vV = V; vS = S;
+  vNear = length(cameraPosition - P) / max(aD.w, 1.0);   // camera distance in trail half-widths
   #include <fog_vertex>
 }`,
     fragmentShader: `uniform vec3 uSunDir, uSunCol, uAmbT, uAmbB;
-varying vec3 vCol, vV, vS; varying float vSide, vA, vEmit;
+varying vec3 vCol, vV, vS; varying float vSide, vA, vEmit, vNear;
 #include <fog_pars_fragment>
 float fh(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 float vn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(fh(i), fh(i + vec2(1.0, 0.0)), f.x), mix(fh(i + vec2(0.0, 1.0)), fh(i + vec2(1.0, 1.0)), f.x), f.y); }
 void main() {
-  float s = vSide, prof = max(1.0 - s * s, 0.0);
+  float s = vSide;
   // billows: noise anchored to the emission time (puffs stay where they were made), coarse lumps plus fine fray at the edges
   vec2 q = vec2(vEmit * 3.2, s * 1.4 + vEmit * 0.53);
   float n = vn(q) * 0.5 + vn(q * 2.1 + 7.1) * 0.3 + vn(q * 4.7 + 3.3) * 0.2;
-  float d = pow(prof, 0.75) * (0.3 + 1.05 * n);
-  float a = min(1.0, vA * smoothstep(0.1, 0.8, d) * (0.8 + 0.35 * n));
+  // a soft tube, not a ribbon: the radius swells and pinches with slow noise, the rim frays, and the opacity is the
+  // optical depth through a gaussian core, so the edge melts into the sky from any side (no cut-off at the strip's edge)
+  float r = abs(s) / (0.62 + 0.34 * vn(vec2(vEmit * 0.85, 3.7))) + (n - 0.5) * 0.32, prof = max(1.0 - r * r, 0.0);
+  float a = vA * (1.0 - exp(-exp(-2.6 * r * r) * (0.55 + 0.9 * n) * 2.3)) * smoothstep(1.0, 0.72, abs(s));
+  a *= smoothstep(1.2, 4.5, vNear);   // a trail within a few widths of the camera is a wall of smoke: thin it out
   if (a < 0.004) discard;
   vec3 V = normalize(vV), S = normalize(vS);
   vec3 N = normalize(S * s * 0.8 + V * sqrt(prof) + vec3(0.0, (n - 0.5) * 0.6, 0.0));
@@ -216,13 +220,14 @@ void main() {
     const x = s / DT, wF = 1 - sstep(B.sB - 1, B.sB + 1.5, s) * (1 - sstep(B.sG - 6, B.sG - 0.5, s));
     cr(B.J[i].A, B.NS, x, o); if (i && wF > 0 && S !== 1) { cr(B.J[0].A, B.NS, x, _p0); o.x += (o.x - _p0.x) * (S - 1) * wF; o.y += (o.y - _p0.y) * (S - 1) * wF; o.z += (o.z - _p0.z) * (S - 1) * wF; }
     return o; };
+  const bakeFor = it => { const kk = show.k; if (!show.bake || show.bake.id !== it.id || kk[0] !== it.t0 || kk[1] !== it.t1 || kk[2] !== it.cx || kk[3] !== it.cy || kk[4] !== it.r) {
+      show.bake = bakeShow(it); kk[0] = it.t0; kk[1] = it.t1; kk[2] = it.cx; kk[3] = it.cy; kk[4] = it.r; } return show.bake; };
   function updFlypast(it, dt, T) {
-    const kk = show.k; if (!show.bake || show.bake.id !== it.id || kk[0] !== it.t0 || kk[1] !== it.t1 || kk[2] !== it.cx || kk[3] !== it.cy || kk[4] !== it.r) {
-      show.bake = bakeShow(it); kk[0] = it.t0; kk[1] = it.t1; kk[2] = it.cx; kk[3] = it.cy; kk[4] = it.r; }
-    const B = show.bake, D = Math.max(30, it.t1 - it.t0), kT = B.TEND / D, s = (T - it.t0) * kT, cam = Z.camera.position;
+    const B = bakeFor(it), D = Math.max(30, it.t1 - it.t0), kT = B.TEND / D, s = (T - it.t0) * kT, cam = Z.camera.position;
     const fade = sstep(0, 2.5, s);   // the smoke outlives the display: after t1 it just ages away
     jetAt(B, 0, s, 1, _p); const St = clamp(cam.distanceTo(_p) / 2100, 1, 5);
-    show.S = show.S + (St - show.S) * (1 - Math.exp(-Math.min(dt, 0.1) * 4)); const S = Z.fxDbg && Z.fxDbg.jetS ? Z.fxDbg.jetS : show.S;   // fxDbg: inspection hook
+    // the scale eases with zooming, but a camera cut (the cinematic, a follow camera) snaps it: no giant jets shrinking
+    show.S = St > show.S * 1.6 || St < show.S / 1.6 ? St : show.S + (St - show.S) * (1 - Math.exp(-Math.min(dt, 0.1) * 4)); const S = Z.fxDbg && Z.fxDbg.jetS ? Z.fxDbg.jetS : show.S;   // fxDbg: inspection hook
     // jets
     const js = S * sstep(0, 1.5, s) * (1 - sstep(B.TEND - 2.5, B.TEND, s));
     for (let i = 0; i < NJ; i++) { const x = s / DT, J = B.J[i];
@@ -240,7 +245,7 @@ void main() {
         _p.x += wx * a + wob * a * 0.5; _p.y -= 0.5 * a; _p.z += wz * a + Math.cos(se * 1.1 + i) * a * 0.4;
         trPos[o * 3] = _p.x; trPos[o * 3 + 1] = _p.y; trPos[o * 3 + 2] = _p.z; trPos[o * 3 + 3] = _p.x; trPos[o * 3 + 4] = _p.y; trPos[o * 3 + 5] = _p.z;
         const on = se < 0 || se > B.TEND - 1 ? 0 : lin1(J.SM, B.NS, se / DT);
-        const al = fade * on * Math.pow(1 - a / LIFE, 1.25) * sstep(0, 0.35, a) * 0.92, hw = S * (1.0 + 10 * (1 - Math.exp(-a / 2.5)) + 0.5 * a);
+        const al = fade * on * Math.pow(1 - a / LIFE, 1.25) * sstep(0, 0.35, a) * 0.92, hw = S * (1.3 + 12.5 * (1 - Math.exp(-a / 2.5)) + 0.6 * a);
         trD[o * 4] = -1; trD[o * 4 + 1] = al; trD[o * 4 + 2] = se; trD[o * 4 + 3] = hw; trD[o * 4 + 4] = 1; trD[o * 4 + 5] = al; trD[o * 4 + 6] = se; trD[o * 4 + 7] = hw; }
       for (let j = 0; j < TV; j++) { const a = (i * TV + Math.max(0, j - 1)) * 6, b = (i * TV + Math.min(NT, j + 1)) * 6, o = (i * TV + j) * 6;
         let tx = trPos[a] - trPos[b], ty = trPos[a + 1] - trPos[b + 1], tz = trPos[a + 2] - trPos[b + 2]; const l = Math.hypot(tx, ty, tz) || 1; tx /= l; ty /= l; tz /= l;
@@ -476,6 +481,17 @@ void main() {
   let lastT = -1;
   return {
     state: () => ({ troop: troopS, show, walk: !!walkIM }),
+    // where the flypast is at sim time T, for the cinematic camera (hub3d's chase): the formation's centre (true scale),
+    // the lead's horizontal heading and the formation's spread in metres; null when no display is on
+    focus(T) {
+      let it = null; for (const o of Z.fx || []) if (o && o.kind === 'flypast' && T >= o.t0 - 1 && T <= o.t1 + 1) { it = o; break; }
+      if (!it) return null;
+      const B = bakeFor(it), s = clamp((T - it.t0) * B.TEND / Math.max(30, it.t1 - it.t0), 0, B.TEND), P = [];
+      let x = 0, y = 0, z = 0; for (let i = 0; i < NJ; i++) { const p = jetAt(B, i, s, 1, new THREE.Vector3()); P.push(p); x += p.x; y += p.y; z += p.z; }
+      x /= NJ; y /= NJ; z /= NJ; let r = 0; for (const p of P) r = Math.max(r, Math.hypot(p.x - x, p.y - y, p.z - z));
+      const f = lin(B.J[0].F, B.NS, s / DT, new THREE.Vector3()), h = Math.hypot(f.x, f.z);
+      return { x, y, z, fx: h > 1e-3 ? f.x / h : 1, fz: h > 1e-3 ? f.z / h : 0, fh: h, r };
+    },
     update(dt, now) {
       const list = Z.fx, T = Z.T; let fly = null, mk = null;
       if (list && list.length) for (const it of list) { if (!it) continue;

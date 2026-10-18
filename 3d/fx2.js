@@ -731,13 +731,13 @@ vec3 fxCol(vec3 P,float reg,float t){
     g.setAttribute('aA', new THREE.InstancedBufferAttribute(A, 4)); g.setAttribute('aB', new THREE.InstancedBufferAttribute(B, 4)); g.instanceCount = n;
     // uC: show centre (bursts), uG: launch site on open ground (rockets, gerbs), uR: burst scale with camera distance, uSm: smoke alpha
     const U = { uTime: { value: 0 }, uC: { value: new THREE.Vector3() }, uG: { value: new THREE.Vector3() }, uFade: { value: 0 }, uK: { value: 1 }, uR: { value: 1 }, uSm: { value: 1 },
-      uPix: { value: 0.001 }, uWind: { value: new THREE.Vector2(3, 0) } };
+      uPix: { value: 0.001 }, uWind: { value: new THREE.Vector2(3, 0) }, uDay: { value: 0 } };
     // Colours stay at or below ~1.1 with the secondary channels near zero, so ACES and bloom keep them saffron, green and gold;
     // only the burst flash (and a white shell's first 0.15 s) goes HDR and carries the bloom.
     const mat = new THREE.ShaderMaterial({ uniforms: U, transparent: true, depthWrite: false, depthTest: true,
       blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
       blendSrcAlpha: THREE.OneFactor, blendDstAlpha: THREE.OneMinusSrcAlphaFactor,
-      vertexShader: `uniform float uTime,uFade,uK,uPix,uR,uSm;uniform vec3 uC,uG;uniform vec2 uWind;attribute vec4 aA,aB;
+      vertexShader: `uniform float uTime,uFade,uK,uPix,uR,uSm,uDay;uniform vec3 uC,uG;uniform vec2 uWind;attribute vec4 aA,aB;
         varying vec2 vUv;varying vec3 vCol;varying float vA,vT,vSeed,vHot;
         float h1(float x){return fract(sin(x*78.233)*43758.5453);}
         const float PER=0.62,RISE=1.25;const float CYC=${S}.*PER;
@@ -761,10 +761,10 @@ vec3 fxCol(vec3 P,float reg,float t){
           float type=aA.x,s=aA.y,j=aA.z,r=aA.w;vec3 d=aB.xyz;float r2=aB.w;
           vec3 p=uC,pp=uC;float w=1.,a=0.;vec3 col=vec3(1.);float vt=0.;vHot=0.;
           vec3 bp,g0;float kind,ci,age;
-          if(type<1.5){                                   // shell smoke: burst puffs (0) and rocket trail (1)
+          if(type<1.5){                                   // shell smoke: burst puffs (0) and rocket trail (1); denser, deeper-coloured by day
             shell(s,bp,g0,kind,ci,age);vt=1.;
             if(type<0.5){float t=age-RISE-.05;a=t>0.?.55*smoothstep(0.,.35,t)*exp(-t/5.):0.;
-              col=mix(vec3(.78,.76,.74),smokeCol(ci,d),.85);
+              col=mix(vec3(.78,.76,.74),smokeCol(ci,d),.85+.15*uDay)*(1.-.12*uDay);a*=1.+.6*uDay;
               p=bp+d*(80.+55.*r)*uR*(1.-exp(-t*1.6))-vec3(0.,4.*t,0.)+vec3(uWind.x,0.,uWind.y)*t*2.2;w=((32.+26.*r)*(.55+.45*min(t,3.)/3.)+t*5.)*uR;}
             else{float te=j*RISE*.92,t=age-te;float f=j;f=1.-(1.-f)*(1.-f);
               a=t>0.?.42*exp(-t/3.)*smoothstep(0.,.15,t):0.;col=vec3(.84,.83,.81);
@@ -804,14 +804,16 @@ vec3 fxCol(vec3 P,float reg,float t){
             c=mix(m1.xyz,m0.xyz,position.y*.5+.5);c.xy+=sd*position.x*w+dr*position.y*w;vUv=position.xy;vCol=col;}
           gl_Position=vA>.002?projectionMatrix*vec4(c,1.):vec4(2.,2.,2.,1.);
         }`,
-      fragmentShader: `varying vec2 vUv;varying vec3 vCol;varying float vA,vT,vSeed,vHot;
+      fragmentShader: `uniform float uDay;varying vec2 vUv;varying vec3 vCol;varying float vA,vT,vSeed,vHot;
         ${GLSL_NOISE}
         void main(){
           if(vT>1.5){float r=length(vUv);float a=vA*(exp(-r*r*6.)+.35*exp(-r*r*2.));if(a<.003)discard;gl_FragColor=vec4(vCol*a,a*.3);}
           else if(vT>.5){float n=fx2n(vUv*2.2+vSeed)*.6+fx2n(vUv*5.1-vSeed)*.4;float m=smoothstep(1.,.25,length(vUv)+(n-.5)*.7);float a=m*vA;
             if(a<.004)discard;gl_FragColor=vec4(vCol*a,a);}
-          else{float y=vUv.y*.5+.5,x=vUv.x;float core=exp(-x*x*3.5);float along=pow(y,1.6)*(1.-smoothstep(.93,1.,y)*.5);float a=min(1.,vA*core*along*1.4);
-            if(a<.003)discard;gl_FragColor=vec4((vCol+vec3(vHot*1.2*core))*a,a*.88);}
+          else{float y=vUv.y*.5+.5,x=vUv.x;float core=exp(-x*x*mix(3.5,6.,uDay));float along=pow(y,1.6)*(1.-smoothstep(.93,1.,y)*.5);float a=min(1.,vA*core*along*mix(1.4,2.4,uDay));
+            // daylight: a soft dark rim around each streak (alpha only) so the colour holds against a bright field or haze
+            float rim=min(.4,vA*along*exp(-x*x*1.5)*.5)*uDay;
+            if(a<.003&&rim<.003)discard;gl_FragColor=vec4((vCol+vec3(vHot*1.2*core))*a,max(a*.88,rim));}
         }` });
     const mesh = new THREE.Mesh(g, mat); mesh.frustumCulled = false; mesh.visible = false; root.add(mesh);
     return { mesh, U };
@@ -842,7 +844,8 @@ vec3 fxCol(vec3 P,float reg,float t){
     FW.U.uTime.value = now; FW.U.uC.value.set(it.x, 0, it.y); FW.U.uG.value.set(st.x, 0, st.y); FW.U.uFade.value = f; FW.U.uK.value = clamp(cd / 1500, 1, 7);
     FW.U.uR.value = mix(1, 2.2, sS); FW.U.uSm.value = mix(1, 0.5, sS);
     const wd = Z.atmo && Z.atmo.wind; if (wd) FW.U.uWind.value.set(Math.cos(wd.dir) * (wd.speed || 3), Math.sin(wd.dir) * (wd.speed || 3));
-    FW.U.uPix.value = 2 / (Z.camera.projectionMatrix.elements[5] * Z.renderer.domElement.height) * mix(1.3, 2.5, sS);   // spark half-width floor in pixels
+    const day = clamp(1 - (Z.nightF || 0) * 1.6, 0, 1); FW.U.uDay.value = day;   // daylight: fatter, denser sparks (see the shader)
+    FW.U.uPix.value = 2 / (Z.camera.projectionMatrix.elements[5] * Z.renderer.domElement.height) * mix(1.3, 2.5, sS) * (1 + 0.9 * day);   // spark half-width floor in pixels
     FW.mesh.visible = f > 0.01;
   }
   KS.add('fireworks');

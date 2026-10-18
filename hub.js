@@ -945,8 +945,9 @@ STORY.lastball={len:900,start(c){
   c.sixFn=(cc=>{radio('PA','SIX! INDIA WIN THE WORLD CUP!');logE('India won the World Cup off the last ball.');
     for(const o of CONC)if(o.open!==false)floater(o.cx,o.cy,0,'SIX! 🏏','#ffd23f');radio('RAMP','The whole apron is honking. The tower has joined in. So has a fire tender.');
     if(cc.pa)for(const f of flights)if(f.state==='at_gate'&&f.readyAt>T){f.readyAt=Math.max(T,f.readyAt-240);}FXV.push({kind:'fireworks',id:'six',x:procC.x,y:procC.y,t0:T,t1:T+200});
-    const f=flights.find(o=>o.state==='push')||flights.find(o=>o.state==='at_gate'&&o.kind==='dep');
-    const b=['LAST BALL · SIX TO WIN','SIX! India win the World Cup','IN-DI-A! IN-DI-A! 🏆',icos('🏏')+FLAG_IN+icos('🏆')];if(f)cinema(f,b,{ms:6500});else flashBanner(b);
+    // the cut goes to the fireworks over the terminal, seen from above them so they burst against the field, not the sky
+    const b=['LAST BALL · SIX TO WIN','SIX! India win the World Cup','IN-DI-A! IN-DI-A! 🏆',icos('🏏')+FLAG_IN+icos('🏆')];
+    cinema(null,b,{view:{tx:procC.x,ty:procC.y,dist:2200,pitch:0.22,yaw:0.4},at:[procC.x,procC.y],track:orbitShot({x:procC.x,y:procC.y,h:320,dist:1350,pitch:0.1,yaw:0.4,rate:0.035,right:330}),ms:8000});
     guard([cc.pa?'The crews are back. They are running.':'They are back. Slowly. Smiling.','Who is honking? … Fine. Honk. 📣'],WHO.tower);});c.len=4000;
 },tick(c){if(c.six&&T>=c.six&&!c.sixed){c.sixed=true;c.sixFn(c);}}};
 
@@ -1014,7 +1015,7 @@ STORY.surya={len:3000,start(c){const open=RW.filter(r=>!r.locked);if(!open.lengt
   const cx=RW.reduce((a,r)=>a+(r.x0+r.x1)/2,0)/RW.length,cy=RW.reduce((a,r)=>a+r.y,0)/RW.length;
   const pick=o=>{const t=o.s;takeRunways(open,t,240,0,'Surya Kiran display','Air display');FXV.push({kind:'flypast',id:'surya',t0:t,t1:t+240,cx,cy,r:4200});c.at=t;
     c.lines.push([t-c.E,()=>{guard(['Zero Mile, Surya Kiran leader. Nine Hawks, running in.',"How's the josh? 🇮🇳"],WHO.surya);
-      cinema(null,['SURYA KIRAN · IAF AEROBATIC TEAM','Nine Hawks open Zero Mile',"How's the josh? High, sir! 🇮🇳",icos('✈️')+FLAG_IN+icos('✈️')],{view:{tx:cx,ty:cy+600,dist:7000,pitch:0.42,yaw:0.5},at:[cx,cy],ms:9000});}]);
+      cinema(null,['SURYA KIRAN · IAF AEROBATIC TEAM','Nine Hawks open Zero Mile',"How's the josh? High, sir! 🇮🇳",icos('✈️')+FLAG_IN+icos('✈️')],{view:{tx:cx-1500,ty:cy,dist:4200,pitch:0.3,yaw:0.5},at:[cx,cy],track:chaseFlypast(),speed:0.15,until:t+38});}]);
     c.lines.push([t-c.E+240,'TWR','Surya Kiran, beautiful. All runways back to normal. The josh remains high.']);};
   guard(['Sir, the Surya Kiran team will open the airport.','Every runway stops for 4 minutes. You choose when. ✈️'],WHO.surya);
   const best=opts.reduce((a,b)=>b.n<a.n?b:a);

@@ -15,13 +15,14 @@ Z3MOD.aircraft = function (Z) {
   // band layout (u across, v down within the band): fuselage unwrap x 0..1400 (u = t nose->tail, v = angle from the
   // crown to the keel), fin x 1408..1888 (left = leading edge, top = tip), flat patches 1900..2040, window row at v .84-.92
   const AW = 2048, AH = 1024, BH = 64, UF = 1400 / AW, UN0 = 1408 / AW, UN1 = 1888 / AW, VK = BH / AH;
+  const FA0 = 0.03, FAK = 0.69, WV0 = 0.765, WV1 = 0.835, TV0 = 0.87, TV1 = 0.965; // fuselage, window row, titles row (v within a band)
   const PU = { white: [1912 / AW, 0.5], eng: [1940 / AW, 0.5], wlt: [1968 / AW, 0.5], dark: [1996 / AW, 0.5], grey: [2024 / AW, 0.5] };
   const ALK = Object.keys(Z.AL), AIDX = {}; ALK.forEach((k, i) => { AIDX[k] = i; });
   const atlas = document.createElement('canvas'); atlas.width = AW; atlas.height = AH;
   const atlasE = document.createElement('canvas'); atlasE.width = AW; atlasE.height = AH;
   {
     const c = atlas.getContext('2d'), e = atlasE.getContext('2d'); e.fillStyle = '#000'; e.fillRect(0, 0, AW, AH);
-    const fa = a => 0.03 + 0.75 * a;
+    const fa = a => FA0 + FAK * a;
     for (let i = 0; i < ALK.length && i < AH / BH; i++) {
       const y0 = i * BH, k = ALK[i];
       const F = (t0, t1, a0, a1, col) => { c.fillStyle = col; c.fillRect(t0 * 1400, y0 + fa(a0) * BH, (t1 - t0) * 1400, (fa(a1) - fa(a0)) * BH + 0.5); };
@@ -30,7 +31,7 @@ Z3MOD.aircraft = function (Z) {
       const N = (x0, x1, y0_, y1, col) => { c.fillStyle = col; c.fillRect(fx(x0), fy(y0_), (x1 - x0) * 480, (y1 - y0_) * 0.94 * BH + 0.5); };
       const NP = (pts, col) => { c.fillStyle = col; c.beginPath(); pts.forEach((p, j) => (j ? c.lineTo : c.moveTo).call(c, fx(p[0]), fy(p[1]))); c.closePath(); c.fill(); };
       const ND = (x, y, r, col) => { c.fillStyle = col; c.beginPath(); c.ellipse(fx(x), fy(y), r * 480, r * 0.94 * BH * 3.2, 0, 0, 7); c.fill(); };
-      const titles = (t0, a, col, n) => { c.fillStyle = col; let x = t0 * 1400; for (let j = 0; j < (n || 9); j++) { const w = 7 + ((j * 37) % 9); c.fillRect(x, y0 + fa(a) * BH, w, (fa(a + 0.085) - fa(a)) * BH); x += w + 3 + (j % 4 === 3 ? 6 : 0); } };
+      let TT = null; const titles = (t0, a, col, n) => { TT = [t0, col, n || 9]; };
       let eng = '#d4d8dd', wlt = '#e6e8eb';
       // base: white crown, light grey keel
       F(0, 1, 0, 1, '#f3f4f6'); F(0, 1, 0.8, 1, '#c9cdd2'); N(0, 1, 0, 1, '#f3f4f6');
@@ -63,10 +64,13 @@ Z3MOD.aircraft = function (Z) {
       const P = (x, col) => { c.fillStyle = col; c.fillRect(x, y0, 28, BH); };
       P(1900, '#ffffff'); P(1928, eng); P(1956, wlt); P(1984, '#121820'); P(2012, '#9aa0a6');
       // window row: the crown colour at window height, with dark windows; emissive copy lights them at night
-      const wy = y0 + Math.round(0.84 * BH), wh = Math.round(0.08 * BH);
+      // titles row: the crown colour at title height, with letter blocks (a strip on each side of the fuselage samples it)
+      { const ty = Math.round(y0 + TV0 * BH), th = Math.round((TV1 - TV0) * BH); c.drawImage(atlas, 0, Math.round(y0 + fa(0.2) * BH), 1400, 1, 0, ty, 1400, th);
+        if (TT) { c.fillStyle = TT[1]; let x = TT[0] * 1400; for (let j = 0; j < TT[2]; j++) { const w = 7 + ((j * 37) % 9); c.fillRect(x, ty + 1, w, th - 2); x += w + 3 + (j % 4 === 3 ? 6 : 0); } } }
+      const wy = y0 + Math.round(WV0 * BH), wh = Math.round((WV1 - WV0) * BH);
       c.drawImage(atlas, 0, Math.round(y0 + fa(0.35) * BH), 1400, 1, 0, wy, 1400, wh);
       c.fillStyle = '#1b2430'; e.fillStyle = '#ffd08a';
-      for (let x = 2; x < 1400; x += 8) { c.fillRect(x, wy + 1, 4, wh - 2); e.fillRect(x, wy + 1, 4, wh - 2); }
+      for (let x = 2; x < 1400; x += 8) { c.fillRect(x, wy + 0.5, 4.5, wh - 1); e.fillRect(x, wy + 0.5, 4.5, wh - 1); }
       // tail logo lights: a dim copy of the fin glows at night
       e.globalAlpha = 0.28; e.drawImage(atlas, 1408, y0, 480, BH, 1408, y0, 480, BH); e.globalAlpha = 1;
     }
@@ -172,7 +176,7 @@ Z3MOD.aircraft = function (Z) {
     B38M: merge(base.nb, { L: 39.5, S: 35.9, W: 1.88, H: 1.95, yb: 1.05, tn: .17, nose: 'boeing', tail: 'max', doors: [[0.12, 1], [0.45, 0], [0.485, 0], [0.86, 1]],
       wing: { x: 3.3, y: 0.42, cr: 7.3, ct: 1.3, sw: 25, dh: 6, wl: 'split', wlh: 2.0 }, eng: [{ z: 4.95, r: 1.02, len: 4.6, fwd: 3.6, drop: 0.55, flat: 0.8 }],
       hs: { half: 7.1, cr: 4.0 }, fin: { cr: 6.8, h: 6.4, sw: 38 }, gear: { nd: 4.6, mains: [{ dx: 3.6, z: 2.85, b: 1 }], r: 0.55, nr: 0.36 } }),
-    AT76: merge(base.tp, { L: 27.2, S: 27.1, doors: [[0.1, 1], [0.86, 1]] }),
+    AT76: merge(base.tp, { L: 27.2, S: 27.1, ttl: [40, 55], doors: [[0.1, 1], [0.86, 1]] }),
     A333: merge(base.wb, { L: 63.7, S: 60.3, W: 2.82, H: 2.86, eng: [{ z: 9.4, r: 1.4, len: 6.6, fwd: 3.6, drop: 1.5 }], doors: [[0.085, 1], [0.27, 1], [0.6, 1], [0.84, 1]],
       wing: { x: 6.0, cr: 12.0, wl: 'classic', wlh: 2.8 } }),
     A359: merge(base.wb, { L: 66.8, S: 64.75, mask: 1, eng: [{ z: 9.9, r: 1.68, len: 7.4, fwd: 4.0, drop: 1.6 }], doors: [[0.085, 1], [0.26, 1], [0.6, 1], [0.84, 1]],
@@ -186,9 +190,9 @@ Z3MOD.aircraft = function (Z) {
     B77W: merge(base.wb, { L: 73.9, S: 64.8, W: 3.1, H: 3.2, tn: .12, tt: .74, nose: 'b787', tail: 'blade', doors: [[0.075, 1], [0.23, 1], [0.5, 1], [0.69, 1], [0.86, 1]],
       wing: { x: 6.0, cr: 14.0, sw: 31.6, wl: 'raked', flex: 0.02 }, eng: [{ z: 9.7, r: 2.0, len: 7.8, fwd: 4.4, drop: 1.75 }],
       fin: { cr: 11.5, h: 10.2 }, gear: { nd: 6.6, mains: [{ dx: 8.0, z: 5.5, b: 3 }], r: 0.68 } }),
-    A388: { L: 72.7, S: 79.75, W: 3.57, H: 4.2, yb: 2.2, tn: .15, tt: .71, deck: 2, nose: 'a380', tail: 'a380', win: [[44, 48], [70, 73]],
+    A388: { L: 72.7, S: 79.75, W: 3.57, H: 4.2, yb: 2.2, tn: .15, tt: .71, deck: 2, nose: 'a380', tail: 'a380', win: [[41, 48], [68, 75]], ttl: [22, 35],
       doors: [[0.1, 1], [0.25, 1], [0.45, 1], [0.62, 1], [0.8, 1]],
-      wing: { x: 9.5, y: 0.7, cr: 17.5, ct: 4.0, sw: 33.5, dh: 5.6, t: 2.0, kink: .3, flex: 0.01, wl: 'fence', wlh: 2.4 },
+      wing: { x: 9.5, y: 0.7, cr: 17.5, ct: 4.0, sw: 33.5, dh: 5.6, t: 2.0, kink: .3, flex: 0.01, wl: 'fence', wlh: 1.5 },
       eng: [{ z: 14.5, r: 1.55, len: 7.0, fwd: 4.6, drop: 1.9 }, { z: 25.8, r: 1.5, len: 6.8, fwd: 4.0, drop: 1.6 }],
       hs: { half: 15.3, cr: 10.5, ct: 3.6, sw: 34, dh: 4, te: 1.8, y: 0.0 }, fin: { cr: 14.8, ct: 5.4, h: 13.4, sw: 41, te: 1.2 },
       gear: { nd: 6.4, mains: [{ dx: 10.5, z: 6.2, b: 2 }, { dx: 13.8, z: 2.3, b: 3 }], r: 0.7, nr: 0.6 } },
@@ -211,7 +215,10 @@ Z3MOD.aircraft = function (Z) {
     let nx = -dR, ny = Math.cos(th) * R / h, nz = Math.sin(th) * R / w; const l = Math.hypot(nx, ny, nz); nx /= l; ny /= l; nz /= l;
     return { p: [x + nx * off, yc + h * Math.cos(th) + ny * off, w * Math.sin(th) + nz * off], n: [nx, ny, nz] };
   }
-  const fusUV = (t, th) => { let a = Math.abs(th) % (2 * Math.PI); if (a > Math.PI) a = 2 * Math.PI - a; return [t * UF, 0.03 + 0.75 * a / Math.PI]; };
+  let UVP = null; // the type being built (fusUV reads its deck count)
+  const fusUV = (t, th) => { let a = Math.abs(th) % (2 * Math.PI); if (a > Math.PI) a = 2 * Math.PI - a; let q = a / Math.PI;
+    if (UVP && UVP.deck === 2) { const d = q * 180; q = d <= 50 ? d / 180 * 1.3 : 0.361 + (d - 50) / 130 * 0.639; }
+    return [t * UF, FA0 + FAK * q]; };
   function patch(g, P, t0, t1, nt, thF, nth, off, col, uvF) {
     for (let i = 0; i < nt; i++) for (let j = 0; j < nth; j++) {
       const ta = t0 + (t1 - t0) * i / nt, tb = t0 + (t1 - t0) * (i + 1) / nt, ua = j / nth, ub = (j + 1) / nth;
@@ -230,7 +237,7 @@ Z3MOD.aircraft = function (Z) {
 
   function buildType(P, hi, liv) {
     const body = Geo(), gear = Geo(), prop = Geo(), N = hi ? (P.W > 2.5 ? 16 : 14) : 8;
-    const WG = wingGeom(P); P.WG = WG;
+    const WG = wingGeom(P); P.WG = WG; UVP = P;
     P.nx = P.L / 2 - P.gear.nd; P.mains = P.gear.mains.map(m => ({ x: P.wing.x - m.dx, z: m.z, b: m.b }));
     // fuselage
     const ts = [];
@@ -272,7 +279,7 @@ Z3MOD.aircraft = function (Z) {
         for (let i = 1; i <= seg; i++) { const a = (i / seg) * 72 * D2R, sl = h / seg * 1.25, nx = px - sl * 0.75, ny = py + Math.sin(a) * sl, nz = pz + Math.cos(a) * sl * 0.6, nc = ct * (1 - 0.55 * i / seg);
           slab(body, [[px, py, sgn * pz], [px - pc, py, sgn * pz], [nx - nc, ny, sgn * nz], [nx, ny, sgn * nz]], [0.14, 0.06, 0.05, 0.1], i === seg ? 2 : 1, COL.white, null, PU.wlt); px = nx; py = ny; pz = nz; pc = nc; }
       } else if (wl === 'fence') {
-        slab(body, [[tx + 0.4, ty - 0.9, z0], [tx - ct * 0.85, ty - 0.9, z0], [tx - ct * 0.9 - 0.6, ty + h, z0], [tx - 0.8, ty + h, z0]], [0.12, 0.06, 0.05, 0.08], 2, COL.white, null, PU.wlt);
+        slab(body, [[tx + 0.3, ty - 0.7, z0], [tx - ct * 0.6, ty - 0.7, z0], [tx - ct * 0.75 - 0.4, ty + h, z0], [tx - ct * 0.25, ty + h, z0]], [0.12, 0.06, 0.05, 0.08], 2, COL.white, null, PU.wlt);
       } else if (wl === 'raked') { // 787 / 777: a highly swept tip panel, no winglet
         slab(body, [[tx, ty, z0], [tx - ct, ty, z0], [tx - rake * 1.15 - 0.35, ty + rake * 0.12, z0 + sgn * rake], [tx - rake * 1.05, ty + rake * 0.12, z0 + sgn * rake]], [wt * 0.28, wt * 0.08, 0.06, 0.08], 1, COL.wing, COL.wingB);
       }
@@ -315,12 +322,16 @@ Z3MOD.aircraft = function (Z) {
     if (hi) {
       // cockpit windows (dark), the A350's black mask, the 787's four panes
       const c0 = P.tn * (P.mask ? 0.3 : 0.36), c1 = P.tn * (P.mask ? 0.6 : 0.54), ca = P.mask ? 78 : P.nose === 'boeing' ? 58 : 62;
-      if (P.cock4) for (const [a, b] of [[-56, -31], [-27, -3], [3, 27], [31, 56]]) patch(body, P, c0, c1, 1, (t, u) => (a + (b - a) * u) * D2R, 2, 0.03, COL.white);
-      else patch(body, P, c0, c1, 1, (t, u) => (-ca + 2 * ca * u) * D2R, 6, 0.03, COL.white);
+      if (P.cock4) for (const [a, b] of [[-56, -31], [-27, -3], [3, 27], [31, 56]]) patch(body, P, c0, c1, 3, (t, u) => (a + (b - a) * u) * D2R, 2, 0.06, COL.white);
+      else patch(body, P, c0, c1, P.mask ? 4 : 3, (t, u) => (-ca + 2 * ca * u) * D2R, P.mask ? 10 : 6, 0.06, COL.white);
       // cabin window rows (each row is a strip textured with the airline's window row; it glows at night)
       const w0 = P.tn * 1.08, w1 = P.tt + (1 - P.tt) * 0.2;
       for (const sgn of [-1, 1]) for (const [a, b] of P.win)
-        patch(body, P, w0, w1, 3, (t, u) => sgn * (a + (b - a) * u) * D2R, 1, 0.04, COL.white, (t, u) => [t * UF, 0.845 + 0.07 * u]);
+        patch(body, P, w0, w1, 3, (t, u) => sgn * (a + (b - a) * u) * D2R, 1, 0.04, COL.white, (t, u) => [t * UF, WV0 + 0.005 + (WV1 - WV0 - 0.01) * u]);
+      // titles: a strip per side; U runs backwards on the starboard side so the titles read nose-first on both sides
+      const TA = 0.12, TB = 0.31, tl = P.ttl || [32, 46];
+      for (const sgn of [-1, 1]) patch(body, P, TA, TB, 4, (t, u) => sgn * (tl[0] + (tl[1] - tl[0]) * u) * D2R, 1, 0.045, COL.white,
+        (t, u) => [(sgn < 0 ? t : TA + TB - t) * UF, TV0 + 0.005 + (TV1 - TV0 - 0.01) * u]);
       // door outlines: two thin dark edges per door
       const wa = P.win[P.win.length - 1][0];
       for (const sgn of [-1, 1]) for (const [dt, big] of P.doors || []) {

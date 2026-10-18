@@ -137,14 +137,14 @@
   "say": "Polish Air Force zero zero one, two seven centre. [[slnc 300]] Dzień dobry. [[slnc 300]] Who do we follow?"
  },
  {
-  "key": "Russia Cargo, Antonov, heavy, 27R. The cars are on board.",
-  "voice": "ru",
-  "say": "Russia Cargo, Antonov, heavy, two seven right. [[slnc 300]] The cars are on board."
+  "key": "Attention, please. The delegation of the Russian Federation. First, the cars. Then two aircraft. They are identical.",
+  "voice": "ru_announcer",
+  "say": "Attention, please. [[slnc 600]] The delegation of the Russian Federation. [[slnc 600]] First, the cars. [[slnc 600]] Then two aircraft. [[slnc 600]] They are identical."
  },
  {
-  "key": "Attention, please. The delegation of the Russian Federation. Two aircraft. They are identical.",
-  "voice": "ru_announcer",
-  "say": "Attention, please. [[slnc 600]] The delegation of the Russian Federation. [[slnc 600]] Two aircraft. [[slnc 600]] They are identical."
+  "key": "Russia Cargo, Antonov, heavy, 27C. The cars are on board.",
+  "voice": "ru",
+  "say": "Russia Cargo, Antonov, heavy, two seven centre. [[slnc 300]] The cars are on board."
  },
  {
   "key": "Zero Mile Tower, Russia, Ilyushin, established, runway 27R.",
@@ -335,9 +335,9 @@
   "say": "Aussie One, two seven centre. [[slnc 300]] G'day. [[slnc 300]] Long way for a photo."
  },
  {
-  "key": "Attention, please. The second aircraft of the Russian Federation. Also identical.",
+  "key": "Attention, please. The cars of the Russian Federation. Then the second aircraft. Also identical.",
   "voice": "ru_announcer",
-  "say": "Attention, please. [[slnc 600]] The second aircraft of the Russian Federation. [[slnc 600]] Also identical."
+  "say": "Attention, please. [[slnc 600]] The cars of the Russian Federation. [[slnc 600]] Then the second aircraft. [[slnc 600]] Also identical."
  },
  {
   "key": "Russia Two, also Ilyushin, also established, 27R.",

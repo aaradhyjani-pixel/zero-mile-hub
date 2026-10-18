@@ -611,10 +611,10 @@ function spgFinale(){setTimeout(()=>guard(['Thank you, sir, for this.','And than
 const STAGED=[];
 function spgStaged(rws,o){o=o||{};const t0=o.at!=null?o.at:T,n=rws.length,tm=spgStaged.times(t0,n,o),s={lv:LV,t0,ev:[],prev:null};
   const line=i=>i===0?`Runway ${rws[0].short} shall be cleared first.`:i===n-1?`And finally, runway ${rws[i].short}.`:`Then runway ${rws[i].short}.`;
-  const hold=()=>{if(SND.on&&speed>1&&s.prev==null){s.prev=speed;speed=1;if(running)setSpeed(1);}};
+  const hold=()=>{if(SND.on&&speed>1&&s.prev==null){s.prev=speed;speed=1;if(running)setSpeed(1,true);}};
   s.ev.push([t0,()=>{hold();guard(['Your runways shall now be cleared, in a staged manner.']);}]);
   rws.forEach((r,i)=>{s.ev.push([tm.say[i],()=>{hold();guard([line(i)]);}]);s.ev.push([tm.open[i],()=>{if(o.open)o.open(r,i);radio('TWR',`Runway ${r.short} is back in service.`);renderRw();}]);});
-  s.ev.push([tm.open[n-1]+1,()=>{if(s.prev!=null){speed=s.prev;if(running)setSpeed(speed);s.prev=null;}if(o.done)o.done();if(o.finale!==false)spgFinale();}]);
+  s.ev.push([tm.open[n-1]+1,()=>{if(s.prev!=null){speed=s.prev;if(running)setSpeed(speed,true);s.prev=null;}if(o.done)o.done();if(o.finale!==false)spgFinale();}]);
   s.ev.sort((a,b)=>a[0]-b[0]);STAGED.push(s);return tm;}
 spgStaged.times=(t0,n,o)=>{o=o||{};const first=o.first||100,lead=o.lead||60,step=o.step||110,say=[],open=[];for(let i=0;i<n;i++){say.push(t0+first+step*i);open.push(t0+first+step*i+lead);}return{say,open};};
 function stagedTick(){for(const s of STAGED.slice()){if(s.lv!==LV||T<s.t0-5){STAGED.splice(STAGED.indexOf(s),1);continue;}while(s.ev.length&&T>=s.ev[0][0])s.ev.shift()[1]();if(!s.ev.length)STAGED.splice(STAGED.indexOf(s),1);}}
@@ -687,7 +687,7 @@ function cineTick(){stagedTick();
   const c=CINE,now=performance.now();if(!V3.on&&c.f)centerOn(c.f.x,c.f.y);
   if(c.o.landed&&c.f&&c.f.landT!=null&&!c.landAt)c.landAt=now;
   const over=(c.f&&['gone','diverted'].includes(c.f.state))||(c.o.until!=null?T>=c.o.until||now-c.t0>40000:(c.landAt&&now-c.landAt>3500)||now-c.t0>(c.o.ms||(c.o.landed?20000:6500)));
-  if(over){CINE=null;vipBanner(false);speed=c.prevSpeed;if(running)setSpeed(speed);if(V3.on&&V3.ready&&c.prevCam){setCam('map');Object.assign(C3.t,c.prevCam.t);}}
+  if(over){CINE=null;vipBanner(false);speed=c.prevSpeed;if(running)setSpeed(speed,true);if(V3.on&&V3.ready&&c.prevCam){setCam('map');Object.assign(C3.t,c.prevCam.t);}}
 }
 // a special arrival that appears 14 km out and lands on runway r at sim time td (holds a stand if one is given)
 function specialArr(o,r,td,stand){const f=mk(Object.assign({kind:'arr',state:'sched',intl:false,dir:'W',eta:td,endurance:180},o));Object.assign(f,{origEta:td,spawnT:1e12,spRw:r,spTd:td});if(stand){stand.res=f;f.res=stand;}
@@ -1250,7 +1250,7 @@ tick(c,t){const pl=c.pl;
   c.doneT=T;if(T-(c.ltT||-9)>=1){c.ltT=T;ltRender(false);}
   // the SPG hands the runways back, one at a time, in step with his voice; then his thank-you, then the evening
   if(!c.ret0&&T>=pl.p1+30){c.ret0=true;LT.cur=null;ltRender(false);music(null,{fadeOut:800});
-    spgStaged(c.retOrder,{at:pl.p1+30,open:r=>{for(const x of RW)x.blocks=x.blocks.filter(b=>!(b.sumC===c&&x===r));renderRw();},done:()=>{c.fin=T;if(STORY.evening)startStory('evening');}});}},
+    spgStaged(c.retOrder,{at:pl.p1+30,open:r=>{for(const x of RW)x.blocks=x.blocks.filter(b=>!(b.sumC===c&&x===r));renderRw();},done:()=>{c.fin=T;if(STORY.eve4)startStory('eve4');}});}},
 lesson(c,tl){const at=c.E,end=c.ret?c.ret.open[2]:at+2700,w=tl.filter(s=>s.t>=at&&s.t<=end),pk=w.reduce((a,s)=>s.hold>a.hold?s:a,w[0]||{hold:0,t:at}),nd=S.notamDiv||0;
   return{w:45,title:`The Delhi summit took two runways from ${clk(at)} to ${clk(end)}`,text:`The stack peaked at ${pk.hold} around ${clk(pk.t)}.${nd?` ${nd} flight${nd>1?'s':''} ran down to their planned diversion fuel and went to Nagpur's old airport.`:''} With 27R and 27C gone for the whole summit, 27L for its last minutes and every runway stopped for the big three, the runways you keep have to do everything: lean them towards arrivals before the stops (the bank chart shows them), then hand departures back as each stop ends. Landing the big three together saves 6 minutes of runway time; it costs a 12-minute apron gridlock.`};}};
 
@@ -1263,7 +1263,7 @@ const EVE_SUP=[[240,'USAF','C17','REACH 1','US Air Force C-17, empty','Washingto
   [960,'SV','B77W','SAUDI 2','Saudi 777, empty','Riyadh','RUH',null],[1030,'SV','B789','SAUDI 3','Saudi 787, empty','Riyadh','RUH',['FSO','Saudi 3 follows them. Also empty. Also luggage, until today.']],
   [1300,'CCA','A333','AIR CHINA 2','Air China A330 (support)','Beijing','PEK',['FSO','Air China 2 is going to wait in Delhi. The President\'s aircraft stays here.']],
   [700,'6E','A21N','PRESS 1','The press charter','Delhi','DEL',null]];
-STORY.evening={len:4400,start(c){c.sup=EVE_SUP.map(x=>({x,done:false}));
+STORY.eve4={len:4400,start(c){c.sup=EVE_SUP.map(x=>({x,done:false}));
   const q=()=>flights.filter(f=>f.kind==='dep'&&!f.counted&&f.std<=T&&['at_gate','push','start','taxi_out','hp','lineup','stuck'].includes(f.state)).length;
   c.lines=[[120,'TWR','All stations: summit protocol cancelled. Normal operations. Well, normal for today.'],
     [150,cc=>{const n=q();radio('AOCC',`${n} departures want to go now: everything the summit held, and the evening bank behind it. Put runways on DEP.`);logE(`${n} departures queued after the summit.`);}],
@@ -1709,10 +1709,13 @@ $('#zIn').onclick=()=>V3.on?cam3Zoom(1/1.6,VW/2,VH/2):zoomCenter(1.6);$('#zOut')
 function pick(mx,my){let best=null,bd=1e9;for(const f of flights){if(f.sx==null||['sched','diverted','gone','cancelled','towed'].includes(f.state))continue;const d=Math.hypot(f.sx-mx,f.sy-my);const lim=Math.max(9,f.sr||0);if(d<lim&&d<bd){bd=d;best=f;}}return best;}
 function pickInc(mx,my){for(const I of incidents)if(I.sx!=null&&Math.hypot(I.sx-mx,I.sy-my)<20)return I;return null;}
 function pickRw(mx,my){for(const s of rwSigns)if(mx>=s.x&&mx<=s.x+s.w&&my>=s.y-3&&my<=s.y+s.h+3)return s.r;let wx=mx/cam.s+cam.x,wy=my/cam.s+cam.y,tol=10/cam.s;if(V3.on){const g=groundAt(mx,my);if(!g)return null;wx=g.x;wy=g.y;tol=45;}for(const r of RW){if(wx>=r.x0&&wx<=r.x1&&Math.abs(wy-r.y)<Math.max(r.width/2+10,tol))return r;}return null;}
-document.querySelectorAll('.speeds button').forEach(b=>b.onclick=()=>setSpeed(+b.dataset.s));
+// while a set piece runs live (PACE) the speed buttons only take effect afterwards; say so instead of silently ignoring them
+const liveNote=s=>{if(PACE!=null&&s>0)radio('AOCC',`The summit runs live: the clock stays at a third of normal speed until the last delegation lands, then goes to ${s}×.`);};
+document.querySelectorAll('.speeds button').forEach(b=>b.onclick=()=>{liveNote(+b.dataset.s);setSpeed(+b.dataset.s);});
 (function(){const b=$('#snd');const paint=()=>{b.textContent=SND.on?'Sound on':'Sound off';b.classList.toggle('on',SND.on);};paint();b.onclick=()=>{SND.on=!SND.on;store.set('zm_snd',SND.on);paint();if(SND.on)tickSound(true);else voiceReset();};})();
-function setSpeed(s){if(!running)return;if(s===0)paused=!paused;else{speed=s;paused=false;}document.querySelectorAll('.speeds button').forEach(b=>{const v=+b.dataset.s;b.classList.toggle('on',v===0?paused:(!paused&&v===speed));});$('#spP').textContent=paused?'Resume':'Pause';}
-window.addEventListener('keydown',e=>{if(e.key===' '&&!(e.target.closest&&e.target.closest('button'))){e.preventDefault();setSpeed(0);}if(e.key==='1')setSpeed(1);if(e.key==='2')setSpeed(2);if(e.key==='3')setSpeed(4);if(e.key==='Escape'){closePop();if(V3.on&&V3.mode!=='map')setCam('map');}if(e.key==='+'||e.key==='=')zoomCenter(1.6);if(e.key==='-')zoomCenter(1/1.6);if(e.key==='f')V3.on?cam3Fit():fitCam();if(e.key==='m'||e.key==='M')setView(V3.on?'2d':'3d');if(e.key==='c'||e.key==='C')cycleCam();if(V3.on&&(e.key==='q'||e.key==='Q'))C3.t.yaw+=0.25;if(V3.on&&(e.key==='e'||e.key==='E'))C3.t.yaw-=0.25;});
+// keep: restore a speed without un-pausing (a cinematic ending while the player has paused must not resume the game)
+function setSpeed(s,keep){if(!running)return;if(s===0)paused=!paused;else{speed=s;if(!keep)paused=false;}document.querySelectorAll('.speeds button').forEach(b=>{const v=+b.dataset.s;b.classList.toggle('on',v===0?paused:(!paused&&v===speed));});$('#spP').textContent=paused?'Resume':'Pause';}
+window.addEventListener('keydown',e=>{if(e.key===' '&&!(e.target.closest&&e.target.closest('button'))){e.preventDefault();setSpeed(0);}if(e.key==='1'){liveNote(1);setSpeed(1);}if(e.key==='2'){liveNote(2);setSpeed(2);}if(e.key==='3'){liveNote(4);setSpeed(4);}if(e.key==='Escape'){closePop();if(V3.on&&V3.mode!=='map')setCam('map');}if(e.key==='+'||e.key==='=')zoomCenter(1.6);if(e.key==='-')zoomCenter(1/1.6);if(e.key==='f')V3.on?cam3Fit():fitCam();if(e.key==='m'||e.key==='M')setView(V3.on?'2d':'3d');if(e.key==='c'||e.key==='C')cycleCam();if(V3.on&&(e.key==='q'||e.key==='Q'))C3.t.yaw+=0.25;if(V3.on&&(e.key==='e'||e.key==='E'))C3.t.yaw-=0.25;});
 
 /* ============ the debrief: what to do better next time, from your own shift ============ */
 (function(){const st=document.createElement('style');st.textContent=`.sheet ol.lessons{margin:4px 0 8px;padding-left:22px;color:var(--ink-2);font-size:14px}.sheet ol.lessons li{margin-bottom:7px}.sheet ol.lessons b{color:var(--ink);font-family:var(--f-sign);font-weight:600;font-size:15.5px;letter-spacing:.01em}

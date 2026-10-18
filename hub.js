@@ -106,7 +106,7 @@ const DIRSTACK={N:0,W:1,E:1,S:2};
 
 /* ============ levels ============ */
 const LEVELS=[
-  {n:1,name:'Opening day',sub:'Bengaluru moves in',from:'BLR',clock:'06:00',arr:42,dep:42,amp:0.9,rw:2,rwOpen:{R3:'ARR',R4:'DEP'},concs:'AB',intl:0.08,wide:0.06,a380:0,target:110,light:'dawn',
+  {n:1,name:'Opening day',sub:'Bengaluru moves in',from:'BLR',clock:'06:00',arr:42,dep:42,amp:0.9,rw:2,rwOpen:{R3:'ARR',R4:'DEP'},concs:'AB',intl:0.08,wide:0.06,a380:0,target:110,light:'day',
    blurb:'Kempegowda International closes at dawn and Bengaluru\'s airlines move in. Two runways, two concourses. Learn the bank chart and the runway desk.',
    last:{t:'Last flight out of Kempegowda',d:'<p>At 05:55, IndiGo 6E 6101 pushed back from Bengaluru\'s Kempegowda International: the last departure before it closed. Bengaluru\'s airlines now fly from here.</p><p>Look for its terminal-in-a-garden in ZMI: the gardens under the oculus, the planted valley where the Hall becomes the Mall, and a garden court at every pier root. And every stand built two ways, for one widebody or two narrowbodies, as at Bengaluru\'s T2.</p>'},
    script:[[900,'medical']],ops:[[700,'birds'],[2100,'fod']]},
@@ -118,9 +118,9 @@ const LEVELS=[
    blurb:'Chhatrapati Shivaji Maharaj International closes: Mumbai\'s airlines and the Gulf wave arrive. 46 °C. Hot air is thin, so heavy jets need the long runway to get airborne.',
    last:{t:'Last flight out of Chhatrapati Shivaji Maharaj',d:'<p>At 13:50, Air India AI 629 left Mumbai\'s Terminal 2 and the airport closed. Mumbai\'s widebodies and the Gulf carriers now fly from here.</p><p>Mumbai holds up ZMI\'s roof: branching columns that flare into a field of coffers with coloured lenses, a 40 m cantilever over the kerb, and an art wall along the transfer route.</p>'},
    script:[[1200,'vvip'],[3000,'medical']],ops:[[600,'birds'],[1500,'fod'],[2300,'tug'],[3900,'birds']]},
-  {n:4,name:'Delhi. Full hub.',sub:'+ Delhi',from:'ALL 5 CITIES',clock:'19:00',arr:116,dep:116,amp:0.75,rw:6,rwOpen:{R1:'ARR',R2:'ARR',R3:'DEP',R4:'DEP',R5:'DEP',R6:'MIX'},concs:'ABCDEF',intl:0.25,wide:0.20,a380:6,target:315,light:'dusk',dust:[2400,3300],
-   blurb:'Delhi\'s hub banks move in: four airports\' worth of traffic at the evening peak, about 230 movements an hour with peaks well above. Then a pre-monsoon squall kicks up an andhi (dust storm).',
-   last:{t:'Delhi\'s banks move in',d:'<p>Delhi\'s own airport stays open for its city, but from tonight its connecting banks run through ZMI. Four cities\' traffic, three cities\' building, at the old Zero Mile.</p><p>The north lobe of the Hall points almost exactly at Delhi.</p>'},
+  {n:4,name:'Delhi. Full hub.',sub:'+ Delhi',from:'ALL 5 CITIES',clock:'12:00',arr:116,dep:116,amp:0.75,rw:6,rwOpen:{R1:'ARR',R2:'ARR',R3:'DEP',R4:'DEP',R5:'DEP',R6:'MIX'},concs:'ABCDEF',intl:0.25,wide:0.20,a380:6,target:315,light:'day',dust:[2400,3300],
+   blurb:'Delhi\'s hub banks move in: four airports\' worth of traffic at the peak, about 230 movements an hour with peaks well above. Then a pre-monsoon squall kicks up an andhi (dust storm).',
+   last:{t:'Delhi\'s banks move in',d:'<p>Delhi\'s own airport stays open for its city, but from today its connecting banks run through ZMI. Four cities\' traffic, three cities\' building, at the old Zero Mile.</p><p>The north lobe of the Hall points almost exactly at Delhi.</p>'},
    script:[[1000,'lights'],[1800,'lane'],[2550,'shear'],[3700,'medical']],ops:[[500,'birds'],[1400,'tug'],[3000,'fod'],[4400,'birds']]}
 ];
 
@@ -471,7 +471,7 @@ function spawnInc(type,target,extra){
     Object.assign(I,{x:LONGEST.x0+LONGEST.len*0.5,y:LONGEST.y,title:'VVIP movement: pick a runway',text:`Protocol needs one runway to itself for 6 minutes, starting 3 minutes after you choose: no landings, no take-offs. Pick the one that hurts least. The busy count is aircraft on final, taxiing or queued for it.`,def:di,defText:`protocol takes the long runway, ${LONGEST.short}.`,
       acts:rs.map((r,i)=>({l:`${r.short} · ${r.mode} · ${load(r)} busy`,pri:i===0,fn(){give(r);resolve(I,true,`VVIP movement given runway ${r.short}.`);}}))});explain('vvip');break;}
   case 'lights':{const r=target||RW.filter(r=>canArr(r)).sort((a,b)=>b.tdList.length-a.tdList.length)[0];if(!r){ok=false;break;}
-    Object.assign(I,{r,x:lerp(r.x0,r.x1,0.4),y:r.y,title:`Edge lights failed on ${r.short}`,text:`Night is falling and half of ${r.short}'s edge lights are dark. Repair now and it closes for 6 minutes. Or keep it open with 60% more spacing between landings; the electricians then fix it during the runway's next changeover.`,def:1,defText:`${r.short} stays open at a reduced landing rate until its next changeover.`,
+    Object.assign(I,{r,x:lerp(r.x0,r.x1,0.4),y:r.y,title:`Edge lights failed on ${r.short}`,text:`Half of ${r.short}'s edge lights have failed, and in this haze ATC needs them. Repair now and it closes for 6 minutes. Or keep it open with 60% more spacing between landings; the electricians then fix it during the runway's next changeover.`,def:1,defText:`${r.short} stays open at a reduced landing rate until its next changeover.`,
       acts:[{l:'Repair now (6 min)',pri:1,fn(){closeRw(r,360,'Lighting repair');resolve(I,true,`Edge lights on ${r.short} repaired.`);}},{l:'Keep open, slower',fn(){r.degraded=true;renderRw();resolve(I,true,`${r.short} kept landing with its edge lights out.`);}}]});explain('lights');break;}
   case 'lane':{const due=c=>flights.filter(o=>o.state==='at_gate'&&o.gate&&o.gate.conc===c.id&&o.std<T+1500).length;const c=target||CONC.filter(c=>c.open!==false).sort((a,b)=>due(b)-due(a))[0];if(!c){ok=false;break;}const n=due(c);
     Object.assign(I,{c,x:c.lx,y:c.ly,title:`Dead tug blocks ${c.name}`,text:`A pushback tug broke down in the apron lane of ${c.name}, with ${n} departures due there soon. Clear it now and nothing moves on that pier for 4 minutes. Or work around it: crews push by hand from the lane edge, adding 3 minutes to every pushback there for 15 minutes.`,def:1,defText:'crews work around it: +3 min on every pushback from that pier for 15 min.',

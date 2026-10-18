@@ -93,19 +93,24 @@ const tmpC=[];function col(h){return(tmpC[h]=tmpC[h]||new Z.THREE.Color(h));}
 function lightRig(){
   const THREE=Z.THREE;if(!LV)return;
   nightF=LV.light==='dusk'?clamp((T-600)/2400,0,1):LV.light==='dawn'?clamp(0.6-T/1500,0,0.6):0;
-  const {el,az}=solar((T0C+T+86400)%86400);const e=el/D2R;
+  // daytime only: the sun keeps a mid-morning angle on every level (a 14:00 afternoon sun in the heat level)
+  const {el,az}=solar(((LV.light==='heat'?14*3600:10*3600)+T*0.25)%86400);const e=el/D2R;
   const d=new THREE.Vector3(Math.sin(az)*Math.cos(el),Math.sin(el),-Math.cos(az)*Math.cos(el));Z.sunDir.copy(d);
   const day=clamp((e+4)/14,0,1),warm=1-clamp((e-2)/25,0,1);
   const sunC=new THREE.Color().lerpColors(col('#fff6e8'),col('#ff9a52'),warm*0.85);
-  V3.sun.color.copy(sunC);V3.sun.intensity=3.1*day*(LV.light==='heat'?1.15:1)*(dustNow?0.45:1);
+  // after sunset a moon takes over the key light, and twilight keeps the sky bright for a while (civil twilight):
+  // the airport must stay readable at night, it's a game
+  const tw=clamp((e+9)/13,0,1),moon=clamp((-1-e)/5,0,1);
+  if(moon>0){const ma=140*D2R,me=48*D2R;V3.keyDir=new THREE.Vector3(Math.sin(ma)*Math.cos(me),Math.sin(me),-Math.cos(ma)*Math.cos(me));}else V3.keyDir=d;
+  V3.sun.color.copy(sunC).lerp(col('#a9bde8'),moon);V3.sun.intensity=Math.max(3.1*day*(LV.light==='heat'?1.15:1),0.75*moon)*(dustNow?0.45:1);
   const top=new THREE.Color().lerpColors(col('#0a1226'),LV.light==='heat'?col('#6f95bd'):col('#2f64a3'),day);
   const hor=new THREE.Color().lerpColors(col('#1b2238'),LV.light==='heat'?col('#efe6d2'):col('#c9d9e6'),day);
   if(warm>0.2&&day>0.02)hor.lerp(col('#f2a46b'),warm*0.55*Math.min(1,day*3));
   if(e<2&&e>-10){const tw=1-Math.abs(e+3)/9;hor.lerp(col('#e58a5c'),clamp(tw,0,1)*0.55);}
   if(dustNow){hor.lerp(col('#b88a5c'),0.75);top.lerp(col('#8a6a4a'),0.6);}
   V3.skyU.top.value.copy(top);V3.skyU.hor.value.copy(hor);V3.skyU.sunDir.value.copy(d);V3.skyU.sunCol.value.copy(sunC);V3.skyU.glow.value=day*(dustNow?0.4:1);
-  V3.hemi.color.lerpColors(col('#22304f'),col('#cfe3ff'),day);V3.hemi.groundColor.lerpColors(col('#141c18'),col('#5f7d46'),day);V3.hemi.intensity=0.35+0.65*day;
-  Z.renderer.toneMappingExposure=LV.light==='heat'?1.2:1.0+0.35*(1-day);
+  V3.hemi.color.lerpColors(col('#6a80b4'),col('#cfe3ff'),tw);V3.hemi.groundColor.lerpColors(col('#2e3f2a'),col('#5f7d46'),tw);V3.hemi.intensity=1.15-0.15*tw;
+  Z.renderer.toneMappingExposure=LV.light==='heat'?1.2:1.0+0.4*(1-day);
   const fogC=hor.clone();const near=V3.mode==='map'?C3.dist*1.4:2500,far=V3.mode==='map'?C3.dist*5+22000:38000;
   Z.scene.fog.color.copy(fogC);Z.scene.fog.near=dustNow?250:LV.light==='heat'?near*0.6:near;Z.scene.fog.far=dustNow?4200:LV.light==='heat'?far*0.7:far;
 }
@@ -138,7 +143,7 @@ function camUpdate(dt){
   cam.updateProjectionMatrix();
   // shadows cover the area around the focus, sized to the view
   if(focus){const s=clamp(Z.camDist*(V3.mode==='map'?0.38:0.6),350,3800),sh=V3.sun.shadow.camera;sh.left=-s;sh.right=s;sh.top=s;sh.bottom=-s;sh.updateProjectionMatrix();
-    V3.sun.target.position.set(focus[0],0,focus[1]);V3.sun.position.set(focus[0]+Z.sunDir.x*12000,Math.max(300,Z.sunDir.y*12000),focus[1]+Z.sunDir.z*12000);V3.sun.castShadow=Z.sunDir.y>0.03;}
+    const kd=V3.keyDir||Z.sunDir;V3.sun.target.position.set(focus[0],0,focus[1]);V3.sun.position.set(focus[0]+kd.x*12000,Math.max(300,kd.y*12000),focus[1]+kd.z*12000);V3.sun.castShadow=kd.y>0.03;}
 }
 
 // screen <-> world

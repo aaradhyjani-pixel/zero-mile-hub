@@ -1865,7 +1865,7 @@ const FLAG_RU='<svg viewBox="0 0 90 60" class="flag"><rect width="90" height="20
 // the bodyguard: dark suit, sunglasses, earpiece; slides in on the dashboard side and says his piece
 (function(){const st=document.createElement('style');st.textContent=`#guard{position:absolute;right:calc(var(--rail) + 30px);top:118px;z-index:13;display:flex;align-items:flex-start;gap:6px;pointer-events:none;transform:translateX(130%);opacity:0;transition:transform .55s cubic-bezier(.2,.9,.25,1.15),opacity .3s}
 #guard.on{transform:translateX(0);opacity:1}#vipBanner.on~#guard{top:350px}#guard{transition:transform .55s cubic-bezier(.2,.9,.25,1.15),opacity .3s,top .4s}#guard svg{width:116px;height:150px;filter:drop-shadow(0 10px 18px rgba(0,0,0,.6));animation:gbob 2.4s ease-in-out infinite}
-@keyframes gbob{50%{transform:translateY(-3px) rotate(-1deg)}}#guard .glint{animation:glint 2.2s ease-in-out infinite}@keyframes glint{0%,70%,100%{opacity:0}80%{opacity:1}}
+@keyframes gbob{50%{transform:translateY(-3px) rotate(-1deg)}}#guard,#guard svg,#vipBanner,#vipBanner .flag,#vipBanner .ico,#vipBanner .meme{will-change:transform}#guard .glint{animation:glint 2.2s ease-in-out infinite}@keyframes glint{0%,70%,100%{opacity:0}80%{opacity:1}}
 #guard .bub{order:-1;margin-top:18px;max-width:240px;background:#f4f1e8;color:#121212;font-family:var(--f-sign);font-weight:700;font-size:19px;line-height:1.15;padding:9px 12px;border-radius:10px;position:relative;box-shadow:0 8px 24px rgba(0,0,0,.5)}
 #guard .bub::after{content:'';position:absolute;right:-9px;top:18px;border:6px solid transparent;border-left:10px solid #f4f1e8}#guard .bub small{display:block;font-family:var(--f-mono);font-weight:500;font-size:10.5px;color:#6a6a6a;letter-spacing:.06em;margin-bottom:2px}
 @media (prefers-reduced-motion:reduce){#guard svg,#guard .glint{animation:none}}`;document.head.appendChild(st);
@@ -3209,7 +3209,7 @@ function guides3D(now){
 // never oscillates). G picks the top rung (High 0, Medium 2, Low 4); hitches (>100 ms) never count as "slow".
 const QL=[{ao:true,bloom:true,pr:1.5},{ao:true,bloom:true,pr:1.25},{ao:false,bloom:true,pr:1.25},{ao:false,bloom:true,pr:1},{ao:false,bloom:false,pr:1},{ao:false,bloom:false,pr:0.85}];
 const QTOP=[0,2,4],QFT=new Float32Array(64);
-function qApply(){const q=QL[V3.ql],R=Z.renderer;if(V3.ao)V3.ao.enabled=q.ao;if(V3.bloom)V3.bloom.enabled=q.bloom;if(V3.gradeU)V3.gradeU.bloomK.value=q.bloom&&V3.bloom?1:0;
+function qApply(){const q=QL[V3.ql],R=Z.renderer;if(V3.ao)V3.ao.enabled=q.ao&&!V3.aoCine;if(V3.bloom)V3.bloom.enabled=q.bloom;if(V3.gradeU)V3.gradeU.bloomK.value=q.bloom&&V3.bloom?1:0;
   const pr=Math.min(window.devicePixelRatio||1,V3.comp?q.pr:Math.min(1.75,q.pr+0.25));if(R.getPixelRatio()!==pr){R.setPixelRatio(pr);resize3D();}}
 function quality3D(dtR){
   if(navigator.webdriver&&!Z.adaptive)return;
@@ -3218,7 +3218,7 @@ function quality3D(dtR){
   const top=QTOP[V3.tier];if(V3.ql==null||V3.ql<top)V3.ql=top;
   // stutter counts as slow too: a fine median with 1 frame in 10 running double length is what players feel as lag
   if(med>18.5||p90>26){V3.qSlow=(V3.qSlow||0)+1;V3.qFast=0;
-    if(V3.qSlow>=2&&V3.ql<QL.length-1){V3.qSlow=0;if(performance.now()-(V3.qUpT||0)<6000)V3.qWait=Math.min(240,(V3.qWait||20)*2);V3.ql++;qApply();}}
+    if(V3.qSlow>=(V3.aoCine?1:2)&&V3.ql<QL.length-1){V3.qSlow=0;if(performance.now()-(V3.qUpT||0)<6000)V3.qWait=Math.min(240,(V3.qWait||20)*2);V3.ql++;qApply();}}
   else if(med<17.2&&p90<19){V3.qSlow=0;V3.qFast=(V3.qFast||0)+1;
     if(V3.ql>top&&V3.qFast*0.5>=(V3.qWait||20)){V3.qFast=0;V3.ql--;V3.qUpT=performance.now();qApply();}}
   else{V3.qSlow=0;V3.qFast=0;}}
@@ -3240,6 +3240,9 @@ function draw3D(now,dtR){
   if(!Z.renderer)return;const t0=performance.now(),R=Z.renderer;
   if(R.domElement.width!==Math.round(VW*R.getPixelRatio()))resize3D();
   lightRig();camUpdate(dtR);
+  // cinematics are the most expensive shots (a low camera looking across the whole field and sky): they run without AO,
+  // which nobody misses in a slow-motion cut but everybody feels as a stutter; quality also steps down faster meanwhile
+  {const on=!!(CINE||(SUM&&SUM.cine));if(V3.ao&&on!==!!V3.aoCine){V3.aoCine=on;if(on){V3.aoPrev=V3.ao.enabled;V3.ao.enabled=false;}else if(V3.ql!=null)qApply();else V3.ao.enabled=!!V3.aoPrev;}}
   for(const k in Z.mods){const m=Z.mods[k];if(m&&m.update){try{m.update(dtR,now);}catch(err){console.error('3D '+k,err);m.update=null;}}}
   atmoApply(now);guides3D(now);overlayAtmo();
   try{envUpdate(now);}catch(err){console.warn('3D: environment map failed',err);V3.pmrem=null;}

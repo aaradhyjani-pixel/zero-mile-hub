@@ -468,7 +468,7 @@ function guides3D(now){
 // never oscillates). G picks the top rung (High 0, Medium 2, Low 4); hitches (>100 ms) never count as "slow".
 const QL=[{ao:true,bloom:true,pr:1.5},{ao:true,bloom:true,pr:1.25},{ao:false,bloom:true,pr:1.25},{ao:false,bloom:true,pr:1},{ao:false,bloom:false,pr:1},{ao:false,bloom:false,pr:0.85}];
 const QTOP=[0,2,4],QFT=new Float32Array(64);
-function qApply(){const q=QL[V3.ql],R=Z.renderer;if(V3.ao)V3.ao.enabled=q.ao;if(V3.bloom)V3.bloom.enabled=q.bloom;if(V3.gradeU)V3.gradeU.bloomK.value=q.bloom&&V3.bloom?1:0;
+function qApply(){const q=QL[V3.ql],R=Z.renderer;if(V3.ao)V3.ao.enabled=q.ao&&!V3.aoCine;if(V3.bloom)V3.bloom.enabled=q.bloom;if(V3.gradeU)V3.gradeU.bloomK.value=q.bloom&&V3.bloom?1:0;
   const pr=Math.min(window.devicePixelRatio||1,V3.comp?q.pr:Math.min(1.75,q.pr+0.25));if(R.getPixelRatio()!==pr){R.setPixelRatio(pr);resize3D();}}
 function quality3D(dtR){
   if(navigator.webdriver&&!Z.adaptive)return;
@@ -477,7 +477,7 @@ function quality3D(dtR){
   const top=QTOP[V3.tier];if(V3.ql==null||V3.ql<top)V3.ql=top;
   // stutter counts as slow too: a fine median with 1 frame in 10 running double length is what players feel as lag
   if(med>18.5||p90>26){V3.qSlow=(V3.qSlow||0)+1;V3.qFast=0;
-    if(V3.qSlow>=2&&V3.ql<QL.length-1){V3.qSlow=0;if(performance.now()-(V3.qUpT||0)<6000)V3.qWait=Math.min(240,(V3.qWait||20)*2);V3.ql++;qApply();}}
+    if(V3.qSlow>=(V3.aoCine?1:2)&&V3.ql<QL.length-1){V3.qSlow=0;if(performance.now()-(V3.qUpT||0)<6000)V3.qWait=Math.min(240,(V3.qWait||20)*2);V3.ql++;qApply();}}
   else if(med<17.2&&p90<19){V3.qSlow=0;V3.qFast=(V3.qFast||0)+1;
     if(V3.ql>top&&V3.qFast*0.5>=(V3.qWait||20)){V3.qFast=0;V3.ql--;V3.qUpT=performance.now();qApply();}}
   else{V3.qSlow=0;V3.qFast=0;}}
@@ -499,6 +499,9 @@ function draw3D(now,dtR){
   if(!Z.renderer)return;const t0=performance.now(),R=Z.renderer;
   if(R.domElement.width!==Math.round(VW*R.getPixelRatio()))resize3D();
   lightRig();camUpdate(dtR);
+  // cinematics are the most expensive shots (a low camera looking across the whole field and sky): they run without AO,
+  // which nobody misses in a slow-motion cut but everybody feels as a stutter; quality also steps down faster meanwhile
+  {const on=!!(CINE||(SUM&&SUM.cine));if(V3.ao&&on!==!!V3.aoCine){V3.aoCine=on;if(on){V3.aoPrev=V3.ao.enabled;V3.ao.enabled=false;}else if(V3.ql!=null)qApply();else V3.ao.enabled=!!V3.aoPrev;}}
   for(const k in Z.mods){const m=Z.mods[k];if(m&&m.update){try{m.update(dtR,now);}catch(err){console.error('3D '+k,err);m.update=null;}}}
   atmoApply(now);guides3D(now);overlayAtmo();
   try{envUpdate(now);}catch(err){console.warn('3D: environment map failed',err);V3.pmrem=null;}

@@ -2438,7 +2438,7 @@ STORY.tiger={len:2000,start(c){const r=rwBy('dep')[0];if(!r)return false;c.r=r;c
   const p0=walk(r,0.66,0.38,6,6);
   c.mark={x:p0[0][0],y:r.y,e:'🐅',until:T+1e6,px:34,k:'tiger',path:p0,t0:T,t1:T+420};MARKS.push(c.mark);
   c.fx={kind:'tiger',id:'tiger1',path:p0,t0:T,t1:T+420,darted:null,exit:null};FXV.push(c.fx);
-  c.lines.push([8,()=>tigerCam(['SHERNI PUTTAR ON THE LOOSE',`A tigress is walking down ${r.short}`,'Shere Khan, you are not cleared to line up 🐅',icos('🐅','🛫','🌳')],p0[0][0],r.y)]);
+  c.lines.push([8,()=>tigerCam(['SHERNI PUTTAR ON THE LOOSE',`A tigress is walking down ${r.short}`,'Sherni Puttar, you are not cleared to line up 🐅',icos('🐅','🛫','🌳')],p0[0][0],r.y)]);
   guard(['Sir, she is not a bird. You cannot sweep her.','She is the senior-most resident here. 🐅'],WHO.ranger);
   c.lines.push([0,'TWR',`All stations: a tigress is on ${r.short}. Nobody is to taxi towards her. That includes the follow-me car.`]);
   const I=c.I=storyCard(c,{icon:{g:'🐅',c:'#ff8c1a'},x:p0[0][0],y:r.y,title:`Sherni Puttar on the loose: a tigress on ${r.short}`,

@@ -339,6 +339,7 @@ function camUpdate(dt){
   if(V3.mode!=='map'&&V3.mode!=='tower'){const f=C3.follow;if(!f||['gone','diverted','towed','cancelled','sched'].includes(f.state)){if(V3.mode==='approach'){C3.follow=nextArrival();if(!C3.follow)setCam('map');}else setCam('map');camLabel();}}
   if(V3.mode==='map'){
     if(!running){C3.t.yaw+=dt*0.035;C3.t.dist=Math.max(C3.t.dist,8000);}
+    if(CINE&&CINE.o.track&&C3.t.dist<CINE.o.view.dist*3){const p=CINE.o.track();if(p){C3.t.tx=p[0];C3.t.ty=p[1];}}   // a cinematic keeps its moving subject in frame (until the player zooms out)
     const ke=C3.intro>0?1-Math.exp(-dt*1.6):k;if(C3.intro>0)C3.intro-=dt;
     for(const key of ['tx','ty','dist','yaw','pitch'])C3[key]+=(C3.t[key]-C3[key])*ke;
     const cp=Math.cos(C3.pitch);cam.position.set(C3.tx+Math.sin(C3.yaw)*cp*C3.dist,Math.sin(C3.pitch)*C3.dist,C3.ty+Math.cos(C3.yaw)*cp*C3.dist);
@@ -436,9 +437,9 @@ function drawOverlay3D(now){
   for(const st of STACKS){const n=flights.filter(f=>f.state==='holding'&&f.stack===st);if(!n.length)continue;const p=proj(st.x,st.y,2600*AIR_K);if(p)signText(p.X,p.Y-40,`STACK ${st.id} · ${n.length}`,0.95,n.some(f=>f.minFuel)?'#ff4d3f':'#f4c430');}
   rwSigns=[];for(const r of RW){const p=proj(r.x0+r.len*0.18,r.y,0);if(!p)continue;const s=rwSign(r);const rect=signText(p.X,p.Y-16,`${r.short} · ${s.lbl}`,r.locked?.6:1,s.col);rect.r=r;rwSigns.push(rect);}
   for(const f of flights){if(!f.mayday||f.landT!=null||f.sx==null)continue;const X=f.sx,Y=f.sy,pp=(now*1.4)%1;ctx.strokeStyle=`rgba(255,77,63,${1-pp})`;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(X,Y,10+pp*28,0,7);ctx.stroke();signText(X,Y-30,`MAYDAY ${fl(f)}`,1,'#ff4d3f');}
-  for(const I of incidents){const q=incPos(I);const p=proj(q.x,q.y,I.f?altM(I.f):0);if(!p){I.sx=null;continue;}const X=p.X,Y=p.Y-(I.f?0:14);const ic=(I.icon||ICON[I.type]);const pulse=1+0.18*Math.sin(now*7);const R=13*pulse;
-    ctx.fillStyle='rgba(0,0,0,.55)';ctx.beginPath();ctx.arc(X,Y,R+5,0,7);ctx.fill();ctx.strokeStyle=ic.c;ctx.lineWidth=3;ctx.beginPath();ctx.arc(X,Y,R+3,-Math.PI/2,-Math.PI/2+2*Math.PI*clamp(I.left/I.total,0,1));ctx.stroke();
-    ctx.fillStyle=ic.c;ctx.beginPath();ctx.arc(X,Y,R-2,0,7);ctx.fill();ctx.fillStyle='#0b0b0b';ctx.font='700 15px Barlow Condensed, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(ic.g,X,Y+1);ctx.textAlign='left';ctx.textBaseline='alphabetic';I.sx=X;I.sy=Y;}
+  for(const I of incidents){const q=incPos(I);const p=proj(q.x,q.y,I.f?altM(I.f):0);if(!p){I.sx=null;continue;}
+    // a ground subject (a story's animal, crowd or set) is drawn at about 2 m times the characters' view scale (fx2 charScale)
+    let up=0;if(!I.f){const t=proj(q.x,q.y,2.2*clamp(Z.camDist/80,1,160));if(t)up=p.Y-t.Y;}incMark(ctx,I,p.X,p.Y,now,up);}
   drawMarks(ctx,(x,y,a)=>proj(x,y,a*AIR_K),now,Z.fxKinds);
   const tagged=new Set();if(selected)tagged.add(selected);if(hover)tagged.add(hover);
   if(V3.mode==='map'&&Z.camDist<2200){const cp=Z.camera.position,cand=[];for(const f of flights){if(f.sx!=null&&['approach','rollout','lineup','roll','nogate','climb','hp'].includes(f.state)&&f.sx>40&&f.sx<VW-40&&f.sy>40&&f.sy<VH-40)cand.push([Math.hypot(cp.x-f.x,cp.z-f.y),f]);}
@@ -447,7 +448,7 @@ function drawOverlay3D(now){
   if(selected&&selected.sx!=null){ctx.strokeStyle='#f4c430';ctx.lineWidth=2;ctx.beginPath();ctx.arc(selected.sx,selected.sy,Math.max(10,selected.sr+5),0,7);ctx.stroke();}
   // the weather module draws the andhi in 3D; the old screen-space streaks only without it
   if(dustNow&&!Z.mods.weather){ctx.fillStyle='rgba(220,180,130,.35)';for(const p of dustP){const x=((p.x*VW-now*260*p.v)%VW+VW)%VW,y=p.y*VH;ctx.fillRect(x,y,p.s*7,p.s);}}
-  if(popInc){const q=incPos(popInc);const p=proj(q.x,q.y,popInc.f?altM(popInc.f):0);if(p)placePop(p.X,p.Y);}
+  if(popInc&&popInc.sx!=null)placePop(popInc.sx,popInc.sy);
   drawFloats(q=>proj(q.x,q.y,q.alt*AIR_K+40));
 }
 

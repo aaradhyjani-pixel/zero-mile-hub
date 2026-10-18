@@ -1,0 +1,193 @@
+[
+ {
+  "key": "Sir. We have taken over your runways.",
+  "voice": "spg",
+  "say": "Sir. [[slnc 450]] We have taken over your runways."
+ },
+ {
+  "key": "All of them. Yes, the long one too.",
+  "voice": "spg",
+  "say": "All of them. [[slnc 450]] Yes. The long one too."
+ },
+ {
+  "key": "Can you have one runway back? No. We have chosen the runways. We choose the order. We are very fast at saying no.",
+  "voice": "spg",
+  "say": "Can you have one runway back? [[slnc 600]] No. [[slnc 500]] We have chosen the runways. We choose the order. [[slnc 500]] We are very fast at saying no."
+ },
+ {
+  "key": "The motorcade has left for Tadoba. Every road from here to the tigers is closed. The tigers have been informed.",
+  "voice": "spg",
+  "say": "The motorcade has left for Tadoba. [[slnc 400]] Every road from here to the tigers is closed. [[slnc 600]] The tigers have been informed."
+ },
+ {
+  "key": "Your runways shall now be cleared, in a staged manner.",
+  "voice": "spg"
+ },
+ {
+  "key": "Runway 27L shall be cleared first.",
+  "voice": "spg",
+  "say": "Runway two seven left shall be cleared first."
+ },
+ {
+  "key": "Then runway 27R.",
+  "voice": "spg",
+  "say": "Then, runway two seven right."
+ },
+ {
+  "key": "Then runway 28R.",
+  "voice": "spg",
+  "say": "Then, runway two eight right."
+ },
+ {
+  "key": "Then runway 27C.",
+  "voice": "spg",
+  "say": "Then, runway two seven centre."
+ },
+ {
+  "key": "And finally, runway 28C.",
+  "voice": "spg",
+  "say": "And finally, runway two eight centre."
+ },
+ {
+  "key": "Thank you, sir, for this.",
+  "voice": "spg"
+ },
+ {
+  "key": "And thank you for serving the nation.",
+  "voice": "spg",
+  "say": "And thank you, for serving the nation."
+ },
+ {
+  "key": "Jai Hind.",
+  "voice": "spg"
+ },
+ {
+  "key": "Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 27L.",
+  "voice": "announcer",
+  "say": "Ladies and gentlemen. [[slnc 800]] The aircraft carrying the Honourable Prime Minister of India [[slnc 600]] shall now be landing [[slnc 700]] on runway two seven left."
+ },
+ {
+  "key": "Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 28R. By Antonov.",
+  "voice": "ru_announcer",
+  "say": "Ladies and gentlemen. [[slnc 700]] The motorcade of His Excellency the President of the Russian Federation [[slnc 500]] will now land [[slnc 500]] on runway two eight right. [[slnc 900]] By Antonov."
+ },
+ {
+  "key": "Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 28R.",
+  "voice": "ru_announcer",
+  "say": "Ladies and gentlemen. [[slnc 700]] The aircraft of His Excellency the President of the Russian Federation [[slnc 500]] will now land [[slnc 500]] on runway two eight right."
+ },
+ {
+  "key": "Air India One, welcome to Zero Mile. Follow the car with the very large flag.",
+  "voice": "tower"
+ },
+ {
+  "key": "Antonov, welcome to Zero Mile. Please do not park on the red carpet.",
+  "voice": "tower"
+ },
+ {
+  "key": "Russia One, welcome to Zero Mile. Your follow-me car is the other car with the very large flag.",
+  "voice": "tower"
+ },
+ {
+  "key": "Russia Two, welcome. Yes, you look exactly like Russia One. Follow the third car with the very large flag.",
+  "voice": "tower",
+  "say": "Russia Two, welcome. [[slnc 400]] Yes, you look exactly like Russia One. [[slnc 400]] Follow the third car with the very large flag."
+ },
+ {
+  "key": "Sir, forty jets. One muhurat.",
+  "voice": "in",
+  "say": "Sir, forty jets. [[slnc 500]] One muhurat."
+ },
+ {
+  "key": "Not one minute after. 💍",
+  "voice": "in",
+  "say": "Not one minute after."
+ },
+ {
+  "key": "Baraat 1, welcome to Zero Mile. Follow the car with the marigolds to the wedding apron.",
+  "voice": "tower",
+  "say": "Baraat one, welcome to Zero Mile. Follow the car with the marigolds to the wedding apron."
+ },
+ {
+  "key": "The groom will now change to a horse. The horse is on Baraat 31.",
+  "voice": "in",
+  "say": "The groom will now change to a horse. [[slnc 600]] The horse is on Baraat thirty one."
+ },
+ {
+  "key": "All forty landed before the muhurat.",
+  "voice": "in"
+ },
+ {
+  "key": "Shubh vivah! 💐",
+  "voice": "in",
+  "say": "Shubh vivaah!"
+ },
+ {
+  "key": "Return gift for the tower: one silver box of kaju katli. Each. We have accepted.",
+  "voice": "tower",
+  "say": "Return gift for the tower: one silver box of kaaju katli. [[slnc 400]] Each. [[slnc 500]] We have accepted."
+ },
+ {
+  "key": "Sir, fog. In the afternoon. At 46 degrees.",
+  "voice": "in",
+  "say": "Sir, fog. [[slnc 400]] In the afternoon. [[slnc 400]] At forty six degrees."
+ },
+ {
+  "key": "We are as surprised as you are. 🌫️",
+  "voice": "in",
+  "say": "We are as surprised as you are."
+ },
+ {
+  "key": "Backtracking in this? I cannot see the runway from the cab.",
+  "voice": "tower",
+  "say": "Backtracking in this? [[slnc 400]] I cannot see the runway from the cab."
+ },
+ {
+  "key": "Every read-back in full. Nobody rushes.",
+  "voice": "tower",
+  "say": "Every read-back in full. [[slnc 400]] Nobody rushes."
+ },
+ {
+  "key": "Orange City has stopped. Four hundred metres short.",
+  "voice": "tower",
+  "say": "Orange City has stopped. [[slnc 400]] Four hundred metres short."
+ },
+ {
+  "key": "Nobody moves on that runway until I can see it.",
+  "voice": "tower"
+ },
+ {
+  "key": "Crash tenders on scene. Foam going on now.",
+  "voice": "in"
+ },
+ {
+  "key": "Both crews are out. The medics have them.",
+  "voice": "in"
+ },
+ {
+  "key": "27L is closed for the rest of the day.",
+  "voice": "tower",
+  "say": "Two seven left is closed for the rest of the day."
+ },
+ {
+  "key": "We will run on the other four. Arrivals first.",
+  "voice": "tower"
+ },
+ {
+  "key": "The fog has lifted.",
+  "voice": "in"
+ },
+ {
+  "key": "Fifteen minutes of fog at 46 degrees. We are writing a paper.",
+  "voice": "in",
+  "say": "Fifteen minutes of fog, at forty six degrees. [[slnc 500]] We are writing a paper."
+ },
+ {
+  "key": "The fire is out.",
+  "voice": "in"
+ },
+ {
+  "key": "The foam stays down until the investigators have seen it.",
+  "voice": "in"
+ }
+]

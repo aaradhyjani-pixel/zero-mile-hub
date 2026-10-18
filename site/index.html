@@ -1970,7 +1970,7 @@ function vipBanner(on,k,title,meme,icons){const b=$('#vipBanner');if(!on){b.clas
 //  RETURN  spgStaged: the SPG names each runway and it reopens a game minute later; then his sign-off; then the stack
 // A cinematic never lands its aircraft before the announcement has finished: the last 45 s of the approach run in slow
 // motion until it has. Everything here is event-driven and allocation-free per tick (no DOM work outside the events).
-const SUMT={pm:240,an:470,il1:650,il2:790,ret:900,cue:125};
+const SUMT={pm:200,an:390,il1:550,il2:680,ret:800,cue:125,first:60,step:90,lead:50};
 // a staged announcement: each line goes on the ticker as it is spoken (its recorded clip in that speaker's accent, if there
 // is one; otherwise it stays up for a reading time), then onDone
 function announce(src,lines,o){o=o||{};const s0=S;let i=0;
@@ -1984,18 +1984,26 @@ function voiced(lines,who,o){o=o||{};const g=$('#guard');if(!g)return;
   speak(lines,{gap:o.gap!=null?o.gap:700,onLine:i=>{clearTimeout(guard.t2);guardShow(lines[i],who);if(o.onLine)o.onLine(i);},onDone:()=>{guard.t2=setTimeout(()=>g.classList.remove('on'),1400);if(o.onDone)o.onDone();}});}
 function startSummit(){
   const open=RW.filter(r=>!r.locked&&r.mode!=='OFF');if(open.length<2)return false;S.summitAt=T;
-  const E=T,order=open.slice().sort((a,b)=>b.len-a.len),ret=E+SUMT.ret,tm=spgStaged.times(ret,order.length);
+  const E=T,order=open.slice().sort((a,b)=>b.len-a.len),ret=E+SUMT.ret,so={first:SUMT.first,step:SUMT.step,lead:SUMT.lead},tm=spgStaged.times(ret,order.length,so);
   // every runway is the SPG's until he names it in the staged return; the blocks end exactly when he reopens each one
   const blk=order.map((r,i)=>{const b={from:E,to:tm.open[i],why:'Security (VVIP)',summit:true};r.blocks.push(b);r.blocks.sort((a,c)=>a.from-c.from);return b;});
   let waved=0;for(const f of flights)if(f.state==='approach'&&f.td-T>25&&f.rwy&&open.includes(f.rwy)&&!f.vip){goAround(f,'VVIP protocol, all runways closed');waved++;}
-  // flow control: arrivals not yet airborne are held at their origins and released so they reach Nagpur from about ten
-  // minutes before the first runway comes back (a real stack to work afterwards, without a fuel crisis in it)
+  // the airlines thin the window (a third of the arrivals nobody connects from, a quarter of the departures) and flow control
+  // holds the remaining arrivals at their origins, releasing them to reach Nagpur from about ten minutes before the first
+  // runway comes back: a real stack to work afterwards, without a fuel crisis in it
+  const refd=new Set();for(const f of flights)if(f.links)for(const l of f.links)refd.add(l.arr);
+  let nc=0,ka=0,kd=0;for(const f of flights){
+    if(f.kind==='arr'&&f.state==='sched'&&!f.vip&&f.spawnT>T&&f.eta>E+120&&f.eta<tm.open[0]+300&&!refd.has(f)&&ka++%3===2){f.state='diverted';f.cancelled=true;f.turn=null;if(f.res){f.res.res=null;f.res=null;}nc++;}
+    else if(f.kind==='dep'&&f.state==='at_gate'&&!f.charter&&f.std>E&&f.std<tm.open[0]&&kd++%4===3){if(f.gate){f.gate.occ=null;f.gate=null;}f.state='cancelled';nc++;}}
   const a0=E+300,a1=tm.open[0]+600,b0=tm.open[0]-600;let held=0;
   for(const f of flights)if(f.kind==='arr'&&f.state==='sched'&&!f.vip&&f.eta>a0&&f.eta<a1&&f.spawnT>T){const eta=b0+(f.eta-a0)*(a1-b0)/(a1-a0);if(eta>f.eta+30){f.spawnT+=eta-f.eta;f.eta=eta;held++;}}
-  const pick=code=>GATES.filter(g=>g.remote&&g.open&&!g.occ&&!g.res&&!g.mars&&CR[g.code]>=CR[code]).sort((a,b)=>b.x-a.x)[0]||null;
+  // the red carpet goes to the free stand nearest the runway exit each VIP will take, so the taxi in is short
+  const pick=(type,r)=>{const T_=TYPES[type],need=T_.code==='F'?2200:T_.code==='E'?1900:1300,tx=r.x1-450,ex=r.exits.find(e=>tx-e.x>=need)||r.exits[r.exits.length-1],n=G.get(ex.to);
+    return GATES.filter(g=>g.open&&!g.occ&&!g.res&&!marsBusy(g)&&CR[g.code]>=CR[T_.code]).sort((a,b)=>dist(a.x,a.y,n.x,n.y)-dist(b.x,b.y,n.x,n.y))[0]||null;};
   const vip=(al,type,disp,call,from,code,td,rw,o)=>{const f=mk({kind:'arr',state:'sched',al,type,intl:al!=='IN1',from,fromCode:code,dir:'W',eta:td,endurance:180});
-    Object.assign(f,{num:'1',disp,callsign:call,vip:true,origEta:td,spawnT:1e12,vipRw:rw,vipTd:td},o);const g=pick(TYPES[type].code);if(g){g.res=f;f.res=g;f.stand=g;}return f;};
-  const rp=order[0],rr=order[1]||order[0];
+    Object.assign(f,{num:'1',disp,callsign:call,vip:true,origEta:td,spawnT:1e12,vipRw:rw,vipTd:td},o);const g=pick(type,rw);if(g){g.res=f;f.res=g;f.stand=g;}return f;};
+  // the Prime Minister on the long runway; the Russians on the other long one nearest the terminal
+  const rp=order[0],rr=order.slice(1,3).sort((a,b)=>Math.abs(a.y-procC.y)-Math.abs(b.y-procC.y))[0]||order[0];cinema.q.length=0;
   const pm=vip('IN1','B77W','Air India One','INDIA ONE','Delhi','DEL',E+SUMT.pm,rp,{mus:'india',src:'SPG',
     ann:`Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway ${rp.short}.`,
     ban:['SPG · CEREMONIAL ARRIVAL','The Honourable Prime Minister of India',`Air India One · Boeing 777 · on final for runway ${rp.short}`,FLAG_IN],
@@ -2013,8 +2021,8 @@ function startSummit(){
     hello:'Russia Two, welcome. Yes, you look exactly like Russia One. Follow the third car with the very large flag.'});
   SUM={E,ret,tm,order,blk,vips:[pm,an,il1,il2],ci:0,cine:null,ev:[],pm,an,il1,il2,held};
   // timed lines (relative to E); the rest are events below (spawned, landed, docked)
-  SUM.ev=[[15,()=>{if(held){radio('ATC',`Flow control: ${held} flights for Zero Mile are being held on the ground at their origins until the runways come back.`);logE(`Flow control held ${held} arrivals at their origins for the summit.`);}}],
-    [40,()=>radio('SPG','Can you have one runway back? No. We have chosen the runways. We choose the order. We are very fast at saying no.')]];
+  SUM.ev=[[15,()=>{if(held||nc){radio('ATC',`Airlines have cancelled ${nc} flights for the summit. Flow control is holding ${held} more on the ground at their origins until the runways come back.`);logE(`The summit: ${nc} flights cancelled, ${held} arrivals held at their origins.`);}}],
+    [40,()=>say('SPG','Can you have one runway back? No. We have chosen the runways. We choose the order. We are very fast at saying no.')]];
   guard(['Sir. We have taken over your runways.','All of them. Yes, the long one too.']);
   radio('TWR',`All stations, summit protocol: every runway at Zero Mile is closed.${waved?` ${waved} on final, go around.`:''} Everyone else, hold.`);
   logE('The summit: the SPG took every runway.');renderRw();return true;
@@ -2055,11 +2063,11 @@ function summitTick(){
   if(!s.shook&&s.il1.docked&&s.il2.landT!=null&&!s.cine){s.shook=T;const g=s.il1.stand||s.pm.stand;
     radio('PROTOCOL','The Honourable Prime Minister has received His Excellency the President of the Russian Federation on the red carpet. Handshake: eleven seconds.');logE('The Prime Minister received the President at the VIP stands.');
     if(g){MARKS.push({x:g.x,y:g.y,e:'🤝',until:T+400,px:30});if(T<s.ret-70&&!CINE)cinema(null,['ZERO MILE · THE SUMMIT','The Prime Minister receives the President of the Russian Federation','Hindi-Rusi bhai bhai 🤝',FLAG_IN+FLAG_RU],{view:{tx:g.x,ty:g.y,dist:650,pitch:0.32,yaw:0.7},at:[g.x,g.y],ms:5500});}}
-  if(s.shook&&!s.gone&&T>=s.shook+60){s.gone=true;radio('SPG','The motorcade has left for Tadoba. Every road from here to the tigers is closed. The tigers have been informed.');
+  if(s.shook&&!s.gone&&T>=s.shook+60){s.gone=true;say('SPG','The motorcade has left for Tadoba. Every road from here to the tigers is closed. The tigers have been informed.');
     const g=s.il1.stand||s.pm.stand;if(g)MARKS.push({e:'🚗',n:6,sp:160,px:18,path:[[g.x,g.y],[lerp(g.x,procC.x,0.5),lerp(g.y,procC.y,0.5)],[procC.x-900,procC.y]],t0:T,t1:T+300,until:T+300,x:g.x,y:g.y});}
   // the staged return: he names a runway, it reopens a game minute later, then the next one
   if(!s.back&&T>=s.ret&&!s.cine){s.back=T;S.summitBack=s.tm.open[0];
-    spgStaged(s.order,{at:s.ret,open:(r,i)=>{r.blocks=r.blocks.filter(b=>b!==s.blk[i]);},done:()=>{s.done=T;}});}
+    spgStaged(s.order,{at:s.ret,first:SUMT.first,step:SUMT.step,lead:SUMT.lead,open:(r,i)=>{r.blocks=r.blocks.filter(b=>b!==s.blk[i]);},done:()=>{s.done=T;}});}
   // then the stack the summit left: the approach controller calls it down
   if(s.done&&T>=(s.nextStack||0)){s.nextStack=T+30;let h=0;for(const f of flights)if(f.state==='holding')h++;
     if(!s.peak){s.peak=Math.max(1,h);radio('APP',`The summit stack is ${h} aircraft${s.held?', and flow control is releasing the flights it held':''}. Give arrivals every runway you can.`);}
@@ -2365,7 +2373,7 @@ const WED_CUTS={1:[['THE CHAMBANI WEDDING','Baraat 1 of 40 · Gulfstream G650 on
   30:[['THE GROOM HAS LANDED','Baraat 30 · the groom, on RWY, under a water salute','The bride\'s side asked for a bigger one 💦',icos('🤵','💦','🐎')],true],
   36:[['BARAAT 36 OF 40','The DJ\'s speakers','The DJ came on Baraat 1. He has not stopped 🎧',icos('🎧','🔊','💃')],false]};
 STORY.wedding={len:2200,start(c){const L=r=>r.tdList.length+flights.filter(f=>f.rwy===r&&['hp','taxi_out'].includes(f.state)).length;
-  const r=RW.filter(o=>!o.locked&&o.mode!=='OFF'&&o!==LONGEST).sort((a,b)=>L(a)-L(b))[0];if(!r)return false;c.r=r;
+  const MK={DEP:0,MIX:1,ARR:2};const r=RW.filter(o=>!o.locked&&o.mode!=='OFF'&&o!==LONGEST).sort((a,b)=>(MK[a.mode]-MK[b.mode])||(L(a)-L(b)))[0];if(!r)return false;c.r=r;
   const n=40,gap=28,tA=T+300,tM=tA+n*gap+15;Object.assign(c,{n,gap,tA,tM,jets:[],cut:{}});
   voiced(['Sir, forty jets. One muhurat.','Not one minute after. 💍'],WHO.planner);
   c.lines.push([0,'AOCC',`The Chambani family's wedding guests are inbound: 40 private jets from ${clk(tA)}. Shananth Chambani weds Kanika Merchant at ${clk(tM)}.`]);
@@ -2381,7 +2389,7 @@ STORY.wedding={len:2200,start(c){const L=r=>r.tdList.length+flights.filter(f=>f.
     text:`Shananth Chambani weds Kanika Merchant at ${clk(tM)}, and the guest list has its own airline: 40 private jets, landing from ${clk(tA)}. Give the family ${r.short} to themselves until the muhurat: 40 landings in 19 minutes, but ${r.short} is shut to everyone else. Or fit the jets into normal traffic on your arrival runways: nothing closes, but the stack grows and some guests will miss the muhurat.`,
     def:0,defText:`the family gets ${r.short} until the muhurat.`,
     acts:[{l:`Give them ${r.short}`,pri:1,fn(){c.own=true;takeRunways([r],tA-40,n*gap+80,0,'The Chambani wedding','Booked by the Chambanis');mkJets(true);resolve(I,true,`${r.short} booked for the Chambani wedding: 40 jets inbound.`);}},
-      {l:'Fit them into traffic',fn(){c.own=false;mkJets(false);resolve(I,true,'The Chambani wedding jets were fitted into normal arrivals.');}}]});
+      {l:'Fit them into traffic',fn(){c.own=false;mkJets(false);resolve(I,true,'The Chambani wedding jets were fitted into normal arrivals.');}}]});c.I=I;
   // the muhurat: fireworks over the wedding apron, the count, the sign-off
   c.lines.push([tM-T,cc=>{if(!cc.jets.length)return;const pk=G.get(PARK);FXV.push({kind:'fireworks',id:'muhurat',x:pk.x,y:pk.y,t0:T,t1:T+150});const k=cc.jets.filter(f=>f.landT!=null).length;cc.kn=k;
     if(k===40)voiced(['All forty landed before the muhurat.','Shubh vivah! 💐'],WHO.planner);else guard([`${k} of 40 landed before the muhurat.`,'Shubh vivah! 💐'],WHO.planner);
@@ -2389,7 +2397,9 @@ STORY.wedding={len:2200,start(c){const L=r=>r.tdList.length+flights.filter(f=>f.
   c.lines.push([tM-T+60,cc=>{if(cc.jets.length)say('TWR','Return gift for the tower: one silver box of kaju katli. Each. We have accepted.');}]);
   c.lines.push([tM-T+130,cc=>{music(null,{fadeOut:3500});}]);
   c.lines.push([tM-T+320,cc=>{wedChip(cc,false);}]);
-},tick(c){if(!c.jets.length)return;
+},tick(c){
+  // the first jet will not wait for the card: if it is still open when Baraat 1 is due in, ops gives the family the runway
+  if(!c.jets.length){if(c.I&&incidents.includes(c.I)&&T>=c.tA-D_APP-40)expire(c.I);if(!c.jets.length)return;}
   if(T<c.tM+320&&T>=(c.chipAt||0)){c.chipAt=T+10;wedChip(c,true);}
   // cuts: one at a time, never over another cinematic
   for(const n in WED_CUTS){const f=c.jets[n-1];if(!f||c.cut[n]||f.state!=='approach')continue;

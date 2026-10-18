@@ -263,7 +263,7 @@ void main() {
   furMat.customProgramCacheKey = () => 'zmh-fx-fur-2';
   const troop = new THREE.InstancedMesh(sph, furMat, NP * MCAP); troop.frustumCulled = false; troop.count = 0; troop.visible = false; troop.castShadow = false; troop.receiveShadow = true;
   troop.instanceMatrix.setUsage(THREE.DynamicDrawUsage); root.add(troop);
-  { const C = h => new THREE.Color(h), body = C('#a08d72'), rump = C('#a8875f'), limb = C('#94816a'), head = C('#a39078'), face = C('#e09a8c'), muz = C('#d48a80'), eye = C('#2a1a12'), ear = C('#c79486'), tail = C('#a48660'), baby = C('#7a6853'), bface = C('#dca394');
+  { const C = h => new THREE.Color(h), body = C('#8f7556'), rump = C('#94704a'), limb = C('#82694e'), head = C('#937a5c'), face = C('#e09a8c'), muz = C('#d48a80'), eye = C('#2a1a12'), ear = C('#c79486'), tail = C('#93744f'), baby = C('#6b5640'), bface = C('#dca394');
     const pc = [rump, body, head, face, muz, eye, eye, ear, ear, limb, limb, limb, limb, rump, limb, rump, limb, tail, tail, tail, tail, tail, baby, bface];
     for (let m = 0; m < MCAP; m++) for (let k = 0; k < NP; k++) { const c = pc[k].clone(); if (k !== 5 && k !== 6) c.multiplyScalar(1 + ((m * 37 + 11) % 9 - 4) * 0.03); troop.setColorAt(m * NP + k, c); }
     troop.instanceColor.setUsage(THREE.StaticDrawUsage); }
@@ -387,7 +387,7 @@ void main() {
     else { troop.setMatrixAt(b + 22, ZERO); troop.setMatrixAt(b + 23, ZERO); }
     // contact shadow under the body
     _t3.copy(J.pm).setY(0); toW(_t3, _mp); _mp.y = M.wy + 0.03 * SC; _ms.set(0.62 * SC, 1, 0.42 * SC); _mm.compose(_mp, _qy, _ms); shadows.setMatrixAt(M.m, _mm);
-    _bc.setRGB(0.5 * fade, 0, 0); shadows.setColorAt(M.m, _bc);
+    _bc.setRGB(0.68 * fade, 0, 0); shadows.setColorAt(M.m, _bc);
     for (let k = 0; k < NP; k++) fadeA.array[b + k] = fade;
   }
   const _fp = new THREE.Vector3();
@@ -395,7 +395,10 @@ void main() {
     const F = M.flee, P = F.P; let L = 0; for (let i = 0; i < P.length - 1; i++) L += F.seg[i];
     let d = p * L, i = 0; while (i < P.length - 2 && d > F.seg[i]) { d -= F.seg[i]; i++; }
     const t = clamp(d / (F.seg[i] || 1), 0, 1), A = P[i], B = P[i + 1];
-    o.lerpVectors(A, B, t); if (i === 0) o.y = A.y * (1 - t) + 1.2 * troopS.S * Math.sin(Math.PI * t) * (A.y > 1 ? 1 : 0);
+    o.lerpVectors(A, B, t); if (i === 0) o.y = A.y * (1 - t) + Math.min(1.2 * troopS.S, 5) * Math.sin(Math.PI * t) * (A.y > 1 ? 1 : 0);
+    // spread across the stream, in step with the current scale (so zooming in never leaves them strewn hundreds of metres apart)
+    const sp = 1.6 * troopS.S + 4, w = i === 0 ? 0 : i === 1 ? t : 1, j = i === 2 ? F.j1 + (F.j2 - F.j1) * t : F.j1;
+    o.x += F.nx * j * sp * w; o.z += F.ny * j * sp * w;
     return Math.atan2(B.z - A.z, B.x - A.x);
   }
   function updMonkeys(it, dt, now, T, adv) {
@@ -405,7 +408,7 @@ void main() {
     // scale: keep a monkey ~5 px long, never below life size, capped for the strategic view
     let cx = 0, cz = 0; for (const M of MS) { cx += M.wx; cz += M.wz; } cx /= MS.length || 1; cz /= MS.length || 1;
     const dist = Math.hypot(cam.position.x - cx, cam.position.y, cam.position.z - cz), vh = Z.renderer.domElement.clientHeight || 860;
-    const mpp = dist * 2 * Math.tan(cam.fov * D2R / 2) / vh, St = clamp(mpp * 12 / 0.5, 1, 160);
+    const mpp = dist * 2 * Math.tan(cam.fov * D2R / 2) / vh, St = clamp(mpp * 14 / 0.5, 1, 170);
     troopS.S = troopS.S === 1 && St > 1 && !troopS.init ? St : troopS.S + (St - troopS.S) * (1 - Math.exp(-Math.min(dt, 0.1) * 5)); troopS.init = 1;
     const S = troopS.S, fin = sstep(it.t0, it.t0 + 12, T) * (1 - sstep(it.t1 - 12, it.t1, T)), F = it.flee;
     let n = 0;
@@ -418,16 +421,17 @@ void main() {
       let fade = fin, gT = 0, wT = 0;
       if (F && T >= F.t0) {
         if (!M.flee) { const jit = (rnd(M.m, 20) - 0.5) * 2, j2 = (rnd(M.m, 21) - 0.5) * 2, fx = num(F.x0, ax), fy = num(F.y0, az), gx = num(F.x1, fx), gy = num(F.y1, fy);
-          const ux = gx - fx, uy = gy - fy, ul = Math.hypot(ux, uy) || 1, nx = -uy / ul, ny = ux / ul, sp = 1.6 * S + 4;
-          const P = [new THREE.Vector3(ax, ay, az), new THREE.Vector3(ax + dz * (ay > 1 ? 4 : 0), 0, az - dx * (ay > 1 ? 4 : 0)),
-            new THREE.Vector3(fx + nx * jit * sp, 0, fy + ny * jit * sp), new THREE.Vector3(gx + nx * j2 * sp, 0, gy + ny * j2 * sp)];
+          const ux = gx - fx, uy = gy - fy, ul = Math.hypot(ux, uy) || 1, nx = -uy / ul, ny = ux / ul;
+          const P = [new THREE.Vector3(ax, ay, az), new THREE.Vector3(ax + dz * (ay > 1 ? 4 : 0), 0, az - dx * (ay > 1 ? 4 : 0)), new THREE.Vector3(fx, 0, fy), new THREE.Vector3(gx, 0, gy)];
           const seg = []; for (let i = 0; i < 3; i++) seg.push(P[i].distanceTo(P[i + 1]));
-          M.flee = { P, seg, d: 0.32 * rnd(M.m, 22), dur: 0.55 + 0.12 * rnd(M.m, 23) }; }
+          M.flee = { P, seg, nx, ny, j1: jit, j2, d: 0.32 * rnd(M.m, 22), dur: 0.55 + 0.12 * rnd(M.m, 23) }; M.fpx = ax; M.fpz = az; }
         const uF = clamp((T - F.t0) / Math.max(1, F.t1 - F.t0), 0, 1), p = clamp((uF - M.flee.d) / M.flee.dur, 0, 1);
         if (p > 0) { M.hd = fleePos(M, p, _fp); ax = _fp.x; ay = _fp.y; az = _fp.z; gT = p < 1 ? 1 : 0; M.hYt = 0; }
         else { wT = 1; M.hYt = Math.sin(now * 3 + M.m) * 0.9; }
         fade = Math.min(fade, 1 - sstep(0.9, 1, p)); if (T > F.t1) fade = 0;
-        M.ph = (M.ph + rdt * 3.1) % 1;
+        // gallop cadence follows the ground speed (no skating), between a lope and a frantic scramble
+        const mv = Math.hypot(ax - M.fpx, az - M.fpz); M.fpx = ax; M.fpz = az;
+        if (rdt > 0) M.ph = (M.ph + rdt * clamp(mv / rdt / (0.42 * S), 2.6, 7.5)) % 1;
       } else {
         // idle life in real time: sit (look around, scratch), now and then walk somewhere along the roof or the apron
         if (now > M.tEnd) {

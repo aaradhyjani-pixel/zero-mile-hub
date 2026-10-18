@@ -257,9 +257,21 @@ function showToast(t,d){$('#tT').textContent=t;$('#tD').innerHTML=d.startsWith('
 // rects (map canvas px) of the card and of everything else that floats over the map, so incident badges never end up under
 // one (incMark). Runs a few times a second from the HUD loop, and whenever the card opens or a cinematic starts or ends.
 const HUD_FLOAT=['#toast','#vipBanner.on','#guard.on','#fogTag','#stopBtn','#kiteChip','#wedChip','#delegChip','#delegLT.on','#zoomBox','#camLbl'],HUD_CHIPS=['#fogTag','#delegChip','#kiteChip','#wedChip'];
+// RWE: where each runway's west end is on screen in the strategic view, re-read while the map camera frames the field (a
+// cinematic or a close zoom keeps the last reading, so nothing jumps); reach(y0,y1) is how far right a card in the left margin
+// may reach between those screen rows without covering a runway (Infinity: no runway ends in that band)
+const RWE=[];
+const reach=(y0,y1)=>{let x=Infinity;for(const p of RWE)if(p.Y>y0-20&&p.Y<y1+20)x=Math.min(x,p.X);return x;};
+const setVar=(e,k,v)=>{if(e.style.getPropertyValue(k)!==v){if(v)e.style.setProperty(k,v);else e.style.removeProperty(k);return true;}return false;};
 function toastRoom(){const el=$('#toast'),app=$('#app'),a=app.getBoundingClientRect(),v3=document.body.classList.contains('v3');
   let chipB=0;if(v3)for(const s of HUD_CHIPS){const e=$(s);if(e&&!e.hidden){const r=e.getBoundingClientRect();if(r.height)chipB=Math.max(chipB,r.bottom-a.top);}}
-  const bt=Math.max(250,Math.ceil(chipB)+14)+'px';if(app.style.getPropertyValue('--banT')!==bt)app.style.setProperty('--banT',bt);
+  const btN=Math.max(250,Math.ceil(chipB)+14),bt=btN+'px';if(app.style.getPropertyValue('--banT')!==bt)app.style.setProperty('--banT',bt);
+  if(v3&&V3.ready&&V3.mode==='map'&&!CINE&&!(SUM&&SUM.cine)&&C3.dist>6000&&!(C3.intro>0)){RWE.length=0;for(const r of RW)for(const dy of [-30,30]){const p=proj(r.x0,r.y+dy,0);if(p)RWE.push(p);}}
+  {const b=$('#vipBanner'),g=$('#guard'),w=$('#wave').getBoundingClientRect(),cb=w.top-a.top-8,lx=14,gap=16;
+    // the banner from its top to about 110 px down, the speaker's popup under it (figure 96 px, then the bubble), the card above the chart
+    const bm=v3?Math.round(clamp(reach(btN-12,btN+110)-lx-gap,200,500))+'px':'',gt=b.classList.contains('on')?btN+Math.max(100,b.offsetHeight+14):btN;
+    const bw=v3?Math.round(clamp(reach(gt,gt+125)-lx-96-gap,150,240))+'px':'',cw=v3?Math.round(clamp(reach(cb-260,cb)-lx-gap,260,380))+'px':'';
+    if(setVar(b,'--banMax',bm)&&b.classList.contains('on'))banFit();setVar(g,'--bubW',bw);if(el)setVar(el,'--cardW',cw);}
   // (folded, it can still be in the way on a short screen during the Delhi summit: then it tucks away until there is room)
   const crowd=()=>{const r=el.getBoundingClientRect();for(const s of ['#guard.on','#vipBanner.on'].concat(HUD_CHIPS)){const o=$(s);if(!o||o.hidden)continue;const q=o.getBoundingClientRect();
     if(q.height&&q.bottom+8>r.top&&q.top<r.bottom&&q.left<r.right&&q.right>r.left)return true;}return false;};
@@ -587,6 +599,8 @@ const FLAG_RU='<svg viewBox="0 0 90 60" class="flag"><rect width="90" height="20
 // and the line under it wrap to two lines each and step their font down until they fit (banFit), so nothing is ever cut off
 (function(){const st=document.createElement('style');st.textContent=`#vipBanner{--banMax:max(260px,min(500px,calc(50vw - 22.5vh - 30px)));position:absolute;box-sizing:border-box;left:max(14px,env(safe-area-inset-left,0px));top:var(--banT,250px);width:max-content;max-width:var(--banMax);min-width:min(var(--kw,0px),var(--banMax));transform:translateX(-24px);z-index:12;opacity:0;pointer-events:none;transition:opacity .45s,transform .45s;
   display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:9px;align-items:center;background:linear-gradient(180deg,rgba(10,13,16,.95),rgba(10,13,16,.9));border:1px solid #f4c430;border-left-width:3px;border-radius:6px;padding:9px 12px 7px 9px;box-shadow:0 10px 26px rgba(0,0,0,.5)}
+#vipBanner.slim .flags{max-width:52px}#vipBanner.slim .flag{width:24px;height:16px}#vipBanner.slim .ico{font-size:17px;line-height:19px}
+#vipBanner.kin .k{position:static;grid-column:1/-1;max-width:none;white-space:normal;padding:0;margin:-2px 0 3px;background:none;line-height:1.2}#vipBanner.kin .flags{grid-row:2/span 2}
 #vipBanner.on{opacity:1;transform:none}#vipBanner .flags{grid-row:1/span 2;display:flex;flex-wrap:wrap;justify-content:center;gap:4px;max-width:64px;align-items:center}#vipBanner.nof{grid-template-columns:minmax(0,1fr)}#vipBanner.nof .flags{display:none}
 #vipBanner .flag{width:30px;height:20px;border-radius:2px;box-shadow:0 2px 6px rgba(0,0,0,.5);animation:wave 1.6s ease-in-out infinite;transform-origin:left center}
 #vipBanner .flag:nth-child(2){animation-delay:.4s}#vipBanner .flag:nth-child(3){animation-delay:.8s}@keyframes wave{0%,100%{transform:perspective(200px) rotateY(0) skewY(0)}50%{transform:perspective(200px) rotateY(-14deg) skewY(2deg)}}
@@ -602,8 +616,10 @@ const FLAG_RU='<svg viewBox="0 0 90 60" class="flag"><rect width="90" height="20
 // at the smallest size: readable beats tidy). The banner's height goes to --banH, for the speaker's popup that stacks under it.
 function banFit(){const b=$('#vipBanner');if(!b||!b.classList.contains('on'))return;
   const set=(v,px)=>b.style.setProperty(v,px+'px'),k=b.querySelector('.k'),h=b.querySelector('h3'),m=b.querySelector('.meme'),rows=(e,px,lh)=>Math.round(e.offsetHeight/(px*lh));
-  for(const v of ['--kw','--ks','--hs','--ms'])b.style.removeProperty(v);
-  if(k&&k.textContent){set('--kw',k.scrollWidth+24);for(let px=10;px>8&&k.scrollWidth>k.clientWidth+1;)set('--ks',px-=0.5);}
+  for(const v of ['--kw','--ks','--hs','--ms'])b.style.removeProperty(v);b.classList.remove('kin');
+  b.classList.toggle('slim',parseFloat(getComputedStyle(b).maxWidth)<360);
+  if(k&&k.textContent){set('--kw',k.scrollWidth+24);for(let px=10;px>8.5&&k.scrollWidth>k.clientWidth+1;)set('--ks',px-=0.5);
+    if(k.scrollWidth>k.clientWidth+1){b.classList.add('kin');b.style.removeProperty('--kw');}}
   if(h&&h.textContent)for(let px=17;px>14&&rows(h,px,1.15)>2;)set('--hs',px-=0.5);
   if(m&&m.textContent)for(let px=14;px>12&&rows(m,px,1.2)>2;)set('--ms',px-=0.5);
   $('#app').style.setProperty('--banH',b.offsetHeight+'px');}
@@ -612,7 +628,7 @@ function banFit(){const b=$('#vipBanner');if(!b||!b.classList.contains('on'))ret
 (function(){const st=document.createElement('style');st.textContent=`#guard{position:absolute;left:max(14px,env(safe-area-inset-left,0px));top:var(--banT,250px);z-index:13;display:flex;align-items:flex-start;gap:4px;pointer-events:none;transform:translateX(-130%);opacity:0;transition:transform .55s cubic-bezier(.2,.9,.25,1.15),opacity .3s,top .4s .35s}
 #guard.on{transform:translateX(0);opacity:1}#vipBanner.on~#guard{top:calc(var(--banT,250px) + max(100px,var(--banH,0px) + 14px));transition:transform .55s cubic-bezier(.2,.9,.25,1.15),opacity .3s,top .4s}#guard svg{order:-1;flex:none;width:92px;height:119px;filter:drop-shadow(0 8px 14px rgba(0,0,0,.6));animation:gbob 2.4s ease-in-out infinite}
 @keyframes gbob{50%{transform:translateY(-3px) rotate(-1deg)}}#guard,#guard svg,#vipBanner,#vipBanner .flag,#vipBanner .ico,#vipBanner .meme{will-change:transform}#guard .glint{animation:glint 2.2s ease-in-out infinite}@keyframes glint{0%,70%,100%{opacity:0}80%{opacity:1}}
-#guard .bub{margin-top:14px;max-width:min(240px,calc(50vw - 22.5vh - 140px));min-width:150px;background:#f4f1e8;color:#121212;font-family:var(--f-sign);font-weight:700;font-size:17px;line-height:1.15;padding:8px 11px;border-radius:10px;position:relative;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+#guard .bub{margin-top:14px;max-width:var(--bubW,min(240px,calc(50vw - 22.5vh - 140px)));min-width:150px;background:#f4f1e8;color:#121212;font-family:var(--f-sign);font-weight:700;font-size:17px;line-height:1.15;padding:8px 11px;border-radius:10px;position:relative;box-shadow:0 8px 24px rgba(0,0,0,.5)}
 #guard .bub::after{content:'';position:absolute;left:-9px;top:16px;border:6px solid transparent;border-right:10px solid #f4f1e8}#guard .bub small{display:block;font-family:var(--f-mono);font-weight:500;font-size:10px;color:#6a6a6a;letter-spacing:.06em;margin-bottom:2px}
 /* the 2D map draws the airport on the left and open approach airspace on the right: there the stack mirrors to the right */
 body:not(.v3) #vipBanner,body:not(.v3) #guard{left:auto;right:calc(var(--rail) + 36px)}body:not(.v3) #vipBanner{--banMax:min(440px,30vw);transform:translateX(24px)}

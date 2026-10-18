@@ -529,8 +529,11 @@ function frameTick(){
   const THREE=Z.THREE,c=FRM.cam||(FRM.cam=new THREE.PerspectiveCamera()),v=FRM.v||(FRM.v=new THREE.Vector3()),g=cam.region,t=C3.t,d0=t.dist;
   // where a set piece should land: clear of the edges, and below the character pop-ups and banners along the top
   const w=g.R-g.L,h=g.B-g.Tp,IN=[g.L+w*0.12,g.R-w*0.12,g.Tp+h*0.2,g.B-h*0.12],OUT=[g.L+8,g.R-8,g.Tp+8,g.B-8];
-  // and above the coach card while it is up (it sits in the bottom right of the view)
-  {const el=$('#toast');if(el&&!el.hidden){const r=el.getBoundingClientRect(),a=cv.getBoundingClientRect();if(r.height)IN[3]=Math.max(IN[2]+40,Math.min(IN[3],r.top-a.top-16));}}
+  // and clear of the coach card while it is up (in the 3D view it sits in the left margin, above the bank chart): beside it
+  // or above it, whichever leaves the set piece more room
+  {const el=$('#toast');if(el&&!el.hidden&&!el.classList.contains('tuck')){const r=el.getBoundingClientRect(),a=cv.getBoundingClientRect();
+    if(r.height&&r.right-a.left>IN[0]&&r.left-a.left<IN[1]&&r.bottom-a.top>IN[2]){const xl=r.right-a.left+16,yt=r.top-a.top-16;
+      if((IN[1]-Math.max(IN[0],xl))*(IN[3]-IN[2])>=(IN[1]-IN[0])*(Math.min(IN[3],yt)-IN[2]))IN[0]=Math.min(IN[1]-40,Math.max(IN[0],xl));else IN[3]=Math.max(IN[2]+40,Math.min(IN[3],yt));}}}
   const box=(Q,b)=>{b[0]=b[2]=1e9;b[1]=b[3]=-1e9;for(const p of Q){v.set(p[0],p[2],p[1]).project(c);if(v.z>1)continue;const X=(v.x+1)/2*VW,Y=(1-v.y)/2*VH;
     b[0]=Math.min(b[0],X);b[1]=Math.max(b[1],X);b[2]=Math.min(b[2],Y);b[3]=Math.max(b[3],Y);}return b[0]<=b[1];};
   // the shift (px) on one axis that puts span [a0,a1] inside [lo,hi], or the range of shifts that do

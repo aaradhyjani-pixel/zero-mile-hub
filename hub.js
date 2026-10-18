@@ -1343,6 +1343,11 @@ STORY.wedding={len:2200,start(c){const L=r=>r.tdList.length+flights.filter(f=>f.
   c.lines.push([tM-T,cc=>{if(!cc.jets.length)return;const pk=G.get(PARK);FXV.push({kind:'fireworks',id:'muhurat',x:pk.x,y:pk.y,t0:T,t1:T+150});const k=cc.jets.filter(f=>f.landT!=null).length;cc.kn=k;
     if(k===40)voiced(['All forty landed before the muhurat.','Shubh vivah! 💐'],WHO.planner,{pri:3,hold:0.3});else guard([`${k} of 40 landed before the muhurat.`,'Shubh vivah! 💐'],WHO.planner,{pri:3,hold:0.3});
     flashBanner(['THE MUHURAT',`Shananth weds Kanika · ${k} of 40 jets made it`,'Shubh vivah! 💐',icos('💍','💐','🐘')],5000);wedChip(cc,true);}]);
+  // the wedding's bill: every guest who missed the muhurat counts as a late arrival, up to 20 (the family keeps count), and all
+  // forty down in time earns the tower a thank-you: runway changeovers run faster for 15 minutes
+  c.lines.push([tM-T+8,cc=>{if(!cc.jets.length)return;const k=cc.jets.filter(f=>f.landT!=null&&f.landT<=cc.tM).length,m=cc.n-k;
+    if(m>0){const pen=Math.min(m,20);S.arr+=pen;radio('AOCC',`${m} wedding guest${m>1?'s':''} missed the muhurat. The family has noted ${m>20?'them':'every one'}: ${pen} late arrivals on your on-time figure.`);logE(`${m} Chambani guests missed the muhurat.`);}
+    else{FX.chgK=0.7;FX.chgUntil=T+900;radio('AOCC','All forty made the muhurat. The Chambanis have sent lunch to the tower: runway changeovers run faster for the next 15 minutes.');logE('All 40 Chambani guests made the muhurat: faster changeovers for 15 minutes.');}}]);
   c.lines.push([tM-T+60,cc=>{if(cc.jets.length)say('TWR','Return gift for the tower: one silver box of kaju katli. Each. We have accepted.');}]);
   c.lines.push([tM-T+130,cc=>{music(null,{fadeOut:3500});}]);
   c.lines.push([tM-T+150,cc=>{wedChip(cc,false);}]);

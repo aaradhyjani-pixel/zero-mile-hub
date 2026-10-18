@@ -2,7 +2,7 @@
 import asyncio, sys, json, os, re
 from playwright.async_api import async_playwright
 HUB, MODE = sys.argv[1], sys.argv[2]; PRE = sys.argv[3] if len(sys.argv) > 3 else ''
-src = open(os.path.expanduser('~/zmh-l3/run.py')).read(); AUTO = re.search(r"AUTO = '''(.*?)'''", src, re.S).group(1)
+src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'run.py')).read(); AUTO = re.search(r"AUTO = '''(.*?)'''", src, re.S).group(1)
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(); pg = await b.new_page(viewport={'width': 1440, 'height': 860}); errs = []

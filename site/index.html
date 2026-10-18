@@ -4338,8 +4338,11 @@ function camUpdate(dt){
     cam.near=4;
     const f=C3.follow;if(f){const h=f.heading,a=altM(f),span=f.T.span;const air=a>5;
       const back=V3.mode==='approach'?span*1.7+38:span*(air?2.3:2.0)+28,up=V3.mode==='approach'?span*0.32+7:span*(air?0.5:0.42)+6,side=V3.mode==='approach'?span*0.55:span*0.15;
-      const want=V3.tv.set(f.x-Math.cos(h)*back-Math.sin(h)*side,a+up,f.y-Math.sin(h)*back+Math.cos(h)*side);
-      const look=V3.tv2.set(f.x+Math.cos(h)*span*1.5,a+span*0.12,f.y+Math.sin(h)*span*1.5);
+      // high above the ground (a go-around, a diversion, a climb-out) a camera level with the aircraft looks at sky and cloud and
+      // nothing else: lift it and aim below the aircraft, so the field and the land are in the frame behind it
+      const gk=air?clamp((a-120)/700,0,1):0,upH=up+a*0.38*gk;
+      const want=V3.tv.set(f.x-Math.cos(h)*back-Math.sin(h)*side,a+upH,f.y-Math.sin(h)*back+Math.cos(h)*side);
+      const look=V3.tv2.set(f.x+Math.cos(h)*span*1.5,a*(1-0.42*gk)+span*0.12*(1-gk),f.y+Math.sin(h)*span*1.5);
       if(!C3.fpos){C3.fpos=want.clone();C3.flook=look.clone();}
       const kk=1-Math.exp(-dt*(f.vip?16:V3.mode==='approach'?4:3));C3.fpos.lerp(want,kk);C3.flook.lerp(look,Math.min(1,kk*1.6));
       if(C3.fpos.y<3)C3.fpos.y=3;cam.position.copy(C3.fpos);cam.lookAt(C3.flook);cam.fov+=((V3.mode==='approach'?38:46)-cam.fov)*k;

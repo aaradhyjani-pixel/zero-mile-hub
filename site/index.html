@@ -1426,7 +1426,8 @@ const TYPES={
   A333:{name:'Airbus A330-300',len:63.7,span:60.3,code:'E',wake:'H',eng:2,pax:290,turn:70},
   A388:{name:'Airbus A380-800',len:72.7,span:79.75,code:'F',wake:'J',eng:4,pax:489,turn:100,hot:true},
   IL96:{name:'Ilyushin Il-96-300PU',len:55.3,span:57.7,code:'E',wake:'H',eng:4,pax:120,turn:90},
-  A124:{name:'Antonov An-124 Ruslan',len:68.96,span:73.3,code:'F',wake:'J',eng:4,pax:20,turn:120}
+  A124:{name:'Antonov An-124 Ruslan',len:68.96,span:73.3,code:'F',wake:'J',eng:4,pax:20,turn:120},
+  GLF6:{name:'Gulfstream G650',len:30.4,span:30.4,code:'C',wake:'M',eng:2,pax:14,turn:30}
 };
 const CR={C:1,E:3,F:4};
 const AL={
@@ -1435,7 +1436,7 @@ const AL={
   EK:{name:'Emirates',radio:'EMIRATES',tail:'#d71a21'},QR:{name:'Qatar Airways',radio:'QATARI',tail:'#8a1648'},EY:{name:'Etihad',radio:'ETIHAD',tail:'#b8925a'},
   SQ:{name:'Singapore Airlines',radio:'SINGAPORE',tail:'#264a8c'},LH:{name:'Lufthansa',radio:'LUFTHANSA',tail:'#22397a'},BA:{name:'British Airways',radio:'SPEEDBIRD',tail:'#2f52a8'},
   SV:{name:'Saudia',radio:'SAUDIA',tail:'#12805a'},TG:{name:'Thai',radio:'THAI',tail:'#6a3496'},FZ:{name:'flydubai',radio:'SKY DUBAI',tail:'#1a4c86'},AF:{name:'Air France',radio:'AIRFRANS',tail:'#1d3c8f'},
-  IN1:{name:'Air India One',radio:'INDIA ONE',tail:'#ff9933'},RSD:{name:'Rossiya Special Flight Squadron',radio:'RUSSIA',tail:'#1c3f94'}
+  IN1:{name:'Air India One',radio:'INDIA ONE',tail:'#ff9933'},CHW:{name:'Chambani Wedding Air',radio:'BARAAT',tail:'#d4a017'},RSD:{name:'Rossiya Special Flight Squadron',radio:'RUSSIA',tail:'#1c3f94'}
 };
 const DOMC=[['Delhi','DEL','N',3],['Mumbai','BOM','W',3],['Bengaluru','BLR','S',3],['Hyderabad','HYD','S',2],['Chennai','MAA','S',2],['Kolkata','CCU','E',2],['Ahmedabad','AMD','W',2],['Pune','PNQ','W',1.5],['Goa','GOX','W',1],['Kochi','COK','S',1],['Jaipur','JAI','N',1],['Lucknow','LKO','N',1],['Guwahati','GAU','E',1],['Patna','PAT','E',1],['Bhubaneswar','BBI','E',1],['Srinagar','SXR','N',0.6],['Varanasi','VNS','N',0.8],['Indore','IDR','N',0.8],['Raipur','RPR','E',0.6],['Visakhapatnam','VTZ','E',0.8],['Thiruvananthapuram','TRV','S',0.8],['Chandigarh','IXC','N',0.7],['Amritsar','ATQ','N',0.6],['Coimbatore','CJB','S',0.6]];
 const INTC=[['Dubai','DXB','W',['EK','6E','AI','FZ'],5],['Doha','DOH','W',['QR','6E'],2],['Abu Dhabi','AUH','W',['EY','6E','IX'],2],['Singapore','SIN','E',['SQ','AI','6E'],2],['London','LHR','W',['BA','AI'],1.5],['Frankfurt','FRA','W',['LH','AI'],1],['Paris','CDG','W',['AF','AI'],0.8],['Jeddah','JED','W',['SV','6E'],1],['Bangkok','BKK','E',['TG','6E','AI'],1.2]];
@@ -1446,7 +1447,7 @@ const LEVELS=[
   {n:1,name:'Opening day',sub:'Bengaluru moves in',from:'BLR',clock:'06:00',arr:42,dep:42,amp:0.9,starsAt:{otp2:82,cx2:85,otp3:86,cx3:90},rw:2,rwOpen:{R3:'ARR',R4:'DEP'},concs:'AB',intl:0.08,wide:0.06,a380:0,target:110,light:'day',
    blurb:'Kempegowda International closes at dawn and Bengaluru\'s airlines move in. Two runways, two concourses. Learn the bank chart and the runway desk.',
    last:{t:'Last flight out of Kempegowda',d:'<p>At 05:55, IndiGo 6E 6101 pushed back from Bengaluru\'s Kempegowda International: the last departure before it closed. Bengaluru\'s airlines now fly from here.</p><p>Look for its terminal-in-a-garden in ZMI: the gardens under the oculus, the planted valley where the Hall becomes the Mall, and a garden court at every pier root. And every stand built two ways, for one widebody or two narrowbodies, as at Bengaluru\'s T2.</p>'},
-   script:[[300,'st_ribbon'],[900,'medical'],[2700,'st_tiger']],ops:[[700,'birds'],[2100,'fod']]},
+   script:[[300,'st_ribbon'],[900,'medical'],[1500,'st_surya'],[3300,'st_tiger']],ops:[[700,'birds'],[2100,'fod']]},
   {n:2,name:'Ahmedabad and Hyderabad',sub:'+ Ahmedabad, Hyderabad',from:'BLR+AMD+HYD',clock:'09:00',arr:76,dep:76,amp:0.9,rw:4,rwOpen:{R2:'ARR',R3:'DEP',R4:'DEP',R5:'MIX'},concs:'ABC',intl:0.12,wide:0.10,a380:0,target:205,light:'day',
    blurb:'Sardar Vallabhbhai Patel International closes and Ahmedabad\'s flights move in, with Hyderabad\'s hub traffic. Four runways, taller waves: flip runways as each bank comes through.',
    last:{t:'Last flight out of Sardar Vallabhbhai Patel',d:'<p>At 08:50, IndiGo 6E 6202 left Ahmedabad and SVPIA closed. Ahmedabad\'s flights and Hyderabad\'s connecting banks now run through ZMI.</p><p>Ahmedabad lives on in the building\'s edges: jaali screens shade every sun-facing glass wall, and the forecourt is a stepwell, terraces stepping down to shaded water. Sardar Patel brought more than 560 princely states into one India; the unity marker under the oculus remembers it.</p>'},
@@ -1454,21 +1455,21 @@ const LEVELS=[
   {n:3,name:'Mumbai and the Gulf',sub:'+ Mumbai',from:'BLR+AMD+HYD+BOM',clock:'14:00',len:6600,arr:90,dep:90,amp:0.85,starsAt:{otp2:78,cx2:76,otp3:84,cx3:82},rw:5,rwOpen:{R1:'ARR',R2:'MIX',R3:'DEP',R4:'DEP',R5:'MIX'},concs:'ABCDE',intl:0.22,wide:0.18,a380:4,target:315,light:'heat',
    blurb:'Chhatrapati Shivaji Maharaj International closes: Mumbai\'s airlines and the Gulf wave arrive. 46 °C. Hot air is thin, so heavy jets need the long runway to get airborne.',
    last:{t:'Last flight out of Chhatrapati Shivaji Maharaj',d:'<p>At 13:50, Air India AI 629 left Mumbai\'s Terminal 2 and the airport closed. Mumbai\'s widebodies and the Gulf carriers now fly from here.</p><p>Mumbai holds up ZMI\'s roof: branching columns that flare into a field of coffers with coloured lenses, a 40 m cantilever over the kerb, and an art wall along the transfer route.</p>'},
-   script:[[1500,'st_dabba'],[3000,'summit'],[4800,'medical']],ops:[[600,'birds'],[1500,'fod'],[2300,'tug'],[3900,'birds']]},
-  {n:4,name:'Delhi. Full hub.',sub:'+ Delhi',from:'ALL 5 CITIES',clock:'12:00',arr:116,dep:116,amp:0.75,rw:6,rwOpen:{R1:'ARR',R2:'ARR',R3:'DEP',R4:'DEP',R5:'DEP',R6:'MIX'},concs:'ABCDEF',intl:0.25,wide:0.20,a380:6,target:315,light:'day',dust:[2400,3300],
+   script:[[1500,'st_dabba'],[2100,'st_gps'],[3000,'summit'],[4200,'st_wedding'],[4800,'medical']],ops:[[600,'birds'],[1500,'fod'],[2300,'tug'],[3900,'birds']]},
+  {n:4,name:'Delhi. Full hub.',sub:'+ Delhi',from:'ALL 5 CITIES',clock:'12:00',arr:116,dep:116,amp:0.75,rw:6,charters:{n:16,std:3900},rwOpen:{R1:'ARR',R2:'ARR',R3:'DEP',R4:'DEP',R5:'DEP',R6:'MIX'},concs:'ABCDEF',intl:0.25,wide:0.20,a380:6,target:315,light:'day',dust:[2400,3300],
    blurb:'Delhi\'s hub banks move in: four airports\' worth of traffic at the peak, about 230 movements an hour with peaks well above. Then a pre-monsoon squall kicks up an andhi (dust storm).',
    last:{t:'Delhi\'s banks move in',d:'<p>Delhi\'s own airport stays open for its city, but from today its connecting banks run through ZMI. Four cities\' traffic, three cities\' building, at the old Zero Mile.</p><p>The north lobe of the Hall points almost exactly at Delhi.</p>'},
-   script:[[600,'st_whatsapp'],[1000,'lights'],[1800,'lane'],[2550,'shear'],[3700,'medical'],[4300,'st_trophy']],ops:[[500,'birds'],[1400,'tug'],[3000,'fod'],[4400,'birds']]}
+   script:[[600,'st_whatsapp'],[1000,'lights'],[1200,'st_superover'],[1500,'st_monkeys'],[2550,'shear'],[3700,'medical'],[4300,'st_trophy']],ops:[[500,'birds'],[1400,'tug'],[3000,'fod'],[4400,'birds']]}
 ];
 
 /* ============ state ============ */
 let flights=[],FID=0,S=null,incidents=[],INC=0,selected=null,hover=null,selRw=null;
 const puffs=[],moveLog=[];
 function resetState(){
-  SUM=null;STO=[];CINE=null;MARKS=[];cinema.q=[];specialArr.list=[];flights=[];FID=0;incidents=[];INC=0;selected=null;hover=null;selRw=null;puffs.length=0;moveLog.length=0;ops.length=0;opsClock=0;lastCnx=-1e9;
+  SUM=null;STO=[];CINE=null;MARKS=[];FXV=[];cinema.q=[];specialArr.list=[];flights=[];FID=0;incidents=[];INC=0;selected=null;hover=null;selRw=null;puffs.length=0;moveLog.length=0;ops.length=0;opsClock=0;lastCnx=-1e9;
   S={tl:[],flipLog:[],tlNext:0,combo:0,bestCombo:0,moves:0,arr:0,dep:0,depOnTime:0,arrOnTime:0,cnxMade:0,cnxMiss:0,safety:100,incOk:0,incDef:0,incTypes:{},hits:[],holdMin:0,div:0,goArounds:0,log:[],delaySum:0,flips:0};
   GATES.forEach(g=>{g.occ=null;g.res=null;});
-  RW.forEach(r=>{r.tdList=[];r.lastSchedTd=-1e9;r.lastDep=-1e9;r.arrExit=-1e9;r.occ=null;r.changeUntil=-1;r.closedUntil=-1;r.why='';r.ops=0;r.flash=0;r.blocks=[];r.gapReq=false;r.degraded=false;r.strike=null;r.shear=false;r.sepK=1;r.sepUntil=-1;r.kiteUntil=-1;});
+  RW.forEach(r=>{r.tdList=[];r.lastSchedTd=-1e9;r.lastDep=-1e9;r.arrExit=-1e9;r.occ=null;r.changeUntil=-1;r.closedUntil=-1;r.why='';r.ops=0;r.flash=0;r.blocks=[];r.gapReq=false;r.degraded=false;r.strike=null;r.shear=false;r.sepK=1;r.sepUntil=-1;r.kiteUntil=-1;r.noArrUntil=-1;r.gpsUntil=-1;});
   Object.assign(FX,{chgK:1,chgUntil:-1,pushFreeze:-1,pushSlow:-1,pushSlowS:0});
   CONC.forEach(c=>{c.laneShut=-1;c.slowUntil=-1;});
   RC.clear();SIMR=mulberry(11);
@@ -1525,6 +1526,10 @@ function buildLevel(L){
     const k=1+Math.floor(R()*3);for(let i=0;i<k;i++){const d=cands[Math.floor(R()*cands.length)];const n=Math.max(3,Math.round(tp/k*(0.6+R()*0.8)));const link={arr:a,n,x:(a.intl||d.intl?40:26)*60};(d.links=d.links||[]).push(link);}
   }
   for(const v of depList)if(v.virtualOf&&v.links)v.virtualOf.turnLinks=v.links;
+  // fan charters (a set piece cancels them): on the bank chart from the start, no connections
+  if(L.charters){const C=L.charters,als=['6E','IX','SG','QP'],tys=['A20N','B38M','A20N','A21N'],cities=[['Mumbai','BOM','W'],['Delhi','DEL','N'],['Pune','PNQ','W'],['Hyderabad','HYD','S'],['Bengaluru','BLR','S'],['Kolkata','CCU','E'],['Chennai','MAA','S'],['Ahmedabad','AMD','W']];
+    for(let i=0;i<C.n;i++){const c=cities[i%8];const f=mk({kind:'dep',state:'at_gate',al:als[i%4],type:tys[i%4],intl:false,to:c[0],toCode:c[1],dir:c[2],std:C.std+(i%4)*45});f.num=String(7101+i);f.origStd=f.std;f.readyAt=f.std-300;f.charter=true;
+      const g=freeGate(f,true);if(g){g.occ=f;f.gate=g;f.x=g.x;f.y=g.y;f.heading=g.a;}else flights.splice(flights.indexOf(f),1);}}
 }
 function mk(o){const f=Object.assign({id:++FID,x:0,y:0,heading:Math.PI,alt:0,v:0,path:null,pd:0,plen:0,prio:false,held:false,trail:[]},o);f.T=TYPES[f.type];f.A=AL[f.al];f.pax=Math.round(f.T.pax*(0.78+SIMR()*0.18));flights.push(f);return f;}
 function zoneOk(g,f){return g.zone==='swing'||(f.intl?g.zone==='intl':g.zone==='dom');}
@@ -1598,7 +1603,7 @@ function runways(){
   if(avail.length){
     const cands=flights.filter(f=>(f.state==='holding'||(f.state==='inbound'&&T>=f.eta-D_APP-40))).sort((a,b)=>rk(a)-rk(b));
     const depWaiting=r=>flights.some(f=>f.state==='hp'&&f.rwy===r);
-    const ready=avail.filter(r=>{const td=T+D_APP;let need=r.lastSchedTd+arrSep(r);if(r.mode==='MIX'&&depWaiting(r))need+=MIX_GAP;return td>=need&&td>=r.lastDep+DEP_OCC&&!blockAt(r,td,30);});
+    const ready=avail.filter(r=>{const td=T+D_APP;let need=r.lastSchedTd+arrSep(r);if(r.mode==='MIX'&&depWaiting(r))need+=MIX_GAP;return td>=need&&td>=r.lastDep+DEP_OCC&&!blockAt(r,td,30)&&!(T<r.noArrUntil);});
     for(const c of cands){if(!ready.length)break;
       if(!c.res&&!c.gate){const g=freeGate(c);if(g){g.res=c;c.res=g;}}
       const gy=gateY(c);ready.sort((a,b)=>Math.abs(a.y-gy)-Math.abs(b.y-gy));const r=ready.shift();beginApproach(c,r,T+D_APP);}
@@ -1664,6 +1669,7 @@ function touchdown(f){
   const now=performance.now()/1000;for(let i=0;i<6;i++)puffs.push({x:tx-i*6,y:r.y+(i%2?-7:7),t:now+i*0.05});
 }
 function startTaxiIn(f){
+  if(f.toPark){const p=route(f.exitNode,PARK);if(p){setPath(f,[{x:f.x,y:f.y}].concat(p),TAXI_R);f.state='wedtaxi';}else f.state='towed';return;}
   if(!f.res&&!f.gate){const g=freeGate(f);if(g){g.res=f;f.res=g;}}
   if(f.res){const p=route(f.exitNode,f.res.lane);if(p){setPath(f,[{x:f.x,y:f.y}].concat(p),TAXI_R);f.state='taxi_in';return;}}
   f.state='nogate';f.nogateSince=T;if(!incidents.some(i=>i.f===f))spawnInc('nogate',f);
@@ -1695,12 +1701,14 @@ function updateFlight(f,dt){
     if(dustNow&&f.td-T<20&&f.td-T>10&&f.gaRoll<(f.rwy.shear?0.3:0.07)&&!f.gaDone){f.gaDone=true;goAround(f,'windshear in the dust');break;}
     if(f.birdHit&&f.td-T<20&&!f.gaDone){f.gaDone=true;goAround(f,'bird strike on short final');break;}
     if(f.rwy.kiteUntil>T&&f.td-T<20&&f.td-T>10&&f.gaRoll<0.25&&!f.gaDone&&!f.vip){f.gaDone=true;goAround(f,'kite on short final. Yes, a kite');break;}
+    if(f.rwy.gpsUntil>T&&f.td-T<25&&f.td-T>12&&f.gaRoll<0.3&&!f.gaDone&&!f.vip){f.gaDone=true;floater(f.x,f.y,f.alt,'PULL UP','#ff4d3f');goAround(f,'false TERRAIN PULL UP alarm, GPS spoofing');break;}
     if(T>=f.td)touchdown(f);break;}
   case 'rollout':{f.v=Math.max(14,f.v-1.15*dt);const done=advance(f,dt,f.v);if(f.rwy.occ===f&&f.pd>=f.exitAt){f.rwy.occ=null;f.rwy.arrExit=T;floater(f.x,f.y,0,'+1','#a99cff');}if(done){if(f.rwy.occ===f){f.rwy.occ=null;f.rwy.arrExit=T;}startTaxiIn(f);}break;}
   case 'nogate':{if(!f.res){const g=freeGate(f);if(g){g.res=f;f.res=g;}}if(f.res){const p=route(f.exitNode,f.res.lane);if(p){setPath(f,[{x:f.x,y:f.y}].concat(p),TAXI_R);f.state='taxi_in';closeIncFor(f,true);}}break;}
   case 'taxi_in':if(blocked(f))break;if(advance(f,dt,14)){const g=f.res;setPath(f,[{x:G.get(g.lane).x,y:G.get(g.lane).y},{x:g.x,y:g.y}]);f.state='dock';}break;
   case 'dock':if(laneShut(f.res))break;if(advance(f,dt,4)){const g=f.res;g.occ=f;g.res=null;f.gate=g;f.res=null;f.heading=g.a;f.inBlock=T;if(f.turn)toDep(f);else{f.state='parked';f.towAt=T+(20+SIMR()*15)*60;}}break;
   case 'parked':if(f.vip)break;if(T>=f.towAt&&laneClear(f.gate)){const g=f.gate;const p=route(g.lane,PARK);g.occ=null;f.state='tow';setPath(f,[{x:g.x,y:g.y}].concat(p||[]),TAXI_R);f.gate=null;}break;
+  case 'wedtaxi':if(advance(f,dt,16))f.state='towed';break;
   case 'tow':if(blocked(f))break;if(advance(f,dt,f.pd<90?3:7,f.pd<90))f.state='towed';break;
   case 'at_gate':{
     if(f.std<=T&&f.links&&!f.cnxAsked&&!f.held){const late=f.links.filter(l=>l.arr.inBlock==null&&l.arr.state!=='diverted').reduce((s,l)=>s+l.n,0);if(late>=40&&T-lastCnx>400&&!incidents.some(i=>i.type==='connex')){f.cnxAsked=true;spawnInc('connex',f,{n:late});}}
@@ -1933,15 +1941,15 @@ function storyTick(){
   cineTick();
 }
 // a cinematic cut on one aircraft: the sim slows to half speed, the camera follows it, a banner names the moment
-function cinema(f,ban,o){o=o||{};if(!f||['gone','diverted'].includes(f.state))return;if(CINE||(SUM&&SUM.cine)){(cinema.q=cinema.q||[]).push([f,ban,o]);return;}
+function cinema(f,ban,o){o=o||{};if(f?['gone','diverted'].includes(f.state):!o.view)return;if(CINE||(SUM&&SUM.cine)){(cinema.q=cinema.q||[]).push([f,ban,o]);return;}
   CINE={f,ban,o,c:o.c,t0:performance.now(),prevSpeed:speed,prevCam:V3.on&&V3.ready?{t:Object.assign({},C3.t)}:null};speed=0.5;
   vipBanner(true,ban[0],ban[1],ban[2],ban[3]==null?'':ban[3]);
-  if(V3.on&&V3.ready){V3.mode=f.state==='approach'?'approach':'follow';C3.follow=f;C3.fpos=null;C3.apT=-99;camLabel();}else centerOn(f.x,f.y);}
+  if(V3.on&&V3.ready){if(f){V3.mode=f.state==='approach'?'approach':'follow';C3.follow=f;C3.fpos=null;C3.apT=-99;camLabel();}else{setCam('map');Object.assign(C3.t,o.view);}}else if(f)centerOn(f.x,f.y);else if(o.at)centerOn(o.at[0],o.at[1]);}
 function cineTick(){
   if(!CINE){const q=cinema.q;if(q&&q.length&&!(SUM&&SUM.cine)){const [f,b,o]=q.shift();cinema(f,b,o);}return;}
-  const c=CINE,now=performance.now();if(!V3.on)centerOn(c.f.x,c.f.y);
-  if(c.o.landed&&c.f.landT!=null&&!c.landAt)c.landAt=now;
-  const over=['gone','diverted'].includes(c.f.state)||(c.landAt&&now-c.landAt>3500)||now-c.t0>(c.o.ms||(c.o.landed?20000:6500));
+  const c=CINE,now=performance.now();if(!V3.on&&c.f)centerOn(c.f.x,c.f.y);
+  if(c.o.landed&&c.f&&c.f.landT!=null&&!c.landAt)c.landAt=now;
+  const over=(c.f&&['gone','diverted'].includes(c.f.state))||(c.landAt&&now-c.landAt>3500)||now-c.t0>(c.o.ms||(c.o.landed?20000:6500));
   if(over){CINE=null;vipBanner(false);speed=c.prevSpeed;if(running)setSpeed(speed);if(V3.on&&V3.ready&&c.prevCam){setCam('map');Object.assign(C3.t,c.prevCam.t);}}
 }
 // a special arrival that appears 14 km out and lands on runway r at sim time td (holds a stand if one is given)
@@ -1963,24 +1971,29 @@ function flashBanner(b,ms){if(CINE||(SUM&&SUM.cine))return;vipBanner(true,b[0],b
   flashBanner.t=setTimeout(()=>{if(!CINE&&!(SUM&&SUM.cine))vipBanner(false);},ms||4500);}
 // emoji on the field (2D map and 3D overlay): {x,y,e,until,n,sp,alt,px}
 let MARKS=[];
-function drawMarks(g,toScr,now){for(const m of MARKS){if(T>m.until)continue;const n=m.n||1;
+// 3D spectacles the stories ask for (read by 3d/fx.js through Z.fx): see 3d/FX.md for the item shapes
+let FXV=[];
+function drawMarks(g,toScr,now,skip){for(const m of MARKS){if(T>m.until||(skip&&m.k&&skip.has(m.k)))continue;const n=m.n||1;
   for(let i=0;i<n;i++){const x=m.x+(n>1?(((i*37)%7)-3)*m.sp/6+Math.sin(now*0.7+i)*m.sp*0.06:0),y=m.y+(n>1?(((i*53)%5)-2)*m.sp/10+Math.cos(now*0.9+i*2)*m.sp*0.04:0);
     const p=toScr(x,y,m.alt||0);if(!p)continue;g.font=`${m.px||26}px serif`;g.textAlign='center';g.textBaseline='middle';g.fillText(m.e,p.X,p.Y+(n>1?Math.sin(now*2+i)*3:0));}}
   g.textAlign='left';g.textBaseline='alphabetic';MARKS=MARKS.filter(m=>T<=m.until);}
 const WHO={protocol:{badge:'PROTOCOL · MINISTRY',svg:face('🙏','#3a2614')},ranger:{badge:'RANGE OFFICER · FOREST DEPT',svg:face('🐅','#1f3a14')},
   kid:{badge:'ROOFTOP · AHMEDABAD',svg:face('🪁','#14304a')},ramp:{badge:'GROUND OPS SUPERVISOR',svg:face('🏏','#123a22')},tower:{badge:'TOWER',svg:face('📣','#123a22')},
-  dabba:{badge:'MUKADAM · DABBAWALAS',svg:face('🍱','#3a2a10')},admin:{badge:'GROUP ADMIN · OPS',svg:face('📱','#103a2a')},team:{badge:'TEAM MANAGER',svg:face('🏆','#123a5a')}};
+  dabba:{badge:'MUKADAM · DABBAWALAS',svg:face('🍱','#3a2a10')},admin:{badge:'GROUP ADMIN · OPS',svg:face('📱','#103a2a')},team:{badge:'TEAM MANAGER',svg:face('🏆','#123a5a')},
+  surya:{badge:'SURYA KIRAN LEADER · IAF',svg:face('✈️','#3a1414')},langur:{badge:'LANGUR-CALL MAN · WILDLIFE',svg:face('🐒','#3a2a14')},radar:{badge:'RADAR CONTROLLER',svg:face('📡','#1c1440')},
+  planner:{badge:'WEDDING PLANNER · CHAMBANI',svg:face('💍','#3a2a08')},fan:{badge:'FAN CLUB · JAMTHA',svg:face('🏏','#103a2a')}};
 
 // L1 · the ribbon: the first departure can't go until the Chief Guest cuts it, and he is always five minutes away
 STORY.ribbon={len:1500,start(c){const r=rwBy('dep')[0];if(!r)return false;c.r=r;
   c.blk={from:T,to:T+1e6,open:true,why:'Inauguration ribbon',desk:'Ribbon across it, until it is cut'};r.blocks.push(c.blk);r.blocks.sort((a,b)=>a.from-b.from);
-  c.mark={x:r.x0+300,y:r.y,e:'🎀',until:T+1e6,px:30};MARKS.push(c.mark);
+  const hx=r.holds.length?G.get(r.holds[0]).x:r.x1-300;c.mark={x:hx,y:r.y,e:'🎀',until:T+1e6,px:30,k:'ribbon'};MARKS.push(c.mark);
+  c.fx={kind:'ribbon',id:'ribbon',x:hx,y:r.y,w:75,t0:T,t1:T+1e6,cutAt:null};FXV.push(c.fx);
   guard(['Sir, no departures yet. The Chief Guest will cut the ribbon.','He is five minutes away. 🙏'],WHO.protocol);
   c.lines.push([0,'PROTOCOL',`A ceremonial ribbon is tied across ${r.short}. No departures until the Chief Guest cuts it. He is five minutes away.`]);
-  const go=()=>{r.blocks=r.blocks.filter(b=>b!==c.blk);c.mark.until=T;renderRw();const f=flights.find(o=>o.rwy===r&&['lineup','hp'].includes(o.state))||flights.find(o=>o.rwy===r&&o.state==='taxi_out');
+  const go=()=>{r.blocks=r.blocks.filter(b=>b!==c.blk);c.mark.until=T;c.fx.cutAt=T;c.fx.t1=T+150;renderRw();const f=flights.find(o=>o.rwy===r&&['lineup','hp'].includes(o.state))||flights.find(o=>o.rwy===r&&o.state==='taxi_out');
     if(f)cinema(f,['OPENING DAY',`The first departure rolls through the ribbon on ${r.short}`,'BAS PAANCH MINUTE 🙏',icos('🎀','✂️','🛫')],{ms:7000});};
   c.go=go;c.wait=T+240+Math.floor(SIMR()*240);
-  const I=storyCard(c,{icon:{g:'🎀',c:'#ff9933'},x:r.x0+300,y:r.y,title:`A ribbon across ${r.short}`,
+  const I=storyCard(c,{icon:{g:'🎀',c:'#ff9933'},x:hx,y:r.y,title:`A ribbon across ${r.short}`,
     text:`The opening ceremony has tied a ribbon across ${r.short}, and the first departures are queuing behind it. Cut it yourselves and traffic flows now, but Protocol will re-stage the ceremony in about 15 minutes on the arrivals runway, for 2 minutes. Or wait: the Chief Guest is "five minutes away".`,
     def:1,defText:'you wait for the Chief Guest.',
     acts:[{l:'Cut it ourselves',pri:1,fn(){go();const ra=rwBy('arr').sort((a,b)=>b.tdList.length-a.tdList.length)[0];
@@ -1995,24 +2008,26 @@ STORY.ribbon={len:1500,start(c){const r=rwBy('dep')[0];if(!r)return false;c.r=r;
 STORY.tiger={len:1500,start(c){const r=rwBy('dep')[0];if(!r)return false;c.r=r;c.ra=rwBy('arr',r)[0]||null;
   const f=flights.find(o=>o.rwy===r&&['hp','lineup'].includes(o.state))||flights.find(o=>o.rwy===r&&o.state==='taxi_out');
   if(f)cinema(f,['TIGER CAPITAL OF INDIA',`A tigress is walking down ${r.short}`,'Shere Khan, you are not cleared to line up 🐅',icos('🐅','🛫','🌳')],{ms:6500});
-  c.mark={x:lerp(r.x0,r.x1,0.45),y:r.y,e:'🐅',until:T+1e6,px:34};MARKS.push(c.mark);
+  c.mark={x:lerp(r.x0,r.x1,0.45),y:r.y,e:'🐅',until:T+1e6,px:34,k:'tiger'};MARKS.push(c.mark);
+  c.fx={kind:'tiger',id:'tiger1',path:[[lerp(r.x0,r.x1,0.62),r.y-20],[lerp(r.x0,r.x1,0.45),r.y+8],[lerp(r.x0,r.x1,0.3),r.y-12]],t0:T,t1:T+1e6,exit:null};FXV.push(c.fx);
   guard(['Sir, she is not a bird. You cannot sweep her.','She is the senior-most resident here. 🐅'],WHO.ranger);
   c.lines.push([0,'TWR',`All stations: a tigress is on ${r.short}. Nobody is to taxi towards her. That includes the follow-me car.`]);
   const I=storyCard(c,{icon:{g:'🐅',c:'#ff8c1a'},x:c.mark.x,y:r.y,title:`A tigress on ${r.short}`,
     text:`A tigress from the Umred-Karhandla corridor has walked onto ${r.short}. Wait for the forest department's dart team and ${r.short} shuts for 4 to 6 minutes; nobody knows exactly. Or herd her off with sirens: ${r.short} stays open, but she is still out there.`,
     def:0,defText:`${r.short} shuts until the dart team arrives.`,
-    acts:[{l:'Wait for the dart team',pri:1,fn(){const d=240+Math.floor(SIMR()*120);closeRw(r,d,'Tigress on the runway');c.mark.until=T+d;
+    acts:[{l:'Wait for the dart team',pri:1,fn(){const d=240+Math.floor(SIMR()*120);closeRw(r,d,'Tigress on the runway');c.mark.until=T+d;c.fx.t1=T+d;c.fx.darted=T+d-90;
         c.lines.push([T-c.E+d,'FOREST','She has been darted, weighed and named. She is called Runway. She is going home to Tadoba.']);resolve(I,true,`${r.short} shut for the tigress.`);}},
-      {l:'Herd her off with sirens',fn(){c.mark.until=T+60;c.herd=true;resolve(I,true,'');
+      {l:'Herd her off with sirens',fn(){c.mark.until=T+60;c.fx.t1=T+60;c.fx.exit=[lerp(r.x0,r.x1,0.4),r.y+(r.y<0?-900:900)];c.herd=true;resolve(I,true,'');
         if(c.ra){const ra=c.ra,at=T-c.E+900;c.lines.push([at-60,'FOREST',`Update: the tigress has been seen heading towards ${ra.short}. She did not like the sirens.`]);
-          c.lines.push([at,()=>{closeRw(ra,240,'Tigress, again');MARKS.push({x:lerp(ra.x0,ra.x1,0.6),y:ra.y,e:'🐅',until:T+240,px:34});
+          c.lines.push([at,()=>{closeRw(ra,240,'Tigress, again');MARKS.push({x:lerp(ra.x0,ra.x1,0.6),y:ra.y,e:'🐅',until:T+240,px:34,k:'tiger'});
+            FXV.push({kind:'tiger',id:'tiger2',path:[[lerp(ra.x0,ra.x1,0.7),ra.y+(ra.y<0?-700:700)],[lerp(ra.x0,ra.x1,0.6),ra.y],[lerp(ra.x0,ra.x1,0.5),ra.y+10]],t0:T,t1:T+240,exit:null});
             guard(['She is back. On your arrivals runway.','Sirens only made her curious, sir. 🐅'],WHO.ranger);
             const g=nextOn(ra);flashBanner(['SHE IS BACK',`The tigress is on ${ra.short}`,'Madam has right of way 🐅',icos('🐅','🐅')]);}]);}}}]});
 },lesson(c){return c.herd?{w:25,title:'The tigress came back',text:'Herding her off kept the departure runway open, but she walked onto the arrivals runway 15 minutes later, mid-wave. A cost you put off still has to be paid: when you choose the risky option, flip a second runway to MIX early so the bill lands softly.'}:null;}};
 
 // L2 · Uttarayan: Ahmedabad moved in, and so did its kites
 STORY.kites={len:1000,start(c){const ra=rwBy('arr').sort((a,b)=>b.tdList.length-a.tdList.length);const r=ra[0];if(!r)return false;c.r=r;r.kiteUntil=T+480;
-  c.nx=ra.find(o=>o!==r)||null;MARKS.push({x:r.x1+1600,y:r.y,e:'🪁',until:T+480,n:9,sp:2200,alt:160,px:24});
+  c.nx=ra.find(o=>o!==r)||null;MARKS.push({x:r.x1+1600,y:r.y,e:'🪁',until:T+480,n:9,sp:2200,alt:160,px:24,k:'kites'});FXV.push({kind:'kites',id:'k1',x:r.x1+1600,y:r.y,sp:1800,alt:180,n:60,t0:T,t1:T+480});
   const f=nextOn(r);if(f)cinema(f,['UTTARAYAN · KITE FESTIVAL',`Ahmedabad moved in. So did its kites, over ${r.short}.`,'KAI PO CHE! 🪁 Kites 1, A321neo 0',icos('🪁','🪁','🪁')],{ms:6500});
   guard(['Uncle, the whole city is on the roof.','We are not cutting your planes. We are cutting each other. 🪁'],WHO.kid);
   c.lines.push([0,'TWR',`All aircraft for ${r.short}: kites reported on final, 300 to 800 feet. Yes, kites.`]);
@@ -2021,7 +2036,7 @@ STORY.kites={len:1000,start(c){const ra=rwBy('arr').sort((a,b)=>b.tdList.length-
     def:1,defText:`${r.short} keeps landing through the kites.`,
     acts:[{l:`${r.short} to DEP while they pass`,pri:1,fn(){c.back=r.mode;setMode(r,'DEP');resolve(I,true,`${r.short} switched to departures while the kites passed.`);}},{l:'Keep landing',fn(){resolve(I,true,'');}}]});
   if(c.nx){const n=c.nx;c.lines.push([400,'WX',`The kites are drifting south. Expect them over ${n.short} in about a minute.`]);
-    c.lines.push([480,()=>{if(c.back&&r.mode==='DEP'&&!r.locked)setMode(r,c.back);n.kiteUntil=T+360;MARKS.push({x:n.x1+1600,y:n.y,e:'🪁',until:T+360,n:8,sp:2200,alt:160,px:24});radio('TWR',`Kites now on final for ${n.short}. ${r.short} is clear.`);guard(['Uncle, sorry. Wind changed.','Kai po che! 🪁'],WHO.kid);renderRw();}]);}
+    c.lines.push([480,()=>{if(c.back&&r.mode==='DEP'&&!r.locked)setMode(r,c.back);n.kiteUntil=T+360;MARKS.push({x:n.x1+1600,y:n.y,e:'🪁',until:T+360,n:8,sp:2200,alt:160,px:24,k:'kites'});FXV.push({kind:'kites',id:'k2',x:n.x1+1600,y:n.y,sp:1800,alt:180,n:50,t0:T,t1:T+360});radio('TWR',`Kites now on final for ${n.short}. ${r.short} is clear.`);guard(['Uncle, sorry. Wind changed.','Kai po che! 🪁'],WHO.kid);renderRw();}]);}
   c.lines.push([860,'TWR','The kites have gone home for lunch. All finals clear.']);}};
 
 // L2 · the last ball of the World Cup final: the country stops, and so does the apron
@@ -2034,7 +2049,7 @@ STORY.lastball={len:900,start(c){
     acts:[{l:'Put it on the PA (3 min)',pri:1,fn(){FX.pushFreeze=T+180;c.pa=true;c.six=T+180;radio('PA','Ladies and gentlemen, the last ball. Nobody move.');resolve(I,true,'The last ball went on the PA: pushbacks paused for 3 minutes.');}},
       {l:'Back to work',fn(){FX.pushSlow=T+360;FX.pushSlowS=150;c.six=T+180;resolve(I,true,'');}}]});
   c.sixFn=(cc=>{radio('PA','SIX! INDIA WIN THE WORLD CUP!');logE('India won the World Cup off the last ball.');
-    if(cc.pa)for(const f of flights)if(f.state==='at_gate'&&f.readyAt>T)f.readyAt=Math.max(T,f.readyAt-240);
+    if(cc.pa)for(const f of flights)if(f.state==='at_gate'&&f.readyAt>T)f.readyAt=Math.max(T,f.readyAt-240);FXV.push({kind:'fireworks',id:'six',x:procC.x,y:procC.y,t0:T,t1:T+200});
     const f=flights.find(o=>o.state==='push')||flights.find(o=>o.state==='at_gate'&&o.kind==='dep');
     const b=['LAST BALL · SIX TO WIN','SIX! India win the World Cup','IN-DI-A! IN-DI-A! 🏆',icos('🏏')+FLAG_IN+icos('🏆')];if(f)cinema(f,b,{ms:6500});else flashBanner(b);
     guard([cc.pa?'The crews are back. They are running.':'They are back. Slowly. Smiling.','Who is honking? … Fine. Honk. 📣'],WHO.tower);});c.len=4000;
@@ -2048,7 +2063,7 @@ STORY.dabba={len:900,start(c){const ds=CONC.filter(o=>o.id[0]==='D');if(!ds.leng
   const I=storyCard(c,{icon:{g:'🍱',c:'#f4c430'},x:ds[0].lx,y:ds[0].ly,title:'Dabbawalas crossing at Concourse D',
     text:"Mumbai's dabbawalas moved with the airport, and they feed the tower. 120 bicycles on the tiffin run need to cross Concourse D's apron road. Let them cross and nothing moves at D for 3 minutes. Hold them and the tower's lunch is late: every runway changeover takes 3 minutes instead of 2 for the next 15 minutes.",
     def:0,defText:'they cross anyway: Concourse D stops for 3 minutes.',
-    acts:[{l:'Let them cross (3 min)',pri:1,fn(){for(const d of ds){d.laneShut=Math.max(d.laneShut,T+180);MARKS.push({x:d.lx,y:d.ly,e:'🚲',until:T+180,n:6,sp:500,px:20});}resolve(I,true,'The dabbawalas crossed Concourse D. On time, obviously.');}},
+    acts:[{l:'Let them cross (3 min)',pri:1,fn(){for(const d of ds){d.laneShut=Math.max(d.laneShut,T+180);MARKS.push({x:d.lx,y:d.ly,e:'🚲',until:T+180,n:6,sp:500,px:20,k:'cyclists'});FXV.push({kind:'cyclists',id:'dabba'+d.id,x0:d.lx-450,y0:d.ly,x1:d.lx+450,y1:d.ly,n:40,t0:T,t1:T+180});}resolve(I,true,'The dabbawalas crossed Concourse D. On time, obviously.');}},
       {l:'Hold the bicycles',fn(){FX.chgK=1.5;FX.chgUntil=T+900;c.hangry=true;renderRw();resolve(I,true,'');}}]});
   c.lines.push([200,cc=>{if(cc.hangry){radio('TWR','The tower is hungry. Changeovers are taking longer. Nobody talk to the supervisor.');guard(['Lunch is late, saheb.','The tower is not happy. 🍱'],WHO.dabba);}
     else radio('TWR','Lunch has arrived in the tower. Every dabba correct. Again.');}]);}};
@@ -2058,12 +2073,12 @@ const WA=['Good afternoon to all 🌞🙏','Forwarded many times: NASA says Zero
   'Good morning 🌞','Is canteen open','Sir my leave application pls see','Video: amazing A380 landing (not ours)','👍','👍👍','Sir which one is the Delhi bank? Pls share Excel','This message was deleted','Pls call','Ok'];
 STORY.whatsapp={len:720,start(c){
   guard(['Dear all, the five ops groups are now one group.','1,400 members. Official purposes only. 🙏'],WHO.admin);
-  flashBanner(['DELHI MOVES IN','Five ops WhatsApp groups are now one','GOOD AFTERNOON TO ALL 🌞🙏',icos('📱','🌞','🙏')],5000);
+  flashBanner(['DELHI MOVES IN','Five ops WhatsApp groups are now one','GOOD AFTERNOON TO ALL 🌞🙏',icos('📱','🌞','🙏')],5000);c.fx={kind:'chat',id:'wa',x:procC.x,y:procC.y,t0:T,t1:T+600};FXV.push(c.fx);
   for(let i=0;i<6;i++)c.lines.push([10+i*12,'OPS GROUP',WA[i]]);
   const I=storyCard(c,{icon:{g:'📱',c:'#25d366'},x:CONC[0].lx,y:CONC[0].ly,title:'1,400 people in the ops WhatsApp group',
     text:"Delhi's arrival merged five ops groups into one, and runway changeover confirmations are buried under good-morning messages: changeovers take 4 minutes instead of 2. Make the group admin-only and the hurt members start \"ZMI Ops (Real)\", where gate changes get lost: pushbacks take 90 seconds longer for 8 minutes. Or ride it out for 8 minutes.",
     def:1,defText:'you ride it out: 4-minute changeovers for 8 minutes.',
-    acts:[{l:'Make it admin-only',pri:1,fn(){FX.pushSlow=T+480;FX.pushSlowS=90;c.quiet=true;radio('OPS GROUP','Only admins can send messages. 214 members have left. "ZMI Ops (Real)" has 213 members.');resolve(I,true,'The ops group went admin-only.');}},
+    acts:[{l:'Make it admin-only',pri:1,fn(){FX.pushSlow=T+480;FX.pushSlowS=90;c.quiet=true;c.fx.t1=T+30;radio('OPS GROUP','Only admins can send messages. 214 members have left. "ZMI Ops (Real)" has 213 members.');resolve(I,true,'The ops group went admin-only.');}},
       {l:'Ride it out',fn(){FX.chgK=2;FX.chgUntil=T+480;renderRw();resolve(I,true,'');}}]});
 },tick(c,t){if(!c.quiet&&t>90&&t<600&&t>=(c.nm||90)){c.nm=t+30;radio('OPS GROUP',WA[6+Math.floor(Math.random()*(WA.length-6))]);}}};
 
@@ -2075,12 +2090,112 @@ STORY.trophy={len:900,start(c){const r=rwBy('arr').sort((a,b)=>a.y-b.y)[0];if(!r
   const I=storyCard(c,{icon:{g:'🏆',c:'#f4c430'},x:r.x1+1500,y:r.y,title:'The World Cup is coming home',
     text:`The team from the last ball lands on ${r.short} in about 7 minutes, and half of Nagpur is on the airport road. Give them the water salute and an apron parade: ${r.short} closes for 5 minutes after they land. Or send them straight to the motorcade: the crowd jams the forecourt, and pushbacks at Concourses A and B take 3 minutes longer for 10 minutes.`,
     def:1,defText:'straight to the motorcade: slow pushbacks at A and B for 10 minutes.',
-    acts:[{l:'Water salute + parade',pri:1,fn(){takeRunways([r],td+40,300,0,'Victory parade','Victory parade');c.arch=true;resolve(I,true,`${r.short} closed for the champions' parade.`);}},
+    acts:[{l:'Water salute + parade',pri:1,fn(){takeRunways([r],td+40,300,0,'Victory parade','Victory parade');c.arch=true;FXV.push({kind:'waterarch',id:'arch',x:r.x1-1700,y:r.y,a:Math.PI,t0:td-30,t1:td+320});resolve(I,true,`${r.short} closed for the champions' parade.`);}},
       {l:'Straight to the motorcade',fn(){for(const o of CONC)if('AB'.includes(o.id[0]))o.slowUntil=Math.max(o.slowUntil,T+600);resolve(I,true,'');}}]});
   c.lines.push([5,'APP','Trophy One, Nagpur Approach. Welcome home. Everybody on this frequency says congratulations.']);
   c.lines.push([70,'FSO','There are 1,00,000 people on the airport road. 40,000 of them have a drum.']);
 },tick(c,t){const f=c.f;if(f&&f.state==='approach'&&!c.cine&&f.td-T<95){c.cine=true;
   cinema(f,['THE CHAMPIONS ARE HOME',`Trophy One · Air India A350 on final for ${c.r.short}`,c.arch?'Water salute! IN-DI-A! 🏆':'IN-DI-A! IN-DI-A! 🏆',icos('🏆')+FLAG_IN+icos('🏏')],{landed:true});}}};
+// L1 · the Surya Kiran flypast: every runway stops for 4 minutes, and you pick the slot off the bank chart
+STORY.surya={len:3000,start(c){const open=RW.filter(r=>!r.locked);if(!open.length)return false;
+  const due=s=>flights.filter(f=>(f.kind==='arr'&&f.landT==null&&f.eta>=s-60&&f.eta<s+300)||(f.kind==='dep'&&['at_gate','push','start','taxi_out','hp'].includes(f.state)&&Math.max(f.std,f.readyAt||0)>=s-60&&Math.max(f.std,f.readyAt||0)<s+300)).length;
+  const cand=[];for(let s=T+300;s<=T+1200;s+=60)cand.push({s,n:due(s)});
+  const opts=[cand[0],cand.reduce((a,b)=>b.n<a.n?b:a),cand.reduce((a,b)=>b.n>a.n?b:a)].filter((o,i,A)=>A.findIndex(p=>Math.abs(p.s-o.s)<240)===i);
+  for(const o of cand){if(opts.length>=3)break;if(opts.every(p=>Math.abs(p.s-o.s)>=240))opts.push(o);}
+  opts.sort((a,b)=>a.s-b.s);
+  const cx=RW.reduce((a,r)=>a+(r.x0+r.x1)/2,0)/RW.length,cy=RW.reduce((a,r)=>a+r.y,0)/RW.length;
+  const pick=o=>{const t=o.s;takeRunways(open,t,240,0,'Surya Kiran display','Air display');FXV.push({kind:'flypast',id:'surya',t0:t,t1:t+240,cx,cy,r:4200});c.at=t;
+    c.lines.push([t-c.E,()=>{guard(['Zero Mile, Surya Kiran leader. Nine Hawks, running in.',"How's the josh? 🇮🇳"],WHO.surya);
+      cinema(null,['SURYA KIRAN · IAF AEROBATIC TEAM','Nine Hawks open Zero Mile',"How's the josh? High, sir! 🇮🇳",icos('✈️')+FLAG_IN+icos('✈️')],{view:{tx:cx,ty:cy+600,dist:7000,pitch:0.42,yaw:0.5},at:[cx,cy],ms:9000});}]);
+    c.lines.push([t-c.E+240,'TWR','Surya Kiran, beautiful. All runways back to normal. The josh remains high.']);};
+  guard(['Sir, the Surya Kiran team will open the airport.','Every runway stops for 4 minutes. You choose when. ✈️'],WHO.surya);
+  const best=opts.reduce((a,b)=>b.n<a.n?b:a);
+  const I=storyCard(c,{icon:{g:'✈️',c:'#ff9933'},x:cx,y:cy,title:'Surya Kiran flypast: pick the slot',
+    text:"The Air Force's aerobatic team opens Zero Mile with a 4-minute display, and every runway stops for it. You choose when. The count is how many flights are due to land or take off around that slot: find the quiet gap between waves on the bank chart and it costs almost nothing.",
+    def:0,defText:`the Air Force takes the first slot, ${clk(opts[0].s)}.`,botPick:opts.indexOf(best),
+    acts:opts.map(o=>({l:`${clk(o.s)} · ${o.n} due`,fn(){pick(o);resolve(I,true,`Surya Kiran display set for ${clk(o.s)}.`);}}))});
+  c.opts=opts;},
+  lesson(c){if(c.at==null)return null;const o=c.opts.find(p=>p.s===c.at),b=c.opts.reduce((a,p)=>p.n<a.n?p:a);
+    return o&&o.n>b.n+2?{w:15,title:'The flypast slot',text:`You put the display at ${clk(o.s)} with ${o.n} flights due; ${clk(b.s)} had ${b.n}. The bank chart shows the gaps between waves: a closure placed in a gap costs almost nothing.`}:null;}};
+
+// L4 · Pier F is under new management: Delhi's macaques take the airbridges
+STORY.monkeys={len:900,start(c){const pc=CONCI.FN;if(!pc)return false;const gs=GATES.filter(g=>g.conc==='FN');
+  const pts=gs.map(g=>[g.x,g.y]).concat(gs.map(g=>{const n=G.get(g.lane);return [lerp(g.x,n.x,0.5),lerp(g.y,n.y,0.5)];}));
+  const r=RW.filter(o=>!o.locked).sort((a,b)=>Math.abs(a.y-pc.cy)-Math.abs(b.y-pc.cy))[0];if(!r)return false;c.r=r;
+  pc.laneShut=Math.max(pc.laneShut,T+600);const fx={kind:'monkeys',id:'pierF',t0:T,t1:T+600,pts,n:14,flee:null};FXV.push(fx);
+  const m1={x:pc.cx,y:pc.cy,e:'🐒',until:T+600,n:7,sp:700,px:22};MARKS.push(m1);
+  guard(["Sir, I am not a langur. They don't know that.",'HOO-HOOP! 🐒'],WHO.langur);
+  c.lines.push([0,'TWR','Emirates 510, monkeys on the airbridge, hold position. … Say again? … Affirm, monkeys.']);
+  const f=flights.find(o=>o.gate&&o.gate.conc==='FN'&&o.state==='at_gate')||flights.find(o=>o.res&&o.res.conc==='FN');
+  if(f)cinema(f,['PIER F IS UNDER NEW MANAGEMENT',"Delhi's macaques have taken the airbridges",'Affirm, monkeys. Hold position 🐒',icos('🐒','🍌','🐒')],{ms:7000});
+  const I=storyCard(c,{icon:{g:'🐒',c:'#b07a3c'},x:pc.cx,y:pc.cy,title:'Monkeys have taken Pier F',
+    text:`A troop of Delhi's macaques has moved onto Pier F North's airbridges, and nothing can park or push back there. Call the langur-call men and the monkeys bolt within 90 seconds, straight across ${r.short}, which closes for 3 minutes. Or send the wildlife team with nets: gentler, but Pier F stays shut for 8 minutes.`,
+    def:1,defText:'the wildlife team uses nets: Pier F shut for 8 minutes.',
+    acts:[{l:'Langur-call men (90 s)',pri:1,fn(){pc.laneShut=T+90;fx.flee={t0:T+20,t1:T+110,x0:pc.cx,y0:pc.cy,x1:pc.cx+300,y1:r.y+(r.y>pc.cy?700:-700)};fx.t1=T+110;m1.until=T+20;
+        MARKS.push({x:pc.cx+150,y:r.y,e:'🐒',until:T+110,n:6,sp:500,px:22});takeRunways([r],T+30,180,0,'Monkeys crossing','Monkeys crossing');
+        c.lines.push([T-c.E+25,'RAMP',`HOO-HOOP! … They are running. They are running towards ${r.short}.`]);resolve(I,true,`The langur-call men cleared Pier F; the monkeys crossed ${r.short}.`);}},
+      {l:'Wildlife team, nets',fn(){pc.laneShut=T+480;fx.t1=T+480;m1.until=T+480;resolve(I,true,'');}}]});
+  c.lines.push([300,'WILDLIFE',"One monkey has a passenger's boarding pass. He is not on the manifest."]);}};
+
+// L3 · "Nagpur is flat": GPS spoofing sets off false terrain alarms on the runways that only have GPS approaches
+STORY.gps={len:900,start(c){const gr=RW.filter(r=>!r.locked&&['R2','R5'].includes(r.id));if(!gr.length)return false;c.gr=gr;
+  const nm=gr.map(r=>r.short).join(' and '),il=RW.filter(r=>!r.locked&&!gr.includes(r)).map(r=>r.short).join(', ');
+  for(const r of gr)MARKS.push({x:r.x1+2400,y:r.y,e:'📡',until:T+600,px:24,k:'ghosts'});FXV.push({kind:'ghosts',id:'gps',pts:gr.map(r=>[r.x1+2600,r.y]),t0:T,t1:T+600});
+  guard(['GPS says Muscat. Radar says Butibori.','I believe my radar. 📡'],WHO.radar);
+  const f=gr.map(nextOn).filter(Boolean)[0];
+  if(f)cinema(f,['GPS SPOOFING','"TERRAIN, PULL UP." There is no terrain.','Nagpur is flat. 🗺️',icos('🛰️','📡','🛰️')],{ms:6500});
+  const I=storyCard(c,{icon:{g:'📡',c:'#7a5cff'},x:gr[0].x1+2000,y:gr[0].y,title:`GPS spoofing: false alarms on ${nm}`,
+    text:`Someone is broadcasting fake satellite signals, and aircraft GPS now thinks it is over Muscat. ${nm} have no ILS (the radio beam on the ground that guides a plane onto the runway), so landings there use GPS, and the fake signal sets off "TERRAIN, PULL UP" alarms: the jet goes around, though Nagpur is flat. For 10 minutes: land only on the ILS runways (${il}) and use ${nm} for take-offs, or keep landing everywhere and expect surprise go-arounds.`,
+    def:0,defText:`ops stops landings on ${nm} for 10 minutes.`,
+    acts:[{l:'ILS runways only (10 min)',pri:1,fn(){for(const r of gr)r.noArrUntil=T+600;renderRw();resolve(I,true,`Landings moved off the GPS runways ${nm} for 10 minutes.`);}},
+      {l:'Keep landing on GPS',fn(){for(const r of gr)r.gpsUntil=T+600;renderRw();resolve(I,true,'');}}]});
+  c.lines.push([0,'APP','Emirates 210, GPS spoofing reported in the area. … Unable RNP, request vectors for the ILS.']);
+  c.lines.push([600,'APP','GPS spoofing has stopped. The aircraft are back over Nagpur, where they always were.']);}};
+
+// L3 · the Chambani wedding: 40 private jets must land before the muhurat (the jokes are about the scale, not the couple)
+STORY.wedding={len:2400,start(c){const L=r=>r.tdList.length+flights.filter(f=>f.rwy===r&&['hp','taxi_out'].includes(f.state)).length;
+  const r=RW.filter(o=>!o.locked&&o.mode!=='OFF'&&o!==LONGEST).sort((a,b)=>L(a)-L(b))[0];if(!r)return false;c.r=r;
+  const n=40,gap=30,tA=T+420,tM=tA+n*gap;c.tM=tM;
+  guard([`Sir, 40 jets. One muhurat: ${clk(tM)}.`,`${clk(tM)}. Not ${clk(tM+60)}. 💍`],WHO.planner);
+  c.lines.push([0,'AOCC',`The Chambani family requests a runway for the wedding guests. Shananth Chambani weds Kanika Merchant at ${clk(tM)}.`]);
+  const I=storyCard(c,{icon:{g:'💍',c:'#d4a017'},x:r.x1+1500,y:r.y,title:'The Chambani wedding: 40 jets before the muhurat',
+    text:`Shananth Chambani weds Kanika Merchant at ${clk(tM)}, and the guest list has its own airline: 40 private jets. The family wants ${r.short} to themselves for 20 minutes from ${clk(tA)}. Say yes and you get 40 landings towards your target (the summit cost you plenty), but ${r.short} is shut to everyone else in the afternoon peak. Or send them to Nagpur's old airport.`,
+    def:1,defText:"the guests go to Nagpur's old airport.",
+    acts:[{l:'Welcome the baraat',pri:1,fn(){c.yes=true;takeRunways([r],tA-40,n*gap+80,0,'The Chambani wedding','Booked by the Chambanis');
+        const C=[['Mumbai','BOM',0],['London','LHR',1],['Dubai','DXB',1],['Jamnagar','JGA',0],['New York','JFK',1],['Udaipur','UDR',0],['Paris','CDG',1],['Singapore','SIN',1]];
+        const pk=G.get(PARK);FXV.push({kind:'elephant',id:'haathi',path:[[pk.x+1600,pk.y+900],[pk.x+700,pk.y+500],[pk.x+120,pk.y+80]],t0:tA+300,t1:tM+600});
+        c.jets=[];for(let i=0;i<n;i++){const k=C[i%8];const f=specialArr({al:'CHW',type:'GLF6',num:String(i+1),disp:`Baraat ${i+1}`,callsign:`BARAAT ${i+1}`,from:k[0],fromCode:k[1],intl:!!k[2],vip:true},r,tA+i*gap,null);f.toPark=true;c.jets.push(f);}
+        resolve(I,true,`${r.short} booked for the Chambani wedding: 40 jets inbound.`);}},
+      {l:'Send them to the old airport',fn(){resolve(I,true,'');guard(['Sir, the family is disappointed.',"So they have bought Nagpur's old airport. 💍"],WHO.planner);}}]});
+  for(const L2 of [[440,'TWR','Baraat 1, cleared to land. Follow the car with the marigolds to the wedding apron.'],[640,'PLANNER',"The groom's side has asked for a water salute. The bride's side has asked for a bigger one."],
+    [840,'FSO','One elephant is arriving by road. It has been cleared.'],[1040,'PLANNER','Jet 23 is carrying only the lehengas. Jet 24 is carrying the jewellery for jet 23.'],[1240,'TWR','Return gift for the tower: one silver box of kaju katli. Each. We have accepted.']])
+    c.lines.push([L2[0],cc=>{if(cc.yes){radio(L2[1],L2[2]);logE(L2[2]);}}]);
+  c.lines.push([tM-T+20,cc=>{if(!cc.yes)return;const pk=G.get(PARK);FXV.push({kind:'fireworks',id:'muhurat',x:pk.x,y:pk.y,t0:T,t1:T+300});const k=cc.jets.filter(f=>f.landT!=null).length;guard([`${k} of 40 landed before the muhurat.`,'Shubh vivah! 💐'],WHO.planner);
+    flashBanner(['THE MUHURAT',`Shananth weds Kanika · ${k} of 40 jets made it`,'Shubh vivah! 💐',icos('💍','💐','🐘')],5000);}]);
+},tick(c){if(!c.yes||c.cine)return;const f=c.jets[0];if(f&&f.state==='approach'&&f.td-T<95){c.cine=true;
+  cinema(f,['THE CHAMBANI WEDDING',`Shananth Chambani weds Kanika Merchant · 40 jets before ${clk(c.tM)}`,'The guest list has its own airline 💍',icos('💍','🛩️','🐘')],{landed:true});}}};
+
+// L4 · Super Over at Jamtha: 16 fan charters sit on the bank chart all day, then the fans decide to stay
+STORY.superover={len:3200,start(c){const ch=flights.filter(f=>f.charter);if(!ch.length)return false;c.ch=ch;const std=Math.min(...ch.map(f=>f.std));
+  flashBanner(['JAMTHA · INDIA v AUSTRALIA',`16 fan charters leave after the match, from ${clk(std)}`,'Find them on the bank chart 🏏',icos('🏏','🏟️','🏏')],5000);
+  c.lines.push([0,'AOCC',`The T20 at Jamtha ends around ${clk(std-1500)}. 16 fan charters are due out from ${clk(std)}.`]);
+  const d=(std-600)-T;
+  c.lines.push([d-240,()=>{guard(["It's a TIE at Jamtha!",'SUPER OVER! Nobody in Nagpur is breathing. 🏏'],WHO.fan);radio('JAMTHA','It is a tie. Super Over.');}]);
+  c.lines.push([d,cc=>{let n=0;for(const f of cc.ch)if(['at_gate','push','start'].includes(f.state)){if(f.gate){f.gate.occ=null;f.gate=null;}f.state='cancelled';n++;}cc.n=n;
+    FXV.push({kind:'fireworks',id:'jamtha',x:procC.x,y:procC.y+5200,t0:T,t1:T+400});renderRw();flashBanner(['SUPER OVER · JAMTHA','India win! And the champions land here within the hour',`The fans are staying: ${n} charters cancelled 🎉`,icos('🏏','🎉','🏏')],6000);
+    guard(['Sir, we are not leaving. Trophy One is landing.','Also, we have no hotel. We will sleep at your airport. 🎉'],WHO.fan);
+    radio('AOCC',`All ${n} fan charters cancelled: the fans are staying for the champions. If you set runways for their departures, set them back.`);logE(`${n} fan charters were cancelled after the Super Over.`);}]);},
+  lesson(c){return c.n?{w:20,title:`${c.n} charters vanished`,text:'The fan charters sat on the bank chart all day, then were cancelled 10 minutes before departure. Preparing for a wave is right; keep watching the chart after you flip, and when a wave disappears, flip back straight away.'}:null;}};
+
+// 2D: the flypast as nine red Hawks on a racetrack with saffron, white and green smoke (the 3D view draws its own)
+function drawFx2D(){for(const o of FXV){if(o.kind!=='flypast'||T<o.t0||T>o.t1+60)continue;
+  const pos=t=>{const u=clamp((t-o.t0)/(o.t1-o.t0),0,1),th=u*Math.PI*4;return{x:o.cx+Math.cos(th)*o.r,y:o.cy+Math.sin(th)*o.r*0.45,a:Math.atan2(Math.cos(th)*o.r*0.45,-Math.sin(th)*o.r)};};
+  const tc=Math.min(T,o.t1),cols=['#ff9933','#ffffff','#138808'];ctx.lineCap='round';
+  for(let k=0;k<3;k++){ctx.strokeStyle=cols[k];ctx.globalAlpha=0.7*(T>o.t1?1-(T-o.t1)/60:1);ctx.lineWidth=4;ctx.beginPath();
+    for(let j=0;j<=30;j++){const t=tc-j*2.5;if(t<o.t0)break;const p=pos(t),s=(k-1)*55;const X=sx(p.x-Math.sin(p.a)*s),Y=sy(p.y+Math.cos(p.a)*s);j?ctx.lineTo(X,Y):ctx.moveTo(X,Y);}ctx.stroke();}
+  ctx.globalAlpha=1;if(T>o.t1)continue;const p=pos(T);
+  for(let i=0;i<9;i++){const row=Math.ceil(i/2),side=i===0?0:(i%2?-1:1);const bx=p.x-Math.cos(p.a)*row*70-Math.sin(p.a)*side*row*45,by=p.y-Math.sin(p.a)*row*70+Math.cos(p.a)*side*row*45;
+    ctx.save();ctx.translate(sx(bx),sy(by));ctx.rotate(p.a);ctx.fillStyle='#e0262e';ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(9,0);ctx.lineTo(-6,-6);ctx.lineTo(-3,0);ctx.lineTo(-6,6);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();}}}
 const tleft=I=>I.simFuse?`MAYDAY in ${Math.max(0,Math.ceil(I.left/Math.max(1,speed)))} s`:`${Math.max(0,Math.ceil(I.left))} s`;
 function renderInc(){
   $('#incCount').textContent=incidents.length?`${incidents.length} open`:'all clear';
@@ -2103,7 +2218,8 @@ function renderFlightPop(){const f=popF;if(!f)return;const st=stateText(f);let d
   $('#popBody').innerHTML=`<h4 style="display:flex;gap:8px;align-items:center"><i style="width:5px;height:18px;background:${f.A.tail};border-radius:2px;display:inline-block"></i>${fl(f)} <span style="font-size:12px;color:var(--ink-3);font-family:var(--f-body);font-weight:400">${f.A.name}</span></h4><dl>${dl}</dl><div class="acts"><button id="fpPrio" class="${f.prio?'pri':''}" ${['holding','inbound','at_gate','taxi_out','hp'].includes(f.state)?'':'disabled'}>${f.prio?'Prioritised':'Prioritise'}</button>${f.kind==='dep'&&f.state==='at_gate'?`<button id="fpHold">${f.held?'Release':'Hold at gate'}</button>`:''}${V3.on?'<button id="fpFollow">Follow</button>':''}</div>`;
   const p=$('#fpPrio');if(p)p.onclick=()=>{f.prio=!f.prio;renderFlightPop();};const fw=$('#fpFollow');if(fw)fw.onclick=()=>{setCam('follow',f);closePop();};const h=$('#fpHold');if(h)h.onclick=()=>{f.held=!f.held;renderFlightPop();};}
 function stateText(f){const m={sched:'On the ground at origin',inbound:'Inbound',holding:`Holding at ${7+(f.level||0)},000 ft`,approach:`Final for ${f.rwy?f.rwy.short:''}`,rollout:'Landing',taxi_in:'Taxiing to gate '+(f.res?f.res.id:''),dock:'Parking',parked:'Parked, no onward flight',nogate:'Waiting for a gate',tow:'Towed to long-stay parking',push:'Pushing back',start:'Starting engines',taxi_out:f.noRwy?'No departure runway open':`Taxiing to ${f.rwy?f.rwy.short:''}`,hp:`Holding short of ${f.rwy?f.rwy.short:''}`,lineup:'Lining up',roll:'Taking off',climb:'Climbing out',goaround:'Going around',divert:'Diverting',stuck:'Stopped on the taxiway'};
-  if(f.vip&&(f.state==='parked'||f.state==='dock'))return 'VVIP: on the red carpet';
+  if(f.vip&&(f.state==='parked'||f.state==='dock'))return 'VVIP: on the red carpet';if(f.state==='wedtaxi')return 'To the wedding apron (follow the marigolds)';
+  if(f.charter&&f.state==='at_gate')return 'Fan charter: leaves after the Jamtha match';
   if(f.state==='at_gate'){if(f.held)return 'Held at gate';const go=Math.max(f.std,f.readyAt);return T<f.readyAt?'Turnaround in progress':T<go?'Boarding':'Waiting to push';}return m[f.state]||f.state;}
 
 /* ============ camera ============ */
@@ -2256,7 +2372,7 @@ function drawOps(now){
     else if(o.kind==='tug'){const f=o.f,a=f.heading,k=clamp((T-o.t0)/60,0,1),d=f.T.len*0.55*EXs/2.6;drawVeh(lerp(o.sx,f.x+Math.cos(a)*d,k),lerp(o.sy,f.y+Math.sin(a)*d,k),a,7,'#f4c430',now,true,'Tug');}
   }
   for(const c of CONC){if(c.laneShut>T||c.slowUntil>T)drawVeh(c.lx,c.ly,Math.PI/2,7,c.laneShut>T?'#ff4d3f':'#ffae3b',now,true,c.laneShut>T?'Recovery: lane shut':'Dead tug: slow pushbacks');}
-  drawMarks(ctx,(x,y)=>({X:sx(x),Y:sy(y)}),now);
+  drawMarks(ctx,(x,y)=>({X:sx(x),Y:sy(y)}),now);drawFx2D();
 }
 const mmss=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');};
 let rwSigns=[];
@@ -2304,7 +2420,7 @@ function draw(now){
 }
 
 /* ============ bank chart ============ */
-function capNow(kind,ov,at){const tt=at==null?T:at;let c=0;for(const r of RW){const md=ov&&ov.r===r?ov.m:r.mode;if(r.locked||tt<r.closedUntil||blockAt(r,tt))continue;const dg=(r.degraded?1.6:1)*(tt<r.sepUntil?r.sepK:1);if(kind==='arr'){if(md==='ARR')c+=3600/(SEP_AA*sepF()*dg+6);else if(md==='MIX')c+=3600/(SEP_AA*sepF()*dg+MIX_GAP+6)*1;}else{if(md==='DEP')c+=3600/(SEP_DD*(dustNow?1.15:1)+4);else if(md==='MIX')c+=3600/(SEP_AA*sepF()+MIX_GAP+6);}}return c;}
+function capNow(kind,ov,at){const tt=at==null?T:at;let c=0;for(const r of RW){const md=ov&&ov.r===r?ov.m:r.mode;if(r.locked||tt<r.closedUntil||blockAt(r,tt)||(kind==='arr'&&tt<r.noArrUntil))continue;const dg=(r.degraded?1.6:1)*(tt<r.sepUntil?r.sepK:1);if(kind==='arr'){if(md==='ARR')c+=3600/(SEP_AA*sepF()*dg+6);else if(md==='MIX')c+=3600/(SEP_AA*sepF()*dg+MIX_GAP+6)*1;}else{if(md==='DEP')c+=3600/(SEP_DD*(dustNow?1.15:1)+4);else if(md==='MIX')c+=3600/(SEP_AA*sepF()+MIX_GAP+6);}}return c;}
 // forecast: what the holding stack and the departure queue do from now if the setup stays (or with one runway flipped)
 let WAVEP=null,WBINS=null;
 function forecast(A,D,cur,nb,B,t0,ov){let b=flights.filter(f=>f.state==='holding').length,q=flights.filter(f=>f.state==='hp'||f.state==='taxi_out').length;const out=[];
@@ -2372,7 +2488,7 @@ function rwStatus(){
   document.querySelectorAll('#rwRows .rw').forEach(row=>{const r=RW.find(x=>x.id===row.dataset.r);const st=row.querySelector('.st');if(r.locked){st.textContent='Opens in a later level';return;}
     const fin=flights.filter(f=>f.state==='approach'&&f.rwy===r).length,q=flights.filter(f=>(f.state==='hp')&&f.rwy===r).length;
     let s='';const bk=r.blocks[0];if(T<r.closedUntil)s=`<span class="bad">closed ${Math.ceil((r.closedUntil-T)/60)} min · ${r.why}</span>`;else if(bk&&T>=bk.from)s=`<span class="bad">${bk.summit?'Taken by security':(bk.desk||'VVIP closure')}${bk.open?'':' · '+mmss(bk.to-T)}</span>`;else if(T<r.changeUntil)s=`<span class="hot">changeover ${Math.ceil((r.changeUntil-T)/60)} min</span>`;else s=`<b>${fin}</b> on final · <b class="${q>6?'hot':''}">${q}</b> queued · ${r.ops} ops`;
-    const tags=[];if(bk&&T<bk.from)tags.push(`<span class="bad">VVIP in ${mmss(bk.from-T)}</span>`);if(r.degraded)tags.push('<span class="hot">lights out: slower landings</span>');if(T<r.sepUntil)tags.push(`<span class="hot">${r.sepWhy||'double spacing'}</span>`);if(r.kiteUntil>T)tags.push('<span class="hot">kites on final: go-arounds</span>');if(r.strike)tags.push('<span class="hot">bird remains: risk</span>');if(ops.some(o=>o.kind==='fod'&&o.r===r&&o.phase==='wait'))tags.push('<span class="hot">sweep pending</span>');if(r.shear)tags.push('<span class="hot">windshear</span>');st.innerHTML=s+(tags.length?' · '+tags.join(' · '):'');});
+    const tags=[];if(bk&&T<bk.from)tags.push(`<span class="bad">VVIP in ${mmss(bk.from-T)}</span>`);if(r.degraded)tags.push('<span class="hot">lights out: slower landings</span>');if(T<r.sepUntil)tags.push(`<span class="hot">${r.sepWhy||'double spacing'}</span>`);if(T<r.noArrUntil)tags.push('<span class="hot">GPS spoofed: no landings</span>');if(r.gpsUntil>T)tags.push('<span class="hot">GPS spoofed: false PULL UPs</span>');if(r.kiteUntil>T)tags.push('<span class="hot">kites on final: go-arounds</span>');if(r.strike)tags.push('<span class="hot">bird remains: risk</span>');if(ops.some(o=>o.kind==='fod'&&o.r===r&&o.phase==='wait'))tags.push('<span class="hot">sweep pending</span>');if(r.shear)tags.push('<span class="hot">windshear</span>');st.innerHTML=s+(tags.length?' · '+tags.join(' · '):'');});
 }
 
 /* ============ HUD ============ */
@@ -2567,7 +2683,7 @@ function menu(tab){
   $('#sheet').querySelectorAll('.lc').forEach(b=>b.onclick=()=>startLevel(+b.dataset.n));
   $('#sheet').querySelectorAll('[data-inc]').forEach(b=>b.onclick=()=>{CFG.inc=b.dataset.inc;store.set('zm_cfg',CFG);menu('levels');});
 }
-window.HUB={get T(){return T;},get S(){return S;},get LV(){return LV;},flights:()=>flights,RW,incidents:()=>incidents,setMode:(id,m)=>{const r=RW.find(x=>x.id===id||x.short===id);if(r)setMode(r,m);},startLevel,capNow,resolveAll:()=>{for(const I of incidents.slice()){const a=I.acts.find(a=>!(a.dis&&a.dis()));if(a)a.fn();}},speed:s=>setSpeed(s),ops:()=>ops,cfg:CFG,
+window.HUB={get T(){return T;},get S(){return S;},get LV(){return LV;},flights:()=>flights,RW,incidents:()=>incidents,setMode:(id,m)=>{const r=RW.find(x=>x.id===id||x.short===id);if(r)setMode(r,m);},startLevel,capNow,resolveAll:()=>{for(const I of incidents.slice()){const a=I.botPick!=null?I.acts[I.botPick]:I.acts.find(a=>!(a.dis&&a.dis()));if(a)a.fn();}},speed:s=>setSpeed(s),ops:()=>ops,cfg:CFG,
   // test hooks: run the sim forward synchronously, and point the camera
   ff:secs=>{for(let i=0;i<secs&&!ended;i++)tick(1);puffs.length=0;hud();drawWave();},look:(x,y,z)=>{camT.s=cam.fit*z;camT.anchor=null;camT.x=x-((cam.region.L+cam.region.R)/2)/camT.s;camT.y=y-((cam.region.Tp+cam.region.B)/2)/camT.s;clampCam(camT);Object.assign(cam,{x:camT.x,y:camT.y,s:camT.s});},spawn:(t,x)=>spawnInc(t,x),opsSpawn:(k,x)=>opsSpawn(k,x),pause:()=>{paused=true;},
   view:v=>setView(v),ready3d:()=>new Promise(r=>{if(V3.ready||V3.failed)r(V3.ready);else{V3.waiters.push(r);init3D();}}),
@@ -2593,7 +2709,7 @@ const AIR_K=0.55;   // sim altitude units to metres: a 700-unit final over 7.45 
 function altM(f){return f.alt>2?f.alt*AIR_K:0;}
 const Z={THREE:null,scene:null,camera:null,renderer:null,SPEC,mods:{},kEx:1,camDist:9000,quality:2,tier:'High',sunDir:null,addons:{},atmo:null,
   get T(){return T;},get LV(){return LV;},get nightF(){return nightF;},get dustNow(){return dustNow;},get heatNow(){return heatNow;},
-  get selected(){return selected;},get running(){return running;},
+  get selected(){return selected;},get running(){return running;},get fx(){return FXV;},
   flights:()=>flights,incidents:()=>incidents,ops:()=>ops,RW,GATES,CONC,TYPES,AL,EXT,STACKS,procC,G,BLD,
   terrain:()=>TERR,altM,clk:t=>clk(t),stackPos:(st,u,l)=>stackPos(st,u,l),LONGEST,
   canArr:r=>canArr(r),canDep:r=>canDep(r),blockAt:(r,t)=>blockAt(r,t),CHANGE,OPSW,
@@ -3016,7 +3132,7 @@ function drawOverlay3D(now){
   for(const I of incidents){const q=incPos(I);const p=proj(q.x,q.y,I.f?altM(I.f):0);if(!p){I.sx=null;continue;}const X=p.X,Y=p.Y-(I.f?0:14);const ic=(I.icon||ICON[I.type]);const pulse=1+0.18*Math.sin(now*7);const R=13*pulse;
     ctx.fillStyle='rgba(0,0,0,.55)';ctx.beginPath();ctx.arc(X,Y,R+5,0,7);ctx.fill();ctx.strokeStyle=ic.c;ctx.lineWidth=3;ctx.beginPath();ctx.arc(X,Y,R+3,-Math.PI/2,-Math.PI/2+2*Math.PI*clamp(I.left/I.total,0,1));ctx.stroke();
     ctx.fillStyle=ic.c;ctx.beginPath();ctx.arc(X,Y,R-2,0,7);ctx.fill();ctx.fillStyle='#0b0b0b';ctx.font='700 15px Barlow Condensed, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(ic.g,X,Y+1);ctx.textAlign='left';ctx.textBaseline='alphabetic';I.sx=X;I.sy=Y;}
-  drawMarks(ctx,(x,y,a)=>proj(x,y,a*AIR_K),now);
+  drawMarks(ctx,(x,y,a)=>proj(x,y,a*AIR_K),now,Z.fxKinds);
   const tagged=new Set();if(selected)tagged.add(selected);if(hover)tagged.add(hover);
   if(V3.mode==='map'&&Z.camDist<2200){const cp=Z.camera.position,cand=[];for(const f of flights){if(f.sx!=null&&['approach','rollout','lineup','roll','nogate','climb','hp'].includes(f.state)&&f.sx>40&&f.sx<VW-40&&f.sy>40&&f.sy<VH-40)cand.push([Math.hypot(cp.x-f.x,cp.z-f.y),f]);}
     cand.sort((a,b)=>a[0]-b[0]);for(const c of cand.slice(0,6))tagged.add(c[1]);}
@@ -4772,6 +4888,426 @@ Z3MOD.field = function (Z) {
         sockIM.instanceMatrix.needsUpdate = true; }
       lodT -= dt; if (lodT <= 0) { lodT = 0.25; lodTrees(false); }
     }
+  };
+};
+
+/* ---- 3d/fx2.js ---- */
+Z3MOD.fx2 = function (Z) {
+  // Round 2 set pieces (3d/FX.md "Round 2"): the tigress, Uttarayan kites, the inauguration ribbon, the dabbawalas, fireworks,
+  // the water-salute arch, the wedding elephant, GPS-spoofing ghosts and the ops WhatsApp storm. Reads Z.fx every frame and draws
+  // the kinds it knows. States follow sim time (Z.T); motion runs in real time. Characters are procedural lofted meshes,
+  // skinned (tigress, elephant) or vertex-animated instances (cyclists), with contact shadows, and scale up with camera
+  // distance so they read from the strategic view. Every mesh is hidden while no item of its kind is active.
+  const THREE = Z.THREE, scene = Z.scene;
+  const root = new THREE.Group(); root.name = 'fx2'; scene.add(root);
+  const KS = Z.fxKinds || (Z.fxKinds = new Set());
+  const clamp = (v, a, b) => v < a ? a : v > b ? b : v, mix = (a, b, t) => a + (b - a) * t;
+  const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  const wrapA = a => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
+  const mulberry = s => () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _s = new THREE.Vector3(), _c = new THREE.Color();
+  const UP = new THREE.Vector3(0, 1, 0);
+  const GLSL_NOISE = `
+float fx2h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float fx2n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(fx2h(i),fx2h(i+vec2(1,0)),f.x),mix(fx2h(i+vec2(0,1)),fx2h(i+vec2(1,1)),f.x),f.y);}
+`;
+
+  // ---------------- character scale: modest close up, big enough to read from the strategic camera ----------------
+  let charK = 1;
+  const charScale = () => clamp(Z.camDist / 80, 1, 160);
+
+  // ---------------- contact shadows: soft ground blobs, one instanced draw for every character ----------------
+  const BLOBN = 128;
+  const blobGeo = new THREE.PlaneGeometry(1, 1); blobGeo.rotateX(-Math.PI / 2);
+  const blobOp = new THREE.InstancedBufferAttribute(new Float32Array(BLOBN), 1); blobOp.setUsage(THREE.DynamicDrawUsage); blobGeo.setAttribute('aOp', blobOp);
+  const blobMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+  blobMat.onBeforeCompile = sh => {
+    sh.vertexShader = 'attribute float aOp;varying float vOp;varying vec2 vQ;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvOp=aOp;vQ=position.xz*2.;');
+    sh.fragmentShader = 'varying float vOp;varying vec2 vQ;\n' + sh.fragmentShader.replace('#include <alphamap_fragment>', '#include <alphamap_fragment>\nfloat r2=dot(vQ,vQ);diffuseColor.a*=vOp*pow(max(0.,1.-r2),1.6);');
+  };
+  const blobs = new THREE.InstancedMesh(blobGeo, blobMat, BLOBN); blobs.frustumCulled = false; blobs.renderOrder = 20; blobs.count = 0;
+  blobs.instanceMatrix.setUsage(THREE.DynamicDrawUsage); root.add(blobs);
+  let nBlob = 0;
+  const blob = (x, z, rot, sx, sz, op) => {
+    if (nBlob >= BLOBN || op <= 0.001) return;
+    _q.setFromAxisAngle(UP, rot); _v.set(x, 0.3 + 0.03 * charK, z); _s.set(sx, 1, sz); _m.compose(_v, _q, _s);
+    blobs.setMatrixAt(nBlob, _m); blobOp.array[nBlob] = op; nBlob++;
+  };
+
+  // ---------------- procedural loft builder (tubes along a bone chain, skinned) ----------------
+  function Loft() { this.p = []; this.si = []; this.sw = []; this.pat = []; this.ix = []; }
+  // rings: [x,y,z, a (radius along "up"), b (radius along side), bone0, bone1, w1 (weight of bone1), param]
+  Loft.prototype.tube = function (rings, n, region, ref, caps) {
+    const T = new THREE.Vector3(), S = new THREE.Vector3(), U = new THREE.Vector3(), R = new THREE.Vector3(ref[0], ref[1], ref[2]), P = new THREE.Vector3();
+    const base = this.p.length / 3, m = rings.length;
+    for (let i = 0; i < m; i++) {
+      const a = rings[Math.max(0, i - 1)], b = rings[Math.min(m - 1, i + 1)], r = rings[i];
+      T.set(b[0] - a[0], b[1] - a[1], b[2] - a[2]).normalize();
+      S.crossVectors(T, R); if (S.lengthSq() < 1e-6) S.set(0, 0, 1); S.normalize(); U.crossVectors(S, T).normalize();
+      for (let j = 0; j < n; j++) {
+        const th = j / n * Math.PI * 2, c = Math.cos(th), s = Math.sin(th);
+        P.set(r[0], r[1], r[2]).addScaledVector(U, r[3] * c).addScaledVector(S, r[4] * s);
+        this.p.push(P.x, P.y, P.z); this.si.push(r[5], r[6], 0, 0); this.sw.push(1 - r[7], r[7], 0, 0);
+        this.pat.push(P.x, P.y, P.z, region + clamp(r[8] != null ? r[8] : i / (m - 1), 0, 1) * 0.98);
+      }
+    }
+    for (let i = 0; i < m - 1; i++) for (let j = 0; j < n; j++) {
+      const a = base + i * n + j, b = base + i * n + (j + 1) % n, c = a + n, d = b + n;
+      this.ix.push(a, b, c, b, d, c);
+    }
+    const cap = (i, end) => {
+      const r = rings[i], o = rings[end ? i - 1 : i + 1]; T.set(r[0] - o[0], r[1] - o[1], r[2] - o[2]).normalize();
+      const k = (Math.min(r[3], r[4])) * 0.35, ci = this.p.length / 3;
+      this.p.push(r[0] + T.x * k, r[1] + T.y * k, r[2] + T.z * k); this.si.push(r[5], r[6], 0, 0); this.sw.push(1 - r[7], r[7], 0, 0);
+      this.pat.push(r[0], r[1], r[2], region + (end ? 0.98 : 0));
+      for (let j = 0; j < n; j++) { const a = base + i * n + j, b = base + i * n + (j + 1) % n; if (end) this.ix.push(ci, a, b); else this.ix.push(ci, b, a); }
+    };
+    if (caps & 1) cap(0, false); if (caps & 2) cap(m - 1, true);
+  };
+  Loft.prototype.geo = function () {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(this.p, 3));
+    g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(this.si, 4));
+    g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(this.sw, 4));
+    g.setAttribute('aPat', new THREE.Float32BufferAttribute(this.pat, 4));
+    g.setIndex(this.ix); g.computeVertexNormals(); return g;
+  };
+  // bones: [name, parentIndex, [x,y,z] absolute bind position]
+  function makeSkel(defs) {
+    const bones = defs.map(d => { const b = new THREE.Bone(); b.name = d[0]; return b; });
+    defs.forEach((d, i) => { const p = d[1] >= 0 ? defs[d[1]][2] : [0, 0, 0]; bones[i].position.set(d[2][0] - p[0], d[2][1] - p[1], d[2][2] - p[2]); if (d[1] >= 0) bones[d[1]].add(bones[i]); });
+    return bones;
+  }
+  // a skinned creature: material colours come from a GLSL function of the bind-pose position and the region
+  function creature(defs, loft, colorGLSL, rough) {
+    const bones = makeSkel(defs), geo = loft.geo();
+    const U = { uFade: { value: 1 } };
+    const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: rough || 0.85, metalness: 0, envMapIntensity: 0.9 });
+    mat.onBeforeCompile = sh => {
+      sh.uniforms.uFade = U.uFade;
+      sh.vertexShader = 'attribute vec4 aPat;varying vec4 vPat;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvPat=aPat;');
+      sh.fragmentShader = 'uniform float uFade;varying vec4 vPat;\n' + sh.fragmentShader.replace('#include <common>', '#include <common>\n' + GLSL_NOISE + colorGLSL + '\n').replace('vec4 diffuseColor = vec4( diffuse, opacity );',
+        'if(fx2h(floor(gl_FragCoord.xy))>uFade)discard;vec4 diffuseColor=vec4(fxCol(vPat.xyz,floor(vPat.w+0.001),fract(vPat.w+0.001)),opacity);');
+    };
+    const mesh = new THREE.SkinnedMesh(geo, mat); mesh.add(bones[0]); mesh.updateMatrixWorld(true);
+    mesh.bind(new THREE.Skeleton(bones)); mesh.frustumCulled = false; mesh.visible = false;
+    const g = new THREE.Group(); g.add(mesh); root.add(g);
+    const by = {}; bones.forEach((b, i) => { by[b.name] = i; });
+    return { g, mesh, bones, by, U, rx: new Float32Array(bones.length), ry: new Float32Array(bones.length), rz: new Float32Array(bones.length) };
+  }
+  const applyPose = (C) => { for (let i = 0; i < C.bones.length; i++) { C.bones[i].rotation.set(C.rx[i], C.ry[i], C.rz[i]); } };
+
+  // path helpers (path in sim coords); per-item cumulative lengths are built once
+  const pathPrep = p => { const c = [0]; for (let i = 1; i < p.length; i++) c.push(c[i - 1] + Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1])); return c; };
+  const PT = { x: 0, y: 0, h: 0 };
+  const pathAt = (p, c, d) => {
+    const L = c[c.length - 1]; d = clamp(d, 0, L); let i = 1; while (i < c.length - 1 && c[i] < d) i++;
+    const a = p[i - 1], b = p[i] || a, sl = Math.max(1e-6, c[i] - c[i - 1]), t = clamp((d - c[i - 1]) / sl, 0, 1);
+    PT.x = a[0] + (b[0] - a[0]) * t; PT.y = a[1] + (b[1] - a[1]) * t; PT.h = Math.atan2(b[1] - a[1], b[0] - a[0]); return PT;
+  };
+  const ST = new Map();   // per-item state (allocated once per item)
+  const stOf = (it, mk) => { let s = ST.get(it); if (!s) { s = mk(); ST.set(it, s); } return s; };
+
+  // =====================================================================================================
+  // THE TIGRESS: a lofted, skinned Bengal tigress (about 2.7 m nose to rump, 0.9 m tail), procedural stripes
+  // =====================================================================================================
+  const TG = (() => {
+    const z1 = 0.135, z2 = 0.145;
+    const defs = [
+      ['root', -1, [0, 0, 0]], ['pelvis', 0, [-0.55, 0.76, 0]], ['spine', 1, [0.0, 0.72, 0]], ['chest', 2, [0.48, 0.74, 0]],
+      ['neck', 3, [0.76, 0.82, 0]], ['head', 4, [0.96, 0.87, 0]],
+      ['t0', 1, [-0.84, 0.80, 0]], ['t1', 6, [-1.0, 0.70, 0]], ['t2', 7, [-1.13, 0.54, 0]], ['t3', 8, [-1.22, 0.38, 0]], ['t4', 9, [-1.32, 0.24, 0]], ['t5', 10, [-1.45, 0.16, 0]],
+      ['flU', 3, [0.50, 0.78, z1]], ['flL', 12, [0.47, 0.47, z1]], ['flP', 13, [0.51, 0.11, z1]],
+      ['frU', 3, [0.50, 0.78, -z1]], ['frL', 15, [0.47, 0.47, -z1]], ['frP', 16, [0.51, 0.11, -z1]],
+      ['hlU', 1, [-0.62, 0.78, z2]], ['hlL', 18, [-0.50, 0.47, z2]], ['hlP', 19, [-0.68, 0.25, z2]],
+      ['hrU', 1, [-0.62, 0.78, -z2]], ['hrL', 21, [-0.50, 0.47, -z2]], ['hrP', 22, [-0.68, 0.25, -z2]],
+    ];
+    const L = new Loft();
+    // torso: x, centre y, half height, half width; bones blend pelvis(1) spine(2) chest(3) neck(4)
+    const bx = [[-0.55, 1], [0.0, 2], [0.48, 3], [0.76, 4]];
+    const bw = x => { if (x <= bx[0][0]) return [1, 1, 0]; for (let i = 0; i < bx.length - 1; i++) if (x <= bx[i + 1][0]) { const t = (x - bx[i][0]) / (bx[i + 1][0] - bx[i][0]); return [bx[i][1], bx[i + 1][1], t]; } return [4, 4, 0]; };
+    const tor = [[-0.9, 0.78, 0.07, 0.06], [-0.86, 0.77, 0.16, 0.13], [-0.78, 0.75, 0.22, 0.18], [-0.64, 0.74, 0.25, 0.205], [-0.46, 0.725, 0.255, 0.21], [-0.22, 0.705, 0.25, 0.205],
+      [0.02, 0.70, 0.27, 0.215], [0.24, 0.695, 0.30, 0.225], [0.42, 0.70, 0.315, 0.225], [0.58, 0.735, 0.29, 0.205], [0.70, 0.79, 0.225, 0.17], [0.80, 0.83, 0.18, 0.145], [0.88, 0.855, 0.16, 0.135]];
+    L.tube(tor.map(r => { const w = bw(r[0]); return [r[0], r[1], 0, r[2], r[3], w[0], w[1], w[2], (r[0] + 0.9) / 1.8]; }), 18, 0, [0, 1, 0], 1);
+    // head: neck(4) to head(5)
+    const hd = [[0.84, 0.85, 0.15, 0.13, 0], [0.92, 0.865, 0.165, 0.155, 0.6], [1.0, 0.875, 0.165, 0.17, 1], [1.08, 0.87, 0.15, 0.158, 1], [1.15, 0.855, 0.125, 0.13, 1],
+      [1.21, 0.835, 0.10, 0.10, 1], [1.27, 0.815, 0.08, 0.082, 1], [1.31, 0.805, 0.062, 0.066, 1], [1.335, 0.80, 0.03, 0.036, 1]];
+    L.tube(hd.map(r => [r[0], r[1], 0, r[2] * 1.1, r[3] * 1.12, 4, 5, r[4], (r[0] - 0.84) / 0.5]), 16, 2, [0, 1, 0], 3);
+    // ears
+    for (const s of [1, -1]) L.tube([[0.985, 0.97, 0.10 * s, 0.05, 0.03, 5, 5, 0, 0], [0.98, 1.02, 0.112 * s, 0.04, 0.022, 5, 5, 0, 0.6], [0.975, 1.055, 0.118 * s, 0.012, 0.008, 5, 5, 0, 1]], 8, 4, [1, 0, 0], 2);
+    // tail: t0..t5 (6..11)
+    const tl = [[-0.86, 0.79, 0.05], [-1.0, 0.70, 0.048], [-1.13, 0.54, 0.045], [-1.22, 0.38, 0.042], [-1.32, 0.24, 0.04], [-1.45, 0.16, 0.038], [-1.55, 0.14, 0.03]];
+    L.tube(tl.map((r, i) => [r[0], r[1], 0, r[2], r[2], 6 + Math.min(i, 5), 6 + Math.min(i + 1, 5), i < 5 ? 0.5 : 0, i / 6]), 8, 3, [0, 0, 1], 3);
+    // legs: front (shoulder 12/15), hind (hip 18/21). Rings: x, y, half side width, half front-back thickness, bone a, bone b, w
+    const fl = (z, b0) => [[0.52, 0.80, 0.10, 0.15, 3, b0, 0.5], [0.49, 0.62, 0.095, 0.12, b0, b0, 0], [0.47, 0.47, 0.08, 0.085, b0, b0 + 1, 0.5], [0.48, 0.30, 0.065, 0.068, b0 + 1, b0 + 1, 0],
+      [0.51, 0.13, 0.06, 0.058, b0 + 1, b0 + 2, 0.6], [0.53, 0.06, 0.075, 0.055, b0 + 2, b0 + 2, 0], [0.59, 0.04, 0.078, 0.045, b0 + 2, b0 + 2, 0], [0.645, 0.032, 0.05, 0.03, b0 + 2, b0 + 2, 0]].map((r, i) => [r[0], r[1], z, r[2], r[3], r[4], r[5], r[6], i / 7]);
+    const hl = (z, b0) => [[-0.60, 0.84, 0.11, 0.19, 1, b0, 0.5], [-0.57, 0.66, 0.11, 0.16, b0, b0, 0], [-0.50, 0.47, 0.075, 0.09, b0, b0 + 1, 0.5], [-0.60, 0.35, 0.055, 0.065, b0 + 1, b0 + 1, 0],
+      [-0.68, 0.25, 0.05, 0.055, b0 + 1, b0 + 2, 0.5], [-0.66, 0.12, 0.05, 0.05, b0 + 2, b0 + 2, 0], [-0.63, 0.055, 0.07, 0.05, b0 + 2, b0 + 2, 0], [-0.57, 0.04, 0.072, 0.042, b0 + 2, b0 + 2, 0],
+      [-0.525, 0.032, 0.045, 0.028, b0 + 2, b0 + 2, 0]].map((r, i) => [r[0], r[1], z, r[2], r[3], r[4], r[5], r[6], i / 8]);
+    L.tube(fl(z1, 12), 10, 1, [0, 0, 1], 2); L.tube(fl(-z1, 15), 10, 1, [0, 0, 1], 2);
+    L.tube(hl(z2, 18), 10, 1, [0, 0, 1], 2); L.tube(hl(-z2, 21), 10, 1, [0, 0, 1], 2);
+    const col = `
+vec3 fxCol(vec3 P,float reg,float t){
+  vec3 org=vec3(0.80,0.25,0.035),rust=vec3(0.50,0.10,0.012),crm=vec3(0.86,0.78,0.62),blk=vec3(0.012,0.009,0.007);
+  vec3 c=org;float st=0.;
+  if(reg<0.5){ // torso
+    float ang=abs(atan(P.z,P.y-0.70));
+    c=mix(org,rust,0.55*smoothstep(1.3,0.,ang));
+    float u=P.x*8.2+0.22*sin(ang*3.5+P.x*7.)+0.35*fx2n(vec2(P.x*5.,ang*2.3));
+    float w=mix(0.30,0.07,smoothstep(0.2,2.2,ang));
+    float d=abs(fract(u)-0.5);st=1.-smoothstep(w*0.5-0.03,w*0.5+0.03,d);
+    st*=step(0.22,fx2n(vec2(P.x*11.,ang*3.1+4.)));st*=1.-smoothstep(1.85,2.35,ang);
+    float d2=abs(fract(u+0.22)-0.5);st=max(st,(1.-smoothstep(0.03,0.05,d2))*step(0.55,fx2n(vec2(P.x*9.,ang*4.)))*(1.-smoothstep(1.2,1.9,ang)));
+    c=mix(c,crm,smoothstep(1.95,2.45,ang));
+    c=mix(c,crm,smoothstep(-0.62,-0.75,P.x)*smoothstep(0.6,1.6,ang)*0.6);
+  } else if(reg<1.5){ // legs
+    float side=abs(P.z);
+    c=mix(org,crm,smoothstep(0.75,0.95,t)*0.7);
+    float inner=smoothstep(0.135,0.095,side)*smoothstep(0.75,0.35,P.y);c=mix(c,crm,inner*0.6);
+    float u=P.y*9.5+0.4*sin(P.x*21.);float d=abs(fract(u)-0.5);
+    st=(1.-smoothstep(0.08,0.13,d))*(1.-inner)*step(0.3,P.y)*step(0.3,fx2n(vec2(P.y*7.,P.x*9.)));
+  } else if(reg<2.5){ // head
+    float z=abs(P.z),y=P.y;
+    c=mix(org,rust,0.3*smoothstep(0.85,0.98,y));
+    float cheek=smoothstep(0.085,0.135,z)*smoothstep(0.88,0.80,y)*step(1.0,P.x);
+    float muz=smoothstep(1.19,1.24,P.x)*smoothstep(0.86,0.80,y);
+    float chin=smoothstep(0.82,0.76,y);
+    c=mix(c,crm,clamp(cheek+muz+chin,0.,1.));
+    float brow=1.-smoothstep(0.012,0.022,length(vec2(P.x-1.135,(y-0.945)*1.4))-0.0)*1.;brow=max(brow,1.-smoothstep(0.014,0.024,length(vec2(P.x-1.15,y-0.925))));
+    c=mix(c,crm,brow*step(0.03,z)*step(z,0.1));
+    float fs=abs(fract(z*26.+P.x*3.)-0.5);st=(1.-smoothstep(0.08,0.14,fs))*smoothstep(0.93,0.96,y)*step(P.x,1.16);
+    float ck=abs(fract((y-0.8)*30.+P.x*8.)-0.5);st=max(st,(1.-smoothstep(0.06,0.12,ck))*smoothstep(0.11,0.15,z)*step(1.0,P.x)*step(P.x,1.13));
+    vec2 ed=vec2(P.x-1.165,y-0.905);float er=length(ed);
+    float eye=(1.-smoothstep(0.016,0.021,er))*step(0.045,z)*step(z,0.10);
+    c=mix(c,mix(vec3(0.55,0.33,0.02),blk,1.-smoothstep(0.004,0.009,er)),eye);
+    st=max(st,(1.-smoothstep(0.021,0.026,er))*(smoothstep(0.016,0.021,er))*step(0.045,z)*step(z,0.10));
+    c=mix(c,vec3(0.32,0.12,0.09),smoothstep(1.305,1.32,P.x)*smoothstep(0.78,0.81,y));
+  } else if(reg<3.5){ // tail
+    c=mix(org,crm,0.2);float d=abs(fract(t*9.)-0.5);st=(1.-smoothstep(0.17,0.22,d))*step(0.15,t);st=max(st,step(0.86,t));
+  } else { // ears: black backs with a white spot, pale fronts
+    float back=step(P.x,0.982);float spot=1.-smoothstep(0.008,0.014,length(vec2(P.y-1.01,abs(P.z)-0.112)));
+    c=mix(crm,blk,back);c=mix(c,crm,back*spot);
+  }
+  return mix(c,blk,st);
+}`;
+    const C = creature(defs, L, col, 0.86);
+    C.g.name = 'tiger';
+    return C;
+  })();
+
+  // ---- pose library: writes bone angles into C.rx/ry/rz (weighted, accumulated) ----
+  const P0 = { y: 0, roll: 0 };
+  function poseClear(C) { C.rx.fill(0); C.ry.fill(0); C.rz.fill(0); P0.y = 0; P0.roll = 0; }
+  const B = TG.by;
+  const LEGS_T = [[B.hlU, 0, 1], [B.flU, 0.25, 0], [B.hrU, 0.5, 1], [B.frU, 0.75, 0]];   // lateral-sequence walk
+  const LEGS_L = [[B.hlU, 0.0, 1], [B.hrU, 0.1, 1], [B.flU, 0.5, 0], [B.frU, 0.6, 0]];   // rotary lope
+  function tigerGait(C, ph, w, lope, now) {
+    const sw = lope ? 0.52 : 0.38, A = lope ? 0.62 : 0.36, legs = lope ? LEGS_L : LEGS_T;
+    for (const [u, off, hind] of legs) {
+      const q = ((ph + off) % 1 + 1) % 1; let a, lift, s;
+      if (q < sw) { s = q / sw; a = mix(-A, A, 0.5 - 0.5 * Math.cos(Math.PI * s)); lift = Math.sin(Math.PI * s); }
+      else { s = (q - sw) / (1 - sw); a = mix(A, -A, s); lift = 0; }
+      if (hind) { C.rz[u] += w * (a * 0.85 - 0.04); C.rz[u + 1] += w * (-0.75 * lift); C.rz[u + 2] += w * (1.1 * lift - (a * 0.85 - 0.75 * lift) * 0.7); }
+      else { C.rz[u] += w * (a + 0.04); C.rz[u + 1] += w * (-0.35 * lift + (lope ? 0.25 * lift : 0)); C.rz[u + 2] += w * (-1.25 * lift * (1 - 0.4 * s) - a * 0.85 * (1 - lift)); }
+    }
+    const k = Math.PI * 2 * ph;
+    if (lope) {
+      P0.y += w * (0.06 * Math.sin(k * 2 + 0.6) - 0.03);
+      C.rz[B.pelvis] += w * 0.12 * Math.sin(k + 0.3); C.rz[B.chest] += w * -0.14 * Math.sin(k + 1.0);
+      C.rz[B.neck] += w * (-0.18 + 0.06 * Math.sin(k)); C.rz[B.t0] += w * -0.95; C.rz[B.t1] += w * -0.3; C.rz[B.t5] += w * -0.3;
+      for (let i = 0; i < 6; i++) C.ry[B.t0 + i] += w * 0.08 * Math.sin(k - i * 0.7);
+    } else {
+      P0.y += w * (-0.012 - 0.012 * Math.cos(k * 2));
+      C.ry[B.pelvis] += w * 0.05 * Math.sin(k); C.ry[B.chest] += w * -0.06 * Math.sin(k); C.rx[B.spine] += w * 0.02 * Math.sin(k);
+      C.rz[B.neck] += w * -0.16; C.rz[B.head] += w * 0.08; C.ry[B.neck] += w * 0.05 * Math.sin(k + 1);
+      C.rz[B.t0] += w * -0.3; C.rz[B.t3] += w * -0.2; C.rz[B.t4] += w * -0.45; C.rz[B.t5] += w * -0.55;
+      for (let i = 0; i < 6; i++) C.ry[B.t0 + i] += w * 0.13 * Math.sin(k - i * 0.6 + now * 0.4);
+    }
+  }
+  function tigerStand(C, w, now, seed) {
+    const look = Math.sin(now * 0.35 + seed) * 0.5 + Math.sin(now * 0.13 + seed * 2) * 0.3;
+    C.ry[B.neck] += w * look * 0.6; C.ry[B.head] += w * look * 0.4; C.rz[B.neck] += w * -0.05; C.rz[B.head] += w * 0.05;
+    const fl = Math.pow(Math.max(0, Math.sin(now * 0.9 + seed)), 6);
+    C.rz[B.t0] += w * -0.15; C.rz[B.t4] += w * -(0.4 + fl * 0.5); C.rz[B.t5] += w * -(0.5 + fl * 0.6);
+    for (let i = 0; i < 6; i++) C.ry[B.t0 + i] += w * (0.1 * Math.sin(now * 0.8 - i * 0.5) + fl * 0.25 * Math.sin(now * 7 - i));
+    P0.y += w * 0.005 * Math.sin(now * 1.6);
+  }
+  function tigerSit(C, w, now, seed) {
+    const p = 0.46;
+    P0.y += w * -0.47; C.rz[B.pelvis] += w * p;
+    C.rz[B.flU] += w * -p; C.rz[B.frU] += w * -p; C.rz[B.flP] += w * 0.02; C.rz[B.frP] += w * 0.02;
+    for (const u of [B.hlU, B.hrU]) { C.rz[u] += w * 1.0; C.rz[u + 1] += w * -2.1; C.rz[u + 2] += w * 1.15; C.rx[u] += w * (u === B.hlU ? -0.42 : 0.42); }
+    C.rx[B.flU] += w * -0.06; C.rx[B.frU] += w * 0.06;
+    C.rz[B.neck] += w * -0.32; C.rz[B.head] += w * -0.08;
+    const look = Math.sin(now * 0.3 + seed) * 0.6;
+    C.ry[B.neck] += w * look * 0.5; C.ry[B.head] += w * look * 0.4;
+    C.rz[B.t0] += w * -0.75; C.rz[B.t1] += w * 0.55; C.rz[B.t2] += w * 0.5;
+    const fl = Math.pow(Math.max(0, Math.sin(now * 1.1 + seed)), 5);
+    for (let i = 1; i < 6; i++) C.ry[B.t0 + i] += w * (0.35 + fl * 0.3 * Math.sin(now * 8 - i));
+  }
+  function tigerLie(C, w, now) {
+    // darted: rolled onto her side, legs out, head down, slow breathing
+    const br = Math.sin(now * 1.3) * 0.015;
+    P0.y += w * -0.12; P0.roll += w * 1.32;
+    C.rz[B.flU] += w * 0.55; C.rz[B.flL] += w * -0.35; C.rz[B.frU] += w * 0.3; C.rz[B.frL] += w * -0.5;
+    C.rz[B.hlU] += w * 0.35; C.rz[B.hlL] += w * -0.3; C.rz[B.hlP] += w * 0.3; C.rz[B.hrU] += w * 0.6; C.rz[B.hrL] += w * -0.6; C.rz[B.hrP] += w * 0.5;
+    C.rx[B.flU] += w * -0.15; C.rx[B.hlU] += w * -0.15;
+    C.rz[B.neck] += w * 0.1; C.rx[B.neck] += w * 0.25; C.rx[B.head] += w * 0.2; C.rz[B.spine] += w * br; C.rz[B.chest] += w * br;
+    C.rz[B.t0] += w * 0.6; for (let i = 1; i < 6; i++) C.ry[B.t0 + i] += w * 0.22;
+  }
+
+  // per-frame tiger logic
+  const tigerItems = [];
+  function tigerUpdate(list, dt, now, dTs) {
+    const C = TG; const it = list[0];
+    if (!it) { C.mesh.visible = false; return; }
+    const st = stOf(it, () => ({ c: pathPrep(it.path), d: 0, ph: 0, wW: 1, wS: 0, wT: 0, wL: 0, wP: 0, hd: null, x: 0, y: 0, ex: null, exT: 0, seed: (it.id.length * 1.7) % 6, init: false, fade: 0 }));
+    const T = Z.T, L = st.c[st.c.length - 1], s = charK;
+    if (!st.init) { st.init = true; st.d = 0; pathAt(it.path, st.c, 0); st.x = PT.x; st.y = PT.y; st.hd = PT.h; st.th = PT.h; }
+    // state by sim time: darted > exit > walking the path at path-length / duration, with pauses folded in
+    // (a 110 sim-s cycle: walk 75, stop and look 10, then sit or stand 25)
+    let want = 'walk';
+    const darted = it.darted != null && T >= it.darted, tau = T - it.t0, cyc = ((tau % 110) + 110) % 110, nCyc = Math.floor(tau / 110);
+    if (darted) want = 'lie';
+    else if (it.exit) { want = 'lope'; if (!st.ex) { st.ex = it.exit; st.exT = Math.min(T, it.t1 - 60); } }
+    else if (st.d >= L - 1) want = cyc < 40 ? 'stand' : 'sit';
+    else if (tau > 20 && cyc >= 75) want = cyc < 85 || (nCyc & 1) ? 'stand' : 'sit';
+    let speed = 0;
+    if (want === 'walk' && dTs > 0) {
+      const wt = t => { const u = Math.max(0, t - it.t0); return Math.floor(u / 110) * 75 + Math.min(u % 110, 75); };
+      const tEnd = it.darted != null ? it.darted : it.t1;
+      const rem = tEnd - T < 3000 ? wt(tEnd) - wt(T) : 1e9;
+      const v = rem < 1e8 ? clamp((L - st.d) / Math.max(5, rem), 0.4, 9) : 2.6;
+      const dd = Math.min(dTs, 30) * v; st.d = Math.min(L, st.d + dd); pathAt(it.path, st.c, st.d); st.x = PT.x; st.y = PT.y; st.th = PT.h; speed = dd;
+    }
+    else if (want === 'lope' && dTs > 0) {
+      const tx = st.ex[0] - st.x, ty = st.ex[1] - st.y, dl = Math.hypot(tx, ty);
+      const dd = Math.min(dl, Math.min(dTs, 30) * clamp(dl / Math.max(4, it.t1 - T), 1, 25)); if (dl > 1) { st.x += tx / dl * dd; st.y += ty / dl * dd; st.th = Math.atan2(ty, tx); } speed = dd;
+    }
+    if (st.th != null) st.hd += wrapA(st.th - st.hd) * Math.min(1, dt * (want === 'lope' ? 3 : 1.6));
+    // gait phase from real displacement (no foot sliding where possible), capped to a natural cadence close up
+    const stride = (want === 'lope' ? 3.3 : 1.45) * s;
+    st.ph = (st.ph + Math.min(speed / stride, dt * (want === 'lope' ? 2.6 : 1.5))) % 1;
+    const k = Math.min(1, dt * 2.2);
+    st.wW += ((want === 'walk' ? 1 : 0) - st.wW) * k; st.wS += ((want === 'sit' ? 1 : 0) - st.wS) * k * 0.8; st.wT += ((want === 'stand' ? 1 : 0) - st.wT) * k;
+    st.wL += ((want === 'lie' ? 1 : 0) - st.wL) * Math.min(1, dt * 0.9); st.wP += ((want === 'lope' ? 1 : 0) - st.wP) * Math.min(1, dt * 4);
+    const ws = st.wW + st.wS + st.wT + st.wL + st.wP || 1;
+    poseClear(C);
+    if (st.wW > 0.01) tigerGait(C, st.ph, st.wW / ws, false, now);
+    if (st.wP > 0.01) tigerGait(C, st.ph, st.wP / ws, true, now);
+    if (st.wT > 0.01) tigerStand(C, st.wT / ws, now, st.seed);
+    if (st.wS > 0.01) tigerSit(C, st.wS / ws, now, st.seed);
+    if (st.wL > 0.01) tigerLie(C, st.wL / ws, now);
+    C.rz[0] = 0; C.ry[0] = 0; C.rx[0] = P0.roll; applyPose(C);
+    // fade in at t0, out before t1 (dart team took her / she has gone into the grass)
+    const fin = smooth(it.t0, it.t0 + 8, T), fout = it.exit ? 1 - smooth(it.t1 - 25, it.t1 - 2, T) : 1 - smooth(it.t1 - 14, it.t1 - 1, T);
+    const fade = Math.min(fin, fout);
+    C.U.uFade.value = fade; C.mesh.visible = fade > 0.01;
+    const g = C.g; g.position.set(st.x, P0.y * s, st.y); g.rotation.set(0, -st.hd, 0); g.scale.setScalar(s);
+    if (P0.roll > 0.01) { g.position.x += -Math.sin(st.hd) * 0.55 * s * Math.min(1, P0.roll); g.position.z += Math.cos(st.hd) * 0.55 * s * Math.min(1, P0.roll); }
+    g.updateMatrixWorld(true);
+    // contact shadows: body (soft, offset from the sun), and one under each paw
+    const ch = Math.cos(st.hd), sh = Math.sin(st.hd), sd = Z.sunDir || UP, lie = Math.min(1, st.wL), sk = 0.45 * s * (1 - 0.8 * lie) / Math.max(0.3, sd.y);
+    blob(st.x - sd.x * sk, st.y - sd.z * sk, -st.hd, 2.7 * s, (0.8 + 0.6 * lie) * s, 0.55 * fade);
+    blob(st.x, st.y, -st.hd, 2.1 * s, (0.62 + 0.5 * lie) * s, 0.5 * fade);
+    for (const pb of [B.flP, B.frP, B.hlP, B.hrP]) {
+      C.bones[pb].getWorldPosition(_v2); const h = clamp(1 - _v2.y / (0.25 * s), 0, 1);
+      blob(_v2.x + ch * 0.06 * s, _v2.z + sh * 0.06 * s, -st.hd, 0.42 * s, 0.3 * s, 0.7 * h * fade * (1 - lie));
+    }
+  }
+  KS.add('tiger');
+
+  // =====================================================================================================
+  // UTTARAYAN KITES: instanced two-tone paper patangs with fluttering tail ribbons, plus faint strings to the rooftops
+  // =====================================================================================================
+  const KT = (() => {
+    const N = 160, P = [], A = [];   // A: part (0 main colour, 1 second colour, 2 stick, 3+t tail)
+    const tri = (a, b, c, part) => { P.push(...a, ...b, ...c); A.push(part, part, part); };
+    const top = [0, 0.62, 0], bot = [0, -0.5, 0], l = [-0.5, 0.12, 0.06], r = [0.5, 0.12, 0.06], ctr = [0, 0.12, -0.04];
+    tri(top, l, ctr, 0); tri(top, ctr, r, 1); tri(ctr, l, bot, 1); tri(ctr, bot, r, 0);
+    // bamboo sticks (thin dark slivers along the spine and the bow)
+    tri([-0.012, 0.62, 0.01], [0.012, 0.62, 0.01], [0, -0.5, 0.01], 2); tri([-0.5, 0.12, 0.07], [0.5, 0.12, 0.07], [0, 0.17, 0.0], 2);
+    // tail ribbon: two streamers from the bottom tip
+    for (const sx of [-1, 1]) for (let i = 0; i < 7; i++) {
+      const t0 = i / 7, t1 = (i + 1) / 7, y0 = -0.5 - t0 * 1.3, y1 = -0.5 - t1 * 1.3, w = 0.04, x0 = sx * 0.05 * t0 * 3, x1 = sx * 0.05 * t1 * 3;
+      tri([x0 - w, y0, 0], [x0 + w, y0, 0], [x1 + w, y1, 0], 3 + t0 * 0.98); A[A.length - 1] = 3 + t1 * 0.98;
+      tri([x0 - w, y0, 0], [x1 + w, y1, 0], [x1 - w, y1, 0], 3 + t0 * 0.98); A[A.length - 2] = 3 + t1 * 0.98; A[A.length - 1] = 3 + t1 * 0.98;
+    }
+    const g = new THREE.InstancedBufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('aPart', new THREE.Float32BufferAttribute(A, 1)); g.computeVertexNormals();
+    const c1 = new THREE.InstancedBufferAttribute(new Float32Array(N * 3), 3), c2 = new THREE.InstancedBufferAttribute(new Float32Array(N * 3), 3), ph = new THREE.InstancedBufferAttribute(new Float32Array(N), 1);
+    g.setAttribute('aC1', c1); g.setAttribute('aC2', c2); g.setAttribute('aPh', ph);
+    const PAL = ['#e8177d', '#ff8a00', '#ffd400', '#1fa83c', '#1e88e5', '#e53935', '#8e24aa', '#f5f5f5', '#00acc1', '#ff5252'];
+    const R = mulberry(4242);
+    for (let i = 0; i < N; i++) { const a = new THREE.Color(PAL[i % PAL.length]), b = new THREE.Color(PAL[(i * 7 + 3) % PAL.length]); if (b.equals(a)) b.set('#ffffff'); c1.setXYZ(i, a.r, a.g, a.b); c2.setXYZ(i, b.r, b.g, b.b); ph.setX(i, R() * 100); }
+    const U = { uTime: { value: 0 } };
+    const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide, roughness: 0.75, metalness: 0, emissive: 0xffffff, emissiveIntensity: 1 });
+    mat.onBeforeCompile = sh => {
+      sh.uniforms.uTime = U.uTime;
+      sh.vertexShader = 'uniform float uTime;attribute float aPart;attribute vec3 aC1;attribute vec3 aC2;attribute float aPh;varying vec3 vKC;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+        vKC=aPart<0.5?aC1:aPart<1.5?aC2:aPart<2.5?vec3(0.12,0.08,0.04):mix(aC2,aC1,step(0.5,fract((aPart-3.)*3.)));
+        if(aPart>=3.){float t=aPart-3.;transformed.z+=sin(uTime*9.+aPh+t*7.)*0.22*t;transformed.x+=sin(uTime*6.3+aPh*1.7+t*5.)*0.18*t;}
+        else{transformed.z+=sin(uTime*13.+aPh)*0.03*(abs(position.x)*2.);}`);
+      sh.fragmentShader = 'varying vec3 vKC;\n' + sh.fragmentShader.replace('vec4 diffuseColor = vec4( diffuse, opacity );', 'vec4 diffuseColor=vec4(vKC*0.7,opacity);')
+        .replace('vec3 totalEmissiveRadiance = emissive;', 'vec3 totalEmissiveRadiance=vKC*0.5;');
+    };
+    const mesh = new THREE.InstancedMesh(g, mat, N); mesh.frustumCulled = false; mesh.count = 0; mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); root.add(mesh);
+    const sp = new Float32Array(N * 6), sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(sp, 3)); sg.attributes.position.setUsage(THREE.DynamicDrawUsage);
+    const strings = new THREE.LineSegments(sg, new THREE.LineBasicMaterial({ color: 0xf4efe6, transparent: true, opacity: 0.32, depthWrite: false }));
+    strings.frustumCulled = false; strings.visible = false; root.add(strings);
+    const rnd = new Float32Array(N * 8); { const Rr = mulberry(99); for (let i = 0; i < rnd.length; i++) rnd[i] = Rr(); }
+    return { mesh, strings, sp, rnd, U, N };
+  })();
+  function kitesUpdate(list, dt, now) {
+    let n = 0; const T = Z.T, k = clamp(Z.camDist / 75, 1.2, 140), N = KT.N, rnd = KT.rnd;
+    KT.U.uTime.value = now;
+    for (const it of list) {
+      const m = Math.min(it.n || 40, N - n), span = it.sp || 1500, alt = it.alt || 180;
+      for (let j = 0; j < m; j++) {
+        const i = n, q = j * 8 % (N * 8), r0 = rnd[q], r1 = rnd[q + 1], r2 = rnd[q + 2], r3 = rnd[q + 3], r4 = rnd[q + 4];
+        const tIn = it.t0 + r0 * 45, tOut = it.t1 - r1 * 70;
+        let a = smooth(tIn, tIn + 12, T), fall = 0;
+        if (T > tOut) { fall = clamp((T - tOut) / 30, 0, 1); a = 1 - smooth(0.7, 1, fall); }   // a cut kite tumbles away
+        if (a <= 0.001) continue;
+        const ang = r2 * Math.PI * 2, rad = Math.sqrt(r3) * span, drift = (T - it.t0) * 0.45;
+        const ph = r4 * 50, sw = now * (0.35 + r0 * 0.3) + ph;
+        const dive = Math.pow(Math.max(0, Math.sin(now * 0.23 + ph)), 8);   // an occasional swooping dive
+        const x = it.x + Math.cos(ang) * rad + Math.sin(sw) * 0.05 * alt + fall * 40 * Math.sin(ph);
+        const z = it.y + Math.sin(ang) * rad * 0.6 + drift + fall * 120 + Math.cos(sw * 0.8) * 0.03 * alt;
+        const y = alt * (0.6 + r1 * 0.7) * (1 - 0.35 * dive) * (1 - 0.85 * fall) + Math.sin(now * 1.3 + ph) * 0.03 * alt + 10;
+        _e.set(-1.15 + 0.25 * Math.sin(now * 1.7 + ph) + dive * 0.8 + fall * 3 * Math.sin(now * 3 + ph), Math.sin(sw * 0.7) * 0.5, Math.sin(now * 2.3 + ph * 1.3) * 0.35 + dive * 1.5 * Math.sin(now * 2 + ph) + fall * now * 2, 'YXZ');
+        _q.setFromEuler(_e); _v.set(x, y, z); _s.setScalar(k * (0.7 + r2 * 0.6) * a);
+        _m.compose(_v, _q, _s); KT.mesh.setMatrixAt(i, _m);
+        const o = i * 6; KT.sp[o] = x; KT.sp[o + 1] = y - 0.5 * k; KT.sp[o + 2] = z;
+        KT.sp[o + 3] = x + (r3 - 0.5) * alt * 0.8; KT.sp[o + 4] = fall > 0 ? y : 4; KT.sp[o + 5] = z - alt * (1.1 + r4 * 0.6);
+        n++;
+      }
+    }
+    KT.mesh.count = n; KT.mesh.visible = n > 0; KT.strings.visible = n > 0;
+    if (n) { KT.mesh.instanceMatrix.needsUpdate = true; KT.strings.geometry.setDrawRange(0, n * 2); KT.strings.geometry.attributes.position.needsUpdate = true;
+      const f = list[0]; KT.strings.material.opacity = 0.3 * smooth(f.t0, f.t0 + 20, Z.T) * (1 - smooth(f.t1 - 20, f.t1, Z.T)); }
+  }
+  KS.add('kites');
+
+  // =====================================================================================================
+  // per frame
+  // =====================================================================================================
+  let lastT = null;
+  const L = { tiger: [], kites: [] };
+  return {
+    update(dt, now) {
+      const fx = Z.fx || [], T = Z.T;
+      const dTs = lastT == null ? 0 : Math.max(0, T - lastT); lastT = T;
+      for (const k in L) L[k].length = 0;
+      for (let i = 0; i < fx.length; i++) { const o = fx[i]; if (L[o.kind] && T >= o.t0 - 1 && T <= o.t1 + 2) L[o.kind].push(o); }
+      if (ST.size > 64) ST.clear();
+      const want = charScale(); charK += (want - charK) * Math.min(1, dt * 3);
+      nBlob = 0;
+      tigerUpdate(L.tiger, dt, now, dTs);
+      kitesUpdate(L.kites, dt, now);
+      blobs.count = nBlob; blobs.visible = nBlob > 0;
+      if (nBlob) { blobs.instanceMatrix.needsUpdate = true; blobOp.needsUpdate = true; }
+    },
   };
 };
 

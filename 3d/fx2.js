@@ -324,10 +324,82 @@ vec3 fxCol(vec3 P,float reg,float t){
   KS.add('tiger');
 
   // =====================================================================================================
+  // UTTARAYAN KITES: instanced two-tone paper patangs with fluttering tail ribbons, plus faint strings to the rooftops
+  // =====================================================================================================
+  const KT = (() => {
+    const N = 160, P = [], A = [];   // A: part (0 main colour, 1 second colour, 2 stick, 3+t tail)
+    const tri = (a, b, c, part) => { P.push(...a, ...b, ...c); A.push(part, part, part); };
+    const top = [0, 0.62, 0], bot = [0, -0.5, 0], l = [-0.5, 0.12, 0.06], r = [0.5, 0.12, 0.06], ctr = [0, 0.12, -0.04];
+    tri(top, l, ctr, 0); tri(top, ctr, r, 1); tri(ctr, l, bot, 1); tri(ctr, bot, r, 0);
+    // bamboo sticks (thin dark slivers along the spine and the bow)
+    tri([-0.012, 0.62, 0.01], [0.012, 0.62, 0.01], [0, -0.5, 0.01], 2); tri([-0.5, 0.12, 0.07], [0.5, 0.12, 0.07], [0, 0.17, 0.0], 2);
+    // tail ribbon: two streamers from the bottom tip
+    for (const sx of [-1, 1]) for (let i = 0; i < 7; i++) {
+      const t0 = i / 7, t1 = (i + 1) / 7, y0 = -0.5 - t0 * 1.3, y1 = -0.5 - t1 * 1.3, w = 0.04, x0 = sx * 0.05 * t0 * 3, x1 = sx * 0.05 * t1 * 3;
+      tri([x0 - w, y0, 0], [x0 + w, y0, 0], [x1 + w, y1, 0], 3 + t0 * 0.98); A[A.length - 1] = 3 + t1 * 0.98;
+      tri([x0 - w, y0, 0], [x1 + w, y1, 0], [x1 - w, y1, 0], 3 + t0 * 0.98); A[A.length - 2] = 3 + t1 * 0.98; A[A.length - 1] = 3 + t1 * 0.98;
+    }
+    const g = new THREE.InstancedBufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('aPart', new THREE.Float32BufferAttribute(A, 1)); g.computeVertexNormals();
+    const c1 = new THREE.InstancedBufferAttribute(new Float32Array(N * 3), 3), c2 = new THREE.InstancedBufferAttribute(new Float32Array(N * 3), 3), ph = new THREE.InstancedBufferAttribute(new Float32Array(N), 1);
+    g.setAttribute('aC1', c1); g.setAttribute('aC2', c2); g.setAttribute('aPh', ph);
+    const PAL = ['#e8177d', '#ff8a00', '#ffd400', '#1fa83c', '#1e88e5', '#e53935', '#8e24aa', '#f5f5f5', '#00acc1', '#ff5252'];
+    const R = mulberry(4242);
+    for (let i = 0; i < N; i++) { const a = new THREE.Color(PAL[i % PAL.length]), b = new THREE.Color(PAL[(i * 7 + 3) % PAL.length]); if (b.equals(a)) b.set('#ffffff'); c1.setXYZ(i, a.r, a.g, a.b); c2.setXYZ(i, b.r, b.g, b.b); ph.setX(i, R() * 100); }
+    const U = { uTime: { value: 0 } };
+    const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide, roughness: 0.75, metalness: 0, emissive: 0xffffff, emissiveIntensity: 1 });
+    mat.onBeforeCompile = sh => {
+      sh.uniforms.uTime = U.uTime;
+      sh.vertexShader = 'uniform float uTime;attribute float aPart;attribute vec3 aC1;attribute vec3 aC2;attribute float aPh;varying vec3 vKC;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+        vKC=aPart<0.5?aC1:aPart<1.5?aC2:aPart<2.5?vec3(0.12,0.08,0.04):mix(aC2,aC1,step(0.5,fract((aPart-3.)*3.)));
+        if(aPart>=3.){float t=aPart-3.;transformed.z+=sin(uTime*9.+aPh+t*7.)*0.22*t;transformed.x+=sin(uTime*6.3+aPh*1.7+t*5.)*0.18*t;}
+        else{transformed.z+=sin(uTime*13.+aPh)*0.03*(abs(position.x)*2.);}`);
+      sh.fragmentShader = 'varying vec3 vKC;\n' + sh.fragmentShader.replace('vec4 diffuseColor = vec4( diffuse, opacity );', 'vec4 diffuseColor=vec4(vKC*0.7,opacity);')
+        .replace('vec3 totalEmissiveRadiance = emissive;', 'vec3 totalEmissiveRadiance=vKC*0.5;');
+    };
+    const mesh = new THREE.InstancedMesh(g, mat, N); mesh.frustumCulled = false; mesh.count = 0; mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); root.add(mesh);
+    const sp = new Float32Array(N * 6), sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(sp, 3)); sg.attributes.position.setUsage(THREE.DynamicDrawUsage);
+    const strings = new THREE.LineSegments(sg, new THREE.LineBasicMaterial({ color: 0xf4efe6, transparent: true, opacity: 0.32, depthWrite: false }));
+    strings.frustumCulled = false; strings.visible = false; root.add(strings);
+    const rnd = new Float32Array(N * 8); { const Rr = mulberry(99); for (let i = 0; i < rnd.length; i++) rnd[i] = Rr(); }
+    return { mesh, strings, sp, rnd, U, N };
+  })();
+  function kitesUpdate(list, dt, now) {
+    let n = 0; const T = Z.T, k = clamp(Z.camDist / 75, 1.2, 140), N = KT.N, rnd = KT.rnd;
+    KT.U.uTime.value = now;
+    for (const it of list) {
+      const m = Math.min(it.n || 40, N - n), span = it.sp || 1500, alt = it.alt || 180;
+      for (let j = 0; j < m; j++) {
+        const i = n, q = j * 8 % (N * 8), r0 = rnd[q], r1 = rnd[q + 1], r2 = rnd[q + 2], r3 = rnd[q + 3], r4 = rnd[q + 4];
+        const tIn = it.t0 + r0 * 45, tOut = it.t1 - r1 * 70;
+        let a = smooth(tIn, tIn + 12, T), fall = 0;
+        if (T > tOut) { fall = clamp((T - tOut) / 30, 0, 1); a = 1 - smooth(0.7, 1, fall); }   // a cut kite tumbles away
+        if (a <= 0.001) continue;
+        const ang = r2 * Math.PI * 2, rad = Math.sqrt(r3) * span, drift = (T - it.t0) * 0.45;
+        const ph = r4 * 50, sw = now * (0.35 + r0 * 0.3) + ph;
+        const dive = Math.pow(Math.max(0, Math.sin(now * 0.23 + ph)), 8);   // an occasional swooping dive
+        const x = it.x + Math.cos(ang) * rad + Math.sin(sw) * 0.05 * alt + fall * 40 * Math.sin(ph);
+        const z = it.y + Math.sin(ang) * rad * 0.6 + drift + fall * 120 + Math.cos(sw * 0.8) * 0.03 * alt;
+        const y = alt * (0.6 + r1 * 0.7) * (1 - 0.35 * dive) * (1 - 0.85 * fall) + Math.sin(now * 1.3 + ph) * 0.03 * alt + 10;
+        _e.set(-1.15 + 0.25 * Math.sin(now * 1.7 + ph) + dive * 0.8 + fall * 3 * Math.sin(now * 3 + ph), Math.sin(sw * 0.7) * 0.5, Math.sin(now * 2.3 + ph * 1.3) * 0.35 + dive * 1.5 * Math.sin(now * 2 + ph) + fall * now * 2, 'YXZ');
+        _q.setFromEuler(_e); _v.set(x, y, z); _s.setScalar(k * (0.7 + r2 * 0.6) * a);
+        _m.compose(_v, _q, _s); KT.mesh.setMatrixAt(i, _m);
+        const o = i * 6; KT.sp[o] = x; KT.sp[o + 1] = y - 0.5 * k; KT.sp[o + 2] = z;
+        KT.sp[o + 3] = x + (r3 - 0.5) * alt * 0.8; KT.sp[o + 4] = fall > 0 ? y : 4; KT.sp[o + 5] = z - alt * (1.1 + r4 * 0.6);
+        n++;
+      }
+    }
+    KT.mesh.count = n; KT.mesh.visible = n > 0; KT.strings.visible = n > 0;
+    if (n) { KT.mesh.instanceMatrix.needsUpdate = true; KT.strings.geometry.setDrawRange(0, n * 2); KT.strings.geometry.attributes.position.needsUpdate = true;
+      const f = list[0]; KT.strings.material.opacity = 0.3 * smooth(f.t0, f.t0 + 20, Z.T) * (1 - smooth(f.t1 - 20, f.t1, Z.T)); }
+  }
+  KS.add('kites');
+
+  // =====================================================================================================
   // per frame
   // =====================================================================================================
   let lastT = null;
-  const L = { tiger: [] };
+  const L = { tiger: [], kites: [] };
   return {
     update(dt, now) {
       const fx = Z.fx || [], T = Z.T;
@@ -338,6 +410,7 @@ vec3 fxCol(vec3 P,float reg,float t){
       const want = charScale(); charK += (want - charK) * Math.min(1, dt * 3);
       nBlob = 0;
       tigerUpdate(L.tiger, dt, now, dTs);
+      kitesUpdate(L.kites, dt, now);
       blobs.count = nBlob; blobs.visible = nBlob > 0;
       if (nBlob) { blobs.instanceMatrix.needsUpdate = true; blobOp.needsUpdate = true; }
     },

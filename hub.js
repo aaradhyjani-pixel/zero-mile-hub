@@ -640,10 +640,13 @@ function startSummit(){
   guard(['Sir. We have taken over your runways.','All of them. Yes, the long one too.']);
   radio(SUM.lines[0][1],SUM.lines[0][2]);SUM.said.add(0);logE(SUM.lines[0][2]);renderRw();return true;
 }
-function vipCinema(f){if(!SUM)return;if(SUM.cine){(SUM.queue=SUM.queue||[]).push(f);return;}SUM.cine={f,t0:performance.now()};if(SUM.prevSpeed==null){SUM.prevSpeed=speed;speed=0.5;}vipBanner(true,f.banner[0],f.banner[1],f.banner[2]);
+function vipCinema(f){if(!SUM)return;if(SUM.cine){(SUM.queue=SUM.queue||[]).push(f);return;}
+  // a story cinematic still on screen gives way, handing over the player's own view and speed (not its low shot and slow motion)
+  if(CINE&&!CINE.o.force){const p=CINE;CINE=null;speed=p.prevSpeed;if(p.prevCam&&!SUM.prevCam)SUM.prevCam=p.prevCam;}
+  SUM.cine={f,t0:performance.now()};if(SUM.prevSpeed==null){SUM.prevSpeed=speed;speed=0.5;}vipBanner(true,f.banner[0],f.banner[1],f.banner[2]);
   if(V3.on&&V3.ready){if(!SUM.prevCam)SUM.prevCam={t:Object.assign({},C3.t)};V3.mode='approach';C3.follow=f;C3.fpos=null;C3.apT=-99;camLabel();}else{centerOn(f.x,f.y);}}
 function vipCinemaEnd(){if(!SUM||!SUM.cine)return;SUM.cine=null;vipBanner(false);const nx=(SUM.queue||[]).shift();if(nx&&nx.state!=='gone'){if(nx.landT==null){vipCinema(nx);return;}}
-  if(SUM.prevSpeed!=null){speed=SUM.prevSpeed;SUM.prevSpeed=null;if(running)setSpeed(speed);}if(V3.on&&V3.ready&&SUM.prevCam){setCam('map');Object.assign(C3.t,SUM.prevCam.t);}}
+  if(SUM.prevSpeed!=null){speed=SUM.prevSpeed;SUM.prevSpeed=null;if(running)setSpeed(speed);}if(V3.on&&V3.ready&&SUM.prevCam){setCam('map');Object.assign(C3.t,SUM.prevCam.t);}SUM.prevCam=null;}
 function summitTick(){
   if(!SUM)return;const t=T-SUM.E,now=performance.now();
   for(const [at,src,txt] of SUM.lines)if(t>=at&&!SUM.said.has(at)){SUM.said.add(at);radio(src,txt);logE(txt);}

@@ -59,7 +59,7 @@ function build3D(THREE,ad){
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;   // one shadow render per frame, even with extra passes
   renderer.info.autoReset=false;
   const scene=new THREE.Scene();const camera=new THREE.PerspectiveCamera(42,1,4,160000);
-  Object.assign(Z,{renderer,scene,camera});
+  Object.assign(Z,{renderer,scene,camera});Z.V3=V3;   // V3 on Z: test hooks (tools read the passes and quality state)
   installFogChunks(THREE);
   // the atmosphere every module shares (weather.js writes it each frame, the core resets what it doesn't write)
   Z.atmo={fogColor:new THREE.Color('#c6d3de'),fogDensity:0.000035,hazeHeight:HAZE_H,skyTint:new THREE.Color('#c6d3de'),skyTintK:0,
@@ -104,7 +104,10 @@ function build3D(THREE,ad){
     tv:new THREE.Vector3(),tv2:new THREE.Vector3(),tv3:new THREE.Vector3(),tc:new THREE.Color(),envKey:null,envT:-9});
   Z.sunDir=new THREE.Vector3(0.45,0.75,-0.48).normalize();V3.keyDir=Z.sunDir;Z.sun=sun;Z.hemi=hemi;
   // image-based lighting: the sky (with a ground below the horizon) rendered into a PMREM cube, refreshed only when it changes
-  if(V3.skyKind==='preetham'){try{V3.pmrem=new THREE.PMREMGenerator(renderer);V3.envScene=new THREE.Scene();const es=new THREE.Mesh(sky.geometry,sky.material);es.scale.setScalar(50);es.frustumCulled=false;V3.envScene.add(es);}catch(err){console.warn('3D: no environment map',err);V3.pmrem=null;}}
+  // (the env scene gets a 1-pixel texture background, which the sky then covers: with no background, PMREMGenerator draws a
+  // throwaway solid-colour box whose shader is compiled and deleted again on every refresh, a 50-250 ms stall each time)
+  if(V3.skyKind==='preetham'){try{V3.pmrem=new THREE.PMREMGenerator(renderer);V3.envScene=new THREE.Scene();const es=new THREE.Mesh(sky.geometry,sky.material);es.scale.setScalar(50);es.frustumCulled=false;V3.envScene.add(es);
+    const bg=new THREE.DataTexture(new Uint8Array([0,0,0,255]),1,1);bg.needsUpdate=true;V3.envScene.background=bg;}catch(err){console.warn('3D: no environment map',err);V3.pmrem=null;}}
   // guides: glowing ribbons for the next two arrivals per runway (no spaghetti), and the holding racetracks
   const gmat=new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:0.9,depthWrite:false,fog:false});
   const gg=new THREE.BufferGeometry();gg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(6000*3),3));gg.setAttribute('color',new THREE.BufferAttribute(new Float32Array(6000*3),3));
@@ -320,8 +323,9 @@ function envUpdate(now){
   if(!V3.pmrem)return;const a=Z.atmo,s=Z.sunDir,u=V3.skyU;
   const key=[s.x,s.y,s.z,a.skyTintK,a.skyTint.r,a.skyTint.g,a.skyTint.b,a.fogColor.r,a.fogColor.g,a.fogColor.b,Math.log(Math.max(1e-6,a.fogDensity)),a.ambientK,a.sunDim];
   const tol=[0.004,0.004,0.004,0.04,0.025,0.025,0.025,0.025,0.025,0.025,0.35,0.05,0.05];
-  const k=V3.envKey;let ch=!k;if(k)for(let i=0;i<key.length;i++)if(Math.abs(key[i]-k[i])>tol[i]){ch=true;break;}
-  if(!ch||(k&&now-V3.envT<0.8))return;
+  // a cinematic waits for its cut back unless the sky changed a lot (weather): a refresh is a burst of GPU work mid-shot
+  const k=V3.envKey;let ch=!k,big=!k;if(k)for(let i=0;i<key.length;i++){const d=Math.abs(key[i]-k[i]);if(d>tol[i])ch=true;if(d>tol[i]*4)big=true;}
+  if(!ch||(k&&now-V3.envT<0.8)||(V3.cine&&!big))return;
   V3.envKey=key;V3.envT=now;
   // the env sees no sun disc (the sun light already gives the highlight) and a sunlit ground below the horizon
   const g0=u.skyGain.value,d0=u.discK.value,p0=u.paleK.value,f0=u.flash.value;
@@ -336,7 +340,7 @@ function envUpdate(now){
 function camUpdate(dt){
   const THREE=Z.THREE,cam=Z.camera,k=1-Math.exp(-dt*9);
   let focus=null;
-  if(V3.mode!=='map'&&V3.mode!=='tower'){const f=C3.follow;if(!f||['gone','diverted','towed','cancelled','sched'].includes(f.state)){if(V3.mode==='approach'){C3.follow=nextArrival();if(!C3.follow)setCam('map');}else setCam('map');camLabel();}}
+  if(V3.mode!=='map'&&V3.mode!=='tower'){const f=C3.follow;if(!f||OFF3[f.state]){if(V3.mode==='approach'){C3.follow=nextArrival();if(!C3.follow)setCam('map');}else setCam('map');camLabel();}}
   if(V3.mode==='map'){
     if(!running){C3.t.yaw+=dt*0.035;C3.t.dist=Math.max(C3.t.dist,8000);}
     const ke=C3.intro>0?1-Math.exp(-dt*1.6):k;if(C3.intro>0)C3.intro-=dt;
@@ -352,8 +356,8 @@ function camUpdate(dt){
     cam.near=4;
     const f=C3.follow;if(f){const h=f.heading,a=altM(f),span=f.T.span;const air=a>5;
       const back=V3.mode==='approach'?span*1.7+38:span*(air?2.3:2.0)+28,up=V3.mode==='approach'?span*0.32+7:span*(air?0.5:0.42)+6,side=V3.mode==='approach'?span*0.55:span*0.15;
-      const want=new THREE.Vector3(f.x-Math.cos(h)*back-Math.sin(h)*side,a+up,f.y-Math.sin(h)*back+Math.cos(h)*side);
-      const look=new THREE.Vector3(f.x+Math.cos(h)*span*1.5,a+span*0.12,f.y+Math.sin(h)*span*1.5);
+      const want=V3.tv.set(f.x-Math.cos(h)*back-Math.sin(h)*side,a+up,f.y-Math.sin(h)*back+Math.cos(h)*side);
+      const look=V3.tv2.set(f.x+Math.cos(h)*span*1.5,a+span*0.12,f.y+Math.sin(h)*span*1.5);
       if(!C3.fpos){C3.fpos=want.clone();C3.flook=look.clone();}
       const kk=1-Math.exp(-dt*(f.vip?16:V3.mode==='approach'?4:3));C3.fpos.lerp(want,kk);C3.flook.lerp(look,Math.min(1,kk*1.6));
       if(C3.fpos.y<3)C3.fpos.y=3;cam.position.copy(C3.fpos);cam.lookAt(C3.flook);cam.fov+=((V3.mode==='approach'?38:46)-cam.fov)*k;
@@ -402,9 +406,10 @@ function shadowFit(focus){
 // screen <-> world
 function proj(x,y,h){const v=V3.v.set(x,h||0,y).project(Z.camera);if(v.z>1||v.z<-1)return null;return{X:(v.x+1)/2*VW,Y:(1-v.y)/2*VH,z:v.z};}
 function groundAt(mx,my){const THREE=Z.THREE;V3.ray.setFromCamera(new THREE.Vector2(mx/VW*2-1,-(my/VH)*2+1),Z.camera);const p=new THREE.Vector3();return V3.ray.ray.intersectPlane(V3.plane,p)?{x:p.x,y:p.z}:null;}
+const OFF3={sched:1,diverted:1,gone:1,cancelled:1,towed:1};
 function project3D(){
   const cam=Z.camera,fovK=VH/(2*Math.tan(cam.fov*D2R/2));
-  for(const f of flights){if(['sched','diverted','gone','cancelled','towed'].includes(f.state)){f.sx=null;continue;}
+  for(const f of flights){if(OFF3[f.state]){f.sx=null;continue;}
     const a=altM(f),p=proj(f.x,f.y,a);if(!p){f.sx=null;continue;}f.sx=p.X;f.sy=p.Y;
     const d=Math.hypot(cam.position.x-f.x,cam.position.y-a,cam.position.z-f.y);f.sr=Math.max(5,f.T.span*Z.kEx*0.5*fovK/Math.max(1,d));}
 }
@@ -453,7 +458,7 @@ function drawOverlay3D(now){
 
 function guides3D(now){
   const g=V3.guides.geometry,P=g.attributes.position.array,Cc=g.attributes.color.array;let n=0;const cap=P.length/3-2;
-  const seg=(x1,y1,h1,x2,y2,h2,r,gc,b)=>{if(n>=cap)return;P.set([x1,h1,y1,x2,h2,y2],n*3);Cc.set([r,gc,b,r,gc,b],n*3);n+=2;};
+  const seg=(x1,y1,h1,x2,y2,h2,r,gc,b)=>{if(n>=cap)return;const i=n*3;P[i]=x1;P[i+1]=h1;P[i+2]=y1;P[i+3]=x2;P[i+4]=h2;P[i+5]=y2;Cc[i]=Cc[i+3]=r;Cc[i+1]=Cc[i+4]=gc;Cc[i+2]=Cc[i+5]=b;n+=2;};
   const pulse=0.75+0.25*Math.sin(now*3);
   for(const r of RW){if(r.locked)continue;const q=flights.filter(f=>f.state==='approach'&&f.rwy===r).sort((a,b)=>a.td-b.td).slice(0,2);
     q.forEach((f,qi)=>{const path=f.path;if(!path)return;const k=qi?0.45:1;let d=f.pd,prev=null;const L=f.plen,step=Math.max(120,(L-d)/40);
@@ -461,23 +466,28 @@ function guides3D(now){
         if(prev)seg(prev[0],prev[1],prev[2],pt.x,pt.y,a,0.54*k*pulse,0.49*k*pulse,1*k*pulse);prev=[pt.x,pt.y,a];}});}
   for(const st of STACKS){const busy=flights.some(f=>f.state==='holding'&&f.stack===st);if(!busy)continue;const P0=4*1100+2*Math.PI*560;let prev=null;
     for(let u=0;u<=P0+1;u+=P0/48){const p=stackPos(st,u,0);const a=2100*AIR_K;if(prev&&((u/(P0/48))|0)%2===0)seg(prev.x,prev.y,a,p.x,p.y,a,0.95,0.78,0.2);prev=p;}}
-  g.setDrawRange(0,n);g.attributes.position.needsUpdate=true;g.attributes.color.needsUpdate=true;
+  // upload only the segments drawn (the buffers hold 6000 vertices: 144 KB a frame if sent whole)
+  g.setDrawRange(0,n);for(const a of [g.attributes.position,g.attributes.color]){if(a.addUpdateRange){a.clearUpdateRanges();a.addUpdateRange(0,Math.max(2,n)*3);}a.needsUpdate=true;}
 }
 // adaptive quality: a ladder of small steps (pixel ratio first, then AO, then bloom) walked down EARLY, as soon as the
 // median frame time sags for a second, and back up only after a long steady stretch (with a growing back-off, so it
 // never oscillates). G picks the top rung (High 0, Medium 2, Low 4); hitches (>100 ms) never count as "slow".
+// Cinematics have their own profile on top (V3.cine): no AO and no bloom (the two post passes that cost the most in a
+// low shot across the field), and the ladder holds still, because a pixel-ratio step reallocates every render target
+// (a 50-230 ms freeze) and would land mid-shot; the samples start afresh when the shot ends.
 const QL=[{ao:true,bloom:true,pr:1.5},{ao:true,bloom:true,pr:1.25},{ao:false,bloom:true,pr:1.25},{ao:false,bloom:true,pr:1},{ao:false,bloom:false,pr:1},{ao:false,bloom:false,pr:0.85}];
 const QTOP=[0,2,4],QFT=new Float32Array(64);
-function qApply(){const q=QL[V3.ql],R=Z.renderer;if(V3.ao)V3.ao.enabled=q.ao&&!V3.aoCine;if(V3.bloom)V3.bloom.enabled=q.bloom;if(V3.gradeU)V3.gradeU.bloomK.value=q.bloom&&V3.bloom?1:0;
+function qApply(){const q=QL[V3.ql],R=Z.renderer,bl=q.bloom&&!V3.cine;if(V3.ao)V3.ao.enabled=q.ao&&!V3.cine;if(V3.bloom)V3.bloom.enabled=bl;if(V3.gradeU)V3.gradeU.bloomK.value=bl&&V3.bloom?1:0;
   const pr=Math.min(window.devicePixelRatio||1,V3.comp?q.pr:Math.min(1.75,q.pr+0.25));if(R.getPixelRatio()!==pr){R.setPixelRatio(pr);resize3D();}}
 function quality3D(dtR){
   if(navigator.webdriver&&!Z.adaptive)return;
+  if(V3.cine)return;
   const ms=dtR*1000;if(ms>100||ms<=0)return;QFT[V3.qn++&63]=ms;V3.qAcc=(V3.qAcc||0)+dtR;if(V3.qAcc<0.5)return;V3.qAcc=0;
   const n=Math.min(V3.qn,64),a=Array.from(QFT.subarray(0,n)).sort((x,y)=>x-y),med=a[n>>1],p90=a[Math.floor(n*0.9)];V3.qn=0;
   const top=QTOP[V3.tier];if(V3.ql==null||V3.ql<top)V3.ql=top;
   // stutter counts as slow too: a fine median with 1 frame in 10 running double length is what players feel as lag
   if(med>18.5||p90>26){V3.qSlow=(V3.qSlow||0)+1;V3.qFast=0;
-    if(V3.qSlow>=(V3.aoCine?1:2)&&V3.ql<QL.length-1){V3.qSlow=0;if(performance.now()-(V3.qUpT||0)<6000)V3.qWait=Math.min(240,(V3.qWait||20)*2);V3.ql++;qApply();}}
+    if(V3.qSlow>=2&&V3.ql<QL.length-1){V3.qSlow=0;if(performance.now()-(V3.qUpT||0)<6000)V3.qWait=Math.min(240,(V3.qWait||20)*2);V3.ql++;qApply();}}
   else if(med<17.2&&p90<19){V3.qSlow=0;V3.qFast=(V3.qFast||0)+1;
     if(V3.ql>top&&V3.qFast*0.5>=(V3.qWait||20)){V3.qFast=0;V3.ql--;V3.qUpT=performance.now();qApply();}}
   else{V3.qSlow=0;V3.qFast=0;}}
@@ -492,16 +502,17 @@ function prewarm3D(){
 }
 function warmFrame(on){
   if(on){const L=V3.warmL=[];Z.scene.traverse(o=>{L.push(o,o.visible,o.frustumCulled,o.isInstancedMesh?o.count:-1);o.visible=true;o.frustumCulled=false;if(o.isInstancedMesh&&!o.count)o.count=1;});
-    V3.warmAO=V3.ao?V3.ao.enabled:false;if(V3.ao)V3.ao.enabled=true;return;}
-  const L=V3.warmL;for(let i=0;i<L.length;i+=4){const o=L[i];o.visible=L[i+1];o.frustumCulled=L[i+2];if(L[i+3]>=0)o.count=L[i+3];}V3.warmL=null;if(V3.ao)V3.ao.enabled=V3.warmAO;
+    V3.warmAO=V3.ao?V3.ao.enabled:false;if(V3.ao)V3.ao.enabled=true;V3.warmBl=V3.bloom?V3.bloom.enabled:false;if(V3.bloom)V3.bloom.enabled=true;return;}
+  const L=V3.warmL;for(let i=0;i<L.length;i+=4){const o=L[i];o.visible=L[i+1];o.frustumCulled=L[i+2];if(L[i+3]>=0)o.count=L[i+3];}V3.warmL=null;if(V3.ao)V3.ao.enabled=V3.warmAO;if(V3.bloom)V3.bloom.enabled=V3.warmBl;
 }
 function draw3D(now,dtR){
   if(!Z.renderer)return;const t0=performance.now(),R=Z.renderer;
   if(R.domElement.width!==Math.round(VW*R.getPixelRatio()))resize3D();
   lightRig();camUpdate(dtR);
-  // cinematics are the most expensive shots (a low camera looking across the whole field and sky): they run without AO,
-  // which nobody misses in a slow-motion cut but everybody feels as a stutter; quality also steps down faster meanwhile
-  {const on=!!(CINE||(SUM&&SUM.cine));if(V3.ao&&on!==!!V3.aoCine){V3.aoCine=on;if(on){V3.aoPrev=V3.ao.enabled;V3.ao.enabled=false;}else if(V3.ql!=null)qApply();else V3.ao.enabled=!!V3.aoPrev;}}
+  // cinematics are the most expensive shots (a low camera looking across the whole field and sky): they run on the
+  // cinematic profile (no AO, no bloom: nobody misses them in a slow-motion cut, everybody feels a stutter), switched at
+  // the cut, and the adaptive ladder holds still until the shot is over (see quality3D)
+  {const on=!!(CINE||(SUM&&SUM.cine));if(on!==!!V3.cine){V3.cine=on;V3.qn=0;V3.qAcc=0;V3.qSlow=0;V3.qFast=0;qApply();}}
   for(const k in Z.mods){const m=Z.mods[k];if(m&&m.update){try{m.update(dtR,now);}catch(err){console.error('3D '+k,err);m.update=null;}}}
   atmoApply(now);guides3D(now);overlayAtmo();
   try{envUpdate(now);}catch(err){console.warn('3D: environment map failed',err);V3.pmrem=null;}

@@ -691,6 +691,15 @@ Z3MOD.field = function (Z) {
   const mkTreeIM = (geo, cap, shadow) => { const im = new THREE.InstancedMesh(geo, treeMat, cap); im.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(cap * 3), 3); im.count = 0;
     im.instanceMatrix.setUsage(THREE.DynamicDrawUsage); im.instanceColor.setUsage(THREE.DynamicDrawUsage); im.frustumCulled = false; im.castShadow = shadow; im.receiveShadow = shadow; if (shadow) im.customDepthMaterial = treeDepth; root.add(im); return im; };
   const nearIM = TGEO.map((g, k) => mkTreeIM(g, NCAP[k], true)), farIM = mkTreeIM(FARG, Math.max(1, NT), false);
+  // the far mesh holds every tree, written and uploaded once; the trees drawn by the near meshes are flagged (aNear) and
+  // dropped in its vertex shader, so a moving camera re-sends only the near trees and an 18 KB flag array (it used to
+  // re-send all 18,000 far matrices, 1.8 MB, up to four times a second in a cinematic: a long frame in Safari each time)
+  const nearF = new Uint8Array(Math.max(1, NT)), nearA = new THREE.InstancedBufferAttribute(nearF, 1); nearA.setUsage(THREE.DynamicDrawUsage); FARG.setAttribute('aNear', nearA);
+  const farMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.82, metalness: 0, envMapIntensity: 0.6 });
+  farMat.onBeforeCompile = sh => { swayHook(sh, true); sh.vertexShader = 'attribute float aNear;\n' + sh.vertexShader.replace('gl_Position=projectionMatrix*mvPosition;', 'gl_Position=projectionMatrix*mvPosition;if(aNear>0.5)gl_Position=vec4(0.0,0.0,-2.0,1.0);'); };
+  farMat.customProgramCacheKey = () => 'zmhTreeFar'; farIM.material = farMat;
+  farIM.instanceMatrix.array.set(TM); farIM.instanceColor.array.set(TCOL); farIM.count = NT;
+  const rng = (a, n) => { a.needsUpdate = true; if (a.addUpdateRange) { a.clearUpdateRanges(); a.addUpdateRange(0, Math.max(1, n) * a.itemSize); } };
   const camV = new THREE.Vector3(), lod = { t: -1, px: 1e9, pz: 1e9, fx: 1e9, fz: 1e9 }, ncount = [0, 0, 0];
   function lodTrees(force) {
     const cam = Z.camera; if (!cam) return; const px = cam.position.x, py = cam.position.y, pz = cam.position.z; cam.getWorldDirection(camV);
@@ -698,12 +707,12 @@ Z3MOD.field = function (Z) {
     if (!force && Math.abs(px - lod.px) + Math.abs(pz - lod.pz) < 120 && Math.abs(fx - lod.fx) + Math.abs(fz - lod.fz) < 120) return;
     lod.px = px; lod.pz = pz; lod.fx = fx; lod.fz = fz;
     const r1 = 2000 * 2000, r2 = cd < 5000 ? 1200 * 1200 : 0, h2 = py * py; ncount[0] = ncount[1] = ncount[2] = 0; let nf = 0;
-    const fM = farIM.instanceMatrix.array, fC = farIM.instanceColor.array;
     for (let i = 0; i < NT; i++) { const x = TM[i * 16 + 12], z = TM[i * 16 + 14], d1 = (x - px) * (x - px) + (z - pz) * (z - pz) + h2, d2 = (x - fx) * (x - fx) + (z - fz) * (z - fz), ty = TTY[i];
-      let M, C, j; if ((d1 < r1 || d2 < r2) && ncount[ty] < NCAP[ty]) { const im = nearIM[ty]; M = im.instanceMatrix.array; C = im.instanceColor.array; j = ncount[ty]++; } else { M = fM; C = fC; j = nf++; }
-      for (let q = 0; q < 16; q++) M[j * 16 + q] = TM[i * 16 + q]; C[j * 3] = TCOL[i * 3]; C[j * 3 + 1] = TCOL[i * 3 + 1]; C[j * 3 + 2] = TCOL[i * 3 + 2]; }
-    for (let k = 0; k < 3; k++) { const im = nearIM[k]; im.count = ncount[k]; im.instanceMatrix.needsUpdate = true; im.instanceColor.needsUpdate = true; }
-    farIM.count = nf; farIM.instanceMatrix.needsUpdate = true; farIM.instanceColor.needsUpdate = true; }
+      if ((d1 < r1 || d2 < r2) && ncount[ty] < NCAP[ty]) { const im = nearIM[ty], M = im.instanceMatrix.array, C = im.instanceColor.array, j = ncount[ty]++; nearF[i] = 1;
+        for (let q = 0; q < 16; q++) M[j * 16 + q] = TM[i * 16 + q]; C[j * 3] = TCOL[i * 3]; C[j * 3 + 1] = TCOL[i * 3 + 1]; C[j * 3 + 2] = TCOL[i * 3 + 2]; }
+      else nearF[i] = 0; }
+    for (let k = 0; k < 3; k++) { const im = nearIM[k]; im.count = ncount[k]; rng(im.instanceMatrix, ncount[k]); rng(im.instanceColor, ncount[k]); }
+    nearA.needsUpdate = true; }
   lodTrees(true);
   if (farmhouses.length) { const bg = new THREE.BoxGeometry(1, 1, 1); bg.translate(0, 0.5, 0); bg.setIndex(Array.from(bg.index.array).filter((_, j) => j < 18 || j >= 24)); bg.clearGroups();
     const im = new THREE.InstancedMesh(bg, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85 }), farmhouses.length), c = new THREE.Color(); _o.rotation.set(0, 0, 0);

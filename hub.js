@@ -781,7 +781,11 @@ function vqEta(it){const now=performance.now();let s=0;
 const VAUD=new Audio();let AU_OK=false,AU_WAIT=null;
 const AU_SILENT='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=';
 function audioHint(on){let d=document.getElementById('audioHint');if(!d){d=document.createElement('div');d.id='audioHint';d.style.cssText='position:fixed;left:50%;top:84px;transform:translateX(-50%);z-index:60;padding:8px 14px;border-radius:8px;background:rgba(10,13,16,.94);border:1px solid #f4c430;color:#fff;font:600 14px Barlow Condensed,Arial Narrow,sans-serif;letter-spacing:.04em;pointer-events:none';d.textContent='🔇 The browser is blocking sound. Click anywhere on the page to turn it on.';document.body.appendChild(d);}d.hidden=!on;}
-function audioUnlock(){if(AU_OK)return;try{VAUD.src=AU_SILENT;const p=VAUD.play();if(p&&p.then)p.then(()=>{AU_OK=true;try{VAUD.pause();}catch(e){}audioHint(false);if(AU_WAIT){const f=AU_WAIT;AU_WAIT=null;f();}}).catch(()=>{});else AU_OK=true;}catch(e){}
+function audioUnlock(){if(AU_OK)return;
+  // a clip is already sounding, so the element is unlocked; never swap its source under a voice that is speaking
+  if(vqCur===VAUD&&!VAUD.paused&&!VAUD.ended){AU_OK=true;audioHint(false);return;}
+  if(vqOn||(vqCur&&!vqCur.paused)){if(AU_WAIT){const f=AU_WAIT;AU_WAIT=null;f();}return;}
+  try{VAUD.src=AU_SILENT;const p=VAUD.play();if(p&&p.then)p.then(()=>{AU_OK=true;try{VAUD.pause();}catch(e){}audioHint(false);if(AU_WAIT){const f=AU_WAIT;AU_WAIT=null;f();}}).catch(()=>{});else AU_OK=true;}catch(e){}
   if(!AU_OK&&AU_WAIT){const f=AU_WAIT;AU_WAIT=null;f();}}
 ['pointerdown','keydown','touchstart','click'].forEach(ev=>document.addEventListener(ev,audioUnlock,true));
 function vqNext(){if(vqOn||audioHold())return;const now=performance.now();let it;
@@ -795,7 +799,7 @@ function vqNext(){if(vqOn||audioHold())return;const now=performance.now();let it
     const go=()=>{if(fin||gen!==vqGen)return;const p=a.play();if(p&&p.catch)p.catch(e=>{if(e&&e.name==='NotAllowedError'){audioHint(true);AU_WAIT=go;}else done();});};go();
     // the watchdog starts when the sound actually starts and trusts the clip's real length; while the game is held it waits
     const words=it.text.split(/\s+/).length,wdog=()=>{if(audioHold()){wd=setTimeout(wdog,500);return;}done();};
-    a.onplaying=()=>{clearTimeout(wd);const d=isFinite(a.duration)&&a.duration>0?a.duration*1000:2500+words*600;wd=setTimeout(wdog,d+1500);};
+    a.onplaying=()=>{AU_OK=true;audioHint(false);clearTimeout(wd);const d=isFinite(a.duration)&&a.duration>0?a.duration*1000:2500+words*600;wd=setTimeout(wdog,d+1500);};
     wd=setTimeout(wdog,9000+words*600);   // it never started playing at all (blocked or failed to load): move on
     return;}
   if(!it.radio&&window.speechSynthesis&&window.SpeechSynthesisUtterance){try{const S2=window.speechSynthesis,v=pickVoice(S2.getVoices(),it.lang);if(it.lang&&!v)return done();const u=new SpeechSynthesisUtterance(it.text.replace(/[\u{1F000}-\u{1FAFF}☀-➿️]/gu,'').trim());

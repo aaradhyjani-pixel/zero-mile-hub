@@ -5461,10 +5461,62 @@ vec3 fxCol(vec3 P,float reg,float t){
   KS.add('cyclists');
 
   // =====================================================================================================
+  // FIREWORKS: GPU-only particle shells (rocket, peony burst with drag and gravity, crackle), HDR colours for bloom
+  // =====================================================================================================
+  const FW = (() => {
+    const S = 22, PP = 150, n = S * PP, sd = new Float32Array(n * 4), R = mulberry(77);
+    for (let s = 0; s < S; s++) for (let p = 0; p < PP; p++) {
+      const i = s * PP + p, u = R() * 2 - 1, a = R() * Math.PI * 2, q = Math.sqrt(1 - u * u), k = 0.82 + 0.18 * R();
+      sd[i * 4] = s + p / PP * 0.999; sd[i * 4 + 1] = Math.cos(a) * q * k; sd[i * 4 + 2] = u * k; sd[i * 4 + 3] = Math.sin(a) * q * k;
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3)); g.setAttribute('aSd', new THREE.BufferAttribute(sd, 4));
+    const U = { uTime: { value: 0 }, uC: { value: new THREE.Vector3() }, uFade: { value: 0 }, uK: { value: 1 }, uPx: { value: 1 } };
+    const mat = new THREE.ShaderMaterial({ uniforms: U, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      vertexShader: `uniform float uTime,uFade,uK,uPx;uniform vec3 uC;attribute vec4 aSd;varying vec3 vCol;varying float vA;
+        float h1(float x){return fract(sin(x*78.233)*43758.5453);}
+        void main(){
+          float slot=floor(aSd.x),pi=fract(aSd.x)*150.,per=0.42,cyc=${S}.*per;
+          float tt=uTime-slot*per,c=floor(tt/cyc),age=tt-c*cyc,sh=slot*7.13+c*31.7;
+          vec3 bp=uC+vec3((h1(sh)-.5)*520.,170.+h1(sh+1.)*230.,(h1(sh+2.)-.5)*520.);
+          float kind=h1(sh+3.);int ci=int(h1(sh+4.)*4.);
+          vec3 col=ci==0?vec3(1.,.42,.06):ci==1?vec3(1.,.95,.85):ci==2?vec3(.12,1.,.3):vec3(1.,.72,.18);
+          vec3 col2=ci==2?vec3(1.,.42,.06):vec3(1.,.95,.85);
+          float rise=0.9;vec3 p;float a=0.,sz=1.;
+          if(age<rise){ // the rocket and its sparks
+            float f=age/rise;f=1.-(1.-f)*(1.-f);vec3 g0=vec3(bp.x,0.,bp.z);
+            float lag=pi<1.?0.:pi/150.*0.25;p=mix(g0,bp,max(0.,f-lag));a=pi<1.?3.:(pi<40.?max(0.,1.-lag*4.)*0.6:0.);col=vec3(1.,.75,.4);sz=pi<1.?1.6:0.7;
+            p+=vec3(h1(pi+c)-.5,0.,h1(pi*1.7+c)-.5)*4.*lag*30.;
+          } else {
+            float t=age-rise,r=(kind>0.7?150.:115.)*(1.-exp(-t*2.6));
+            vec3 d=aSd.yzw;
+            p=bp+d*r-vec3(0.,14.*t*t+6.*t,0.);
+            float life=kind>0.7?3.2:2.6;a=pow(max(0.,1.-t/life),1.6)*2.2;
+            if(t<0.12)a+=(1.-t/0.12)*4.;
+            if(kind>0.45&&kind<0.7){a*=step(0.45,h1(pi*3.1+floor(uTime*18.)));col=mix(col,vec3(1.,.9,.6),.5);}   // crackle
+            col=mix(col,col2,step(0.66,fract(pi*0.618))*step(0.35,kind));
+            sz=1.+0.6*step(0.7,kind);
+          }
+          vCol=col*3.2;vA=a*uFade*1.4;
+          vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;
+          gl_PointSize=vA>0.003?max(2.6*uPx,sz*uK*uPx*4200./-mv.z):0.;
+        }`,
+      fragmentShader: `varying vec3 vCol;varying float vA;void main(){vec2 q=gl_PointCoord*2.-1.;float r=dot(q,q);if(r>1.)discard;float a=vA*(1.-r)*(1.-r);gl_FragColor=vec4(vCol*a,a);}` });
+    const pts = new THREE.Points(g, mat); pts.frustumCulled = false; pts.visible = false; root.add(pts);
+    return { pts, U };
+  })();
+  function fireworksUpdate(list, dt, now) {
+    const it = list[0]; if (!it) { FW.pts.visible = false; return; }
+    const T = Z.T, f = smooth(it.t0, it.t0 + 6, T) * (1 - smooth(it.t1 - 25, it.t1, T));
+    FW.U.uTime.value = now; FW.U.uC.value.set(it.x, 0, it.y); FW.U.uFade.value = f; FW.U.uK.value = clamp(Z.camDist / 1600, 1, 7);
+    FW.U.uPx.value = Z.renderer.getPixelRatio(); FW.pts.visible = f > 0.01;
+  }
+  KS.add('fireworks');
+
+  // =====================================================================================================
   // per frame
   // =====================================================================================================
   let lastT = null;
-  const L = { tiger: [], kites: [], ribbon: [], cyclists: [] };
+  const L = { tiger: [], kites: [], ribbon: [], cyclists: [], fireworks: [] };
   return {
     update(dt, now) {
       const fx = Z.fx || [], T = Z.T;
@@ -5478,6 +5530,7 @@ vec3 fxCol(vec3 P,float reg,float t){
       kitesUpdate(L.kites, dt, now);
       ribbonUpdate(L.ribbon, dt, now);
       cyclistsUpdate(L.cyclists, dt, now);
+      fireworksUpdate(L.fireworks, dt, now);
       blobs.count = nBlob; blobs.visible = nBlob > 0;
       if (nBlob) { blobs.instanceMatrix.needsUpdate = true; blobOp.needsUpdate = true; }
     },

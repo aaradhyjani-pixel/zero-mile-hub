@@ -159,12 +159,12 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
   for (let i = 0; i < 46; i++) { const z = (R() - 0.5) * 44000; push(-3500 - R() * 10000, 2800 + R() * 5000, z, 2400 + R() * 1800, R(), 0.004 + R() * 0.004, 3, 260 + R() * 300, 0, 0, 0.45 + R() * 0.25); }
   // the wall: columns along the front (denser near the airport); body behind, then the rolling face, then the base
   const cols = []; for (let z = -38000; z <= 38000;) { cols.push(z); z += 230 + 0.011 * Math.abs(z); }
-  const colTop = z => 820 + 420 * Math.sin(z * 0.00041 + 1.3) + 260 * Math.sin(z * 0.0013 + 0.4) + 140 * Math.sin(z * 0.0037);
-  cols.forEach((z, i) => { if (i % 2) return; const top = colTop(z); push(-900 - R() * 5200, 200 + R() * top * 0.85, z + (R() - 0.5) * 300, 800 + R() * 700, R(), 0.01 + R() * 0.01, 1, 90 + R() * 120, top, 0, 0.85); });
+  const colTop = z => 1900 + 360 * Math.sin(z * 0.00041 + 1.3) + 170 * Math.sin(z * 0.0013 + 0.4) + 80 * Math.sin(z * 0.0037);
+  cols.forEach((z, i) => { if (i % 2) return; const top = colTop(z); push(-1100 - R() * 5200, 300 + R() * top * 0.85, z + (R() - 0.5) * 300, 1200 + R() * 1050, R(), 0.01 + R() * 0.01, 1, 90 + R() * 120, top, 0, 0.85); });
   cols.forEach(z => { const top = colTop(z);
-    const nt = 1 + (R() < 0.5 ? 1 : 0); for (let k = 0; k < nt; k++) push(-420 - R() * 380, top - R() * 140, z + (R() - 0.5) * 200, 280 + R() * 230, R(), 0.016 + R() * 0.014, 0, 70 + R() * 90, top, 0, 1);
-    for (let y = top - 330; y > 250; y -= 250 + R() * 90) { const f = y / top; push(-60 - 330 * f * f - R() * 160, y, z + (R() - 0.5) * 220, 260 + R() * 200, R(), 0.018 + R() * 0.014, 0, 50 + R() * 80, top, 0, 1); } });
-  cols.forEach(z => { const top = colTop(z); push(-40 + R() * 90, 70 + R() * 70, z + (R() - 0.5) * 160, 300 + R() * 160, R(), 0.02 + R() * 0.02, 0, 40 + R() * 40, top, 0, 1); });
+    const nt = 1 + (R() < 0.5 ? 1 : 0); for (let k = 0; k < nt; k++) push(-520 - R() * 420, top - R() * 180, z + (R() - 0.5) * 200, 420 + R() * 345, R(), 0.016 + R() * 0.014, 0, 70 + R() * 90, top, 0, 1);
+    for (let y = top - 450; y > 300; y -= 380 + R() * 130) { const f = y / top; push(-80 - 420 * f * f - R() * 180, y, z + (R() - 0.5) * 220, 390 + R() * 300, R(), 0.018 + R() * 0.014, 0, 50 + R() * 80, top, 0, 1); } });
+  cols.forEach(z => { const top = colTop(z); push(-40 + R() * 90, 90 + R() * 260, z + (R() - 0.5) * 160, 380 + R() * 220, R(), 0.02 + R() * 0.02, 0, 40 + R() * 40, top, 0, 1); });
   // the gust front: low dust racing ahead of the wall near the airport
   for (let z = -16000; z <= 16000; z += 170) for (let k = 0; k < 2; k++) push(R() * 150, 6 + R() * 30, z + (R() - 0.5) * 160, 70 + R() * 90, R(), 0.03 + R() * 0.04, 2, 900 + R() * 1400, 25 + R() * 70, 2.8 + R() * 2.2, 0.55 + R() * 0.45);
   // drifting dust masses: big soft volumes that wrap around the view and stream with the wind (inside the storm)
@@ -174,9 +174,9 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
   BL.forEach((b, i) => { bP.set(b.slice(0, 4), i * 4); bS.set(b.slice(4, 8), i * 4); bC.set(b.slice(8, 12), i * 4); });
   const billU = Object.assign({}, U, { uWallA: { value: 0 }, uSkirtA: { value: 0 }, uCellA: { value: 0 }, uCumA: { value: 1 }, uDom: { value: 60000 }, uCumOff: { value: new THREE.Vector2() },
     uMassA: { value: 0 }, uMB: { value: new THREE.Vector4(0, 0, 0, 4000) }, uMV: { value: new THREE.Vector3() },
-    uDustLo: { value: lin('#38251a') }, uDustHi: { value: lin('#a97a47') }, uCellC: { value: lin('#584a3e') }, uCumC: { value: lin('#ffffff') }, uCumBase: { value: lin('#8d97a8') } });
+    uDustLo: { value: lin('#2e2017') }, uDustHi: { value: lin('#c89660') }, uField: { value: new THREE.Vector4(0, 0, 4000, 3000) }, uCellC: { value: lin('#584a3e') }, uCumC: { value: lin('#ffffff') }, uCumBase: { value: lin('#8d97a8') } });
   const bill = mk(quadGeo(NB, { iP: bP, iS: bS, iC: bC }), mat({ uniforms: billU,
-    vertexShader: VHEAD + `attribute vec4 iP,iS,iC;uniform float uTime,uFrontX,uCurv,uWallA,uSkirtA,uCellA,uCumA,uDom,uMassA;uniform vec2 uCumOff;uniform vec4 uMB;uniform vec3 uMV;
+    vertexShader: VHEAD + `attribute vec4 iP,iS,iC;uniform float uTime,uFrontX,uCurv,uWallA,uSkirtA,uCellA,uCumA,uDom,uMassA;uniform vec2 uCumOff;uniform vec4 uMB,uField;uniform vec3 uMV;
     varying vec2 vUv;varying float vA,vD;varying vec3 vWP;varying vec4 vS;varying vec3 vInfo;
     void main(){
       float kind=iS.z;vec3 c=iP.xyz;float R=iP.w,a=1.;vec2 sc=vec2(1.);float hb=0.,ht=1500.;
@@ -194,6 +194,8 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
       else{vec2 cc=mod(iC.xy+uCumOff+uDom*0.5,uDom)-uDom*0.5;float e=max(abs(cc.x),abs(cc.y));c.xz+=cc;c.y+=sin(th)*15.;R*=0.96+0.06*sin(th*0.7);
         a=uCumA*smoothstep(uDom*0.5,uDom*0.5-6000.,e);hb=iC.z;ht=iC.z+iC.w+250.;
         a*=1.-smoothstep(hb-900.,hb-250.,cameraPosition.y);}  // never between a high (strategic) camera and the field
+      if(kind<3.5&&cameraPosition.y>c.y+50.){vec3 cp=cameraPosition;vec2 g=cp.xz+(c.xz-cp.xz)*(cp.y/(cp.y-c.y));   // where the puff sits on the ground, seen from the camera
+        vec2 ob=max(abs(g-uField.xy)-uField.zw,0.);a*=mix(1.,smoothstep(R*0.4,R*1.6+600.,length(ob)),smoothstep(1500.,4000.,cp.y));}
       vec4 mv=modelViewMatrix*vec4(c,1.);float d=length(mv.xyz);
       a*=smoothstep(R*0.3,R*1.5,d);
       if(a<0.003){gl_Position=vec4(0.,0.,-2.,1.);return;}
@@ -224,7 +226,8 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
       float crev=mix(0.5,1.08,smoothstep(0.15,0.85,cau));
       vec3 alb;vec3 col;
       if(kind<2.5||kind>4.5){alb=mix(uDustLo,uDustHi,smoothstep(0.02,0.9,h01));if(kind>4.5)alb=mix(uDustLo,uDustHi,0.35+0.4*h01)*mix(0.75,1.2,vS.x);
-        col=alb*(uSkyC*(0.35+0.65*h01)+uGndC*0.5+uSunC*lam*crev*mix(0.35,1.,h01));}
+        col=alb*(uSkyC*(0.35+0.65*h01)+uGndC*0.5+uSunC*lam*crev*mix(0.3,1.15,h01));
+        if(kind<1.5){float rim=pow(clamp(1.-N.z,0.,1.),2.5)*max(dot(normalize(N.xy+1e-4),normalize(uSunV.xy+1e-4)),0.);col+=uSunC*alb*rim*0.9*h01;}}
       else if(kind<3.5){alb=uCellC*mix(0.55,1.15,h01);col=alb*(uSkyC*0.8+uSunC*lam*crev*(0.25+0.75*h01))+uFlash*vec3(1.,0.95,1.1)*0.9*cau;}
       else{float base=smoothstep(vInfo.x-40.,vInfo.x+220.,vWP.y);alb=mix(uCumBase,uCumC,base);
         dens*=smoothstep(vInfo.x-70.,vInfo.x+25.,vWP.y);col=alb*(uSkyC*0.9+uGndC*0.4*(1.-base)+uSunC*lam*crev);}
@@ -295,7 +298,7 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
       }else if(k<3.5){float B=uBoxN*0.42;vec3 box=vec3(B,B*1.2,B);
         vec3 v=vec3(uWindV.x*0.35,-8.-3.*iK.z,uWindV.z*0.35);
         P=iR.xyz*box+v*uTime;P=uCamPos+mod(P-uCamPos+box*0.5,box)-box*0.5;vel=v;
-        rel=(P-uCamPos)/box;wid=(0.014+0.014*iK.y)*ks;blur=0.09*ks;a=uAmt.w*(0.5+0.5*iK.w);
+        rel=(P-uCamPos)/box;wid=(0.007+0.006*iK.y)*ks;blur=0.054*ks;a=uAmt.w*(0.25+0.25*iK.w);
       }else{float H=uBoxF*0.12+200.;vec3 v=vec3(uFieldV.x*0.12,-(9.+3.*iK.z)*max(1.,uBoxF/1200.),uFieldV.z*0.12);
         vec2 pp=iR.xz*uBoxF+v.xz*uTime;pp=uFocus.xz+mod(pp-uFocus.xz+uBoxF*0.5,uBoxF)-uBoxF*0.5;
         P=vec3(pp.x,mod(iR.y*H+v.y*uTime,H),pp.y);vel=v;rel=vec3((P.xz-uFocus.xz)/uBoxF,0.).xzy;
@@ -366,6 +369,7 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
   };
   const t0 = performance.now() / 1000; let flow = 0, flowF = 0, massFlow = 0, cumX = 0, cumZ = 0, lastNow = 0;
   const L = { next: 0, t: -9, k: 0, x: 0, z: 0, idx: 0, dist: 0, force: false };
+  let fieldBox = null;
   const S = { front: -1e6, inside: 0, appr: 0, I: 0, tail: 0, rain: 0, wall: 0 };   // exposed for debugging
   const base = { fog: def.fogColor.clone(), den: def.fogDensity, haze: def.hazeHeight }, wrote = { den: -1 };
 
@@ -439,11 +443,11 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
     A.fogDensity = mix(base.den * (1 + 0.5 * appr), inDen, I); wrote.den = A.fogDensity;
     A.hazeHeight = mix(base.haze, 300, I);
     A.skyTint.copy(P.preFog).lerp(P.skyIn, I); A.skyTintK = Math.max(I * 0.92, appr * wall * 0.25);
-    A.sunDim = mix(1 - 0.15 * appr * wall, 0.28 + 0.14 * tail, I);
+    A.sunDim = mix(mix(1, 0.45, appr * wall), 0.28 + 0.14 * tail, I);
     A.sunTint.copy(P.white).lerp(P.sunIn, Math.max(I, appr * 0.25));
-    A.ambientK = mix(1 - 0.1 * appr * wall, 0.66 + 0.1 * tail, I);
+    A.ambientK = mix(1 - 0.4 * appr * wall, 0.6 + 0.1 * tail, I);
     const G = A.grade;
-    G.exposure = DG.exposure * mix(1, 1.05, I); G.contrast = DG.contrast * mix(1, 0.88, I); G.saturation = DG.saturation * mix(1 - 0.05 * appr, 0.9, I);
+    G.exposure = DG.exposure * mix(1, 1.05, I); G.contrast = DG.contrast * mix(1, 0.88, I); G.saturation = DG.saturation * mix(1 - 0.25 * appr * wall, 0.75 + 0.1 * tail, I);
     G.warmth = DG.warmth + mix(0.06 * appr, 0.3, I); G.vignette = DG.vignette + mix(0.05 * appr, 0.2, I); G.grain = DG.grain + mix(0, 0.045, I);
     A.bloom = mix(1, 1.35, I);
     A.visibility = 1.73 / Math.max(1e-6, A.fogDensity);
@@ -484,7 +488,7 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
     // ---- cloud shadows ----
     cumX += dt * Math.cos(0.32) * 6 * kv; cumZ += dt * Math.sin(0.32) * 6 * kv;
     const dom = 60000; billU.uCumOff.value.set(cumX % dom, cumZ % dom); shU.uCumOff.value.copy(billU.uCumOff.value);
-    const cumA = (heat ? 0.65 : 1) * (1 - Math.max(appr * wall, I)) * (1 - smooth(0.25, 0.9, I));
+    const cumA = (heat ? 0.65 : 1) * (1 - Math.max(appr, I)) * (1 - smooth(0.25, 0.9, I));
     billU.uCumA.value = cumA;
     const sy = Math.max(0.15, U.uSunD.value.y), offK = -1 / sy; shU.uSunOff.value.set(U.uSunD.value.x * offK * 1950, U.uSunD.value.z * offK * 1950);
     for (let i = 0; i < NCL; i++) { const c = CLU[i], v = clU[i]; if (!c) { v.w = 0; continue; }
@@ -497,6 +501,9 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
     // ---- billows ----
     billU.uWallA.value = wall * (1 - 0.6 * I); billU.uSkirtA.value = wall * 0.9;
     billU.uCellA.value = wall * (1 - 0.7 * I);
+    if (!fieldBox) { let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; const add = (x, y) => { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); };
+      for (const r of Z.RW || []) { add(r.x0, r.y); add(r.x1, r.y); } for (const g of Z.GATES || []) add(g.x, g.y);
+      fieldBox = x0 < x1 ? [(x0 + x1) / 2, (y0 + y1) / 2, (x1 - x0) / 2 + 500, (y1 - y0) / 2 + 500] : [0, 0, 4000, 3000]; billU.uField.value.set(...fieldBox); }
 
 
     // ---- sheets ----

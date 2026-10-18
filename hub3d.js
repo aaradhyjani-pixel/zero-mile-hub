@@ -339,11 +339,11 @@ function camUpdate(dt){
   if(V3.mode!=='map'&&V3.mode!=='tower'){const f=C3.follow;if(!f||['gone','diverted','towed','cancelled','sched'].includes(f.state)){if(V3.mode==='approach'){C3.follow=nextArrival();if(!C3.follow)setCam('map');}else setCam('map');camLabel();}}
   if(V3.mode==='map'){
     if(!running){C3.t.yaw+=dt*0.035;C3.t.dist=Math.max(C3.t.dist,8000);}
-    if(CINE&&CINE.o.track&&C3.t.dist<CINE.o.view.dist*3){const p=CINE.o.track();if(p){C3.t.tx=p[0];C3.t.ty=p[1];}}   // a cinematic keeps its moving subject in frame (until the player zooms out)
+    if(CINE&&CINE.o.track&&C3.t.dist<CINE.o.view.dist*3){const p=CINE.o.track();if(Array.isArray(p)){C3.t.tx=p[0];C3.t.ty=p[1];}}   // a cinematic keeps its moving subject in frame (until the player zooms out)
     const ke=C3.intro>0?1-Math.exp(-dt*1.6):k;if(C3.intro>0)C3.intro-=dt;
     // a cinematic can drive the orbit itself (o.track: the flypast, the fireworks), aiming th metres above the ground;
     // it cuts straight to the shot and holds it exactly (no easing lag on a fast target), then eases home after
-    const tr=CINE&&CINE.o.track?CINE.o.track():null;
+    const tr0=CINE&&CINE.o.track?CINE.o.track():null,tr=tr0&&!Array.isArray(tr0)&&tr0.tx!=null?tr0:null;   // [x,y] = keep a subject in frame; {tx,ty,dist,yaw,pitch,th} = drive the orbit
     for(const key of ['tx','ty','dist','yaw','pitch']){if(tr)C3[key]=C3.t[key]=tr[key];else C3[key]+=(C3.t[key]-C3[key])*ke;}
     C3.th=tr?tr.th||0:(C3.th||0)*(1-ke);
     const cp=Math.cos(C3.pitch);cam.position.set(C3.tx+Math.sin(C3.yaw)*cp*C3.dist,C3.th+Math.sin(C3.pitch)*C3.dist,C3.ty+Math.cos(C3.yaw)*cp*C3.dist);

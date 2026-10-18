@@ -572,10 +572,15 @@ function guard(lines,who,o){const g=$('#guard');if(!g)return;clearTimeout(guard.
   if(!who&&speak(lines,{gap:o.gap,gaps:o.gaps,endGap:o.endGap,onLine:i=>{clearTimeout(guard.t2);guardShow(lines[i]);if(o.onLine)o.onLine(i);},onDone:()=>{guard.t2=setTimeout(()=>g.classList.remove('on'),1400);if(o.onDone)o.onDone();}}))return;
   guardShow(lines[0],who);if(o.onLine)o.onLine(0);let i=0;const step=()=>{i++;if(i<lines.length){$('#guardTxt').textContent=lines[i];if(o.onLine)o.onLine(i);guard.t1=setTimeout(step,2600);}};
   if(lines.length>1)guard.t1=setTimeout(step,2600);guard.t2=setTimeout(()=>{g.classList.remove('on');if(o.onDone)o.onDone();},2600*(lines.length-1)+3600+(o.extra||0));}
-// the voice: pre-recorded earpiece clips (voice/spg_audio.js) one after another with pauses; a line without a clip falls back
+// the voice: pre-recorded clips (voice/spg_audio.js maps each line to voice/clips/*.mp3) one after another with pauses; a line without a clip falls back
 // to the browser's speech at a natural pitch, with the best Indian English voice the device has
 /*@@VOICE@@*/
 const VQ=[];let vqOn=false,vqCur=null;
+// voicePreload(keys): start fetching the clips for these on-screen lines now, so they play without a gap when their turn
+// comes (speak() and say() call it for every line they queue; set pieces may call it early with their whole script)
+const VPRE=new Map();
+function voicePreload(keys){if(typeof SPG_AUDIO==='undefined'||!SND.on)return;(Array.isArray(keys)?keys:[keys]).forEach(k=>{const u=SPG_AUDIO[k];if(!u||VPRE.has(u))return;
+  try{const a=new Audio();a.preload='auto';a.src=u;a.load();VPRE.set(u,a);}catch(e){}});}
 // a line can carry an accent (lang, e.g. 'ru-RU'): its clip is recorded in that voice; without a clip the browser's voice for
 // that language reads it (accented English), and a radio call with no clip and no matching voice stays silent
 function pickVoice(vs,lang){const sc=v=>(/en[-_]IN/i.test(v.lang)?4:/en[-_]GB/i.test(v.lang)?2:/^en/i.test(v.lang)?1:0)+(/enhanced|premium|natural|neural|google/i.test(v.name)?3:0)+(/aman/i.test(v.name)?2:0)-(/rishi|compact/i.test(v.name)?1:0);
@@ -584,15 +589,15 @@ function pickVoice(vs,lang){const sc=v=>(/en[-_]IN/i.test(v.lang)?4:/en[-_]GB/i.
   return vs.slice().sort((a,b)=>sc(b)-sc(a))[0]||null;}
 function vqNext(){if(vqOn)return;const it=VQ.shift();if(!it)return;if(it.valid&&!it.valid()){if(it.onEnd)it.onEnd();return vqNext();}vqOn=true;let fin=false;const done=()=>{if(fin)return;fin=true;vqCur=null;duck(false);if(it.onEnd)it.onEnd();setTimeout(()=>{vqOn=false;vqNext();},it.gap);};
   if(it.onStart)it.onStart();const clip=typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[it.text];
-  if(clip){const a=new Audio(clip);vqCur=a;a.volume=it.vol||0.95;a.onended=done;a.onerror=done;duck(true);const p=a.play();if(p&&p.catch)p.catch(done);return;}
+  if(clip){const a=VPRE.get(clip)||new Audio(clip);VPRE.delete(clip);vqCur=a;a.volume=it.vol||0.95;a.onended=done;a.onerror=done;duck(true);const p=a.play();if(p&&p.catch)p.catch(done);return;}
   if(!it.radio&&window.speechSynthesis&&window.SpeechSynthesisUtterance){try{const S2=window.speechSynthesis,v=pickVoice(S2.getVoices(),it.lang);if(it.lang&&!v)return done();const u=new SpeechSynthesisUtterance(it.text.replace(/[\u{1F000}-\u{1FAFF}☀-➿️]/gu,'').trim());
     if(v){u.voice=v;u.lang=v.lang;}else u.lang='en-IN';u.rate=0.95;u.pitch=1;u.onend=done;u.onerror=done;duck(true);S2.speak(u);setTimeout(done,9000);return;}catch(e){}}
   done();}
 // speak(lines,{onLine,onDone,gap,endGap,gaps,lang}): lines one after another; the gap after each line is gaps[i], else gap
 // (1200 ms: the SPG takes his time), and endGap after the last line
-function speak(lines,o){o=o||{};if(!SND.on)return false;lines.forEach((t,i)=>{const last=i===lines.length-1;VQ.push({text:t,lang:o.lang,gap:o.gaps&&o.gaps[i]!=null?o.gaps[i]:last?(o.endGap!=null?o.endGap:900):(o.gap!=null?o.gap:1200),onStart:o.onLine?()=>o.onLine(i):null,onEnd:last?o.onDone:null});});vqNext();return true;}
+function speak(lines,o){o=o||{};if(!SND.on)return false;voicePreload(lines);lines.forEach((t,i)=>{const last=i===lines.length-1;VQ.push({text:t,lang:o.lang,gap:o.gaps&&o.gaps[i]!=null?o.gaps[i]:last?(o.endGap!=null?o.endGap:900):(o.gap!=null?o.gap:1200),onStart:o.onLine?()=>o.onLine(i):null,onEnd:last?o.onDone:null});});vqNext();return true;}
 // a radio call in a speaker's own voice: shows on the ticker, and plays its recorded clip (keyed by the exact text) if there is one
-function say(src,text,o){o=o||{};radio(src,text);if(SND.on&&typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[text]){VQ.push({text,radio:true,gap:o.gap!=null?o.gap:500,vol:o.vol,valid:o.valid,onStart:o.onStart,onEnd:o.onEnd});vqNext();return true;}if(o.onEnd)o.onEnd();return false;}
+function say(src,text,o){o=o||{};radio(src,text);if(SND.on&&typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[text]){voicePreload(text);VQ.push({text,radio:true,gap:o.gap!=null?o.gap:500,vol:o.vol,valid:o.valid,onStart:o.onStart,onEnd:o.onEnd});vqNext();return true;}if(o.onEnd)o.onEnd();return false;}
 function voiceReset(){VQ.length=0;if(vqCur){try{vqCur.pause();}catch(e){}}vqCur=null;vqOn=false;if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}music(null,{now:true});}
 // music for set pieces: music('dj') plays music/dj.mp3 (looped unless {loop:false}), crossfading from whatever was playing;
 // music(null) fades it out. It ducks under voice lines. A missing file is simply silent, so tracks can be dropped in later.

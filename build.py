@@ -31,4 +31,8 @@ os.makedirs(os.path.join(d,'site'),exist_ok=True);open(os.path.join(d,'site','in
 md=os.path.join(d,'music')
 if os.path.isdir(md):
     shutil.rmtree(os.path.join(d,'site','music'),ignore_errors=True);shutil.copytree(md,os.path.join(d,'site','music'))
+# the recorded voice clips (voice/clips/*.mp3, named in voice/spg_audio.js) ship next to the page too
+vc=os.path.join(d,'voice','clips')
+if os.path.isdir(vc):
+    shutil.rmtree(os.path.join(d,'site','voice'),ignore_errors=True);shutil.copytree(vc,os.path.join(d,'site','voice','clips'))
 print(len(out))

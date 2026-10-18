@@ -461,6 +461,152 @@ vec3 fxCol(vec3 P,float reg,float t){
   KS.add('elephant');
 
   // =====================================================================================================
+  // GPS-SPOOFING GHOSTS: instanced hologram airliners (fresnel rim, scanlines, panel grid, slice glitches, a red chromatic
+  // twin) that flicker and jump westward from each spoofed point on the approach, fading as they go
+  // =====================================================================================================
+  const GH = (() => {
+    const P = [], Nn = [], t = new THREE.Vector3(), NM = new THREE.Matrix3();
+    const addG = (geo) => { const g = geo.index ? geo.toNonIndexed() : geo; g.computeVertexNormals(); NM.getNormalMatrix(KM); const gp = g.attributes.position, gn = g.attributes.normal;
+      for (let i = 0; i < gp.count; i++) { t.fromBufferAttribute(gp, i).applyMatrix4(KM); P.push(t.x, t.y, t.z); t.fromBufferAttribute(gn, i).applyMatrix3(NM).normalize(); Nn.push(t.x, t.y, t.z); } };
+    const mk = (geo, x, y, z, rx, ry, rz, sx, sy, sz) => { KE.set(rx, ry, rz); KQ.setFromEuler(KE); KV.set(x, y, z); KS3.set(sx, sy, sz); KM.compose(KV, KQ, KS3); addG(geo); };
+    const slab = (pts, th, ax) => {   // a thin plate from a quad, thickness along y (ax 0) or z (ax 1)
+      const v = [], o = (q, s) => ax ? [q[0], q[1], q[2] + s * th] : [q[0], q[1] + s * th, q[2]];
+      const T = pts.map(q => o(q, 0.5)), B = pts.map(q => o(q, -0.5)), tri = (a, b, c) => v.push(...a, ...b, ...c);
+      tri(T[0], T[1], T[2]); tri(T[0], T[2], T[3]); tri(B[0], B[2], B[1]); tri(B[0], B[3], B[2]);
+      for (let i = 0; i < 4; i++) { const j = (i + 1) % 4; tri(T[i], B[i], B[j]); tri(T[i], B[j], T[j]); }
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(v, 3)); KM.identity(); addG(g);
+    };
+    mk(new THREE.CylinderGeometry(1, 1, 1, 14, 1, true), 0, 0, 0, 0, 0, -Math.PI / 2, 2.0, 36, 2.0);
+    mk(new THREE.SphereGeometry(1, 14, 6, 0, Math.PI * 2, 0, Math.PI / 2), 18, 0, 0, 0, 0, -Math.PI / 2, 2.0, 4.5, 2.0);
+    mk(new THREE.CylinderGeometry(1, 0.22, 1, 14, 1, true), -22.5, 0.5, 0, 0, 0, -Math.PI / 2, 2.0, 9, 2.0);
+    for (const s of [1, -1]) {
+      slab([[4, -0.9, 2 * s], [-12, 0.9, 30 * s], [-16, 0.9, 30 * s], [-6, -0.9, 2 * s]], 0.5, 0);
+      slab([[-21.5, 0.8, 1 * s], [-26.5, 1.2, 10 * s], [-29, 1.2, 10 * s], [-26.5, 0.8, 1 * s]], 0.3, 0);
+      mk(new THREE.CylinderGeometry(1, 1, 1, 10, 1, true), 2.5, -1.9, 10 * s, 0, 0, -Math.PI / 2, 1.45, 5, 1.45);
+    }
+    slab([[-19, 1.5, 0], [-26, 12, 0], [-29.5, 12, 0], [-28.5, 1.5, 0]], 0.35, 1);
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(Nn, 3));
+    const N = 64, aG = new THREE.InstancedBufferAttribute(new Float32Array(N * 4), 4); aG.setUsage(THREE.DynamicDrawUsage); g.setAttribute('aG', aG);
+    const U = { uTime: { value: 0 } };
+    const mat = new THREE.ShaderMaterial({ uniforms: U, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, forceSinglePass: true,
+      vertexShader: `uniform float uTime;attribute vec4 aG;varying vec3 vN,vV,vL;varying float vA,vC;
+        float h1(float x){return fract(sin(x*78.233)*43758.5453);}
+        void main(){
+          vec3 p=position;float fr=floor(uTime*11.);
+          float band=floor(p.x*0.22+fr*3.1+aG.z);float g=h1(band+aG.z*13.);
+          p.z+=g>0.8?(h1(band*1.7+aG.z)-0.5)*7.:0.;p.y+=g>0.92?(h1(band*2.3)-0.5)*3.:0.;
+          p.x*=1.+aG.w*1.8;
+          vec4 wp=modelMatrix*instanceMatrix*vec4(p,1.);
+          vN=normalize(mat3(modelMatrix)*mat3(instanceMatrix)*normal);vV=cameraPosition-wp.xyz;vL=position;vA=aG.y;vC=aG.x;
+          gl_Position=projectionMatrix*viewMatrix*wp;
+        }`,
+      fragmentShader: `uniform float uTime;varying vec3 vN,vV,vL;varying float vA,vC;
+        void main(){
+          vec3 n=normalize(vN),v=normalize(vV);float f=1.-abs(dot(n,v));float rim=f*f;
+          float scan=0.55+0.45*sin(gl_FragCoord.y*1.1-uTime*24.);
+          float lx=smoothstep(0.42,0.5,abs(fract(vL.x/3.)-0.5)),lz=smoothstep(0.44,0.5,abs(fract(vL.z/3.)-0.5));
+          vec3 col=vC<0.5?vec3(0.1,0.9,1.0):vec3(1.0,0.1,0.18);
+          float I=(0.08+1.6*rim+0.5*max(lx,lz))*scan*vA;
+          gl_FragColor=vec4(col*I*1.9,1.);
+        }` });
+    const mesh = new THREE.InstancedMesh(g, mat, N); mesh.frustumCulled = false; mesh.count = 0; mesh.visible = false; mesh.renderOrder = 31; mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); root.add(mesh);
+    return { mesh, aG, U, N, tris: P.length / 9 };
+  })();
+  function ghostsUpdate(list, dt, now) {
+    let n = 0; const T = Z.T, k = clamp(camD() / 2400, 1, 4.4), E = 7, J = 7, arr = GH.aG.array;
+    for (let li = 0; li < list.length; li++) {
+      const it = list[li], pts = it.pts; if (!pts) continue;
+      const fade = smooth(it.t0, it.t0 + 8, T) * (1 - smooth(it.t1 - 20, it.t1, T)); if (fade <= 0.01) continue;
+      for (let pi = 0; pi < pts.length; pi++) {
+        const px = pts[pi][0], py = pts[pi][1];
+        for (let e = 0; e < E && n + 2 <= GH.N; e++) {
+          const per = 6.5 + hash(pi, e) * 2, ph = now / per + e / E + pi * 0.37, cyc = Math.floor(ph), f = ph - cyc, j = Math.floor(f * J), jf = f * J - j;
+          const stp = 330 + 60 * k;
+          const x = px - (j + 0.3 + 0.5 * hash(e + j, cyc)) * stp, y = py + (hash(e * 3 + j, cyc + 1) - 0.5) * 140 * (0.5 + j * 0.3);
+          const alt = (115 + 70 * hash(e, cyc * 3 + j)) * (1 + 0.2 * (k - 1));
+          let a = fade * Math.pow(1 - j / J, 1.1) * smooth(0, 0.06, jf);
+          const fl = hash(e * 5 + pi, Math.floor(now * 15)); if (fl < 0.22) a *= 0.12; else if (fl > 0.9) a *= 1.7;
+          const smear = 1 - smooth(0, 0.14, jf), sd = hash(e * 13 + pi * 7, cyc) * 10;
+          _e.set((hash(e, cyc + j) - 0.5) * 0.14, Math.PI + (hash(e + 3, cyc + j) - 0.5) * 0.16, -0.05, 'YXZ'); _q.setFromEuler(_e); _s.setScalar(k);
+          _v.set(x, alt, y); _m.compose(_v, _q, _s); GH.mesh.setMatrixAt(n, _m); arr[n * 4] = 0; arr[n * 4 + 1] = a; arr[n * 4 + 2] = sd; arr[n * 4 + 3] = smear; n++;
+          _v.set(x + (5 + smear * 30) * k, alt + 1.5 * k, y + (hash(e, Math.floor(now * 9)) - 0.5) * 9 * k); _m.compose(_v, _q, _s);
+          GH.mesh.setMatrixAt(n, _m); arr[n * 4] = 1; arr[n * 4 + 1] = a * 0.7; arr[n * 4 + 2] = sd + 3; arr[n * 4 + 3] = smear; n++;
+        }
+      }
+    }
+    GH.mesh.count = n; GH.mesh.visible = n > 0;
+    if (n) { GH.mesh.instanceMatrix.needsUpdate = true; GH.aG.needsUpdate = true; GH.U.uTime.value = now; }
+  }
+  KS.add('ghosts');
+
+  // =====================================================================================================
+  // THE OPS WHATSAPP STORM: glossy bevelled speech bubbles (green outgoing with blue ticks, white incoming) that pop up
+  // over the terminal and rise, a few per second; text lines, and a 🌞 or 🙏 drawn as simple shapes
+  // =====================================================================================================
+  const CH = (() => {
+    const N = 26, r = 0.1, w = 0.5, h = 0.3, sh = new THREE.Shape();
+    sh.moveTo(-w - 0.13, h); sh.lineTo(w - r, h); sh.quadraticCurveTo(w, h, w, h - r); sh.lineTo(w, -h + r); sh.quadraticCurveTo(w, -h, w - r, -h);
+    sh.lineTo(-w + r, -h); sh.quadraticCurveTo(-w, -h, -w, -h + r); sh.lineTo(-w, h - 0.12); sh.lineTo(-w - 0.13, h);
+    const geo = new THREE.ExtrudeGeometry(sh, { depth: 0.05, bevelEnabled: true, bevelThickness: 0.045, bevelSize: 0.035, bevelSegments: 2, curveSegments: 3 });
+    geo.translate(0, 0, -0.025);
+    const aB = new THREE.InstancedBufferAttribute(new Float32Array(N * 4), 4); aB.setUsage(THREE.DynamicDrawUsage); geo.setAttribute('aB', aB);
+    const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.28, metalness: 0, envMapIntensity: 0.9 });
+    mat.onBeforeCompile = s => {
+      s.vertexShader = 'attribute vec4 aB;varying vec4 vB;varying vec3 vP;varying vec3 vNo;\n' + s.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvB=aB;vP=position;vNo=normal;');
+      s.fragmentShader = `varying vec4 vB;varying vec3 vP;varying vec3 vNo;
+float fh(float x){return fract(sin(x*91.7)*43758.5453);}
+float seg(vec2 p,vec2 a,vec2 b){vec2 pa=p-a,ba=b-a;float h=clamp(dot(pa,ba)/dot(ba,ba),0.,1.);return length(pa-ba*h);}
+vec4 sunI(vec2 p,vec2 c,float r){vec2 q=p-c;float d=length(q),a=atan(q.y,q.x);
+  if(d<r*0.6){vec3 col=vec3(1.,0.7,0.02);if(length(q-vec2(-0.22*r,0.14*r))<0.08*r||length(q-vec2(0.22*r,0.14*r))<0.08*r)col=vec3(0.3,0.14,0.01);
+    if(abs(length(q-vec2(0.,0.06*r))-0.3*r)<0.05*r&&q.y<-0.02*r)col=vec3(0.3,0.14,0.01);return vec4(col,1.);}
+  if(d<r&&d>r*0.7&&cos(a*8.)>0.3)return vec4(1.,0.42,0.,1.);return vec4(0.);}
+vec4 handsI(vec2 p,vec2 c,float r){vec4 o=vec4(0.);
+  for(int i=0;i<2;i++){float s=i==0?-1.:1.;vec2 q=p-c-vec2(s*0.2*r,0.05*r);float an=s*0.3;q=mat2(cos(an),sin(an),-sin(an),cos(an))*q;
+    float e=length(q/vec2(0.25*r,0.62*r));if(e<1.)o=vec4(e>0.8?vec3(0.75,0.4,0.02):vec3(1.,0.72,0.1),1.);}
+  if(abs(p.x-c.x)<0.46*r&&p.y<c.y-0.5*r&&p.y>c.y-0.8*r)o=vec4(0.08,0.4,0.85,1.);return o;}
+vec4 chatFace(vec2 p,float seed,float grn,float mode){vec4 o=vec4(0.);
+  if(mode<1.5){float xe=0.;
+    for(int i=0;i<3;i++){float y=0.16-float(i)*0.13;float len=0.4+0.55*fh(seed+float(i)*7.);if(i==2)len*=mode>0.5?0.35:0.6;
+      float x0=-0.42,x1=x0+len*0.8;xe=x1;if(seg(p,vec2(x0,y),vec2(x1,y))<0.03)o=vec4(0.16,0.18,0.19,1.);}
+    if(mode>0.5){vec4 a=sunI(p,vec2(xe+0.12,-0.1),0.075);if(a.a>0.)o=a;vec4 b=handsI(p,vec2(xe+0.27,-0.1),0.075);if(b.a>0.)o=b;}
+  } else {
+    if(mode<2.5||mode>3.5){vec4 a=sunI(p,vec2(mode>3.5?-0.2:0.,0.03),0.2);if(a.a>0.)o=a;}
+    if(mode>2.5){vec4 b=handsI(p,vec2(mode>3.5?0.2:0.,0.03),0.2);if(b.a>0.)o=b;}
+  }
+  if(seg(p,vec2(0.15,-0.225),vec2(0.28,-0.225))<0.016)o=vec4(0.42,0.46,0.46,1.);
+  if(grn>0.5){float t1=min(seg(p,vec2(0.31,-0.225),vec2(0.335,-0.25)),seg(p,vec2(0.335,-0.25),vec2(0.38,-0.19)));float t2=min(seg(p,vec2(0.35,-0.225),vec2(0.375,-0.25)),seg(p,vec2(0.375,-0.25),vec2(0.42,-0.19)));if(min(t1,t2)<0.013)o=vec4(0.03,0.5,0.95,1.);}
+  return o;}
+` + s.fragmentShader.replace('vec4 diffuseColor = vec4( diffuse, opacity );', `float grn=vB.x;vec3 bc=grn>0.5?vec3(0.70,0.93,0.55):vec3(1.);
+        float front=step(0.6,abs(vNo.z));vec3 c=mix(grn>0.5?vec3(0.18,0.62,0.3):vec3(0.62,0.66,0.7),bc,front);
+        if(front>0.5){vec2 p=vec2(vP.x*sign(vP.z),vP.y);vec4 fc=chatFace(p,vB.z,grn,vB.y);c=mix(c,fc.rgb,fc.a);}
+        vec4 diffuseColor=vec4(c,opacity);`).replace('vec3 totalEmissiveRadiance = emissive;', 'vec3 totalEmissiveRadiance = diffuseColor.rgb*0.3;');
+    };
+    const mesh = new THREE.InstancedMesh(geo, mat, N); mesh.frustumCulled = false; mesh.count = 0; mesh.visible = false; mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); root.add(mesh);
+    return { mesh, aB, N, tris: geo.attributes.position.count / 3 };
+  })();
+  const backOut = t => { const u = t - 1; return 1 + 2.7 * u * u * u + 1.7 * u * u; };
+  function chatUpdate(list, dt, now) {
+    const it = list[0]; if (!it) { CH.mesh.visible = false; return; }
+    const T = Z.T, fade = smooth(it.t0, it.t0 + 6, T) * (1 - smooth(it.t1 - 12, it.t1, T));
+    const kb = clamp(camD() / 480, 1, 24), N = CH.N, LB = 5.2, cam = Z.camera; let n = 0;
+    for (let i = 0; i < N; i++) {
+      const off = i * LB / N + hash(i, 1) * 0.3, tt = now + off, cyc = Math.floor(tt / LB), age = tt - cyc * LB;
+      const h0 = hash(i * 3.1, cyc), h1 = hash(i * 7.7, cyc + 0.5), h2 = hash(i + 0.3, cyc * 1.3), h3 = hash(i * 1.9, cyc * 2.1);
+      if (h3 > fade * 0.95) continue;
+      const pop = age < 0.32 ? backOut(age / 0.32) : 1, out = 1 - smooth(LB - 0.3, LB, age), sc = 16 * kb * pop * out * (0.85 + 0.3 * h2);
+      if (sc < 0.01) continue;
+      const x = it.x + (h0 - 0.5) * 1700, z = it.y + (h1 - 0.5) * 260, y = (30 + 20 * h2) * Math.sqrt(kb) + age * (7 + 4 * h1) * kb;
+      _q.copy(cam.quaternion); _q2.setFromAxisAngle(ZAX, Math.sin(now * 1.7 + i) * 0.06); _q.multiply(_q2);
+      const green = h1 > 0.45; if (green) _q.multiply(QFLIP);
+      _v.set(x, y, z); _s.set(sc * (0.85 + 0.35 * h0), sc, sc); _m.compose(_v, _q, _s); CH.mesh.setMatrixAt(n, _m);
+      CH.aB.setXYZW(n, green ? 1 : 0, h2 < 0.45 ? 0 : h2 < 0.75 ? 1 : 2 + Math.floor(h0 * 2.999), Math.floor(h3 * 1000) + i, 0);
+      n++;
+    }
+    CH.mesh.count = n; CH.mesh.visible = n > 0; if (n) { CH.mesh.instanceMatrix.needsUpdate = true; CH.aB.needsUpdate = true; }
+  }
+  KS.add('chat');
+
+  // =====================================================================================================
   // per frame
   // =====================================================================================================
   let lastT = null;
@@ -475,6 +621,8 @@ vec3 fxCol(vec3 P,float reg,float t){
       nBlob = 0;
       archUpdate(L.waterarch, dt, now);
       elephantUpdate(L.elephant, dt, now);
+      ghostsUpdate(L.ghosts, dt, now);
+      chatUpdate(L.chat, dt, now);
       blobs.count = nBlob; blobs.visible = nBlob > 0;
       if (nBlob) { blobs.instanceMatrix.needsUpdate = true; blobOp.needsUpdate = true; }
     },

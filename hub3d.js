@@ -430,9 +430,10 @@ function drawOverlay3D(now){
   for(const st of STACKS){const n=flights.filter(f=>f.state==='holding'&&f.stack===st);if(!n.length)continue;const p=proj(st.x,st.y,2600*AIR_K);if(p)signText(p.X,p.Y-40,`STACK ${st.id} · ${n.length}`,0.95,n.some(f=>f.minFuel)?'#ff4d3f':'#f4c430');}
   rwSigns=[];for(const r of RW){const p=proj(r.x0+r.len*0.18,r.y,0);if(!p)continue;const s=rwSign(r);const rect=signText(p.X,p.Y-16,`${r.short} · ${s.lbl}`,r.locked?.6:1,s.col);rect.r=r;rwSigns.push(rect);}
   for(const f of flights){if(!f.mayday||f.landT!=null||f.sx==null)continue;const X=f.sx,Y=f.sy,pp=(now*1.4)%1;ctx.strokeStyle=`rgba(255,77,63,${1-pp})`;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(X,Y,10+pp*28,0,7);ctx.stroke();signText(X,Y-30,`MAYDAY ${fl(f)}`,1,'#ff4d3f');}
-  for(const I of incidents){const q=incPos(I);const p=proj(q.x,q.y,I.f?altM(I.f):0);if(!p){I.sx=null;continue;}const X=p.X,Y=p.Y-(I.f?0:14);const ic=ICON[I.type];const pulse=1+0.18*Math.sin(now*7);const R=13*pulse;
+  for(const I of incidents){const q=incPos(I);const p=proj(q.x,q.y,I.f?altM(I.f):0);if(!p){I.sx=null;continue;}const X=p.X,Y=p.Y-(I.f?0:14);const ic=(I.icon||ICON[I.type]);const pulse=1+0.18*Math.sin(now*7);const R=13*pulse;
     ctx.fillStyle='rgba(0,0,0,.55)';ctx.beginPath();ctx.arc(X,Y,R+5,0,7);ctx.fill();ctx.strokeStyle=ic.c;ctx.lineWidth=3;ctx.beginPath();ctx.arc(X,Y,R+3,-Math.PI/2,-Math.PI/2+2*Math.PI*clamp(I.left/I.total,0,1));ctx.stroke();
     ctx.fillStyle=ic.c;ctx.beginPath();ctx.arc(X,Y,R-2,0,7);ctx.fill();ctx.fillStyle='#0b0b0b';ctx.font='700 15px Barlow Condensed, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(ic.g,X,Y+1);ctx.textAlign='left';ctx.textBaseline='alphabetic';I.sx=X;I.sy=Y;}
+  drawMarks(ctx,(x,y,a)=>proj(x,y,a*AIR_K),now);
   const tagged=new Set();if(selected)tagged.add(selected);if(hover)tagged.add(hover);
   if(V3.mode==='map'&&Z.camDist<2200){const cp=Z.camera.position,cand=[];for(const f of flights){if(f.sx!=null&&['approach','rollout','lineup','roll','nogate','climb','hp'].includes(f.state)&&f.sx>40&&f.sx<VW-40&&f.sy>40&&f.sy<VH-40)cand.push([Math.hypot(cp.x-f.x,cp.z-f.y),f]);}
     cand.sort((a,b)=>a[0]-b[0]);for(const c of cand.slice(0,6))tagged.add(c[1]);}

@@ -31,8 +31,10 @@ AUTO = '''
  const hot=H.LV.light==='heat';const longest=H.RW.reduce((p,c)=>c.len>p.len?c:p);
  const dust=H.LV.dust&&T+600>=H.LV.dust[0]&&T<H.LV.dust[1];
  const capA={ARR:38*(dust?0.72:1),DEP:0,MIX:24*(dust?0.8:1)},capD={ARR:0,DEP:47,MIX:24};
+ // closures the bank chart shows (inspections, set pieces, VIP blocks) count as lost capacity in the window
+ const av=open.map(r=>{let lost=Math.max(0,Math.min(r.closedUntil,w1)-T);for(const b of r.blocks||[])lost+=Math.max(0,Math.min(b.to,w1)-Math.max(b.from,T));return Math.max(0,1-lost/(w1-T));});
  let best=null,bs=1e9;const n=open.length;const tot=Math.pow(3,n);const M=['ARR','DEP','MIX'];const hrs=(w1-T)/3600;
- for(let c=0;c<tot;c++){let k=c,ca=0,cd=0,cfg=[];for(let i=0;i<n;i++){const m=M[k%3];k=Math.floor(k/3);cfg.push(m);ca+=capA[m];cd+=capD[m];}
+ for(let c=0;c<tot;c++){let k=c,ca=0,cd=0,cfg=[];for(let i=0;i<n;i++){const m=M[k%3];k=Math.floor(k/3);cfg.push(m);ca+=capA[m]*av[i];cd+=capD[m]*av[i];}
   if(hot&&!longest.locked){const li=open.indexOf(longest);if(li>=0&&cfg[li]==='ARR')continue;}
   const sa=Math.max(0,a-ca*hrs),sd=Math.max(0,d-cd*hrs);const ch=cfg.reduce((s,m,i)=>s+(m!==open[i].mode?1:0),0);
   const sc=sa*1.4+sd+ch*0.6-(ca+cd)*hrs*0.02;if(sc<bs){bs=sc;best=cfg;}}

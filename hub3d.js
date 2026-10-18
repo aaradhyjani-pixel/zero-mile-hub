@@ -439,7 +439,7 @@ function drawOverlay3D(now){
   for(const I of incidents){const q=incPos(I);const p=proj(q.x,q.y,I.f?altM(I.f):0);if(!p){I.sx=null;continue;}const X=p.X,Y=p.Y-(I.f?0:14);const ic=(I.icon||ICON[I.type]);const pulse=1+0.18*Math.sin(now*7);const R=13*pulse;
     ctx.fillStyle='rgba(0,0,0,.55)';ctx.beginPath();ctx.arc(X,Y,R+5,0,7);ctx.fill();ctx.strokeStyle=ic.c;ctx.lineWidth=3;ctx.beginPath();ctx.arc(X,Y,R+3,-Math.PI/2,-Math.PI/2+2*Math.PI*clamp(I.left/I.total,0,1));ctx.stroke();
     ctx.fillStyle=ic.c;ctx.beginPath();ctx.arc(X,Y,R-2,0,7);ctx.fill();ctx.fillStyle='#0b0b0b';ctx.font='700 15px Barlow Condensed, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(ic.g,X,Y+1);ctx.textAlign='left';ctx.textBaseline='alphabetic';I.sx=X;I.sy=Y;}
-  drawMarks(ctx,(x,y,a)=>proj(x,y,a*AIR_K),now);
+  drawMarks(ctx,(x,y,a)=>proj(x,y,a*AIR_K),now,Z.fxKinds);
   const tagged=new Set();if(selected)tagged.add(selected);if(hover)tagged.add(hover);
   if(V3.mode==='map'&&Z.camDist<2200){const cp=Z.camera.position,cand=[];for(const f of flights){if(f.sx!=null&&['approach','rollout','lineup','roll','nogate','climb','hp'].includes(f.state)&&f.sx>40&&f.sx<VW-40&&f.sy>40&&f.sy<VH-40)cand.push([Math.hypot(cp.x-f.x,cp.z-f.y),f]);}
     cand.sort((a,b)=>a[0]-b[0]);for(const c of cand.slice(0,6))tagged.add(c[1]);}

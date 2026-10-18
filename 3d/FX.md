@@ -5,3 +5,17 @@
 - `{kind:'flypast', id, t0, t1, cx, cy, r}`: the Surya Kiran aerobatic team (9 red-and-white Hawk jets in an arrowhead) displays over the field between t0 and t1 (about 240 s), centred on (cx, cy) within radius r: low passes along the runways, a loop, a split. Saffron, white and green smoke trails from the jets.
 - `{kind:'monkeys', id, t0, t1, pts:[[x,y],...], n, flee}`: a troop of n rhesus macaques on Pier F's airbridges and stands (pts are the stand/airbridge points) between t0 and t1: sitting, scratching, walking along the airbridge roofs, tails up, a baby on a back. `flee` is null or `{t0, t1, x0, y0, x1, y1}`: in that window they run in a stream from (x0,y0) to (x1,y1) (across a runway) and are gone after t1.
 - Aircraft type `GLF6` (Gulfstream G650: 30.4 m long, 30.4 m span, T-tail, two rear fuselage engines, oval windows) and airline `CHW` (the Chambani wedding: white, gold cheatline, marigold-orange garland on the nose, gold tail with a "C" monogram).
+
+## Round 2: the earlier set pieces (3d/fx2.js)
+
+Every module that draws a kind adds it to `Z.fxKinds` (a Set; create it if missing): `(Z.fxKinds=Z.fxKinds||new Set()).add('tiger')`. The 3D overlay then stops drawing the flat emoji stand-in for that kind.
+
+- `{kind:'ribbon', id, x, y, w, t0, t1, cutAt}`: a red satin ribbon with big bows stretched across the runway at (x, y), w metres each side of the centreline, on two short gold posts. When `cutAt` is set, it snaps at the middle, the halves flutter down and a burst of marigold petals floats away; gone by t1.
+- `{kind:'tiger', id, path:[[x,y],...], t0, t1, darted, exit}`: a Bengal tigress (big, readable from far: scale up with camera distance) walking slowly along the path with a proper walk cycle, pausing, sitting, tail flicking. If `darted` (a sim time) is set, from then she lies down. If `exit` [x,y] is set, she lopes off towards it and is gone by t1.
+- `{kind:'kites', id, x, y, sp, alt, n, t0, t1}`: n colourful paper kites (diamond, tail ribbons, Uttarayan colours) fluttering and diving within sp metres of (x, y) at about alt metres up, with faint strings down to the ground, drifting slowly south. Fade in and out.
+- `{kind:'cyclists', id, x0, y0, x1, y1, n, t0, t1}`: n dabbawalas on bicycles (white kurta, white Gandhi cap, tiffin crates on the carrier and handlebars) riding in a stream from (x0,y0) to (x1,y1), pedalling.
+- `{kind:'fireworks', id, x, y, t0, t1}`: fireworks bursting 150-400 m above (x, y): saffron, white, green and gold peony bursts and crackle, with bloom.
+- `{kind:'waterarch', id, x, y, a, t0, t1}`: the water-salute arch: two red airport fire tenders either side of the runway at (x, y) (runway axis heading a), their monitors spraying two crossing water arcs about 35 m high, with mist and a faint rainbow.
+- `{kind:'ghosts', id, pts:[[x,y],...], t0, t1}`: GPS spoofing: translucent, glitching "ghost" aircraft echoes (cyan/red hologram look) flickering and jumping westward away from each point on the approach, as if the aircraft's GPS position were somewhere else.
+- `{kind:'elephant', id, path, t0, t1}`: a decorated wedding elephant (painted trunk, embroidered saddle cloth, a howdah) walking slowly along the path to the wedding apron.
+- `{kind:'chat', id, x, y, t0, t1}`: WhatsApp-style speech bubbles (green and white, a few with 🌞🙏 drawn as simple shapes) popping up and rising from the terminal at (x, y), a few per second.

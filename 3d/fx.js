@@ -188,7 +188,7 @@ void main() {
     fragmentShader: `uniform vec3 uSunDir, uSunCol, uAmbT, uAmbB;
 varying vec3 vCol, vV, vS; varying float vSide, vA, vEmit;
 #include <fog_pars_fragment>
-float fh(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float fh(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 float vn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(fh(i), fh(i + vec2(1.0, 0.0)), f.x), mix(fh(i + vec2(0.0, 1.0)), fh(i + vec2(1.0, 1.0)), f.x), f.y); }
 void main() {
   float s = vSide, prof = max(1.0 - s * s, 0.0);
@@ -221,7 +221,7 @@ void main() {
     const B = show.bake, D = Math.max(30, it.t1 - it.t0), kT = B.TEND / D, s = (T - it.t0) * kT, cam = Z.camera.position;
     const fade = sstep(0, 2.5, s) * (1 - sstep(B.TEND - 5, B.TEND, s));
     jetAt(B, 0, s, 1, _p); const St = clamp(cam.distanceTo(_p) / 2100, 1, 5);
-    show.S = show.S + (St - show.S) * (1 - Math.exp(-Math.min(dt, 0.1) * 4)); const S = show.S;
+    show.S = show.S + (St - show.S) * (1 - Math.exp(-Math.min(dt, 0.1) * 4)); const S = Z.fxDbg && Z.fxDbg.jetS ? Z.fxDbg.jetS : show.S;   // fxDbg: inspection hook
     // jets
     const js = S * sstep(0, 1.5, s) * (1 - sstep(B.TEND - 2, B.TEND, s));
     for (let i = 0; i < NJ; i++) { const x = s / DT, J = B.J[i];
@@ -274,11 +274,19 @@ void main() {
     fragmentShader: 'varying vec2 vUv;varying float vA;void main(){vec2 p=vUv*2.-1.;float r=dot(p,p);float a=(1.-smoothstep(0.15,1.,r))*vA;if(a<0.01)discard;gl_FragColor=vec4(0.03,0.025,0.02,a);}' }), MCAP);
   shadows.frustumCulled = false; shadows.count = 0; shadows.visible = false; shadows.renderOrder = 2; shadows.instanceMatrix.setUsage(THREE.DynamicDrawUsage); root.add(shadows);
   for (let i = 0; i < MCAP; i++) shadows.setColorAt(i, new THREE.Color(0, 0, 0)); shadows.instanceColor.setUsage(THREE.DynamicDrawUsage);
+  // dust kicked up by the fleeing troop: camera-facing puffs placed analytically along each monkey's own past path
+  const ND = 5, dustG = new THREE.PlaneGeometry(1, 1);
+  const dust = new THREE.InstancedMesh(dustG, new THREE.ShaderMaterial({ transparent: true, depthWrite: false,
+    vertexShader: 'varying vec2 vUv;varying vec2 vD;void main(){vUv=uv;vD=vec2(1.,1.);\n#ifdef USE_INSTANCING_COLOR\nvD=instanceColor.rg;\n#endif\nvec4 mv=modelViewMatrix*instanceMatrix*vec4(0.,0.,0.,1.);mv.xy+=position.xy*vD.y;gl_Position=projectionMatrix*mv;}',
+    fragmentShader: 'varying vec2 vUv;varying vec2 vD;float h(vec2 p){return fract(sin(dot(p,vec2(41.3,289.1)))*43758.5);}void main(){vec2 p=vUv*2.-1.;float r=length(p);float n=h(floor(vUv*5.)+floor(vD.y));float a=(1.-smoothstep(0.35+0.25*n,1.,r))*vD.x;if(a<0.01)discard;gl_FragColor=vec4(vec3(0.62,0.52,0.4)*(0.85+0.3*(1.-r)),a);}' }), MCAP * ND);
+  dust.frustumCulled = false; dust.count = 0; dust.visible = false; dust.renderOrder = 3; dust.instanceMatrix.setUsage(THREE.DynamicDrawUsage); root.add(dust);
+  for (let i = 0; i < MCAP * ND; i++) dust.setColorAt(i, new THREE.Color(0, 0, 0)); dust.instanceColor.setUsage(THREE.DynamicDrawUsage);
+  const _dp = new THREE.Vector3(), _dm = new THREE.Matrix4();
 
   // the aerobridge walkways (drawn by terminal.js): found once in the scene by their unit-length geometry, read every frame
   let walkIM = null, walkScan = -1e9;
   const findWalk = () => { let best = null;
-    Z.scene.traverse(o => { if (best || !o.isInstancedMesh || o === troop || o === jets || o === shadows || !o.geometry) return; const g = o.geometry; if (!g.attributes.position) return; if (!g.boundingBox) g.computeBoundingBox(); const b = g.boundingBox;
+    Z.scene.traverse(o => { if (best || !o.isInstancedMesh || o === troop || o === jets || o === shadows || o === dust || !o.geometry) return; const g = o.geometry; if (!g.attributes.position) return; if (!g.boundingBox) g.computeBoundingBox(); const b = g.boundingBox;
       if (Math.abs(b.min.x) < 0.01 && Math.abs(b.max.x - 1) < 0.01 && Math.abs(b.max.z - 1.93) < 0.06 && b.max.y - b.min.y > 2.5) { best = o; roofY = b.max.y; } });
     return best; };
   let roofY = 0.3;
@@ -411,7 +419,7 @@ void main() {
     const mpp = dist * 2 * Math.tan(cam.fov * D2R / 2) / vh, St = clamp(mpp * 14 / 0.5, 1, 170);
     troopS.S = troopS.S === 1 && St > 1 && !troopS.init ? St : troopS.S + (St - troopS.S) * (1 - Math.exp(-Math.min(dt, 0.1) * 5)); troopS.init = 1;
     const S = troopS.S, fin = sstep(it.t0, it.t0 + 12, T) * (1 - sstep(it.t1 - 12, it.t1, T)), F = it.flee;
-    let n = 0;
+    let n = 0, nd = 0;
     for (const M of MS) {
       // the monkey's spot this frame: on its walkway roof (the bridge moves when an aircraft docks) or on the apron
       let ax, ay, az, dx, dz;
@@ -426,8 +434,14 @@ void main() {
           const seg = []; for (let i = 0; i < 3; i++) seg.push(P[i].distanceTo(P[i + 1]));
           M.flee = { P, seg, nx, ny, j1: jit, j2, d: 0.32 * rnd(M.m, 22), dur: 0.55 + 0.12 * rnd(M.m, 23) }; M.fpx = ax; M.fpz = az; }
         const uF = clamp((T - F.t0) / Math.max(1, F.t1 - F.t0), 0, 1), p = clamp((uF - M.flee.d) / M.flee.dur, 0, 1);
-        if (p > 0) { M.hd = fleePos(M, p, _fp); ax = _fp.x; ay = _fp.y; az = _fp.z; gT = p < 1 ? 1 : 0; M.hYt = 0; }
-        else { wT = 1; M.hYt = Math.sin(now * 3 + M.m) * 0.9; }
+        if (p > 0) { M.hd = fleePos(M, p, _fp); ax = _fp.x; ay = _fp.y; az = _fp.z; gT = p < 1 ? 1 : 0; M.hYt = 0;
+          // puffs at where it was a moment ago: older puffs larger and fainter
+          const hdS = M.hd;
+          for (let k = 0; k < ND; k++) { const pk = p - (k + 1) * 0.012, idx = M.m * ND + k; if (pk <= 0 || p >= 1) { dust.setMatrixAt(idx, ZERO); continue; }
+            fleePos(M, pk, _dp); if (_dp.y > 1) { dust.setMatrixAt(idx, ZERO); continue; } _dp.y = 0.25 * S * (1 + k * 0.5);
+            _dm.makeTranslation(_dp.x, _dp.y, _dp.z); dust.setMatrixAt(idx, _dm); _bc.setRGB(0.32 * (1 - k / ND) * Math.min(1, fade * 1.5), S * (0.3 + 0.18 * k), 0); dust.setColorAt(idx, _bc); nd++; }
+          M.hd = hdS; }
+        else { for (let k = 0; k < ND; k++) dust.setMatrixAt(M.m * ND + k, ZERO); wT = 1; M.hYt = Math.sin(now * 3 + M.m) * 0.9; }
         fade = Math.min(fade, 1 - sstep(0.9, 1, p)); if (T > F.t1) fade = 0;
         // gallop cadence follows the ground speed (no skating), between a lope and a frantic scramble
         const mv = Math.hypot(ax - M.fpx, az - M.fpz); M.fpx = ax; M.fpz = az;
@@ -454,6 +468,7 @@ void main() {
     }
     troop.count = MS.length * NP; troop.visible = n > 0; troop.instanceMatrix.needsUpdate = true; fadeA.needsUpdate = true;
     shadows.count = MS.length; shadows.visible = n > 0; shadows.instanceMatrix.needsUpdate = true; shadows.instanceColor.needsUpdate = true;
+    dust.count = MS.length * ND; dust.visible = nd > 0; if (nd) { dust.instanceMatrix.needsUpdate = true; dust.instanceColor.needsUpdate = true; }
   }
 
   let lastT = -1;
@@ -471,7 +486,7 @@ void main() {
         const h = Z.hemi; if (h) { trU.uAmbT.value.copy(h.color).multiplyScalar(h.intensity * 0.55); trU.uAmbB.value.copy(h.groundColor).multiplyScalar(h.intensity * 0.5); }
         updFlypast(fly, dt, T);
       } else { jets.visible = false; trails.visible = false; show.bake = null; }
-      if (mk) updMonkeys(mk, dt, now, T, adv); else { troop.visible = false; shadows.visible = false; troopS.id = null; }
+      if (mk) updMonkeys(mk, dt, now, T, adv); else { troop.visible = false; shadows.visible = false; dust.visible = false; troopS.id = null; }
     },
   };
 };

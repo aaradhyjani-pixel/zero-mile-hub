@@ -371,7 +371,7 @@ Z3MOD.field = function (Z) {
     flatLayer(new THREE.Mesh(g, paveMat(1, { color: '#b1ada2', roughness: 0.82 })), -38); }
 
   // ---------- 4. taxiways, exits, shoulders, blast pads, perimeter and service roads, rail ----------
-  const ASPH = lin('#5a5d5f'), LANE = lin('#aaa69c'), SHLD = lin('#6c6e6a'), PAD = lin('#5f605e'), PERIM = lin('#625f59'), RAIL = lin('#6e7480');
+  const ASPH = lin('#4f5254'), LANE = lin('#aaa69c'), SHLD = lin('#6c6e6a'), PAD = lin('#5f605e'), PERIM = lin('#625f59'), RAIL = lin('#6e7480');
   const LB = newB(1);  // markings (yellow/white lines), fades out with distance
   const YEL = lin('#e5b52a'), RED = lin('#b8322a');
   const twB = newB(22);
@@ -418,8 +418,8 @@ Z3MOD.field = function (Z) {
     for (let k = 0; k < 2500; k++) { g.fillStyle = `rgba(56,58,59,${0.25 + R() * 0.4})`; const x = R() < 0.5 ? R() * 1000 : len - R() * 1000; g.fillRect(x, -30 + R() * 60, 0.3 + R() * 1.2, 0.2 + R() * 0.4); }
     // tyre rubber: heavy in the touchdown zone near x1, light near x0
     for (let k = 0; k < 2600; k++) { const d = 140 + Math.pow(R(), 1.7) * 1100, lx = len - d, gear = R() < .8; const ly = gear ? (R() < .5 ? -1 : 1) * (3 + R() * 9) : (R() - 0.5) * 4;
-      g.fillStyle = `rgba(10,10,10,${(0.06 + 0.1 * (1 - d / 1300)) * (gear ? 1 : 0.6)})`; g.beginPath(); g.ellipse(lx, ly, 8 + R() * 40, 0.6 + R() * 1.8, 0, 0, 7); g.fill(); }
-    for (let k = 0; k < 300; k++) { const d = 200 + R() * 500; g.fillStyle = 'rgba(14,14,14,.04)'; g.beginPath(); g.ellipse(d, (R() - 0.5) * 22, 10 + R() * 30, 0.6 + R() * 1.4, 0, 0, 7); g.fill(); }
+      g.fillStyle = `rgba(8,8,8,${(0.09 + 0.16 * (1 - d / 1300)) * (gear ? 1 : 0.6)})`; g.beginPath(); g.ellipse(lx, ly, 8 + R() * 40, 0.6 + R() * 1.8, 0, 0, 7); g.fill(); }
+    for (let k = 0; k < 900; k++) { const d = 150 + Math.pow(R(), 1.5) * 750; g.fillStyle = `rgba(10,10,10,${0.05 + 0.06 * (1 - d / 900)})`; g.beginPath(); g.ellipse(d, (R() - 0.5) * 22, 10 + R() * 30, 0.6 + R() * 1.4, 0, 0, 7); g.fill(); }
     g.restore();
     const TH = RWH * RW.length, u1 = W / RWW, vT = 1 - ri * H / TH, vB = 1 - (ri + 1) * H / TH;
     const a = vtx(rwB, r.x0, r.y - 38, 0.15, WHITE, 0, vT), b = vtx(rwB, r.x1, r.y - 38, 0.15, WHITE, u1, vT), cc = vtx(rwB, r.x1, r.y + 38, 0.15, WHITE, u1, vB), d = vtx(rwB, r.x0, r.y + 38, 0.15, WHITE, 0, vB);
@@ -444,15 +444,19 @@ Z3MOD.field = function (Z) {
   const washGeo = new THREE.PlaneGeometry(1, 1); washGeo.rotateX(-Math.PI / 2);
   const washes = RW.map((r, i) => {
     const m = new THREE.ShaderMaterial({ transparent: false, depthWrite: false, depthFunc: THREE.AlwaysDepth, blending: THREE.CustomBlending, blendSrc: THREE.SrcAlphaFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
-      uniforms: { cA: { value: new THREE.Vector3() }, cB: { value: new THREE.Vector3() }, p: { value: 2 }, al: { value: 0.3 }, chg: { value: -1 }, closed: { value: 0 }, t: { value: 0 }, heat: { value: 0 }, len: { value: r.len }, far: { value: 1 } },
+      uniforms: { cA: { value: new THREE.Vector3() }, cB: { value: new THREE.Vector3() }, p: { value: 2 }, al: { value: 0.3 }, chg: { value: -1 }, closed: { value: 0 }, t: { value: 0 }, heat: { value: 0 }, len: { value: r.len }, far: { value: 1 }, vis: { value: 50000 } },
       vertexShader: 'varying vec2 vUv;varying vec2 vW;void main(){vUv=uv;vec4 w=modelMatrix*vec4(position,1.0);vW=w.xz;gl_Position=projectionMatrix*viewMatrix*w;}',
-      fragmentShader: `uniform vec3 cA,cB;uniform float p,al,chg,closed,t,heat,len,far;varying vec2 vUv;varying vec2 vW;
+      fragmentShader: `uniform vec3 cA,cB;uniform float p,al,chg,closed,t,heat,len,far,vis;varying vec2 vUv;varying vec2 vW;
         void main(){float s=1.0-vUv.x;vec3 c=s<p?cB:cA;float a=al;float side=abs(vUv.y-0.5)*2.0;
-          a*=mix(0.42,0.72,far)+mix(0.58,0.28,far)*smoothstep(0.5,0.98,side);
+          // the full-surface tint is for the map view; close up only the edge band and the changeover markers stay (no teal asphalt)
+          float cdist=length(cameraPosition-vec3(vW.x,0.0,vW.y));float full=smoothstep(1500.0,5000.0,cdist);
+          a*=mix(0.42,0.72,far)*full+mix(0.58,0.28,far)*smoothstep(0.5,0.98,side)*mix(1.0,0.8,full);
           if(p<1.0){float e=exp(-abs(s-p)*len/22.0)*step(s,p+0.02);c=mix(c,vec3(1.0),e*0.55);a=max(a,e*0.85);}
           if(closed>0.5){float h=step(0.5,fract((vW.x-vW.y)/34.0-t*0.25));a*=0.55+0.75*h;}
           if(heat>0.0){float m=heat*smoothstep(0.62,1.0,0.5+0.5*sin(vW.x*0.031+t*1.1+2.2*sin(vW.y*0.21+t*2.7)));c=mix(c,vec3(0.86,0.9,0.96),m*0.6);a=max(a,m*0.2);}
           if(chg>=0.0&&side>0.8){a=mix(a*0.4,0.95,step(s,chg));c=mix(c*0.6,vec3(1.0,0.66,0.2),step(s,chg));}
+          // in dust a low camera loses the wash with the runway; the strategic (high) camera keeps it readable
+          a*=mix(clamp(1.35*exp(-cdist/max(vis,1.0)),0.0,1.0),1.0,smoothstep(1200.0,4500.0,cameraPosition.y));
           gl_FragColor=vec4(c,a);}` });
     const w = new THREE.Mesh(washGeo, m); w.position.set((r.x0 + r.x1) / 2, 0.3, r.y); w.scale.set(r.len, 1, 76); w.renderOrder = -34; w.frustumCulled = false; root.add(w);
     w.userData.st = { key: '' }; return w;
@@ -508,12 +512,14 @@ Z3MOD.field = function (Z) {
       void main(){float k=aP.y;float on=1.0;int ri=int(aP.z+0.5);
         if(aP.z>-0.5){on=(k>1.5)?uApp[ri]:uOn[ri];}
         if(k>2.5){float ph=fract(uT*2.0)/0.6;on*=smoothstep(0.07,0.0,abs(ph-aP.w))*1.5;}
-        vec4 mv=modelViewMatrix*vec4(position,1.0);float dist=max(1.0,-mv.z);mv.xyz*=0.997;gl_Position=projectionMatrix*mv;
-        float sz=aP.x*(1.0+uDust*(k>0.5&&k<1.5?1.6:0.8))*uPx/dist;gl_PointSize=clamp(sz,uMin,96.0);
+        vec4 mv=modelViewMatrix*vec4(position,1.0);float dist=max(1.0,-mv.z);
+        float sz=aP.x*(1.0+uDust*(k>0.5&&k<1.5?0.6:0.4))*uPx/dist;float ps=clamp(sz,uMin,40.0);gl_PointSize=ps;
+        // pull the sprite toward the camera by its own world radius, so the ground never clips it into a half-dome
+        mv.xyz-=normalize(mv.xyz)*min(0.5*ps*dist/uPx+0.5,dist*0.5);gl_Position=projectionMatrix*mv;
         float f=smoothstep(uFog.x,uFog.y*1.4,dist);
         vA=uLa*on*clamp(sz/uMin,0.6,1.0)*(1.0-0.7*f);vC=aCol;
         if(vA<0.003)gl_Position=vec4(2.0,2.0,2.0,1.0);}`,
-    fragmentShader: 'varying vec3 vC;varying float vA;void main(){vec2 q=gl_PointCoord*2.0-1.0;float d=dot(q,q);if(d>1.0)discard;float a=exp(-d*4.5)*0.75+exp(-d*26.0);gl_FragColor=vec4(mix(vC,vec3(1.0),exp(-d*40.0)*0.6),a*vA);}' });
+    fragmentShader: 'varying vec3 vC;varying float vA;void main(){vec2 q=gl_PointCoord*2.0-1.0;float d=dot(q,q);if(d>1.0)discard;float a=exp(-d*8.0)*0.9+exp(-d*2.2)*0.12;gl_FragColor=vec4(mix(vC,vec3(1.0),exp(-d*40.0)*0.6),a*vA);}' });
   const lightGeo = new THREE.BufferGeometry(); lightGeo.setAttribute('position', new THREE.Float32BufferAttribute(LP, 3)); lightGeo.setAttribute('aCol', new THREE.Float32BufferAttribute(LC, 3)); lightGeo.setAttribute('aP', new THREE.Float32BufferAttribute(LA, 4));
   const lightPts = new THREE.Points(lightGeo, lightMat); lightPts.frustumCulled = false; lightPts.renderOrder = 5; lightPts.visible = false; root.add(lightPts);
   // elevated light fixtures: frangible stem + coloured lens (lens takes the instance colour and glows a little)
@@ -714,7 +720,7 @@ Z3MOD.field = function (Z) {
         u.p.value = Math.min(1.05, (now - st.t0) / 1.2);
         u.al.value = (ALPHA[key] + far * 0.22) * (1 - 0.25 * Z.nightF);
         u.chg.value = T < r.changeUntil ? clamp((r.changeUntil - T) / (Z.CHANGE || 120), 0, 1) : -1;
-        u.far.value = far; u.closed.value = key === 'X' ? 1 : 0; u.t.value = now; u.heat.value = heat;
+        u.far.value = far; u.vis.value = Z.atmo && Z.atmo.visibility ? Z.atmo.visibility : 50000; u.closed.value = key === 'X' ? 1 : 0; u.t.value = now; u.heat.value = heat;
         w.scale.z = 76 + Math.max(0, cd - 2000) * 0.0065;
         const on = !r.locked && r.mode !== 'OFF' && !closed && !r.degraded;
         LU.uOn.value[i] = on ? 1 : 0; LU.uApp.value[i] = on && (r.mode === 'ARR' || r.mode === 'MIX') ? 1 : 0;

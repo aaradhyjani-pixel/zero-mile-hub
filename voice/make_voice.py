@@ -2,6 +2,7 @@
 
   python3 voice/make_voice.py            # render new lines, reuse the rest
   python3 voice/make_voice.py --force    # re-render everything
+  VOICE_JOBS=1 python3 voice/make_voice.py   # one clip at a time
 
 Inputs
   voice/voices.json      accent id -> {"voice": macOS `say` voice, "rate": wpm, "fx": earpiece|radio|cockpit|pa|none,
@@ -28,8 +29,15 @@ SR = 24000
 # Words the voices get wrong, per macOS voice ('*' = every voice). Each spelling was checked with a phone recogniser
 # (wav2vec2 espeak CTC): Aman reads "Jai Hind" as "Jay Hynd" (dʒ e h a n); "Jye, Hinnd" gives dʒ aɪ h i n, the same
 # phonemes the Hindi voice Lekha gives for जय हिंद (dʒ a j h i n).
+# A straight apostrophe in a line that also holds an embedded command ([[slnc N]]) makes Aman drop words: "...the People's
+# Republic of China shall now be landing on runway two seven right" came out as "...the People's Republic, two seven right"
+# (5.8 s instead of 7.9 s; without the [[slnc]], or with a typographic apostrophe, every word is there). The typographic
+# apostrophe reads the same in every voice, so all of them get it.
 PRON = {
+    '*': [(r"'", '\u2019')],
     'Aman': [(r'\bJai Hind\b', 'Jye, Hinnd')],
+    # Rishi's "runway" is heard as "runaway" (small.en, ~40 tower clips); "runnway" is heard as "runway" every time
+    'Rishi': [(r'\b([Rr])unway', r'\1unnway')],
 }
 
 DIG = 'zero one two three four five six seven eight nine'.split()
@@ -128,7 +136,8 @@ def main():
             shutil.copy(cached, clip); return 'cached'
         render(*jobs[h], cached); shutil.copy(cached, clip); return 'rendered'
 
-    with cf.ThreadPoolExecutor(max_workers=min(8, os.cpu_count() or 4)) as ex:
+    # VOICE_JOBS=1 renders one clip at a time (cooler on a laptop)
+    with cf.ThreadPoolExecutor(max_workers=int(os.environ.get('VOICE_JOBS') or min(8, os.cpu_count() or 4))) as ex:
         for h, r in zip(jobs, ex.map(job, jobs)):
             stat[r] += 1
     keep = {h[:12] + '.mp3' for h in jobs}

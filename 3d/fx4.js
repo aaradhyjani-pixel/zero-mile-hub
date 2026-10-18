@@ -197,6 +197,270 @@ float fx4n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(fx4
   KS.add('waterarch');
 
   // =====================================================================================================
+  // THE WEDDING ELEPHANT: a lofted, skinned Asian tusker (6.5 m trunk to tail) with a painted face and trunk, an embroidered
+  // velvet jhool, a gold howdah under a chhatri, gold anklets and a mahout; lateral-sequence walk, ear flaps, trunk swing
+  // =====================================================================================================
+  function Loft() { this.p = []; this.si = []; this.sw = []; this.pat = []; this.ix = []; }
+  // rings: [x,y,z, a (radius along U), b (radius along S), bone0, bone1, w1, param]
+  Loft.prototype.tube = function (rings, n, region, ref, caps) {
+    const T = new THREE.Vector3(), S = new THREE.Vector3(), U = new THREE.Vector3(), R = new THREE.Vector3(ref[0], ref[1], ref[2]), P = new THREE.Vector3();
+    const base = this.p.length / 3, m = rings.length;
+    for (let i = 0; i < m; i++) {
+      const a = rings[Math.max(0, i - 1)], b = rings[Math.min(m - 1, i + 1)], r = rings[i];
+      T.set(b[0] - a[0], b[1] - a[1], b[2] - a[2]).normalize();
+      S.crossVectors(T, R); if (S.lengthSq() < 1e-6) S.set(0, 0, 1); S.normalize(); U.crossVectors(S, T).normalize();
+      for (let j = 0; j < n; j++) {
+        const th = j / n * Math.PI * 2, c = Math.cos(th), s = Math.sin(th);
+        P.set(r[0], r[1], r[2]).addScaledVector(U, r[3] * c).addScaledVector(S, r[4] * s);
+        this.p.push(P.x, P.y, P.z); this.si.push(r[5], r[6], 0, 0); this.sw.push(1 - r[7], r[7], 0, 0);
+        this.pat.push(P.x, P.y, P.z, region + clamp(r[8] != null ? r[8] : i / (m - 1), 0, 1) * 0.98);
+      }
+    }
+    for (let i = 0; i < m - 1; i++) for (let j = 0; j < n; j++) { const a = base + i * n + j, b = base + i * n + (j + 1) % n, c = a + n, d = b + n; this.ix.push(a, b, c, b, d, c); }
+    const cap = (i, end) => {
+      const r = rings[i], o = rings[end ? i - 1 : i + 1]; T.set(r[0] - o[0], r[1] - o[1], r[2] - o[2]).normalize();
+      const k = Math.min(r[3], r[4]) * 0.35, ci = this.p.length / 3;
+      this.p.push(r[0] + T.x * k, r[1] + T.y * k, r[2] + T.z * k); this.si.push(r[5], r[6], 0, 0); this.sw.push(1 - r[7], r[7], 0, 0); this.pat.push(r[0], r[1], r[2], region + (end ? 0.98 : 0));
+      for (let j = 0; j < n; j++) { const a = base + i * n + j, b = base + i * n + (j + 1) % n; if (end) this.ix.push(ci, a, b); else this.ix.push(ci, b, a); }
+    };
+    if (caps & 1) cap(0, false); if (caps & 2) cap(m - 1, true);
+  };
+  // an open sheet: rows of points (already positioned) with bones, across-param in w
+  Loft.prototype.sheet = function (rows, region) {
+    const base = this.p.length / 3, m = rows.length, n = rows[0].length;
+    for (let i = 0; i < m; i++) for (let j = 0; j < n; j++) { const q = rows[i][j]; this.p.push(q[0], q[1], q[2]); this.si.push(q[3], q[4], 0, 0); this.sw.push(1 - q[5], q[5], 0, 0); this.pat.push(q[0], q[1], q[2], region + j / (n - 1) * 0.98); }
+    for (let i = 0; i < m - 1; i++) for (let j = 0; j < n - 1; j++) { const a = base + i * n + j, b = a + 1, c = a + n, d = c + 1; this.ix.push(a, c, b, b, c, d); }
+  };
+  const PM = new THREE.Matrix4(), PQ = new THREE.Quaternion(), PE = new THREE.Euler(), PV = new THREE.Vector3(), PS = new THREE.Vector3();
+  Loft.prototype.prim = function (geo, x, y, z, rx, ry, rz, sx, sy, sz, bone, region) {
+    PE.set(rx, ry, rz); PQ.setFromEuler(PE); PV.set(x, y, z); PS.set(sx, sy, sz); PM.compose(PV, PQ, PS);
+    const pos = geo.attributes.position, base = this.p.length / 3;
+    for (let i = 0; i < pos.count; i++) { PV.fromBufferAttribute(pos, i).applyMatrix4(PM); this.p.push(PV.x, PV.y, PV.z); this.si.push(bone, bone, 0, 0); this.sw.push(1, 0, 0, 0); this.pat.push(PV.x, PV.y, PV.z, region + 0.5); }
+    if (geo.index) for (let j = 0; j < geo.index.count; j++) this.ix.push(base + geo.index.getX(j)); else for (let j = 0; j < pos.count; j++) this.ix.push(base + j);
+  };
+  Loft.prototype.geo = function () {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(this.p, 3)); g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(this.si, 4));
+    g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(this.sw, 4)); g.setAttribute('aPat', new THREE.Float32BufferAttribute(this.pat, 4));
+    g.setIndex(this.ix); g.computeVertexNormals(); return g;
+  };
+  const pathPrep = p => { const c = [0]; for (let i = 1; i < p.length; i++) c.push(c[i - 1] + Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1])); return c; };
+  const PT = { x: 0, y: 0, h: 0 };
+  const pathAt = (p, c, d) => {
+    const Ln = c[c.length - 1]; d = clamp(d, 0, Ln); let i = 1; while (i < c.length - 1 && c[i] < d) i++;
+    const a = p[i - 1], b = p[i] || a, sl = Math.max(1e-6, c[i] - c[i - 1]), t = clamp((d - c[i - 1]) / sl, 0, 1);
+    PT.x = a[0] + (b[0] - a[0]) * t; PT.y = a[1] + (b[1] - a[1]) * t; PT.h = Math.atan2(b[1] - a[1], b[0] - a[0]); return PT;
+  };
+
+  const EL = (() => {
+    const zf = 0.46, zh = 0.43;
+    const defs = [
+      ['root', -1, [0, 0, 0]], ['pelvis', 0, [-1.2, 2.15, 0]], ['spine', 1, [-0.2, 2.15, 0]], ['chest', 2, [0.75, 2.2, 0]], ['neck', 3, [1.3, 2.35, 0]], ['head', 4, [1.7, 2.45, 0]],
+      ['tr1', 5, [2.25, 2.05, 0]], ['tr2', 6, [2.38, 1.6, 0]], ['tr3', 7, [2.45, 1.15, 0]], ['tr4', 8, [2.45, 0.75, 0]], ['tr5', 9, [2.45, 0.4, 0]],
+      ['earL', 5, [1.55, 2.82, 0.52]], ['earR', 5, [1.55, 2.82, -0.52]], ['ta0', 1, [-1.8, 2.3, 0]], ['ta1', 13, [-1.84, 1.9, 0]], ['ta2', 14, [-1.86, 1.5, 0]],
+      ['flU', 3, [0.88, 2.1, zf]], ['flL', 16, [0.9, 1.07, zf]], ['flP', 17, [0.9, 0.27, zf]],
+      ['frU', 3, [0.88, 2.1, -zf]], ['frL', 19, [0.9, 1.07, -zf]], ['frP', 20, [0.9, 0.27, -zf]],
+      ['hlU', 1, [-1.15, 2.1, zh]], ['hlL', 22, [-1.12, 1.02, zh]], ['hlP', 23, [-1.17, 0.27, zh]],
+      ['hrU', 1, [-1.15, 2.1, -zh]], ['hrL', 25, [-1.12, 1.02, -zh]], ['hrP', 26, [-1.17, 0.27, -zh]],
+    ];
+    const bones = defs.map(d => { const b = new THREE.Bone(); b.name = d[0]; return b; });
+    defs.forEach((d, i) => { const p = d[1] >= 0 ? defs[d[1]][2] : [0, 0, 0]; bones[i].position.set(d[2][0] - p[0], d[2][1] - p[1], d[2][2] - p[2]); if (d[1] >= 0) bones[d[1]].add(bones[i]); });
+    const L = new Loft();
+    const bx = [[-1.2, 1], [-0.2, 2], [0.75, 3], [1.3, 4]];
+    const bw = x => { if (x <= bx[0][0]) return [1, 1, 0]; for (let i = 0; i < bx.length - 1; i++) if (x <= bx[i + 1][0]) { const t = (x - bx[i][0]) / (bx[i + 1][0] - bx[i][0]); return [bx[i][1], bx[i + 1][1], t]; } return [4, 4, 0]; };
+    // torso: x, centre y, half height, half width
+    const tor = [[-1.95, 2.0, 0.22, 0.2], [-1.88, 2.02, 0.5, 0.42], [-1.72, 2.02, 0.68, 0.58], [-1.45, 2.0, 0.8, 0.68], [-1.1, 1.98, 0.86, 0.75], [-0.6, 1.96, 0.9, 0.8],
+      [-0.1, 1.95, 0.92, 0.82], [0.4, 1.98, 0.9, 0.79], [0.8, 2.03, 0.86, 0.72], [1.1, 2.1, 0.78, 0.62], [1.32, 2.2, 0.68, 0.54]];
+    const torAt = x => { for (let i = 0; i < tor.length - 1; i++) if (x <= tor[i + 1][0]) { const t = (x - tor[i][0]) / (tor[i + 1][0] - tor[i][0]); return [mix(tor[i][1], tor[i + 1][1], t), mix(tor[i][2], tor[i + 1][2], t), mix(tor[i][3], tor[i + 1][3], t)]; } return tor[tor.length - 1].slice(1); };
+    L.tube(tor.map(r => { const w = bw(r[0]); return [r[0], r[1], 0, r[2], r[3], w[0], w[1], w[2], (r[0] + 1.95) / 3.3]; }), 32, 0, [0, 1, 0], 1);
+    // head and trunk in one tube (ref z: a = half width, b = half height)
+    const hd = [[1.22, 2.3, 0.55, 0.66, 3, 4, 0.8], [1.5, 2.42, 0.55, 0.68, 4, 5, 0.4], [1.75, 2.47, 0.52, 0.62, 5, 5, 0], [1.97, 2.42, 0.46, 0.53, 5, 5, 0], [2.14, 2.25, 0.36, 0.41, 5, 6, 0.3],
+      [2.27, 2.0, 0.26, 0.28, 6, 6, 0], [2.36, 1.7, 0.21, 0.22, 6, 7, 0.3], [2.42, 1.36, 0.18, 0.18, 7, 7, 0], [2.45, 1.02, 0.155, 0.155, 8, 8, 0], [2.45, 0.72, 0.13, 0.13, 9, 9, 0],
+      [2.45, 0.45, 0.115, 0.115, 9, 10, 0.5], [2.47, 0.25, 0.1, 0.1, 10, 10, 0], [2.54, 0.15, 0.085, 0.08, 10, 10, 0], [2.63, 0.14, 0.06, 0.055, 10, 10, 0]];
+    L.tube(hd.map((r, i) => [r[0], r[1], 0, r[2], r[3], r[4], r[5], r[6], i / (hd.length - 1)]), 22, 2, [0, 0, 1], 2);
+    // ears (flattened tubes down the side of the head, bound to the ear bones)
+    for (const s of [1, -1]) {
+      const b = s > 0 ? 11 : 12;
+      L.tube([[1.52, 2.92, 0.5 * s, 0.16, 0.03], [1.49, 2.78, 0.57 * s, 0.36, 0.045], [1.45, 2.52, 0.61 * s, 0.43, 0.05], [1.42, 2.22, 0.62 * s, 0.38, 0.045], [1.42, 1.98, 0.6 * s, 0.25, 0.04], [1.46, 1.82, 0.58 * s, 0.1, 0.03]]
+        .map((r, i) => [r[0], r[1], r[2], r[3], r[4], b, b, 0, i / 5]), 12, 4, [1, 0, 0], 3);
+      // tusks
+      L.tube([[2.1, 2.02, 0.22 * s, 0.07, 0.07], [2.34, 1.8, 0.26 * s, 0.058, 0.058], [2.58, 1.74, 0.28 * s, 0.042, 0.042], [2.72, 1.82, 0.28 * s, 0.014, 0.014]].map((r, i) => [r[0], r[1], r[2], r[3], r[4], 5, 5, 0, i / 3]), 8, 9, [0, 0, 1], 2);
+    }
+    // tail
+    L.tube([[-1.82, 2.32, 0.075, 1, 13, 0.5], [-1.84, 1.95, 0.055, 13, 13, 0], [-1.86, 1.6, 0.045, 14, 14, 0], [-1.87, 1.32, 0.04, 15, 15, 0], [-1.88, 1.16, 0.075, 15, 15, 0], [-1.88, 1.0, 0.02, 15, 15, 0]]
+      .map((r, i) => [r[0], r[1], 0, r[2], r[2], r[3], r[4], r[5], i / 5]), 8, 3, [0, 0, 1], 2);
+    // legs (ref z: a = side, b = front-back)
+    const leg = (x0, z, u, top, hind) => [[x0, 2.25, z, hind ? 0.38 : 0.36, hind ? 0.5 : 0.42, top, u, 0.6], [x0, 1.8, z, hind ? 0.34 : 0.33, hind ? 0.42 : 0.36, u, u, 0], [x0 + 0.02, 1.4, z, 0.3, 0.31, u, u, 0],
+      [x0 + 0.03, 1.05, z, 0.265, 0.275, u, u + 1, 0.5], [x0 + 0.02, 0.75, z, 0.24, 0.25, u + 1, u + 1, 0], [x0 + 0.01, 0.45, z, 0.245, 0.255, u + 1, u + 1, 0],
+      [x0 + 0.01, 0.27, z, 0.26, 0.27, u + 1, u + 2, 0.5], [x0 + 0.02, 0.12, z, 0.29, 0.3, u + 2, u + 2, 0], [x0 + 0.02, 0.02, z, 0.3, 0.31, u + 2, u + 2, 0]].map((r, i) => [...r, i / 8]);
+    L.tube(leg(0.88, zf, 16, 3, 0), 14, 1, [0, 0, 1], 2); L.tube(leg(0.88, -zf, 19, 3, 0), 14, 1, [0, 0, 1], 2);
+    L.tube(leg(-1.15, zh, 22, 1, 1), 14, 1, [0, 0, 1], 2); L.tube(leg(-1.15, -zh, 25, 1, 1), 14, 1, [0, 0, 1], 2);
+    // the jhool: embroidered velvet draped over the back, hanging straight down the flanks
+    const rows = [];
+    for (let i = 0; i <= 10; i++) {
+      const x = -1.02 + i / 10 * 1.9, tb = torAt(x), cy = tb[0], a = tb[1] + 0.05, b = tb[2] + 0.05, w = bw(x), hem = 1.22 + 0.14 * Math.pow((x + 0.07) / 0.95, 2), row = [];
+      const NA = 18, NH = 5;
+      for (let j = 0; j <= NH; j++) { const y = mix(hem, cy, j / NH); row.push([x, y, -(b + 0.05 * (cy - y)), w[0], w[1], w[2]]); }
+      for (let j = 1; j < NA; j++) { const th = -Math.PI / 2 + j / NA * Math.PI; row.push([x, cy + a * Math.cos(th), b * Math.sin(th), w[0], w[1], w[2]]); }
+      for (let j = NH; j >= 0; j--) { const y = mix(hem, cy, j / NH); row.push([x, y, b + 0.05 * (cy - y), w[0], w[1], w[2]]); }
+      rows.push(row);
+    }
+    L.sheet(rows, 5);
+    // howdah: cushion, seat box, rail, posts, chhatri with finial
+    const HX = -0.08;
+    L.prim(BOX, HX, 2.98, 0, 0, 0, 0, 1.55, 0.18, 1.3, 2, 13);
+    L.prim(BOX, HX, 3.34, 0, 0, 0, 0, 1.15, 0.55, 1.0, 2, 7);
+    L.prim(BOX, HX, 3.63, 0, 0, 0, 0, 1.24, 0.07, 1.08, 2, 6);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) L.prim(CYL8, HX + sx * 0.54, 4.05, sz * 0.46, 0, 0, 0, 0.035, 0.84, 0.035, 2, 6);
+    const dome = new THREE.SphereGeometry(1, 16, 6, 0, Math.PI * 2, 0, Math.PI / 2);
+    L.prim(dome, HX, 4.46, 0, 0, 0, 0, 0.8, 0.5, 0.72, 2, 8);
+    L.prim(new THREE.CylinderGeometry(1, 1, 1, 16), HX, 4.46, 0, 0, 0, 0, 0.84, 0.07, 0.76, 2, 6);
+    L.prim(SPH, HX, 4.98, 0, 0, 0, 0, 0.09, 0.09, 0.09, 2, 6); L.prim(new THREE.ConeGeometry(1, 1, 8), HX, 5.17, 0, 0, 0, 0, 0.05, 0.3, 0.05, 2, 6);
+    // gold anklets
+    const tor8 = new THREE.TorusGeometry(1, 0.13, 5, 16);
+    for (const [bx0, zz, bn] of [[0.91, zf, 17], [0.91, -zf, 20], [-1.16, zh, 23], [-1.16, -zh, 26]]) { L.prim(tor8, bx0, 0.36, zz, Math.PI / 2, 0, 0, 0.27, 0.27, 0.27, bn, 6); L.prim(tor8, bx0, 0.5, zz, Math.PI / 2, 0, 0, 0.26, 0.26, 0.26, bn, 6); }
+    // the mahout on the neck: white kurta, saffron safa
+    L.prim(BOX, 1.28, 3.22, 0, 0, 0, 0.12, 0.26, 0.5, 0.36, 4, 11);
+    for (const s of [1, -1]) { L.prim(BOX, 1.36, 2.78, 0.4 * s, 0.55 * s, 0, 0, 0.15, 0.62, 0.15, 4, 11); L.prim(BOX, 1.42, 3.12, 0.21 * s, 0, 0, 0.7, 0.09, 0.42, 0.09, 4, 11); }
+    L.prim(SPH, 1.31, 3.6, 0, 0, 0, 0, 0.11, 0.12, 0.1, 4, 10); L.prim(SPH, 1.3, 3.69, 0, 0, 0, 0, 0.14, 0.1, 0.13, 4, 12);
+    const geo = L.geo();
+    const col = `
+float fxR=0.85,fxM=0.;
+vec3 pal(float i){i=mod(i,5.);return i<1.?vec3(0.95,0.12,0.42):i<2.?vec3(1.,0.72,0.04):i<3.?vec3(0.92,0.92,0.88):i<4.?vec3(0.05,0.42,0.85):vec3(1.,0.36,0.02);}
+vec3 gold(){fxM=0.85;fxR=0.32;return vec3(1.,0.66,0.22);}
+float dots(vec3 P,float f,float r){vec3 q=fract(P*f)-0.5;return 1.-smoothstep(r-0.05,r,length(q));}
+vec3 fxCol(vec3 P,float reg,float t){
+  float n=fx4n(P.xy*6.+P.z*2.)*0.6+fx4n(vec2(P.z*21.,P.y*23.))*0.4;
+  vec3 skin=mix(vec3(0.20,0.185,0.18),vec3(0.31,0.29,0.28),n);vec3 c=skin;fxR=0.9;fxM=0.;
+  float wr=fx4n(vec2(P.x*3.,P.y*40.));c*=0.9+0.12*wr;
+  if(reg<0.5){
+  } else if(reg<1.5){ // legs: painted bands and dots above the anklets, pale toenails
+    float b=max(1.-smoothstep(0.012,0.024,abs(P.y-0.66)),1.-smoothstep(0.012,0.024,abs(P.y-0.84)));
+    c=mix(c,vec3(1.,0.75,0.08),b);
+    float dd=dots(vec3(P.x,P.y-0.75,P.z),11.,0.28)*step(0.7,P.y)*step(P.y,0.8);c=mix(c,pal(floor(P.x*11.+P.z*11.)),dd);
+    float nail=step(P.y,0.13)*step(0.06,P.y)*step(0.55,fract(atan(P.z,P.x)*2.));c=mix(c,vec3(0.75,0.7,0.62),nail*0.0);
+  } else if(reg<2.5){ // head + trunk
+    if(t<0.36){
+      float hw=mix(0.11,0.34,smoothstep(2.0,2.85,P.y));
+      float plate=step(1.9,P.x)*step(abs(P.z),hw)*step(1.92,P.y);
+      if(plate>0.5){c=gold();float bo=dots(vec3(0.,P.y,P.z),12.,0.3);c=mix(c,vec3(1.,0.85,0.45),bo);fxR=mix(fxR,0.18,bo);
+        float e=hw-abs(P.z);if(e<0.035){c=vec3(0.6,0.02,0.04);fxM=0.;fxR=0.5;}
+        if(length(vec2(P.y-2.55,P.z))<0.07){c=vec3(0.02,0.45,0.12);fxM=0.2;fxR=0.15;}}
+      else{
+        float d=length(vec2(P.x-1.88,P.y-2.12));float side=step(0.28,abs(P.z));
+        float ro=step(d,0.2)*side;c=mix(c,pal(floor(d*22.)),ro*step(0.4,fract(d*22.)));
+        float sw=(1.-smoothstep(0.01,0.02,abs(length(vec2(P.x-1.96,P.y-2.4))-0.1)))*side;c=mix(c,vec3(0.95,0.95,0.9),sw);
+        float eye=(1.-smoothstep(0.035,0.045,length(vec2(P.x-1.96,P.y-2.4))))*side;c=mix(c,vec3(0.03,0.02,0.01),eye);
+      }
+    } else { // painted trunk: rings, dots in five colours, a vine
+      float u=t*9.;float ring=smoothstep(0.41,0.45,abs(fract(u)-0.5));
+      c=mix(c,vec3(1.,0.72,0.04),ring);
+      float dd=dots(P,10.,0.3);c=mix(c,pal(floor(P.y*10.)+floor(P.z*10.)),dd*(1.-ring));
+      float vine=1.-smoothstep(0.008,0.018,abs(P.z-0.05*sin(P.y*16.)));c=mix(c,vec3(0.1,0.7,0.2),vine*(1.-ring)*step(2.4,P.x+0.05));
+    }
+  } else if(reg<3.5){ c=mix(c,vec3(0.06),step(0.75,t));
+  } else if(reg<4.5){ // ears: pink freckles and a painted rim
+    float fr=step(0.62,fx4n(P.xy*18.));c=mix(c,vec3(0.55,0.36,0.32),fr*0.6);
+    float rim=step(0.8,t)+step(P.x,1.1);float dd=dots(P,9.,0.3);c=mix(c,pal(floor(P.y*13.)),dd*min(rim,1.));
+  } else if(reg<5.5){ // jhool: maroon velvet, gold border and lattice, mirror work, gold tassels
+    float hem=P.y-(1.22+0.14*pow((P.x+0.07)/0.95,2.));float ed=min(min(P.x+1.02,0.88-P.x),hem);
+    c=vec3(0.30,0.008,0.03)*(0.8+0.45*fx4n(P.xy*60.+P.z*30.));fxR=0.95;
+    vec2 g=vec2(P.x*3.4,t*16.);vec2 f=fract(g)-0.5;float dm=abs(f.x)+abs(f.y);
+    float lat=1.-smoothstep(0.03,0.06,abs(dm-0.4));
+    float mir=1.-smoothstep(0.1,0.13,length(f));
+    if(lat>0.5){c=gold();}
+    if(mir>0.5){c=vec3(0.9,0.92,0.95);fxM=1.;fxR=0.1;}
+    if(ed<0.2){c=gold();float stp=1.-smoothstep(0.015,0.025,abs(ed-0.1));c=mix(c,vec3(0.05,0.3,0.12),stp);if(stp>0.5){fxM=0.;fxR=0.6;}}
+    if(hem<0.07){c=step(0.5,fract(P.x*14.+P.z*14.))>0.5?gold():vec3(0.5,0.02,0.04);}
+  } else if(reg<6.5){ c=gold();
+  } else if(reg<7.5){ // howdah panels: red with gold rims and studs
+    c=vec3(0.45,0.01,0.03);fxR=0.6;float px=abs(P.x+0.08),pz=abs(P.z);
+    float rim=step(0.5,px)*step(0.44,pz)+step(abs(P.y-3.34),0.0)+step(0.22,abs(P.y-3.34));
+    float stud=dots(vec3(P.x,P.y,P.z),9.,0.3);
+    if(rim>0.5||(px>0.49&&pz<0.44)&&false)c=gold();
+    if(abs(P.y-3.34)>0.21||(pz>0.49&&px>0.5)||(px>0.56&&pz>0.42))c=gold();
+    else if(stud>0.5){c=gold();}
+  } else if(reg<8.5){ float a=atan(P.z,P.x+0.08);float s=step(0.5,fract(a*16./6.2832));c=mix(vec3(1.,0.32,0.01),vec3(0.75,0.02,0.05),s);fxR=0.75;
+    if(P.y<4.56){c=gold();}
+  } else if(reg<9.5){ c=vec3(0.86,0.8,0.66);fxR=0.35;
+  } else if(reg<10.5){ c=vec3(0.36,0.2,0.12);
+  } else if(reg<11.5){ c=vec3(0.88,0.87,0.83);
+  } else if(reg<12.5){ c=vec3(1.,0.4,0.02);
+  } else { c=vec3(0.6,0.02,0.05);float s=step(0.5,fract(P.x*8.));c=mix(c,gold(),s*step(abs(P.y-2.98),0.03)); }
+  return c;
+}`;
+    const U = { uFade: { value: 1 } };
+    const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85, metalness: 0, envMapIntensity: 1.0, side: THREE.DoubleSide });
+    mat.onBeforeCompile = sh => {
+      sh.uniforms.uFade = U.uFade;
+      sh.vertexShader = 'attribute vec4 aPat;varying vec4 vPat;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvPat=aPat;');
+      sh.fragmentShader = 'uniform float uFade;varying vec4 vPat;\n' + sh.fragmentShader.replace('#include <common>', '#include <common>\n' + GLSL_NOISE + col + '\n')
+        .replace('vec4 diffuseColor = vec4( diffuse, opacity );', 'if(fx4h(floor(gl_FragCoord.xy))>uFade)discard;vec4 diffuseColor=vec4(fxCol(vPat.xyz,floor(vPat.w+0.001),fract(vPat.w+0.001)),opacity);')
+        .replace('float roughnessFactor = roughness;', 'float roughnessFactor = fxR;').replace('float metalnessFactor = metalness;', 'float metalnessFactor = fxM;');
+    };
+    const mesh = new THREE.SkinnedMesh(geo, mat); mesh.add(bones[0]); mesh.updateMatrixWorld(true);
+    mesh.bind(new THREE.Skeleton(bones)); mesh.frustumCulled = false; mesh.visible = false;
+    const g = new THREE.Group(); g.name = 'fx4ele'; g.add(mesh); root.add(g);
+    const n = bones.length;
+    return { g, mesh, bones, U, rx: new Float32Array(n), ry: new Float32Array(n), rz: new Float32Array(n), tris: geo.index.count / 3 };
+  })();
+  const ELEGS = [[22, 0, 1], [16, 0.25, 0], [25, 0.5, 1], [19, 0.75, 0]];   // lateral sequence: LH, LF, RH, RF
+  const EP = { y: 0 }, EFEET = [18, 21, 24, 27];
+  function elePose(C, ph, wW, wI, now, seed) {
+    C.rx.fill(0); C.ry.fill(0); C.rz.fill(0); EP.y = 0;
+    const k = Math.PI * 2 * ph, SW = 0.32, A = 0.23;
+    if (wW > 0.01) {
+      for (let i = 0; i < 4; i++) {
+        const u = ELEGS[i][0], hind = ELEGS[i][2], q = ((ph + ELEGS[i][1]) % 1 + 1) % 1; let a, lift;
+        if (q < SW) { const s = q / SW; a = mix(-A, A, 0.5 - 0.5 * Math.cos(Math.PI * s)); lift = Math.sin(Math.PI * s); }
+        else { a = mix(A, -A, (q - SW) / (1 - SW)); lift = 0; }
+        const kn = (hind ? -0.5 : -0.85) * lift;
+        C.rz[u] += wW * (a + 0.1 * lift); C.rz[u + 1] += wW * kn; C.rz[u + 2] += wW * (-(a + 0.1 * lift + kn) * 0.9 + 0.3 * lift);
+      }
+      EP.y += wW * (0.035 * Math.cos(2 * k) - 0.02);
+      C.rx[1] += wW * 0.035 * Math.sin(k); C.rx[3] += wW * -0.03 * Math.sin(k + 0.6); C.ry[1] += wW * 0.035 * Math.sin(k);
+      C.rz[4] += wW * 0.045 * Math.sin(2 * k + 1); C.ry[4] += wW * 0.04 * Math.sin(k + 0.5);
+      for (let i = 0; i < 5; i++) { C.ry[6 + i] += wW * 0.11 * Math.sin(k - i * 0.55); C.rz[6 + i] += wW * (0.035 * Math.sin(2 * k - i * 0.5) - 0.02); }
+      for (let i = 0; i < 3; i++) C.rx[13 + i] += wW * 0.22 * Math.sin(k - i * 0.7);
+    }
+    if (wI > 0.01) {
+      for (let i = 0; i < 5; i++) { C.ry[6 + i] += wI * 0.14 * Math.sin(now * 0.7 + seed - i * 0.6); C.rz[6 + i] += wI * (i > 2 ? 0.22 : 0.05) * (0.5 + 0.5 * Math.sin(now * 0.45 + seed)); }
+      C.rx[1] += wI * 0.025 * Math.sin(now * 0.5); C.rx[3] += wI * -0.02 * Math.sin(now * 0.5); C.ry[4] += wI * 0.12 * Math.sin(now * 0.3 + seed);
+      for (let i = 0; i < 3; i++) C.rx[13 + i] += wI * 0.3 * Math.sin(now * 1.3 - i * 0.8);
+    }
+    const flap = 0.08 + 0.42 * Math.pow(Math.max(0, Math.sin(now * 1.6 + seed)), 2);
+    C.ry[11] += flap; C.ry[12] -= flap;
+    for (let i = 0; i < C.bones.length; i++) C.bones[i].rotation.set(C.rx[i], C.ry[i], C.rz[i]);
+  }
+  let elK = 1;
+  function elephantUpdate(list, dt, now) {
+    const C = EL, it = list[0];
+    if (!it || !it.path || it.path.length < 2) { C.mesh.visible = false; return; }
+    const st = stOf(it, () => ({ c: pathPrep(it.path), ph: 0, hd: null, lastD: -1, wW: 0, seed: (it.id || 'e').length * 1.3 }));
+    const T = Z.T, Ln = st.c[st.c.length - 1];
+    const walkT = Math.max(30, (it.t1 - it.t0) - 150);
+    const d = clamp((T - it.t0 - 10) / walkT, 0, 1) * Ln;
+    pathAt(it.path, st.c, d);
+    const moved = st.lastD < 0 ? 0 : Math.abs(d - st.lastD); st.lastD = d;
+    if (st.hd == null) st.hd = PT.h;
+    st.hd += wrapA(PT.h - st.hd) * Math.min(1, dt * 1.5);
+    const walking = moved > 1e-4 && d < Ln;
+    st.wW += ((walking ? 1 : 0) - st.wW) * Math.min(1, dt * 2.5);
+    const want = clamp(Math.pow(camD() / 400, 1.3), 1, 72); elK += (want - elK) * Math.min(1, dt * 3);
+    const s = elK, stride = 2.4 * s;
+    if (walking) st.ph = (st.ph + dt * clamp(moved / stride / Math.max(dt, 1e-3), 0.32, 0.6)) % 1;
+    elePose(C, st.ph, st.wW, 1 - st.wW, now, st.seed);
+    const fade = smooth(it.t0, it.t0 + 8, T) * (1 - smooth(it.t1 - 14, it.t1 - 1, T));
+    C.U.uFade.value = fade; C.mesh.visible = fade > 0.01;
+    C.g.position.set(PT.x, EP.y * s, PT.y); C.g.rotation.set(0, -st.hd, 0); C.g.scale.setScalar(s); C.g.updateMatrixWorld(true);
+    const ch = Math.cos(st.hd), sh = Math.sin(st.hd), sd = Z.sunDir || UP, sk = 1.2 * s / Math.max(0.3, sd.y);
+    blob(PT.x - sd.x * sk + ch * 0.2 * s, PT.y - sd.z * sk + sh * 0.2 * s, -st.hd, 5.6 * s, 2.6 * s, 0.5 * fade);
+    blob(PT.x + ch * 0.1 * s, PT.y + sh * 0.1 * s, -st.hd, 4.6 * s, 2.1 * s, 0.45 * fade);
+    for (let i = 0; i < 4; i++) { C.bones[EFEET[i]].getWorldPosition(_v2); const h = clamp(1 - _v2.y / (0.5 * s), 0, 1); blob(_v2.x, _v2.z, -st.hd, 0.85 * s, 0.85 * s, 0.6 * h * fade); }
+  }
+  KS.add('elephant');
+
+  // =====================================================================================================
   // per frame
   // =====================================================================================================
   let lastT = null;
@@ -210,6 +474,7 @@ float fx4n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(fx4
       if (ST.size > 32) ST.clear();
       nBlob = 0;
       archUpdate(L.waterarch, dt, now);
+      elephantUpdate(L.elephant, dt, now);
       blobs.count = nBlob; blobs.visible = nBlob > 0;
       if (nBlob) { blobs.instanceMatrix.needsUpdate = true; blobOp.needsUpdate = true; }
     },

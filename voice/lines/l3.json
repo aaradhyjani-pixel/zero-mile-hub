@@ -32,7 +32,7 @@
  {
   "key": "Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 27L.",
   "voice": "announcer",
-  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft carrying the Honourable Prime Minister of India [[slnc 600]] shall now be landing [[slnc 600]] on runway two seven left."
+  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft carrying the Honourable Prime Minister of India [[slnc 600]] shall now be landing [[slnc 600]] on runway two seven left. [[slnc 500]]"
  },
  {
   "key": "Air India One, Nagpur Approach, radar contact. Expect runway 27R.",
@@ -42,7 +42,7 @@
  {
   "key": "Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 27R.",
   "voice": "announcer",
-  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft carrying the Honourable Prime Minister of India [[slnc 600]] shall now be landing [[slnc 600]] on runway two seven right."
+  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft carrying the Honourable Prime Minister of India [[slnc 600]] shall now be landing [[slnc 600]] on runway two seven right. [[slnc 500]]"
  },
  {
   "key": "Air India One, Nagpur Approach, radar contact. Expect runway 28R.",
@@ -52,7 +52,7 @@
  {
   "key": "Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 28R.",
   "voice": "announcer",
-  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft carrying the Honourable Prime Minister of India [[slnc 600]] shall now be landing [[slnc 600]] on runway two eight right."
+  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft carrying the Honourable Prime Minister of India [[slnc 600]] shall now be landing [[slnc 600]] on runway two eight right. [[slnc 500]]"
  },
  {
   "key": "Air India One, Nagpur Approach, radar contact. Expect runway 27C.",
@@ -62,7 +62,7 @@
  {
   "key": "Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 27C.",
   "voice": "announcer",
-  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft carrying the Honourable Prime Minister of India [[slnc 600]] shall now be landing [[slnc 600]] on runway two seven centre."
+  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft carrying the Honourable Prime Minister of India [[slnc 600]] shall now be landing [[slnc 600]] on runway two seven centre. [[slnc 500]]"
  },
  {
   "key": "Air India One, Nagpur Approach, radar contact. Expect runway 28C.",
@@ -72,7 +72,7 @@
  {
   "key": "Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 28C.",
   "voice": "announcer",
-  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft carrying the Honourable Prime Minister of India [[slnc 600]] shall now be landing [[slnc 600]] on runway two eight centre."
+  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft carrying the Honourable Prime Minister of India [[slnc 600]] shall now be landing [[slnc 600]] on runway two eight centre. [[slnc 500]]"
  },
  {
   "key": "Air India One, welcome to Zero Mile. Follow the car with the very large flag.",
@@ -87,12 +87,12 @@
  {
   "key": "Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 27L. By Antonov.",
   "voice": "ru_announcer",
-  "say": "Ladies and gentlemen. [[slnc 1000]] The motorcade of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two seven left. [[slnc 1000]] By Antonov."
+  "say": "Ladies and gentlemen. [[slnc 1000]] The motorcade of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two seven left. [[slnc 1000]] By Antonov. [[slnc 500]]"
  },
  {
   "key": "Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 27L.",
   "voice": "ru_announcer",
-  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two seven left."
+  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two seven left. [[slnc 500]]"
  },
  {
   "key": "An Antonov An-124 is inbound for 27R with the Russian motorcade. The motorcade has its own aeroplane.",
@@ -102,12 +102,12 @@
  {
   "key": "Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 27R. By Antonov.",
   "voice": "ru_announcer",
-  "say": "Ladies and gentlemen. [[slnc 1000]] The motorcade of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two seven right. [[slnc 1000]] By Antonov."
+  "say": "Ladies and gentlemen. [[slnc 1000]] The motorcade of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two seven right. [[slnc 1000]] By Antonov. [[slnc 500]]"
  },
  {
   "key": "Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 27R.",
   "voice": "ru_announcer",
-  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two seven right."
+  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two seven right. [[slnc 500]]"
  },
  {
   "key": "An Antonov An-124 is inbound for 28R with the Russian motorcade. The motorcade has its own aeroplane.",
@@ -117,12 +117,12 @@
  {
   "key": "Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 28R. By Antonov.",
   "voice": "ru_announcer",
-  "say": "Ladies and gentlemen. [[slnc 1000]] The motorcade of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two eight right. [[slnc 1000]] By Antonov."
+  "say": "Ladies and gentlemen. [[slnc 1000]] The motorcade of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two eight right. [[slnc 1000]] By Antonov. [[slnc 500]]"
  },
  {
   "key": "Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 28R.",
   "voice": "ru_announcer",
-  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two eight right."
+  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two eight right. [[slnc 500]]"
  },
  {
   "key": "An Antonov An-124 is inbound for 27C with the Russian motorcade. The motorcade has its own aeroplane.",
@@ -132,12 +132,12 @@
  {
   "key": "Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 27C. By Antonov.",
   "voice": "ru_announcer",
-  "say": "Ladies and gentlemen. [[slnc 1000]] The motorcade of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two seven centre. [[slnc 1000]] By Antonov."
+  "say": "Ladies and gentlemen. [[slnc 1000]] The motorcade of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two seven centre. [[slnc 1000]] By Antonov. [[slnc 500]]"
  },
  {
   "key": "Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 27C.",
   "voice": "ru_announcer",
-  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two seven centre."
+  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two seven centre. [[slnc 500]]"
  },
  {
   "key": "An Antonov An-124 is inbound for 28C with the Russian motorcade. The motorcade has its own aeroplane.",
@@ -147,12 +147,12 @@
  {
   "key": "Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 28C. By Antonov.",
   "voice": "ru_announcer",
-  "say": "Ladies and gentlemen. [[slnc 1000]] The motorcade of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two eight centre. [[slnc 1000]] By Antonov."
+  "say": "Ladies and gentlemen. [[slnc 1000]] The motorcade of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two eight centre. [[slnc 1000]] By Antonov. [[slnc 500]]"
  },
  {
   "key": "Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 28C.",
   "voice": "ru_announcer",
-  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two eight centre."
+  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two eight centre. [[slnc 500]]"
  },
  {
   "key": "Antonov, welcome to Zero Mile. Please do not park on the red carpet.",
@@ -172,7 +172,7 @@
  {
   "key": "The Honourable Prime Minister is on the red carpet, to receive His Excellency the President of the Russian Federation.",
   "voice": "announcer",
-  "say": "The Honourable Prime Minister is on the red carpet, [[slnc 600]] to receive His Excellency the President of the Russian Federation."
+  "say": "The Honourable Prime Minister is on the red carpet, [[slnc 600]] to receive His Excellency the President of the Russian Federation. [[slnc 500]]"
  },
  {
   "key": "The motorcade is driving out of the Antonov. Ten cars. Nobody has asked where they will park.",
@@ -182,7 +182,7 @@
  {
   "key": "The Honourable Prime Minister has received His Excellency the President of the Russian Federation on the red carpet. Handshake: eleven seconds.",
   "voice": "announcer",
-  "say": "The Honourable Prime Minister has received His Excellency the President of the Russian Federation [[slnc 600]] on the red carpet. [[slnc 1000]] Handshake: [[slnc 600]] eleven seconds."
+  "say": "The Honourable Prime Minister has received His Excellency the President of the Russian Federation [[slnc 600]] on the red carpet. [[slnc 1000]] Handshake: [[slnc 600]] eleven seconds. [[slnc 500]]"
  },
  {
   "key": "The motorcade has left for Tadoba. Every road from here to the tigers is closed. The tigers have been informed.",

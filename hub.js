@@ -673,16 +673,26 @@ function pickVoice(vs,lang){const sc=v=>(/en[-_]IN/i.test(v.lang)?4:/en[-_]GB/i.
 // length (a slow network load can't make the next line start on top of it), and moving on always stops the old clip.
 // Radio chatter (say) that has waited too long in the queue is dropped rather than played late; announcements and the
 // SPG (speak) are never dropped for age, only when their moment has passed (valid).
+// sound follows the game: paused, ended, on the menu or in a background tab, the voice and the music hold where they
+// are and carry on when play resumes; no new line starts while held
+const audioHold=()=>!running||paused||ended||document.hidden;let AHELD=false;
+function audioSync(){const h=audioHold();if(h===AHELD)return;AHELD=h;
+  try{if(vqCur){if(h)vqCur.pause();else{const p=vqCur.play();if(p&&p.catch)p.catch(()=>{});}}}catch(e){}
+  try{if(MUS&&MUS.el){if(h)MUS.el.pause();else{const p=MUS.el.play();if(p&&p.catch)p.catch(()=>{});}}}catch(e){}
+  try{if(window.speechSynthesis){if(h)speechSynthesis.pause();else speechSynthesis.resume();}}catch(e){}
+  if(!h)vqNext();}
+document.addEventListener('visibilitychange',audioSync);
 const VQ_TTL=10000;   // a line that carries its own valid() test (L4's pilot calls) is judged by that instead
-function vqNext(){if(vqOn)return;let it=VQ.shift();
+function vqNext(){if(vqOn||audioHold())return;let it=VQ.shift();
   while(it&&((it.valid&&!it.valid())||(it.radio&&!it.valid&&it.ttl!==0&&performance.now()-it.qt>(it.ttl||VQ_TTL)))){if(it.onEnd)it.onEnd();it=VQ.shift();}
   if(!it)return;vqOn=true;let fin=false,wd=null;
   const done=()=>{if(fin)return;fin=true;clearTimeout(wd);const a=vqCur;vqCur=null;if(a){try{a.onended=a.onerror=a.onplaying=null;a.pause();}catch(e){}}duck(false);if(it.onEnd)it.onEnd();setTimeout(()=>{vqOn=false;vqNext();},Math.max(500,it.gap||0));};   // at least half a second between any two voices
   if(it.onStart)it.onStart();const clip=typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[it.text];
   if(clip){const a=VPRE.get(clip)||new Audio(clip);VPRE.delete(clip);vqCur=a;a.volume=it.vol||0.95;a.onended=done;a.onerror=done;
     const words=it.text.split(/\s+/).length;
-    a.onplaying=()=>{clearTimeout(wd);const d=isFinite(a.duration)&&a.duration>0?a.duration*1000:2500+words*600;wd=setTimeout(done,d+1500);};
-    wd=setTimeout(done,9000+words*600);   // it never started playing at all (blocked or failed to load): move on
+    const wdog=()=>{if(audioHold()){wd=setTimeout(wdog,500);return;}done();};
+    a.onplaying=()=>{clearTimeout(wd);const d=isFinite(a.duration)&&a.duration>0?a.duration*1000:2500+words*600;wd=setTimeout(wdog,d+1500);};
+    wd=setTimeout(wdog,9000+words*600);   // it never started playing at all (blocked or failed to load): move on
     duck(true);const p=a.play();if(p&&p.catch)p.catch(done);return;}
   if(!it.radio&&window.speechSynthesis&&window.SpeechSynthesisUtterance){try{const S2=window.speechSynthesis,v=pickVoice(S2.getVoices(),it.lang);if(it.lang&&!v)return done();const u=new SpeechSynthesisUtterance(it.text.replace(/[\u{1F000}-\u{1FAFF}☀-➿️]/gu,'').trim());
     if(v){u.voice=v;u.lang=v.lang;}else u.lang='en-IN';u.rate=0.95;u.pitch=1;u.onend=done;u.onerror=done;duck(true);S2.speak(u);wd=setTimeout(done,9000);return;}catch(e){}}
@@ -1552,7 +1562,7 @@ tick(c,t){const r=c.r;if(c.bt&&!c.sc&&T>=c.scenAt&&!r.occ&&T<r.btUntil-60)this.b
 begin(c){const r=c.r,side=procC.y>r.y?1:-1;
   const B=mk({kind:'dep',state:'xhold',al:'OCA',type:'B77W',intl:false,to:'Mumbai',toCode:'BOM',dir:'W',std:T});Object.assign(B,{num:'1801',disp:'Orange City Cargo 1801 (777F)',callsign:'ORANGE CITY 1801',x:r.x1-60,y:r.y,heading:Math.PI,v:0,rwy:r,origStd:T,readyAt:T,cargo:true});
   const A=mk({kind:'dep',state:'xbt',al:'SPC',type:'B748',intl:false,to:'Kolkata',toCode:'CCU',dir:'E',std:T+900});Object.assign(A,{num:'77',disp:'Satpura Cargo 77 (747-8F)',callsign:'SATPURA 77',x:r.x1-1500,y:r.y,heading:0,v:8,rwy:r,origStd:T+900,readyAt:T,cargo:true});
-  r.occ=B;c.sc={A,B,t0:T,go:SIMR()<0.4,side,turn:0,phase:'bt'};
+  r.occ=B;c.sc={A,B,t0:T,go:true,side,turn:0,phase:'bt'};   // the player chose to backtrack in fog: the garbled clearance follows; only STOP saves it
   say('TWR',`Satpura 77, backtrack runway ${r.short}, vacate at the next exit, report runway vacated.`);logE(`Satpura 77 backtracking on ${r.short} in fog.`);},
 run(c){const s=c.sc,{A,B}=s,r=c.r,t=T-s.t0,dt=Math.min(1,T-(s.last||T));s.last=T;
   // the freighter backtracks east towards the threshold, then turns off towards the taxiway on the terminal side
@@ -2135,7 +2145,7 @@ window.HUB={get T(){return T;},get S(){return S;},get LV(){return LV;},flights:(
 buildTerrain();resize();
 let last=performance.now(),hudT=0;
 function frame(ms){
-  requestAnimationFrame(frame);
+  requestAnimationFrame(frame);audioSync();
   if(cv.clientWidth&&(cv.clientWidth!==VW||cv.clientHeight!==VH))resize();
   const dtR=Math.min(0.1,(ms-last)/1000);last=ms;camEase(dtR);
   if(running&&!paused&&!ended){let d=dtR*BASE*(PACE!=null?PACE:speed);try{while(d>0){const st=Math.min(1,d);tick(st);d-=st;}}catch(err){console.error(err);}incTick(dtR);if(toastTimer>0&&!frame.cine&&!toastFold){toastTimer-=dtR;if(toastTimer<=0&&!$('#toast').matches(':hover'))$('#toast').hidden=true;}}

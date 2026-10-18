@@ -565,15 +565,34 @@ function guard(lines,who,o){const g=$('#guard');if(!g)return;clearTimeout(guard.
 // to the browser's speech at a natural pitch, with the best Indian English voice the device has
 /*@@VOICE@@*/
 const VQ=[];let vqOn=false,vqCur=null;
-function pickVoice(vs){const sc=v=>(/en[-_]IN/i.test(v.lang)?4:/en[-_]GB/i.test(v.lang)?2:/^en/i.test(v.lang)?1:0)+(/enhanced|premium|natural|neural|google/i.test(v.name)?3:0)+(/aman/i.test(v.name)?2:0)-(/rishi|compact/i.test(v.name)?1:0);return vs.slice().sort((a,b)=>sc(b)-sc(a))[0]||null;}
-function vqNext(){if(vqOn)return;const it=VQ.shift();if(!it)return;vqOn=true;let fin=false;const done=()=>{if(fin)return;fin=true;vqCur=null;if(it.onEnd)it.onEnd();setTimeout(()=>{vqOn=false;vqNext();},it.gap);};
+// a line can carry an accent (lang, e.g. 'ru-RU'): its clip is recorded in that voice; without a clip the browser's voice for
+// that language reads it (accented English), and a radio call with no clip and no matching voice stays silent
+function pickVoice(vs,lang){const sc=v=>(/en[-_]IN/i.test(v.lang)?4:/en[-_]GB/i.test(v.lang)?2:/^en/i.test(v.lang)?1:0)+(/enhanced|premium|natural|neural|google/i.test(v.name)?3:0)+(/aman/i.test(v.name)?2:0)-(/rishi|compact/i.test(v.name)?1:0);
+  if(lang){const L=lang.toLowerCase().replace('_','-'),m=vs.filter(v=>v.lang.toLowerCase().replace('_','-').startsWith(L.split('-')[0])&&(L.indexOf('-')<0||v.lang.toLowerCase().replace('_','-')===L||true));
+    const q=v=>(v.lang.toLowerCase().replace('_','-')===L?2:0)+(/enhanced|premium|natural|neural|google/i.test(v.name)?1:0);return m.sort((a,b)=>q(b)-q(a))[0]||null;}
+  return vs.slice().sort((a,b)=>sc(b)-sc(a))[0]||null;}
+function vqNext(){if(vqOn)return;const it=VQ.shift();if(!it)return;vqOn=true;let fin=false;const done=()=>{if(fin)return;fin=true;vqCur=null;duck(false);if(it.onEnd)it.onEnd();setTimeout(()=>{vqOn=false;vqNext();},it.gap);};
   if(it.onStart)it.onStart();const clip=typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[it.text];
-  if(clip){const a=new Audio(clip);vqCur=a;a.volume=0.95;a.onended=done;a.onerror=done;const p=a.play();if(p&&p.catch)p.catch(done);return;}
-  if(window.speechSynthesis&&window.SpeechSynthesisUtterance){try{const S2=window.speechSynthesis,v=pickVoice(S2.getVoices());const u=new SpeechSynthesisUtterance(it.text.replace(/[\u{1F000}-\u{1FAFF}☀-➿️]/gu,'').trim());
-    if(v){u.voice=v;u.lang=v.lang;}else u.lang='en-IN';u.rate=0.95;u.pitch=1;u.onend=done;u.onerror=done;S2.speak(u);setTimeout(done,9000);return;}catch(e){}}
+  if(clip){const a=new Audio(clip);vqCur=a;a.volume=it.vol||0.95;a.onended=done;a.onerror=done;duck(true);const p=a.play();if(p&&p.catch)p.catch(done);return;}
+  if(!it.radio&&window.speechSynthesis&&window.SpeechSynthesisUtterance){try{const S2=window.speechSynthesis,v=pickVoice(S2.getVoices(),it.lang);if(it.lang&&!v)return done();const u=new SpeechSynthesisUtterance(it.text.replace(/[\u{1F000}-\u{1FAFF}☀-➿️]/gu,'').trim());
+    if(v){u.voice=v;u.lang=v.lang;}else u.lang='en-IN';u.rate=0.95;u.pitch=1;u.onend=done;u.onerror=done;duck(true);S2.speak(u);setTimeout(done,9000);return;}catch(e){}}
   done();}
-function speak(lines,o){o=o||{};if(!SND.on)return false;lines.forEach((t,i)=>{const last=i===lines.length-1;VQ.push({text:t,gap:last?750:450,onStart:o.onLine?()=>o.onLine(i):null,onEnd:last?o.onDone:null});});vqNext();return true;}
-function voiceReset(){VQ.length=0;if(vqCur){try{vqCur.pause();}catch(e){}}vqCur=null;vqOn=false;if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}}
+// speak(lines,{onLine,onDone,gap,endGap,gaps,lang}): lines one after another; the gap after each line is gaps[i], else gap
+// (1200 ms: the SPG takes his time), and endGap after the last line
+function speak(lines,o){o=o||{};if(!SND.on)return false;lines.forEach((t,i)=>{const last=i===lines.length-1;VQ.push({text:t,lang:o.lang,gap:o.gaps&&o.gaps[i]!=null?o.gaps[i]:last?(o.endGap!=null?o.endGap:900):(o.gap!=null?o.gap:1200),onStart:o.onLine?()=>o.onLine(i):null,onEnd:last?o.onDone:null});});vqNext();return true;}
+// a radio call in a speaker's own voice: shows on the ticker, and plays its recorded clip (keyed by the exact text) if there is one
+function say(src,text,o){o=o||{};radio(src,text);if(SND.on&&typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[text]){VQ.push({text,radio:true,gap:o.gap!=null?o.gap:500,vol:o.vol,onStart:o.onStart,onEnd:o.onEnd});vqNext();return true;}if(o.onEnd)o.onEnd();return false;}
+function voiceReset(){VQ.length=0;if(vqCur){try{vqCur.pause();}catch(e){}}vqCur=null;vqOn=false;if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}music(null,{now:true});}
+// music for set pieces: music('dj') plays music/dj.mp3 (looped unless {loop:false}), crossfading from whatever was playing;
+// music(null) fades it out. It ducks under voice lines. A missing file is simply silent, so tracks can be dropped in later.
+var MUS={el:null,name:null,vol:0.4,tm:null,fi:null};
+function musFade(a,to,ms,cb){const from=a.volume,t0=performance.now();const st=()=>{const k=Math.min(1,(performance.now()-t0)/ms);try{a.volume=Math.max(0,Math.min(1,from+(to-from)*k));}catch(e){}if(k<1)a._f=requestAnimationFrame(st);else if(cb)cb();};cancelAnimationFrame(a._f);st();}
+function music(name,o){o=o||{};if(!MUS)return;if(name&&MUS.name===name&&MUS.el)return;clearTimeout(MUS.tm);const old=MUS.el;MUS.el=null;MUS.name=null;
+  if(old){if(o.now){old.pause();}else musFade(old,0,o.fadeOut||1500,()=>old.pause());}
+  if(!name||!SND.on)return;const src=(typeof MUSIC_SRC!=='undefined'&&MUSIC_SRC[name])||`music/${name}.mp3`;const a=new Audio(src);a.loop=o.loop!==false;a.volume=0;
+  MUS.el=a;MUS.name=name;MUS.vol=o.vol!=null?o.vol:0.4;a.onerror=()=>{if(MUS.el===a){MUS.el=null;MUS.name=null;}};const p=a.play();if(p&&p.catch)p.catch(()=>{});musFade(a,vqCur?MUS.vol*0.35:MUS.vol,o.fadeIn||1200);
+  if(!a.loop)a.onended=()=>{if(MUS.el===a){MUS.el=null;MUS.name=null;}};if(o.ms)MUS.tm=setTimeout(()=>{if(MUS.el===a)music(null);},o.ms);}
+function duck(on){const a=MUS&&MUS.el;if(a)musFade(a,on?MUS.vol*0.35:MUS.vol,on?250:700);}
 // after a summit the SPG hands the runways back one by one, then signs off
 function spgReturn(order){const n=order.length;guard(['Your runways shall now be cleared, in a staged manner.'].concat(order.map((r,i)=>i===0?`Runway ${r.short} shall be cleared first.`:i===n-1?`And finally, runway ${r.short}.`:`Then runway ${r.short}.`)));}
 function spgOpen(r){}
@@ -1440,7 +1459,7 @@ function pick(mx,my){let best=null,bd=1e9;for(const f of flights){if(f.sx==null|
 function pickInc(mx,my){for(const I of incidents)if(I.sx!=null&&Math.hypot(I.sx-mx,I.sy-my)<20)return I;return null;}
 function pickRw(mx,my){for(const s of rwSigns)if(mx>=s.x&&mx<=s.x+s.w&&my>=s.y-3&&my<=s.y+s.h+3)return s.r;let wx=mx/cam.s+cam.x,wy=my/cam.s+cam.y,tol=10/cam.s;if(V3.on){const g=groundAt(mx,my);if(!g)return null;wx=g.x;wy=g.y;tol=45;}for(const r of RW){if(wx>=r.x0&&wx<=r.x1&&Math.abs(wy-r.y)<Math.max(r.width/2+10,tol))return r;}return null;}
 document.querySelectorAll('.speeds button').forEach(b=>b.onclick=()=>setSpeed(+b.dataset.s));
-(function(){const b=$('#snd');const paint=()=>{b.textContent=SND.on?'Sound on':'Sound off';b.classList.toggle('on',SND.on);};paint();b.onclick=()=>{SND.on=!SND.on;store.set('zm_snd',SND.on);paint();if(SND.on)tickSound(true);};})();
+(function(){const b=$('#snd');const paint=()=>{b.textContent=SND.on?'Sound on':'Sound off';b.classList.toggle('on',SND.on);};paint();b.onclick=()=>{SND.on=!SND.on;store.set('zm_snd',SND.on);paint();if(SND.on)tickSound(true);else voiceReset();};})();
 function setSpeed(s){if(!running)return;if(s===0)paused=!paused;else{speed=s;paused=false;}document.querySelectorAll('.speeds button').forEach(b=>{const v=+b.dataset.s;b.classList.toggle('on',v===0?paused:(!paused&&v===speed));});$('#spP').textContent=paused?'Resume':'Pause';}
 window.addEventListener('keydown',e=>{if(e.key===' '&&!(e.target.closest&&e.target.closest('button'))){e.preventDefault();setSpeed(0);}if(e.key==='1')setSpeed(1);if(e.key==='2')setSpeed(2);if(e.key==='3')setSpeed(4);if(e.key==='Escape'){closePop();if(V3.on&&V3.mode!=='map')setCam('map');}if(e.key==='+'||e.key==='=')zoomCenter(1.6);if(e.key==='-')zoomCenter(1/1.6);if(e.key==='f')V3.on?cam3Fit():fitCam();if(e.key==='m'||e.key==='M')setView(V3.on?'2d':'3d');if(e.key==='c'||e.key==='C')cycleCam();if(V3.on&&(e.key==='q'||e.key==='Q'))C3.t.yaw+=0.25;if(V3.on&&(e.key==='e'||e.key==='E'))C3.t.yaw-=0.25;});
 

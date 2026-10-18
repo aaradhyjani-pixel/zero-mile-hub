@@ -244,6 +244,7 @@ function setMode(r,m,silent){
   if(r.locked||r.mode===m)return;const was=r.mode;r.mode=m;r.changeUntil=T+CHANGE;S.flips++;
   if(r.degraded){r.degraded=false;r.changeUntil+=120;radio('OPS',`Electricians fixing ${r.short}'s edge lights during the changeover.`);logE(`Edge lights on ${r.short} repaired during a changeover.`);}
   if(r.strike){r.strike=null;logE(`${r.short} inspected for bird remains during the changeover.`);}
+  if(m!=='ARR'&&m!=='MIX')for(const f of flights)if(f.state==='approach'&&f.rwy===r&&f.td-T>40)breakOff(f,r);
   for(const f of flights){if((f.state==='taxi_out'||f.state==='hp')&&f.rwy===r&&!depModeOk(r))assignDep(f,true);}
   if(!silent){radio('AOCC',`Runway ${r.short} ${was} → ${m}. Changeover 2 minutes.`);logE(`Runway ${r.short} set to ${m}.`);}
   renderRw();
@@ -271,7 +272,7 @@ function runways(){
     const q=flights.filter(f=>f.state==='hp'&&f.rwy===r&&!(needsLong(f)&&r!==LONGEST)).sort((a,b)=>(b.prio-a.prio)||(a.hpSince-b.hpSince));if(!q.length)continue;
     const f=q[0];f.state='lineup';r.occ=f;r.lastDep=T;r.lastDepWake=f.T.wake;f.rollT=T;
     if(r.strike&&r.strike.bad&&T<r.strike.until){r.strike=null;f.burst=true;}
-    const st={x:r.x1-60,y:r.y};setPath(f,[{x:f.x,y:f.y},{x:r.x1-30,y:lerp(f.y,r.y,0.6)},st]);
+    const st={x:r.x1-60,y:r.y};setPath(f,[{x:f.x,y:f.y},{x:r.x1-30,y:lerp(f.y,r.y,0.6)},st],50);
     radio('TWR',`${cs(f)}, runway ${r.short}, cleared for take-off.`);
   }
 }
@@ -282,11 +283,20 @@ function assignDep(f,reroute){
   let best=null,bs=1e18,bp=null,bh=null;
   for(const r of opts){const q=flights.filter(o=>(o.state==='hp'||o.state==='taxi_out')&&o.rwy===r).length;for(const h of r.holds){const p=route(from,h);if(!p)continue;const c=pathLen(p)/14+q*75+(r.mode==='MIX'?60:0);if(c<bs){bs=c;best=r;bp=p;bh=h;}}}
   if(!best){f.rwy=null;f.noRwy=true;return false;}
-  f.rwy=best;f.hold=bh;setPath(f,(reroute?[{x:f.x,y:f.y}]:[]).concat(bp));f.state='taxi_out';return true;
+  f.rwy=best;f.hold=bh;setPath(f,(reroute?[{x:f.x,y:f.y}]:[]).concat(bp),TAXI_R);f.state='taxi_out';return true;
 }
 
 /* ============ flight logic ============ */
-function setPath(f,p){f.path=p;f.pd=0;f.plen=pathLen(p);}
+// round each corner with an arc (a quadratic curve through the corner): taxi turns follow the centreline, approaches
+// curve onto final instead of snapping at a waypoint
+function smoothPath(p,R){if(!p||p.length<3||!R)return p;const out=[p[0]];
+  for(let i=1;i<p.length-1;i++){const a=p[i-1],b=p[i],c=p[i+1];const l1=dist(a.x,a.y,b.x,b.y),l2=dist(b.x,b.y,c.x,c.y);if(l1<1||l2<1){out.push(b);continue;}
+    const u1x=(b.x-a.x)/l1,u1y=(b.y-a.y)/l1,u2x=(c.x-b.x)/l2,u2y=(c.y-b.y)/l2;const turn=Math.acos(clamp(u1x*u2x+u1y*u2y,-1,1));if(turn<0.05){out.push(b);continue;}
+    const t=Math.min(R*Math.tan(Math.min(turn,2.6)/2),l1*0.45,l2*0.45);const p1={x:b.x-u1x*t,y:b.y-u1y*t},p2={x:b.x+u2x*t,y:b.y+u2y*t};
+    const n=Math.max(2,Math.ceil(turn/0.2));out.push(p1);for(let k=1;k<n;k++){const q=k/n;out.push({x:(1-q)*(1-q)*p1.x+2*(1-q)*q*b.x+q*q*p2.x,y:(1-q)*(1-q)*p1.y+2*(1-q)*q*b.y+q*q*p2.y});}out.push(p2);}
+  out.push(p[p.length-1]);return out;}
+const TAXI_R=0;   // taxi paths stay exact: cut corners trip blocked() at junctions and jam taxi flow; models still turn smoothly
+function setPath(f,p,R){f.path=R?smoothPath(p,R):p;f.pd=0;f.plen=pathLen(f.path);}
 function advance(f,dt,v,rev){f.pd=Math.min(f.plen,f.pd+v*dt);const p=pointAt(f.path,f.pd);f.x=p.x;f.y=p.y;const tg=rev?p.a+Math.PI:p.a;f.heading+=angDiff(f.heading,tg)*Math.min(1,dt*1.8);return f.pd>=f.plen-0.01;}
 const MOVING=new Set(['rollout','taxi_in','taxi_out','hp','push','start','lineup','nogate','tow','stuck']);
 let movingList=[];
@@ -296,23 +306,36 @@ function spawnInbound(f){const st=stackOf(f);const a=Math.atan2(st.y-0,st.x-0);c
 function beginApproach(f,r,td){
   f.state='approach';f.rwy=r;f.apT0=T;f.td=td;const faf={x:r.x1+7000,y:r.y},tdp={x:r.x1-450,y:r.y};
   const mid={x:Math.max(f.x,faf.x)+1200,y:lerp(f.y,r.y,0.7)};
-  setPath(f,[{x:f.x,y:f.y},mid,faf,tdp]);f.finalLen=7450;f.finalStart=f.plen-f.finalLen;f.startAlt=f.alt||1500;
+  setPath(f,[{x:f.x,y:f.y},mid,faf,tdp],1600);f.finalLen=7000;f.finalStart=f.plen-f.finalLen;f.startAlt=f.alt||1500;
   r.tdList.push(td);r.lastSchedTd=td;r.lastArrWake=f.T.wake;f.gaRoll=SIMR();
 }
-function goAround(f,why){const r=f.rwy;r.tdList=r.tdList.filter(t=>t!==f.td);f.state='goaround';f.td=null;const st=stackOf(f);setPath(f,[{x:f.x,y:f.y},{x:r.x0-1500,y:r.y},{x:r.x0-3000,y:r.y+(r.y<0?-3000:3000)},{x:st.x,y:st.y}]);S.goArounds++;radio('TWR',`${cs(f)}, go around, ${why}.`);}
+function breakOff(f,r){
+  r.tdList=r.tdList.filter(t=>t!==f.td);const alts=RW.filter(o=>o!==r&&canArr(o));
+  if(!alts.length){f.td=null;goAround(f,`runway ${r.short} changing to departures`);return;}
+  alts.sort((a,b)=>Math.abs(a.y-f.y)-Math.abs(b.y-f.y));const o=alts[0],td=Math.max(T+D_APP*0.85,o.lastSchedTd+arrSep(o));
+  f.startAlt=f.alt;beginApproach(f,o,td);radio('APP',`${cs(f)}, break off, sidestep to runway ${o.short}.`);
+}
+function goAround(f,why){const r=f.rwy;r.tdList=r.tdList.filter(t=>t!==f.td);f.state='goaround';f.td=null;const st=stackOf(f);setPath(f,[{x:f.x,y:f.y},{x:r.x0-1500,y:r.y},{x:r.x0-3000,y:r.y+(r.y<0?-3000:3000)},{x:st.x,y:st.y}],1400);S.goArounds++;radio('TWR',`${cs(f)}, go around, ${why}.`);}
 function touchdown(f){
   const r=f.rwy;f.state='rollout';f.alt=0;f.v=68;
   if(f.medSince!=null){const w=(T-f.medSince)/60;if(w>8)hitSafety(4,`The medical on ${fl(f)} waited ${Math.round(w)} min to land.`);else logE(`${fl(f)} landed its medical after ${Math.round(w)} min.`);f.medSince=null;}r.occ=f;r.tdList=r.tdList.filter(t=>t!==f.td);r.ops++;S.moves++;S.arr++;moveLog.push(T);f.landT=T;if(T-f.origEta<=900)S.arrOnTime++;
   const need=f.T.code==='F'?2200:f.T.code==='E'?1900:1300;const tx=r.x1-450;let ex=r.exits.find(e=>tx-e.x>=need)||r.exits[r.exits.length-1];
-  const to=G.get(ex.to);setPath(f,[{x:tx,y:r.y},{x:ex.x,y:r.y},{x:to.x,y:to.y}]);f.exitAt=tx-ex.x+40;f.exitNode=ex.to;
+  const to=G.get(ex.to);setPath(f,[{x:tx,y:r.y},{x:ex.x,y:r.y},{x:to.x,y:to.y}],120);f.exitAt=tx-ex.x+40;f.exitNode=ex.to;
   const now=performance.now()/1000;for(let i=0;i<6;i++)puffs.push({x:tx-i*6,y:r.y+(i%2?-7:7),t:now+i*0.05});
 }
 function startTaxiIn(f){
   if(!f.res&&!f.gate){const g=freeGate(f);if(g){g.res=f;f.res=g;}}
-  if(f.res){const p=route(f.exitNode,f.res.lane);if(p){setPath(f,[{x:f.x,y:f.y}].concat(p));f.state='taxi_in';return;}}
+  if(f.res){const p=route(f.exitNode,f.res.lane);if(p){setPath(f,[{x:f.x,y:f.y}].concat(p),TAXI_R);f.state='taxi_in';return;}}
   f.state='nogate';f.nogateSince=T;if(!incidents.some(i=>i.f===f))spawnInc('nogate',f);
 }
-function depart(f){f.state='gone';const late=(f.rollT-f.std)/60;S.moves++;S.dep++;moveLog.push(f.rollT);if(late<=25)S.depOnTime++;S.delaySum+=Math.max(0,late-10);}
+function depart(f){const late=(f.rollT-f.std)/60;S.moves++;S.dep++;moveLog.push(f.rollT);if(late<=25)S.depOnTime++;S.delaySum+=Math.max(0,late-10);}
+function climbOut(f){
+  f.state='climb';const side=f.y<0?-1:1,H={N:-Math.PI/2,S:Math.PI/2,E:0,W:Math.PI}[f.dir];const h=H==null?Math.PI:H;
+  const p0={x:f.x,y:f.y},p1={x:f.x-2600,y:f.y};let p2,p3;
+  if(h===0){p2={x:p1.x-1800,y:p1.y+side*5200};p3={x:p2.x+16000,y:p2.y+side*1500};}
+  else{p2={x:p1.x+Math.cos(h)*3000-(h===Math.PI?3000:0),y:p1.y+Math.sin(h)*3000};p3={x:p2.x+Math.cos(h)*14000,y:p2.y+Math.sin(h)*14000};}
+  setPath(f,[p0,p1,p2,p3],3200);
+}
 function settleLinks(f){if(!f.links)return;for(const l of f.links){const ok=l.arr.inBlock!=null&&l.arr.inBlock+l.x+(l.arr.gate&&l.arr.gate.remote?300:0)<=f.pushT+(f.heldFor||0);if(ok)S.cnxMade+=l.n;else S.cnxMiss+=l.n;}f.links=null;}
 function laneClear(g){const L=G.get(g.lane);for(const o of movingList){if(o.gate===g)continue;if(Math.abs(o.x-L.x)<130&&Math.abs(o.y-L.y)<130)return false;}return true;}
 function updateFlight(f,dt){
@@ -326,10 +349,10 @@ function updateFlight(f,dt){
     if(f.birdHit&&f.td-T<20&&!f.gaDone){f.gaDone=true;goAround(f,'bird strike on short final');break;}
     if(T>=f.td)touchdown(f);break;}
   case 'rollout':{f.v=Math.max(14,f.v-1.15*dt);const done=advance(f,dt,f.v);if(f.rwy.occ===f&&f.pd>=f.exitAt){f.rwy.occ=null;f.rwy.arrExit=T;}if(done){if(f.rwy.occ===f){f.rwy.occ=null;f.rwy.arrExit=T;}startTaxiIn(f);}break;}
-  case 'nogate':{if(!f.res){const g=freeGate(f);if(g){g.res=f;f.res=g;}}if(f.res){const p=route(f.exitNode,f.res.lane);if(p){setPath(f,[{x:f.x,y:f.y}].concat(p));f.state='taxi_in';closeIncFor(f,true);}}break;}
+  case 'nogate':{if(!f.res){const g=freeGate(f);if(g){g.res=f;f.res=g;}}if(f.res){const p=route(f.exitNode,f.res.lane);if(p){setPath(f,[{x:f.x,y:f.y}].concat(p),TAXI_R);f.state='taxi_in';closeIncFor(f,true);}}break;}
   case 'taxi_in':if(blocked(f))break;if(advance(f,dt,14)){const g=f.res;setPath(f,[{x:G.get(g.lane).x,y:G.get(g.lane).y},{x:g.x,y:g.y}]);f.state='dock';}break;
   case 'dock':if(laneShut(f.res))break;if(advance(f,dt,4)){const g=f.res;g.occ=f;g.res=null;f.gate=g;f.res=null;f.heading=g.a;f.inBlock=T;if(f.turn)toDep(f);else{f.state='parked';f.towAt=T+(20+SIMR()*15)*60;}}break;
-  case 'parked':if(T>=f.towAt&&laneClear(f.gate)){const g=f.gate;const p=route(g.lane,PARK);g.occ=null;f.state='tow';setPath(f,[{x:g.x,y:g.y}].concat(p||[]));f.gate=null;}break;
+  case 'parked':if(T>=f.towAt&&laneClear(f.gate)){const g=f.gate;const p=route(g.lane,PARK);g.occ=null;f.state='tow';setPath(f,[{x:g.x,y:g.y}].concat(p||[]),TAXI_R);f.gate=null;}break;
   case 'tow':if(blocked(f))break;if(advance(f,dt,f.pd<90?3:7,f.pd<90))f.state='towed';break;
   case 'at_gate':{
     if(f.std<=T&&f.links&&!f.cnxAsked&&!f.held){const late=f.links.filter(l=>l.arr.inBlock==null&&l.arr.state!=='diverted').reduce((s,l)=>s+l.n,0);if(late>=40&&T-lastCnx>400&&!incidents.some(i=>i.type==='connex')){f.cnxAsked=true;spawnInc('connex',f,{n:late});}}
@@ -344,12 +367,13 @@ function updateFlight(f,dt){
   case 'roll':{const r=f.rwy;f.v=Math.min(95,f.v+(heatNow&&f.T.hot?1.7:2.3)*dt);f.s+=f.v*dt;f.x=r.x1-f.s;f.y=r.y;f.heading+=angDiff(f.heading,Math.PI)*Math.min(1,dt*3);const lift=f.T.code==='C'?1500:heatNow?3000:2300;
     if(f.burst&&f.v>40){f.burst=false;f.rto=true;f.rtoBurst=true;radio('TWR',`${cs(f)} rejecting take-off! Tyre burst on ${r.short}.`);}
     if(f.rto){f.v=Math.max(0,f.v-5*dt);if(f.v<=6){f.rto=false;f.state='taxi_out';r.occ=null;if(f.rtoBurst){f.rtoBurst=false;r.closedUntil=T+900;r.why='Burst tyre: debris clean-up';hitSafety(8,`${fl(f)} burst a tyre on bird debris on ${r.short}.`);}else{r.closedUntil=T+360;r.why='Runway inspection after a rejected take-off';}f.rollT=null;assignDep(f,true);renderRw();}break;}
-    if(f.s>lift)f.alt+=f.v*0.14*dt;if(r.occ===f&&(f.alt>60))r.occ=null;if(f.x<EXT.x0-2500){r.ops++;depart(f);}break;}
+    if(f.s>lift)f.alt+=f.v*0.14*dt;if(r.occ===f&&(f.alt>60))r.occ=null;if(f.alt>60&&!f.counted){f.counted=true;r.ops++;depart(f);climbOut(f);}break;}
+  case 'climb':f.v=Math.min(150,f.v+1.1*dt);f.alt=Math.min(3000,f.alt+f.v*0.13*dt);if(advance(f,dt,f.v))f.state='gone';break;
   case 'goaround':advance(f,dt,100);f.alt=Math.min(1200,f.alt+12*dt);f.endurance-=dt/60;if(f.pd>=f.plen){f.state='holding';f.holdSince=T-40;f.hu=0;}break;
   case 'divert':advance(f,dt,170);f.alt=Math.min(3500,f.alt+15*dt);if(f.pd>=f.plen)f.state='diverted';break;
   case 'stuck':if(T>=f.stuckUntil){f.state=f.stuckPrev;}break;
   }
-  if(f.alt>30&&['approach','roll','goaround','inbound','divert'].includes(f.state)){const tr=f.trail;if(!tr.length||Math.hypot(tr[tr.length-1].x-f.x,tr[tr.length-1].y-f.y)>160){tr.push({x:f.x,y:f.y});if(tr.length>20)tr.shift();}}
+  if(f.alt>30&&['approach','roll','climb','goaround','inbound','divert'].includes(f.state)){const tr=f.trail;if(!tr.length||Math.hypot(tr[tr.length-1].x-f.x,tr[tr.length-1].y-f.y)>160){tr.push({x:f.x,y:f.y});if(tr.length>20)tr.shift();}}
 }
 function fuelCheck(f){
   if(!f.minFuel&&f.endurance<14){f.minFuel=true;radio(f.al,`${cs(f)}, minimum fuel.`);if(!f.prio)spawnInc('fuel',f);}
@@ -411,7 +435,7 @@ function priorityLand(f){
   beginApproach(f,r,td);r.lastSchedTd=Math.max(prev,td);f.prio=true;
   return bumped.length?`${bumped.join(' and ')} went around to make room.`:'No one had to go around.';
 }
-function sendLong(f){f.rwy=LONGEST;let best=null,bl=1e18,bp=null;for(const h of LONGEST.holds){const p=route(nearestNode(f.x,f.y).k,h);if(p&&pathLen(p)<bl){bl=pathLen(p);best=h;bp=p;}}if(bp){setPath(f,[{x:f.x,y:f.y}].concat(bp));f.state='taxi_out';f.hold=best;}}
+function sendLong(f){f.rwy=LONGEST;let best=null,bl=1e18,bp=null;for(const h of LONGEST.holds){const p=route(nearestNode(f.x,f.y).k,h);if(p&&pathLen(p)<bl){bl=pathLen(p);best=h;bp=p;}}if(bp){setPath(f,[{x:f.x,y:f.y}].concat(bp),TAXI_R);f.state='taxi_out';f.hold=best;}}
 function spawnInc(type,target,extra){
   if(CFG.inc==='off'&&SCRIPTED.has(type))return true; // runways-only mode: the scripted calls never happen
   if(incidents.length>=MAXOPEN&&SCRIPTED.has(type))return false;
@@ -477,14 +501,14 @@ function closePop(){$('#pop').hidden=true;popInc=null;popRw=null;popF=null;selRw
 $('#popX').onclick=closePop;
 function placePop(sx,sy){const p=$('#pop');p.hidden=false;const w=272,h=p.offsetHeight||140;let x=sx+18,y=sy-20;const r=cam.region||{L:0,R:VW,Tp:0,B:VH};if(x+w>r.R)x=sx-w-18;if(y+h>r.B)y=r.B-h-4;if(y<r.Tp)y=r.Tp+4;p.style.left=x+'px';p.style.top=y+'px';}
 function openIncPop(I){popInc=I;popRw=null;popF=null;const ic=ICON[I.type];$('#popBody').innerHTML=`<h4><span style="color:${ic.c}">●</span> ${I.title}</h4><p>${I.text}</p><div class="acts">${I.acts.map((a,i)=>`<button data-i="${i}" class="${a.pri?'pri':''}" ${a.dis&&a.dis()?'disabled':''}>${a.l}</button>`).join('')}</div><p class="dflt" style="margin:6px 0 0;font-size:11.5px;color:var(--ink-3)">If you leave it: ${I.defText}</p>`;$('#popBody').querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>{I.acts[+b.dataset.i].fn();closePop();});const p=incPos(I);placePop(sx(p.x),sy(p.y));}
-function openRwPop(r,mx,my){popRw=r;popInc=null;popF=null;selRw=r;$('#popBody').innerHTML=`<h4>Runway ${r.name}</h4><p>${r.len.toLocaleString('en-IN')} m${r===LONGEST?' · the long runway':''}. What should it do? ${term('modes','Modes')}</p>${segHtml(r)}`;$('#popBody').querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{setMode(r,b.dataset.m);openRwPop(r,mx,my);});placePop(mx,my);renderRw();}
+function openRwPop(r,mx,my){popRw=r;popInc=null;popF=null;selRw=r;$('#popBody').innerHTML=`<h4>Runway ${r.name}</h4><p>${r.len.toLocaleString('en-IN')} m${r===LONGEST?' · the long runway':''}. What should it do? ${term('modes','Modes')}</p>${segHtml(r)}`;$('#popBody').querySelectorAll('.seg button').forEach(b=>{b.onclick=()=>{WAVEP=null;setMode(r,b.dataset.m);openRwPop(r,mx,my);};previewOn(b,r);});placePop(mx,my);renderRw();}
 function openFlightPop(f,mx,my){popF=f;popInc=null;popRw=null;selected=f;renderFlightPop();placePop(mx,my);}
 function renderFlightPop(){const f=popF;if(!f)return;const st=stateText(f);let dl=`<dt>Aircraft</dt><dd>${f.T.name}</dd><dt>Route</dt><dd>${f.kind==='dep'?`→ ${f.toCode} ${f.to}`:`${f.fromCode} ${f.from} →`}${f.intl?' · intl':''}</dd><dt>Status</dt><dd>${st}</dd>`;
   if(f.kind==='dep'){const l=mins(T-f.std);dl+=`<dt>Departs</dt><dd class="mono">${clk(f.std)} ${l>0?`<span style="color:var(--stop)">+${l}m</span>`:''}</dd>`;if(f.links)dl+=`<dt>Connecting</dt><dd>${f.links.reduce((s,l)=>s+l.n,0)} passengers from ${f.links.length} flights</dd>`;}
   else{dl+=`<dt>Lands</dt><dd class="mono">${clk(f.eta)}${f.state==='holding'?` · <span style="color:var(--warn)">${Math.round(f.endurance)}m fuel</span>`:''}</dd>`;if(f.turnLinks||f.turn)dl+=`<dt>Next</dt><dd>${f.turn?`${f.al} ${f.turn.num} at ${clk(f.turn.std)}`:'Night stop'}</dd>`;}
-  $('#popBody').innerHTML=`<h4 style="display:flex;gap:8px;align-items:center"><i style="width:5px;height:18px;background:${f.A.tail};border-radius:2px;display:inline-block"></i>${fl(f)} <span style="font-size:12px;color:var(--ink-3);font-family:var(--f-body);font-weight:400">${f.A.name}</span></h4><dl>${dl}</dl><div class="acts"><button id="fpPrio" class="${f.prio?'pri':''}" ${['holding','inbound','at_gate','taxi_out','hp'].includes(f.state)?'':'disabled'}>${f.prio?'Prioritised':'Prioritise'}</button>${f.kind==='dep'&&f.state==='at_gate'?`<button id="fpHold">${f.held?'Release':'Hold at gate'}</button>`:''}</div>`;
-  const p=$('#fpPrio');if(p)p.onclick=()=>{f.prio=!f.prio;renderFlightPop();};const h=$('#fpHold');if(h)h.onclick=()=>{f.held=!f.held;renderFlightPop();};}
-function stateText(f){const m={sched:'On the ground at origin',inbound:'Inbound',holding:`Holding at ${7+(f.level||0)},000 ft`,approach:`Final for ${f.rwy?f.rwy.short:''}`,rollout:'Landing',taxi_in:'Taxiing to gate '+(f.res?f.res.id:''),dock:'Parking',parked:'Parked, no onward flight',nogate:'Waiting for a gate',tow:'Towed to long-stay parking',push:'Pushing back',start:'Starting engines',taxi_out:f.noRwy?'No departure runway open':`Taxiing to ${f.rwy?f.rwy.short:''}`,hp:`Holding short of ${f.rwy?f.rwy.short:''}`,lineup:'Lining up',roll:'Taking off',goaround:'Going around',divert:'Diverting',stuck:'Stopped on the taxiway'};
+  $('#popBody').innerHTML=`<h4 style="display:flex;gap:8px;align-items:center"><i style="width:5px;height:18px;background:${f.A.tail};border-radius:2px;display:inline-block"></i>${fl(f)} <span style="font-size:12px;color:var(--ink-3);font-family:var(--f-body);font-weight:400">${f.A.name}</span></h4><dl>${dl}</dl><div class="acts"><button id="fpPrio" class="${f.prio?'pri':''}" ${['holding','inbound','at_gate','taxi_out','hp'].includes(f.state)?'':'disabled'}>${f.prio?'Prioritised':'Prioritise'}</button>${f.kind==='dep'&&f.state==='at_gate'?`<button id="fpHold">${f.held?'Release':'Hold at gate'}</button>`:''}${V3.on?'<button id="fpFollow">Follow</button>':''}</div>`;
+  const p=$('#fpPrio');if(p)p.onclick=()=>{f.prio=!f.prio;renderFlightPop();};const fw=$('#fpFollow');if(fw)fw.onclick=()=>{setCam('follow',f);closePop();};const h=$('#fpHold');if(h)h.onclick=()=>{f.held=!f.held;renderFlightPop();};}
+function stateText(f){const m={sched:'On the ground at origin',inbound:'Inbound',holding:`Holding at ${7+(f.level||0)},000 ft`,approach:`Final for ${f.rwy?f.rwy.short:''}`,rollout:'Landing',taxi_in:'Taxiing to gate '+(f.res?f.res.id:''),dock:'Parking',parked:'Parked, no onward flight',nogate:'Waiting for a gate',tow:'Towed to long-stay parking',push:'Pushing back',start:'Starting engines',taxi_out:f.noRwy?'No departure runway open':`Taxiing to ${f.rwy?f.rwy.short:''}`,hp:`Holding short of ${f.rwy?f.rwy.short:''}`,lineup:'Lining up',roll:'Taking off',climb:'Climbing out',goaround:'Going around',divert:'Diverting',stuck:'Stopped on the taxiway'};
   if(f.state==='at_gate'){if(f.held)return 'Held at gate';const go=Math.max(f.std,f.readyAt);return T<f.readyAt?'Turnaround in progress':T<go?'Boarding':'Waiting to push';}return m[f.state]||f.state;}
 
 /* ============ camera ============ */
@@ -505,7 +529,7 @@ function fitCam(){
 }
 const sx=x=>(x-cam.x)*cam.s,sy=y=>(y-cam.y)*cam.s;
 function centerOn(x,y){if(!cam.region)return;const r=cam.region;if(camT.s<cam.fit*2.5)camT.s=cam.fit*3.5;camT.anchor=null;camT.x=x-((r.L+r.R)/2)/camT.s;camT.y=y-((r.Tp+r.B)/2)/camT.s;clampCam(camT);}
-function resize(){DPR=Math.min(window.devicePixelRatio||1,2);VW=cv.clientWidth;VH=cv.clientHeight;cv.width=Math.round(VW*DPR);cv.height=Math.round(VH*DPR);const wr=wcv.getBoundingClientRect();wcv.width=Math.round(wr.width*DPR);wcv.height=Math.round(wr.height*DPR);fitCam();placeToast();}
+function resize(){if(typeof resize3D==='function'&&V3.ready)setTimeout(resize3D,0);DPR=Math.min(window.devicePixelRatio||1,2);VW=cv.clientWidth;VH=cv.clientHeight;cv.width=Math.round(VW*DPR);cv.height=Math.round(VH*DPR);const wr=wcv.getBoundingClientRect();wcv.width=Math.round(wr.width*DPR);wcv.height=Math.round(wr.height*DPR);fitCam();placeToast();}
 window.addEventListener('resize',resize);
 if(window.ResizeObserver)new ResizeObserver(()=>{if(cv.clientWidth)resize();}).observe($('#app'));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){last=performance.now();resize();}});
@@ -640,6 +664,7 @@ function drawOps(now){
 }
 const mmss=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');};
 let rwSigns=[];
+function rwSign(r){const bk=r.blocks[0];const lbl=(r.locked?'NOT YET OPEN':T<r.closedUntil?`CLOSED · ${r.why.toUpperCase()}`:blockAt(r,T)?`CLOSED · VVIP MOVEMENT ${mmss(bk.to-T)}`:T<r.changeUntil?`CHANGEOVER → ${r.mode}`:r.mode==='ARR'?'ARRIVALS':r.mode==='DEP'?'DEPARTURES':r.mode==='MIX'?'MIXED':'CLOSED')+(r.locked?'':bk&&T<bk.from?` · VVIP IN ${mmss(bk.from-T)}`:r.degraded?' · LIGHTS OUT':r.gapReq?' · GAP FOR SWEEPER':'');const col=r.locked?'#6f7a80':T<r.closedUntil||blockAt(r,T)?'#ff4d3f':r.mode==='ARR'?'#8a7cff':r.mode==='DEP'?'#2fd3c6':r.mode==='MIX'?'#f4c430':'#a6afb4';return{lbl,col};}
 const dustP=[];{const r=mulberry(3);for(let i=0;i<500;i++)dustP.push({x:r(),y:r(),v:.6+r()*.8,s:1+r()*3});}
 function draw(now){
   screenT();ctx.fillStyle='#6b5d47';ctx.fillRect(0,0,VW,VH);
@@ -667,8 +692,9 @@ function draw(now){
   if(dustNow){ctx.fillStyle='rgba(170,120,70,.32)';ctx.fillRect(0,0,VW,VH);ctx.fillStyle='rgba(220,180,130,.45)';for(const p of dustP){const x=((p.x*VW-now*220*p.v)%VW+VW)%VW,y=p.y*VH;ctx.fillRect(x,y,p.s*6,p.s);}}
   if(LV&&LV.light==='heat'){const a=0.06+0.03*Math.sin(now*2);ctx.fillStyle=`rgba(255,220,170,${a})`;ctx.fillRect(0,0,VW,VH);}
   // runway signs
-  rwSigns=[];for(const r of RW){const bk=r.blocks[0];const lbl=(r.locked?'NOT YET OPEN':T<r.closedUntil?`CLOSED · ${r.why.toUpperCase()}`:blockAt(r,T)?`CLOSED · VVIP MOVEMENT ${mmss(bk.to-T)}`:T<r.changeUntil?`CHANGEOVER → ${r.mode}`:r.mode==='ARR'?'ARRIVALS':r.mode==='DEP'?'DEPARTURES':r.mode==='MIX'?'MIXED':'CLOSED')+(r.locked?'':bk&&T<bk.from?` · VVIP IN ${mmss(bk.from-T)}`:r.degraded?' · LIGHTS OUT':r.gapReq?' · GAP FOR SWEEPER':'');const col=r.locked?'#6f7a80':T<r.closedUntil||blockAt(r,T)?'#ff4d3f':r.mode==='ARR'?'#8a7cff':r.mode==='DEP'?'#2fd3c6':r.mode==='MIX'?'#f4c430':'#a6afb4';
+  rwSigns=[];for(const r of RW){const {lbl,col}=rwSign(r);
     const X=sx(r.x0+r.len*0.18),Y=sy(r.y)-Math.max(14,r.width*cam.s/2+12);const rect=signText(X,Y,`${r.short} · ${lbl}`,r.locked?.6:1,col);rect.r=r;rwSigns.push(rect);}
+  
   // incident markers
   for(const I of incidents){const p=incPos(I);const X=sx(p.x),Y=sy(p.y);const ic=ICON[I.type];const pulse=1+0.18*Math.sin(now*7);const R=13*pulse;
     ctx.fillStyle='rgba(0,0,0,.55)';ctx.beginPath();ctx.arc(X,Y,R+5,0,7);ctx.fill();ctx.strokeStyle=ic.c;ctx.lineWidth=3;ctx.beginPath();ctx.arc(X,Y,R+3,-Math.PI/2,-Math.PI/2+2*Math.PI*clamp(I.left/I.total,0,1));ctx.stroke();
@@ -681,7 +707,11 @@ function draw(now){
 }
 
 /* ============ bank chart ============ */
-function capNow(kind){let c=0;for(const r of RW){if(r.locked||T<r.closedUntil||blockAt(r,T))continue;const dg=r.degraded?1.6:1;if(kind==='arr'){if(r.mode==='ARR')c+=3600/(SEP_AA*sepF()*dg+6);else if(r.mode==='MIX')c+=3600/(SEP_AA*sepF()*dg+MIX_GAP+6)*1;}else{if(r.mode==='DEP')c+=3600/(SEP_DD*(dustNow?1.15:1)+4);else if(r.mode==='MIX')c+=3600/(SEP_AA*sepF()+MIX_GAP+6);}}return c;}
+function capNow(kind,ov){let c=0;for(const r of RW){const md=ov&&ov.r===r?ov.m:r.mode;if(r.locked||T<r.closedUntil||blockAt(r,T))continue;const dg=r.degraded?1.6:1;if(kind==='arr'){if(md==='ARR')c+=3600/(SEP_AA*sepF()*dg+6);else if(md==='MIX')c+=3600/(SEP_AA*sepF()*dg+MIX_GAP+6)*1;}else{if(md==='DEP')c+=3600/(SEP_DD*(dustNow?1.15:1)+4);else if(md==='MIX')c+=3600/(SEP_AA*sepF()+MIX_GAP+6);}}return c;}
+// forecast: what the holding stack and the departure queue do from now if the setup stays (or with one runway flipped)
+let WAVEP=null,WBINS=null;
+function forecast(A,D,cur,nb,B,t0,ov){const cA=capNow('arr',ov)*B/3600,cD=capNow('dep',ov)*B/3600;let b=flights.filter(f=>f.state==='holding').length,q=flights.filter(f=>f.state==='hp'||f.state==='taxi_out').length;const out=[];
+  for(let i=Math.max(0,cur);i<nb&&t0+i*B<LEN;i++){const rf=i===cur?clamp((t0+(i+1)*B-T)/B,0,1):1;b=Math.max(0,b+A[i]-cA*rf);q=Math.max(0,q+D[i]-cD*rf);out.push({i,b,q});}return out;}
 function drawWave(){
   const W=wcv.width/DPR,H=wcv.height/DPR;if(!W)return;wctx.setTransform(DPR,0,0,DPR,0,0);wctx.clearRect(0,0,W,H);
   const B=300,t0=Math.floor((T-1200)/B)*B,t1=t0+B*20;const nb=(t1-t0)/B;const bw=(W-40)/nb;const X=t=>36+(t-t0)/(t1-t0)*(W-40);const mid=H/2;
@@ -689,7 +719,7 @@ function drawWave(){
   for(const f of flights){
     if(f.landT!=null){const i=Math.floor((f.landT-t0)/B);if(i>=0&&i<nb)Aa[i]++;}
     else if(f.kind==='arr'&&!['diverted','divert'].includes(f.state)){const t=Math.max(f.eta,T);const i=Math.floor((t-t0)/B);if(i>=0&&i<nb)A[i]++;}
-    if(f.rollT!=null&&(f.state==='roll'||f.state==='gone')){const i=Math.floor((f.rollT-t0)/B);if(i>=0&&i<nb)Da[i]++;}
+    if(f.rollT!=null&&(f.state==='roll'||f.state==='climb'||f.state==='gone')){const i=Math.floor((f.rollT-t0)/B);if(i>=0&&i<nb)Da[i]++;}
     else if(f.kind==='dep'&&!['gone','cancelled','roll','lineup'].includes(f.state)){const t=Math.max(f.std,T);const i=Math.floor((t-t0)/B);if(i>=0&&i<nb)D[i]++;}
     else if(f.kind==='arr'&&f.turn&&f.landT==null){const i=Math.floor((Math.max(f.turn.std,T)-t0)/B);if(i>=0&&i<nb)D[i]++;}
   }
@@ -700,11 +730,22 @@ function drawWave(){
     const va=past?Aa[i]:A[i]+(i===cur?Aa[i]:0),vd=past?Da[i]:D[i]+(i===cur?Da[i]:0);const ha=Math.min(mid-2,va*sc),hd=Math.min(mid-2,vd*sc);
     wctx.fillStyle=past?'rgba(138,124,255,.35)':'#8a7cff';wctx.fillRect(x,mid-ha,w,ha);
     wctx.fillStyle=past?'rgba(47,211,198,.35)':'#2fd3c6';wctx.fillRect(x,mid,w,hd);
-    if(i===cur){wctx.fillStyle='#0b0b0b';wctx.textAlign='center';if(va*sc>mid-2){wctx.fillRect(x,2,w,13);wctx.fillStyle='#b8adff';wctx.fillText(va+' due now',x+w/2,9);}if(vd*sc>mid-2){wctx.fillStyle='#0b0b0b';wctx.fillRect(x,H-15,w,13);wctx.fillStyle='#7ff0e6';wctx.fillText(vd+' due now',x+w/2,H-8);}wctx.textAlign='left';}}
+    if(i===cur){wctx.fillStyle='#0b0b0b';wctx.textAlign='center';if(va*sc>mid-2){wctx.fillRect(x,2,w,13);wctx.fillStyle='#b8adff';wctx.fillText(va+' due now',x+w/2,9);}if(vd*sc>mid-2){wctx.fillStyle='#0b0b0b';wctx.fillRect(x,mid+3,w,13);wctx.fillStyle='#7ff0e6';wctx.fillText(vd+' due now',x+w/2,mid+10);}wctx.textAlign='left';}}
+  WBINS={t0,B,nb,X,W,A,D,Aa,Da};
   wctx.strokeStyle='rgba(255,255,255,.18)';wctx.beginPath();wctx.moveTo(36,mid);wctx.lineTo(W-4,mid);wctx.stroke();
   // capacity lines from now on
   const ca=capNow('arr')*B/3600*sc,cd=capNow('dep')*B/3600*sc;const xn=X(T);
   wctx.setLineDash([5,4]);wctx.lineWidth=2;wctx.strokeStyle='#b8adff';wctx.beginPath();wctx.moveTo(xn,mid-ca);wctx.lineTo(W-4,mid-ca);wctx.stroke();wctx.strokeStyle='#7ff0e6';wctx.beginPath();wctx.moveTo(xn,mid+cd);wctx.lineTo(W-4,mid+cd);wctx.stroke();wctx.setLineDash([]);wctx.lineWidth=1;
+  // forecast curves: the stack above the axis, the departure queue below; a ghost set when a mode button is hovered
+  const drawFc=(fc,dash,alpha,lbl)=>{const ys=v=>Math.min(mid-2,v*sc);wctx.setLineDash(dash);wctx.lineWidth=2.4;
+    wctx.strokeStyle=`rgba(255,122,107,${alpha})`;wctx.beginPath();wctx.moveTo(xn,mid-ys(fc.length?fc[0].b:0));for(const p of fc)wctx.lineTo(X(t0+(p.i+1)*B),mid-ys(p.b));wctx.stroke();
+    wctx.strokeStyle=`rgba(255,210,122,${alpha})`;wctx.beginPath();wctx.moveTo(xn,mid+ys(fc.length?fc[0].q:0));for(const p of fc)wctx.lineTo(X(t0+(p.i+1)*B),mid+ys(p.q));wctx.stroke();wctx.setLineDash([]);wctx.lineWidth=1;
+    const pb=fc.reduce((a,p)=>p.b>a.b?p:a,{b:0,i:cur}),pq=fc.reduce((a,p)=>p.q>a.q?p:a,{q:0,i:cur});
+    if(lbl){wctx.font='600 10.5px JetBrains Mono, monospace';if(pb.b>=4){const xx=Math.min(W-150,X(t0+(pb.i+1)*B)-60);wctx.fillStyle='rgba(8,11,13,.85)';wctx.fillRect(xx-3,Math.max(2,mid-ys(pb.b)-15),lbl==='now'?150:170,13);wctx.fillStyle=`rgba(255,140,125,${alpha})`;wctx.fillText(`${lbl==='now'?'':lbl+': '}stack ${Math.round(pb.b)} by ${clk(t0+(pb.i+1)*B)}`,xx,Math.max(8,mid-ys(pb.b)-8));}
+      if(pq.q>=6){const xx=Math.min(W-150,X(t0+(pq.i+1)*B)-60);wctx.fillStyle='rgba(8,11,13,.85)';wctx.fillRect(xx-3,Math.min(H-28,mid+ys(pq.q)+2),lbl==='now'?150:170,13);wctx.fillStyle=`rgba(255,215,140,${alpha})`;wctx.fillText(`${lbl==='now'?'':lbl+': '}queue ${Math.round(pq.q)} by ${clk(t0+(pq.i+1)*B)}`,xx,Math.min(H-21,mid+ys(pq.q)+9));}wctx.font='500 10px JetBrains Mono, monospace';}};
+  drawFc(forecast(A,D,cur,nb,B,t0,null),[],WAVEP?0.45:0.95,'now');
+  if(WAVEP){const ca2=capNow('arr',WAVEP)*B/3600*sc,cd2=capNow('dep',WAVEP)*B/3600*sc;wctx.setLineDash([2,3]);wctx.lineWidth=2;wctx.strokeStyle='rgba(255,255,255,.85)';wctx.beginPath();wctx.moveTo(xn,mid-ca2);wctx.lineTo(W-4,mid-ca2);wctx.moveTo(xn,mid+cd2);wctx.lineTo(W-4,mid+cd2);wctx.stroke();wctx.setLineDash([]);wctx.lineWidth=1;
+    drawFc(forecast(A,D,cur,nb,B,t0,WAVEP),[6,4],1,`if ${WAVEP.r.short} → ${WAVEP.m}`);}
   wctx.strokeStyle='#f4c430';wctx.lineWidth=1.5;wctx.beginPath();wctx.moveTo(xn,2);wctx.lineTo(xn,H-2);wctx.stroke();wctx.lineWidth=1;
   wctx.fillStyle='#6f7a80';for(let t=Math.ceil(t0/900)*900;t<t1;t+=900){const x=X(t);wctx.fillText(clk(t),x+2,H-6);}
   if(LV&&T0C+LEN){const xe=X(LEN);if(xe<W){wctx.fillStyle='rgba(255,255,255,.06)';wctx.fillRect(xe,0,W-xe,H);wctx.fillStyle='#6f7a80';wctx.fillText('END',xe+3,10);}}
@@ -713,11 +754,20 @@ function drawWave(){
   $('#wCounts').innerHTML=`<span style="color:${hold>8?'var(--stop)':hold>3?'var(--warn)':'var(--ink-2)'}">${hold} holding</span> · <span style="color:${q>14?'var(--stop)':q>6?'var(--warn)':'var(--ink-2)'}">${q} queued to depart</span> · ${taxi} taxiing out · capacity ${Math.round(capNow('arr'))}↓ ${Math.round(capNow('dep'))}↑ per hr`;
 }
 
+(function(){const tip=document.createElement('div');tip.id='wTip';tip.className='panel';tip.hidden=true;$('#wave').appendChild(tip);
+  wcv.addEventListener('mousemove',e=>{if(!WBINS||!LV)return;const r=wcv.getBoundingClientRect(),mx=e.clientX-r.left;const {t0,B,nb,X}=WBINS;let i=-1;for(let k=0;k<nb;k++){if(mx>=X(t0+k*B)&&mx<X(t0+(k+1)*B)){i=k;break;}}if(i<0){tip.hidden=true;return;}
+    const a0=t0+i*B,a1=a0+B,arr=[],dep=[];for(const f of flights){const ta=f.landT!=null?f.landT:f.kind==='arr'&&!['diverted','divert'].includes(f.state)?Math.max(f.eta,T):null;if(ta!=null&&ta>=a0&&ta<a1)arr.push(f);
+      const td=f.rollT!=null?f.rollT:f.kind==='dep'&&!['gone','cancelled'].includes(f.state)?Math.max(f.std,T):f.turn&&f.landT==null?Math.max(f.turn.std,T):null;if(td!=null&&td>=a0&&td<a1)dep.push(f);}
+    const line=(list,lbl,c)=>list.length?`<div><b style="color:${c}">${list.length} ${lbl}</b> ${list.slice(0,7).map(f=>`<span class="mono">${f.turn&&f.landT==null&&lbl==='departures'?f.al+' '+f.turn.num:fl(f)}</span>`).join(' · ')}${list.length>7?` +${list.length-7}`:''}</div>`:'';
+    tip.innerHTML=`<div class="mono" style="color:var(--ink-3)">${clk(a0)}–${clk(a1)}</div>${line(arr,'arrivals','var(--arr)')}${line(dep,'departures','var(--dep)')}`||'';tip.hidden=!arr.length&&!dep.length;tip.style.left=Math.min(r.width-330,Math.max(0,mx-150))+'px';});
+  wcv.addEventListener('mouseleave',()=>{tip.hidden=true;});})();
+
 /* ============ runway desk ============ */
 function segHtml(r){return `<div class="seg" role="group" aria-label="Mode for runway ${r.short}">${['ARR','DEP','MIX','OFF'].map(m=>`<button data-m="${m}" class="${r.mode===m?'on':''}" ${r.locked?'disabled':''}>${m}</button>`).join('')}</div>`;}
+function previewOn(b,r){b.onmouseenter=()=>{if(r.locked||r.mode===b.dataset.m)return;WAVEP={r,m:b.dataset.m};try{drawWave();}catch(e){}};b.onmouseleave=()=>{WAVEP=null;try{drawWave();}catch(e){}};}
 function renderRw(){
   $('#rwRows').innerHTML=RW.map(r=>`<div class="rw ${r.locked?'locked':''} ${r===selRw?'sel':''}" data-r="${r.id}"><div class="nm">${r.short}<small>${(r.len/1000).toFixed(1)} km${r===LONGEST?' · long':''}</small></div>${segHtml(r)}<div class="st"></div></div>`).join('');
-  $('#rwRows').querySelectorAll('.rw').forEach(row=>{const r=RW.find(x=>x.id===row.dataset.r);row.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{setMode(r,b.dataset.m);explain('modes');});});
+  $('#rwRows').querySelectorAll('.rw').forEach(row=>{const r=RW.find(x=>x.id===row.dataset.r);row.querySelectorAll('.seg button').forEach(b=>{b.onclick=()=>{WAVEP=null;setMode(r,b.dataset.m);explain('modes');};previewOn(b,r);});});
   rwStatus();
 }
 function rwStatus(){
@@ -770,17 +820,19 @@ const onceSet=new Set();function once(k,fn){if(onceSet.has(k))return;onceSet.add
 
 /* ============ input ============ */
 let drag=null;
-cv.addEventListener('pointerdown',e=>{camT.x=cam.x;camT.y=cam.y;camT.s=cam.s;camT.anchor=null;drag={x:e.clientX,y:e.clientY,cx:cam.x,cy:cam.y,moved:false};cv.setPointerCapture(e.pointerId);});
-cv.addEventListener('pointermove',e=>{const r=cv.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;if(drag){const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>4){drag.moved=true;cv.classList.add('drag');}if(drag.moved){camT.x=drag.cx-dx/camT.s;camT.y=drag.cy-dy/camT.s;clampCam(camT);cam.x=camT.x;cam.y=camT.y;}}else{hover=pick(mx,my);cv.classList.toggle('point',!!(hover||pickInc(mx,my)||pickRw(mx,my)));}});
+cv.addEventListener('contextmenu',e=>{if(V3.on)e.preventDefault();});
+cv.addEventListener('dblclick',e=>{if(!V3.on)return;const r=cv.getBoundingClientRect();const f=pick(e.clientX-r.left,e.clientY-r.top);if(f){closePop();setCam('follow',f);}});
+cv.addEventListener('pointerdown',e=>{if(V3.on){drag={x:e.clientX,y:e.clientY,lx:e.clientX,ly:e.clientY,moved:false,orbit:e.button===2||e.shiftKey||e.altKey};cv.setPointerCapture(e.pointerId);return;}camT.x=cam.x;camT.y=cam.y;camT.s=cam.s;camT.anchor=null;drag={x:e.clientX,y:e.clientY,cx:cam.x,cy:cam.y,moved:false};cv.setPointerCapture(e.pointerId);});
+cv.addEventListener('pointermove',e=>{const r=cv.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;if(drag&&V3.on){if(Math.abs(e.clientX-drag.x)+Math.abs(e.clientY-drag.y)>4){drag.moved=true;cv.classList.add('drag');}if(drag.moved)cam3Drag(e.clientX-drag.lx,e.clientY-drag.ly,drag.orbit);drag.lx=e.clientX;drag.ly=e.clientY;}else if(drag){const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>4){drag.moved=true;cv.classList.add('drag');}if(drag.moved){camT.x=drag.cx-dx/camT.s;camT.y=drag.cy-dy/camT.s;clampCam(camT);cam.x=camT.x;cam.y=camT.y;}}else{hover=pick(mx,my);cv.classList.toggle('point',!!(hover||pickInc(mx,my)||pickRw(mx,my)));}});
 cv.addEventListener('pointerup',e=>{const r=cv.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;if(drag&&!drag.moved&&running){const I=pickInc(mx,my);if(I)openIncPop(I);else{const f=pick(mx,my);if(f)openFlightPop(f,mx,my);else{const rw=pickRw(mx,my);if(rw)openRwPop(rw,mx,my);else{closePop();selected=null;}}}}drag=null;cv.classList.remove('drag');});
-cv.addEventListener('wheel',e=>{e.preventDefault();const r=cv.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;const line=e.deltaMode===1;const mw=line||(e.deltaX===0&&Math.abs(e.deltaY)>=40&&Math.abs(e.deltaY)%1===0);if(e.ctrlKey||e.metaKey)zoomAt(mx,my,Math.exp(-e.deltaY*0.012));else if(mw)zoomAt(mx,my,Math.exp(-(line?e.deltaY*33:e.deltaY)*0.0016));else{camT.anchor=null;camT.x+=e.deltaX/camT.s;camT.y+=e.deltaY/camT.s;clampCam(camT);}},{passive:false});
-$('#zIn').onclick=()=>zoomCenter(1.6);$('#zOut').onclick=()=>zoomCenter(1/1.6);$('#zFit').onclick=()=>fitCam();
+cv.addEventListener('wheel',e=>{e.preventDefault();const r=cv.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;const line=e.deltaMode===1;const mw=line||(e.deltaX===0&&Math.abs(e.deltaY)>=40&&Math.abs(e.deltaY)%1===0);if(V3.on){if(e.ctrlKey||e.metaKey)cam3Zoom(Math.exp(e.deltaY*0.012),mx,my);else if(mw)cam3Zoom(Math.exp((line?e.deltaY*33:e.deltaY)*0.0016),mx,my);else cam3Drag(-e.deltaX,-e.deltaY,false);return;}if(e.ctrlKey||e.metaKey)zoomAt(mx,my,Math.exp(-e.deltaY*0.012));else if(mw)zoomAt(mx,my,Math.exp(-(line?e.deltaY*33:e.deltaY)*0.0016));else{camT.anchor=null;camT.x+=e.deltaX/camT.s;camT.y+=e.deltaY/camT.s;clampCam(camT);}},{passive:false});
+$('#zIn').onclick=()=>V3.on?cam3Zoom(1/1.6,VW/2,VH/2):zoomCenter(1.6);$('#zOut').onclick=()=>V3.on?cam3Zoom(1.6):zoomCenter(1/1.6);$('#zFit').onclick=()=>V3.on?cam3Fit():fitCam();
 function pick(mx,my){let best=null,bd=1e9;for(const f of flights){if(f.sx==null||['sched','diverted','gone','cancelled','towed'].includes(f.state))continue;const d=Math.hypot(f.sx-mx,f.sy-my);const lim=Math.max(9,f.sr||0);if(d<lim&&d<bd){bd=d;best=f;}}return best;}
 function pickInc(mx,my){for(const I of incidents)if(I.sx!=null&&Math.hypot(I.sx-mx,I.sy-my)<20)return I;return null;}
-function pickRw(mx,my){for(const s of rwSigns)if(mx>=s.x&&mx<=s.x+s.w&&my>=s.y-3&&my<=s.y+s.h+3)return s.r;const wx=mx/cam.s+cam.x,wy=my/cam.s+cam.y;for(const r of RW){if(wx>=r.x0&&wx<=r.x1&&Math.abs(wy-r.y)<Math.max(r.width/2+10,10/cam.s))return r;}return null;}
+function pickRw(mx,my){for(const s of rwSigns)if(mx>=s.x&&mx<=s.x+s.w&&my>=s.y-3&&my<=s.y+s.h+3)return s.r;let wx=mx/cam.s+cam.x,wy=my/cam.s+cam.y,tol=10/cam.s;if(V3.on){const g=groundAt(mx,my);if(!g)return null;wx=g.x;wy=g.y;tol=45;}for(const r of RW){if(wx>=r.x0&&wx<=r.x1&&Math.abs(wy-r.y)<Math.max(r.width/2+10,tol))return r;}return null;}
 document.querySelectorAll('.speeds button').forEach(b=>b.onclick=()=>setSpeed(+b.dataset.s));
 function setSpeed(s){if(!running)return;if(s===0)paused=!paused;else{speed=s;paused=false;}document.querySelectorAll('.speeds button').forEach(b=>{const v=+b.dataset.s;b.classList.toggle('on',v===0?paused:(!paused&&v===speed));});$('#spP').textContent=paused?'Resume':'Pause';}
-window.addEventListener('keydown',e=>{if(e.key===' '&&!(e.target.closest&&e.target.closest('button'))){e.preventDefault();setSpeed(0);}if(e.key==='1')setSpeed(1);if(e.key==='2')setSpeed(2);if(e.key==='3')setSpeed(4);if(e.key==='Escape')closePop();if(e.key==='+'||e.key==='=')zoomCenter(1.6);if(e.key==='-')zoomCenter(1/1.6);if(e.key==='f')fitCam();});
+window.addEventListener('keydown',e=>{if(e.key===' '&&!(e.target.closest&&e.target.closest('button'))){e.preventDefault();setSpeed(0);}if(e.key==='1')setSpeed(1);if(e.key==='2')setSpeed(2);if(e.key==='3')setSpeed(4);if(e.key==='Escape'){closePop();if(V3.on&&V3.mode!=='map')setCam('map');}if(e.key==='+'||e.key==='=')zoomCenter(1.6);if(e.key==='-')zoomCenter(1/1.6);if(e.key==='f')V3.on?cam3Fit():fitCam();if(e.key==='m'||e.key==='M')setView(V3.on?'2d':'3d');if(e.key==='c'||e.key==='C')cycleCam();if(V3.on&&(e.key==='q'||e.key==='Q'))C3.t.yaw+=0.25;if(V3.on&&(e.key==='e'||e.key==='E'))C3.t.yaw-=0.25;});
 
 /* ============ levels: start and finish ============ */
 function stars(L,s){let n=0;const otp=s.dep+s.arr?(s.depOnTime+s.arrOnTime)/(s.dep+s.arr)*100:0,ct=s.cnxMade+s.cnxMiss,cx=ct?s.cnxMade/ct*100:100;if(s.safety>=70)n=1;if(n>=1&&s.moves>=L.target&&otp>=87&&cx>=88)n=2;if(n>=2&&otp>=90&&cx>=92&&s.safety>=90)n=3;return n;}
@@ -796,6 +848,7 @@ function startLevel(n){
   $('#lvCode').textContent=`LEVEL ${LV.n} · ${LV.from}`;$('#lvName').textContent=LV.name;
   renderRw();renderInc();$('#coachList').innerHTML='';coachItems.length=0;seen.clear();
   $('#overlay').hidden=true;running=true;paused=false;ended=false;speed=1;setSpeed(1);resize();
+  if(V3.on)cam3Intro();
   for(let i=0;i<30;i++)tick(1);
   if(LV.last){coach(LV.last.t,LV.last.d);radio('AOCC',LV.last.t+'.');setTimeout(()=>{if(running)explain('hub');},8000);}else explain('hub');
   setTimeout(()=>{if(running&&LV.n===1)explain('bank');},16000);
@@ -853,7 +906,12 @@ function menu(tab){
 }
 window.HUB={get T(){return T;},get S(){return S;},get LV(){return LV;},flights:()=>flights,RW,incidents:()=>incidents,setMode:(id,m)=>{const r=RW.find(x=>x.id===id||x.short===id);if(r)setMode(r,m);},startLevel,capNow,resolveAll:()=>{for(const I of incidents.slice()){const a=I.acts.find(a=>!(a.dis&&a.dis()));if(a)a.fn();}},speed:s=>setSpeed(s),ops:()=>ops,cfg:CFG,
   // test hooks: run the sim forward synchronously, and point the camera
-  ff:secs=>{for(let i=0;i<secs&&!ended;i++)tick(1);puffs.length=0;hud();drawWave();},look:(x,y,z)=>{camT.s=cam.fit*z;camT.anchor=null;camT.x=x-((cam.region.L+cam.region.R)/2)/camT.s;camT.y=y-((cam.region.Tp+cam.region.B)/2)/camT.s;clampCam(camT);Object.assign(cam,{x:camT.x,y:camT.y,s:camT.s});},spawn:(t,x)=>spawnInc(t,x),opsSpawn:(k,x)=>opsSpawn(k,x),pause:()=>{paused=true;}};
+  ff:secs=>{for(let i=0;i<secs&&!ended;i++)tick(1);puffs.length=0;hud();drawWave();},look:(x,y,z)=>{camT.s=cam.fit*z;camT.anchor=null;camT.x=x-((cam.region.L+cam.region.R)/2)/camT.s;camT.y=y-((cam.region.Tp+cam.region.B)/2)/camT.s;clampCam(camT);Object.assign(cam,{x:camT.x,y:camT.y,s:camT.s});},spawn:(t,x)=>spawnInc(t,x),opsSpawn:(k,x)=>opsSpawn(k,x),pause:()=>{paused=true;},
+  view:v=>setView(v),ready3d:()=>new Promise(r=>{if(V3.ready||V3.failed)r(V3.ready);else{V3.waiters.push(r);init3D();}}),
+  cam3d:o=>{if(o.mode&&o.mode!=='map'){setCam(o.mode,o.fid?flights.find(f=>f.id===o.fid):null);return;}setCam('map');Object.assign(C3.t,o);Object.assign(C3,C3.t);},
+  stats3d:()=>V3.ready?{cpuMs:+(V3.cpu||0).toFixed(2),fps:V3.fps,calls:Z.renderer.info.render.calls,tris:Z.renderer.info.render.triangles,geoms:Z.renderer.info.memory.geometries,tex:Z.renderer.info.memory.textures,mods:Object.keys(Z.mods),mode:V3.mode}:null,Z:()=>Z};
+
+/*@@3D@@*/
 
 /* ============ boot ============ */
 buildTerrain();resize();
@@ -863,11 +921,12 @@ function frame(ms){
   if(cv.clientWidth&&(cv.clientWidth!==VW||cv.clientHeight!==VH))resize();
   const dtR=Math.min(0.1,(ms-last)/1000);last=ms;camEase(dtR);
   if(running&&!paused&&!ended){let d=dtR*BASE*speed;try{while(d>0){const st=Math.min(1,d);tick(st);d-=st;}}catch(err){console.error(err);}incTick(dtR);if(toastTimer>0){toastTimer-=dtR;if(toastTimer<=0&&!$('#toast').matches(':hover'))$('#toast').hidden=true;}}
-  try{draw(ms/1000);}catch(err){console.error(err);}
+  if(V3.on){try{draw3D(ms/1000,dtR);}catch(err){console.error(err);}}else{try{draw(ms/1000);}catch(err){console.error(err);}}
   hudT+=dtR;if(hudT>0.25&&LV){hudT=0;try{hud();}catch(err){console.error(err);}try{drawWave();}catch(err){console.error(err);}}
 }
 // idle preview: show level 4's layout behind the menu
 LV=LEVELS[3];RW.forEach(r=>{r.locked=false;r.mode=r.role==='arr'?'ARR':r.role==='dep'?'DEP':'MIX';});resetState();
 menu('levels');
+if(V3.want)init3D();
 requestAnimationFrame(frame);
 })();

@@ -52,6 +52,13 @@ Shipped in this pass:
 - [ ] Phase 1+ (3D) per prompt.md.
 - Sensitivity note: AI171 (Air India 787, Ahmedabad, 12 Jun 2025) - never script an Ahmedabad departure accident or use an AI 787 for the AMD last-flight moment.
 
+### 3D (started 06:45, user: "make it 3d, improve animations heavily")
+- Core `hub3d.js` (inside hub.js's closure via build.py marker `/*@@3D@@*/`): Three.js r160 via dynamic import from jsDelivr (2D fallback if it fails), sky dome, real solar position for Nagpur per level clock, hemi + shadowed sun, fog, cameras (map orbit / tower cab / follow / approach; C cycles, M map, Q/E rotate, right-drag orbit), picking via projection (f.sx/f.sy), overlay (signs, incidents, tags, MAYDAY, dust), approach ribbons + stack racetracks, fly-in at level start, menu orbit, adaptive quality, HUB.view/ready3d/cam3d/stats3d.
+- Modules by 3 parallel agents (one file each): `3d/field.js`, `3d/terminal.js`, `3d/aircraft.js`; contract in `3d/CONTRACT.md`. build.py skips a module that fails `node --check`.
+- Sim animation upgrades: curved approach/go-around/exit/lineup paths (`smoothPath`), climb-out state 'climb' with a banked turn to the destination (movement counted at lift-off), break-off (arrivals >40 s out sidestep when their runway leaves ARR/MIX). Taxi smoothing tried and reverted (TAXI_R=0): cut corners trip blocked() and slowed departures (expert L4 dep OTP 87->73).
+- Runs after sim changes (sim4): expert 3/3/3/3, handler 1/1/1/1, lazy 1/1/1/1, 0 errors. run.py forces the 2D view.
+- shots.py: `c3=tx,ty,dist,pitch,yaw` or `c3=tower|follow|approach`, GPU (Metal) rendering.
+
 ### Work queue
 - [x] Incident overhaul (Phase 0 item 7 + user feedback)
 - [x] run.py: handler bot, per-run outdir, incident counting

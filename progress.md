@@ -59,6 +59,12 @@ Shipped in this pass:
 - Runs after sim changes (sim4): expert 3/3/3/3, handler 1/1/1/1, lazy 1/1/1/1, 0 errors. run.py forces the 2D view.
 - shots.py: `c3=tx,ty,dist,pitch,yaw` or `c3=tower|follow|approach`, GPU (Metal) rendering.
 
+### 3D round 2 (user: "no one will call this 3D in today's day and age"; andhi looks very bad)
+- User calls: daytime only, green landscape, type-accurate aircraft + liveries, shadows. Pushed so far: 4e1ea0e (3D), 8a488fb (black-at-sunset fix, daylight), 638d8fe (A380 decks).
+- Round 2 contract: `3d/CONTRACT2.md` (Z.atmo written by weather.js and read by the core; IBL via scene.environment; bloom > 1; budgets 120 calls / 1.2M tris).
+- 5 specialists in parallel: rendering engineer (hub3d.js + importmap: Sky, PMREM, EffectComposer AO/bloom/grade/AA, FogExp2 + height fog, shadow stability, quality tiers G), VFX (new 3d/weather.js: haboob wall, front passage, in-storm dust, lightning, rain tail, clouds + cloud shadows, wind), environment (field.js PBR, trees, water, signs, windsocks), architecture (terminal.js roof/glass/interior/columns/people), vehicles (aircraft.js PBR, fans, gear, liveries, crab/buffet).
+- Before shots: /tmp/zmh/before/. Then an art-director QA pass, verify Chromium + WebKit, push.
+
 ### Work queue
 - [x] Incident overhaul (Phase 0 item 7 + user feedback)
 - [x] run.py: handler bot, per-run outdir, incident counting

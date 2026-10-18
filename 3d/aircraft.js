@@ -233,9 +233,9 @@ Z3MOD.aircraft = function (Z) {
 
   /* ---------------- aircraft types (true dimensions, metres; nose +X, wheels at y = 0) ---------------- */
   const NOSE = { airbus: { qt: 0.5, qb: 0.5, qw: 0.5, drop: 0.36 }, boeing: { qt: 0.78, qb: 0.42, qw: 0.62, drop: 0.5 }, b787: { qt: 0.68, qb: 0.48, qw: 0.56, drop: 0.42 },
-    a380: { qt: 0.3, qb: 0.6, qw: 0.5, drop: 0.5 }, il96: { qt: 0.42, qb: 0.4, qw: 0.42, drop: 0.3 }, an124: { qt: 0.22, qb: 0.62, qw: 0.42, drop: 0.38 }, atr: { qt: 0.6, qb: 0.45, qw: 0.55, drop: 0.3 }, biz: { qt: 0.58, qb: 0.52, qw: 0.6, drop: 0.4 } };
+    a380: { qt: 0.3, qb: 0.6, qw: 0.5, drop: 0.5 }, il96: { qt: 0.42, qb: 0.4, qw: 0.42, drop: 0.3 }, an124: { qt: 0.22, qb: 0.62, qw: 0.42, drop: 0.38 }, c17: { qt: 0.36, qb: 0.5, qw: 0.46, drop: 0.3 }, b747: { qt: 0.7, qb: 0.46, qw: 0.6, drop: 0.48 }, atr: { qt: 0.6, qb: 0.45, qw: 0.55, drop: 0.3 }, biz: { qt: 0.58, qb: 0.52, qw: 0.6, drop: 0.4 } };
   const TAIL = { round: { eh: 0.15, ew: 0.15, drop: 0.22 }, max: { eh: 0.06, ew: 0.06, drop: 0.28 }, blade: { eh: 0.24, ew: 0.035, drop: 0.2 }, b787: { eh: 0.11, ew: 0.09, drop: 0.24 },
-    a380: { eh: 0.13, ew: 0.11, drop: 0.32 }, atr: { eh: 0.16, ew: 0.16, drop: 0.12 }, an124: { eh: 0.13, ew: 0.17, drop: 0.07 }, biz: { eh: 0.1, ew: 0.09, drop: 0.3 } };
+    a380: { eh: 0.13, ew: 0.11, drop: 0.32 }, atr: { eh: 0.16, ew: 0.16, drop: 0.12 }, an124: { eh: 0.13, ew: 0.17, drop: 0.07 }, c17: { eh: 0.16, ew: 0.24, drop: 0.03 }, biz: { eh: 0.1, ew: 0.09, drop: 0.3 } };
   const base = {
     nb: { W: 1.98, H: 2.03, yb: 1.6, tn: .14, tt: .7, deck: 1, nose: 'airbus', tail: 'round', win: [[59, 64]],
       wing: { x: 3.6, y: 0.5, cr: 7.0, ct: 1.55, sw: 26, dh: 5.5, t: 0.9, kink: .36, flex: 0, wl: 'sharklet', wlh: 2.4 },
@@ -302,6 +302,22 @@ Z3MOD.aircraft = function (Z) {
       eng: [{ aft: 1, x: -3.9, y: 3.25, z: 2.25, r: 0.8, len: 5.2 }],
       hs: { half: 5.1, cr: 2.4, ct: 1.15, sw: 30, dh: 0, te: 0.6, ttail: 1 }, fin: { cr: 4.6, ct: 2.4, h: 4.0, sw: 40, te: 1.5 },
       gear: { nd: 2.9, mains: [{ dx: 3.9, z: 2.1, b: 1 }], r: 0.43, nr: 0.29 } },
+    // Boeing 747-8: the upper-deck hump (hump: [t start, t full, t fade, t end, height]) running back to just ahead of the wing,
+    // cockpit up on the hump's forehead, four GEnx pods with chevrons, raked tips (drawn span 68.4 m), a tall swept fin
+    B748: merge(base.wb, { L: 76.3, S: 61.2, W: 3.25, H: 3.3, yb: 2.0, tn: .1, tt: .72, nose: 'b747', tail: 'round', N: 32, hump: [0.006, 0.125, 0.305, 0.378, 2.05],
+      cockT: [0.056, 0.081], cockW: 50, win: [[47, 51, 0.1, 0.3], [60, 64]], ttl: [24, 50], doors: [[0.07, 1], [0.19, 1], [0.37, 1], [0.6, 1], [0.8, 1]],
+      wing: { x: 8.6, y: 0.7, cr: 15.2, ct: 3.6, sw: 37.5, dh: 7, t: 1.9, kink: .3, wl: 'raked', flex: 0.015 },
+      eng: [{ z: 11.9, r: 1.5, len: 6.4, fwd: 4.2, drop: 1.85, chev: 0.08 }, { z: 21.2, r: 1.5, len: 6.4, fwd: 3.4, drop: 1.65, chev: 0.08 }],
+      hs: { half: 11.1, cr: 9.0, ct: 2.7, sw: 37, dh: 7, te: 1.2, y: 0.15 }, fin: { cr: 13.2, ct: 4.4, h: 11.0, sw: 45, te: 0.9 },
+      gear: { nd: 7.6, mains: [{ dx: 12.4, z: 5.6, b: 2 }, { dx: 15.0, z: 1.9, b: 2 }], r: 0.66, nr: 0.6 } }),
+    // Boeing C-17 Globemaster III: high anhedral wing on a dorsal fairing, winglets, four PW2040s on deep pylons, T-tail,
+    // the rear fuselage swept up into a cargo ramp, main gear in long sponsons, a big glazed cockpit; grey all over
+    C17: { L: 53, S: 51.75, W: 3.43, H: 3.35, yb: 0.95, tn: .12, tt: .6, deck: 1, high: 1, nose: 'c17', tail: 'c17', win: [[62, 67]], winT: [0.125, 0.2], cockW: 60, cockT: [0.045, 0.085],
+      doors: [[0.15, 0]], ttl: [28, 50], reg: [36, 48], spH: 1.4, ramp: 1, topF: 1, noCanoe: 1,
+      wing: { x: 5.6, y: 0, cr: 10.6, ct: 3.2, sw: 25, dh: -3.5, t: 1.45, kink: 0, flex: 0, wl: 'classic', wlh: 2.9 },
+      eng: [{ z: 7.6, r: 1.12, len: 5.6, fwd: 2.6, drop: 1.95 }, { z: 14.2, r: 1.12, len: 5.6, fwd: 2.2, drop: 1.8 }],
+      hs: { half: 9.9, cr: 5.2, ct: 2.5, sw: 30, dh: 0, te: 0.8, ttail: 1 }, fin: { cr: 9.6, ct: 5.6, h: 8.9, sw: 36, te: 0.3 },
+      gear: { nd: 6.2, spon: 1, mains: [{ dx: 8.0, z: 2.75, b: 1 }, { dx: 10.2, z: 2.75, b: 1 }], r: 0.64, nr: 0.5 } },
   };
   const TKEYS = Object.keys(TDEF);
 
@@ -315,7 +331,22 @@ Z3MOD.aircraft = function (Z) {
     return [x, yc, W, H];
   }
   const tOfX = (P, x) => clamp((P.L / 2 - x) / P.L, 0, 1);
+  // the 747's upper deck: a flat-topped hump added over the crown, fading out down the sides
+  const humpAt = (P, t) => { const H = P.hump; if (t <= H[0] || t >= H[3]) return 0;
+    if (t < H[1]) { const u = (t - H[0]) / (H[1] - H[0]); return H[4] * Math.pow(Math.sin(u * Math.PI / 2), 0.75); }
+    return t > H[2] ? H[4] * (1 - sstep((t - H[2]) / (H[3] - H[2]))) : H[4]; };
+  const humpG = th => sstep(clamp((Math.cos(th) - 0.3) / 0.52, 0, 1));
+  const posH = (P, t, th) => { const r = ringAt(P, t); return [r[0], r[1] + r[3] * Math.cos(th) + humpAt(P, t) * humpG(th), r[2] * Math.sin(th)]; };
+  function surfH(P, t, th, off) {
+    const p = posH(P, t, th), e = 0.0012, a = posH(P, Math.max(0, t - e), th), b = posH(P, Math.min(1, t + e), th), c = posH(P, t, th - 0.01), d = posH(P, t, th + 0.01);
+    const tx = b[0] - a[0], ty = b[1] - a[1], tz = b[2] - a[2], ux = d[0] - c[0], uy = d[1] - c[1], uz = d[2] - c[2];
+    let nx = ty * uz - tz * uy, ny = tz * ux - tx * uz, nz = tx * uy - ty * ux;
+    if (ny * Math.cos(th) + nz * Math.sin(th) + (t < 0.01 ? nx : 0) < 0) { nx = -nx; ny = -ny; nz = -nz; }
+    const l = Math.hypot(nx, ny, nz) || 1; nx /= l; ny /= l; nz /= l;
+    return { p: [p[0] + nx * off, p[1] + ny * off, p[2] + nz * off], n: [nx, ny, nz] };
+  }
   function surf(P, t, th, off) {
+    if (P.hump) return surfH(P, t, th, off);
     const [x, yc, w, h] = ringAt(P, t), e = 0.004; const ra = ringAt(P, Math.max(0, t - e)), rb = ringAt(P, Math.min(1, t + e));
     const R = (w + h) / 2, dR = ((ra[2] + ra[3]) - (rb[2] + rb[3])) / 2 / Math.max(1e-6, ra[0] - rb[0]);
     let nx = -dR, ny = Math.cos(th) * R / h, nz = Math.sin(th) * R / w; const l = Math.hypot(nx, ny, nz); nx /= l; ny /= l; nz /= l;
@@ -342,7 +373,7 @@ Z3MOD.aircraft = function (Z) {
   }
 
   function buildType(P, hi, liv, extra) {
-    const body = Geo(), prop = Geo(), N = hi ? (P.W > 2.5 ? 26 : 22) : 8;
+    const body = Geo(), prop = Geo(), N = hi ? (P.N || (P.W > 2.5 ? 26 : 22)) : (P.hump ? 10 : 8);
     const WG = wingGeom(P); P.WG = WG; UVP = P;
     P.nx = P.L / 2 - P.gear.nd; P.mains = P.gear.mains.map(m => ({ x: P.wing.x - m.dx, z: m.z, b: m.b }));
     P.gy = P.yb + 0.3 * P.H; P.pv = Math.min(...P.mains.map(m => m.x));
@@ -351,6 +382,9 @@ Z3MOD.aircraft = function (Z) {
     for (const s of hi ? [0, .03, .07, .12, .18, .26, .35, .45, .56, .68, .8, .9, 1] : [0, .12, .4, 1]) ts.push(s * P.tn);
     if (hi) for (const s of [0.25, 0.5, 0.75]) ts.push(P.tn + (P.tt - P.tn) * s);
     for (const s of hi ? [0, .12, .25, .38, .5, .62, .74, .85, .93, .98, 1] : [0, .4, .75, 1]) ts.push(P.tt + s * (1 - P.tt));
+    if (P.hump) { const H = P.hump; for (const s of hi ? [0.15, 0.3, 0.45, 0.6, 0.75, 0.9] : [0.4]) ts.push(H[0] + (H[1] - H[0]) * s);
+      for (const s of hi ? [0, 0.25, 0.5, 0.75, 1] : [0, 0.5, 1]) ts.push(H[2] + (H[3] - H[2]) * s); ts.push(H[1]);
+      ts.sort((a, b) => a - b); for (let i = ts.length - 1; i > 0; i--) if (ts[i] - ts[i - 1] < 1e-4) ts.splice(i, 1); }
     const ring = (t, j) => surf(P, t, j / N * 2 * Math.PI, 0);
     for (let i = 0; i < ts.length - 1; i++) for (let j = 0; j < N; j++) {
       const A = ring(ts[i], j), B = ring(ts[i + 1], j), Cc = ring(ts[i + 1], j + 1), D = ring(ts[i], j + 1);
@@ -367,6 +401,9 @@ Z3MOD.aircraft = function (Z) {
     else { const x0 = P.wing.x + (P.W > 2.5 ? 2.2 : 1.4), x1 = P.wing.x - P.wing.cr - (P.W > 2.5 ? 2.5 : 1.4), Wf = P.W * 1.06, rs = [];
       for (const s of hi ? [0, 0.06, 0.16, 0.32, 0.5, 0.68, 0.84, 0.94, 1] : [0, 0.25, 0.75, 1]) rs.push([x0 + (x1 - x0) * s, Wf * Math.max(0.12, Math.pow(Math.sin(Math.PI * (0.06 + 0.88 * s)), 0.42))]);
       ellX(body, rs, P.yb + 0.5 * P.H, 0.56 * P.H / Wf, 0.95, EN, COL.white, keel); }
+    if (P.topF) { const x0 = P.wing.x + 2.4, x1 = P.wing.x - P.wing.cr - 2.6, rs = [];   // dorsal wing-root fairing over a high wing
+      for (const s of hi ? [0, 0.08, 0.2, 0.4, 0.6, 0.8, 0.92, 1] : [0, 0.3, 0.7, 1]) rs.push([x0 + (x1 - x0) * s, P.W * 0.78 * Math.max(0.1, Math.pow(Math.sin(Math.PI * (0.04 + 0.92 * s)), 0.5))]);
+      ellX(body, rs, P.yb + 2 * P.H - 0.55, 0.62, 0.3, EN, COL.white, fusUV(0.4, 0.2)); }
     // wings: airfoil sections (hi) with polished leading edges; flat slabs far away
     const { zr, half, xLE, yAt, zk, chord } = WG, wt = P.wing.t, wl = P.wing.wl;
     const sta = [zr]; if (P.wing.kink) sta.push(zk); if (hi) for (const u of [0.3, 0.55, 0.78]) sta.push(zk + (half - zk) * u); sta.push(half);
@@ -455,15 +492,15 @@ Z3MOD.aircraft = function (Z) {
       else slab(body, [[hsLE, hsY, 0], [hsTE, hsY, 0], [tLE - hs.ct, ty, sgn * hs.half], [tLE, ty, sgn * hs.half]], [hs.cr * 0.09, 0.08, 0.05, hs.ct * 0.08], 1, COL.stab, COL.wingB); }
     if (hi) {
       // cockpit glass (dark, glossy: it mirrors the sky), the A350's black mask, the 787's four panes
-      const c0 = P.tn * (P.mask ? 0.3 : P.cockW ? 0.32 : 0.36), c1 = P.tn * (P.mask ? 0.6 : P.cockW ? 0.58 : 0.54), ca = P.mask ? 78 : P.cockW || (P.nose === 'boeing' ? 58 : 62);
+      const c0 = P.cockT ? P.cockT[0] : P.tn * (P.mask ? 0.3 : P.cockW ? 0.32 : 0.36), c1 = P.cockT ? P.cockT[1] : P.tn * (P.mask ? 0.6 : P.cockW ? 0.58 : 0.54), ca = P.mask ? 78 : P.cockW || (P.nose === 'boeing' ? 58 : 62);
       body.M = MAT.glass;
       if (P.cock4) for (const [a, b] of [[-56, -31], [-27, -3], [3, 27], [31, 56]]) patch(body, P, c0, c1, 3, (t, u) => (a + (b - a) * u) * D2R, 2, 0.06, COL.white);
       else patch(body, P, c0, c1, P.mask ? 4 : 3, (t, u) => (-ca + 2 * ca * u) * D2R, P.mask ? 10 : 6, 0.06, COL.white);
       body.M = MAT.paint;
       // cabin window rows (each row is a strip textured with the airline's window row)
       const w0 = P.winT ? P.winT[0] : P.tn * 1.08, w1 = P.winT ? P.winT[1] : P.tt + (1 - P.tt) * 0.2;
-      for (const sgn of [-1, 1]) for (const [a, b] of P.win)
-        patch(body, P, w0, w1, 6, (t, u) => sgn * (a - 1.5 + (b - a + 3) * u) * D2R, 1, 0.04, COL.white, (t, u) => [t * UF, WV0 + 0.004 + (WV1 - WV0 - 0.008) * u]);
+      for (const sgn of [-1, 1]) for (const [a, b, ra, rb] of P.win)
+        patch(body, P, ra || w0, rb || w1, 6, (t, u) => sgn * (a - 1.5 + (b - a + 3) * u) * D2R, 1, 0.04, COL.white, (t, u) => [t * UF, WV0 + 0.004 + (WV1 - WV0 - 0.008) * u]);
       // titles and registration: a strip per side; U runs backwards on the starboard side so they read nose-first on both sides
       const tl = P.ttl || [19, 55], rg = P.reg || [44, 55];
       for (const sgn of [-1, 1]) { patch(body, P, TA, TB, 8, (t, u) => sgn * (tl[0] + (tl[1] - tl[0]) * u) * D2R, 5, 0.04, COL.white,
@@ -480,6 +517,9 @@ Z3MOD.aircraft = function (Z) {
       if (P.visor) for (const sgn of [-1, 1]) { const tv = P.tn * 0.97, tc = P.tn * 0.62;
         patch(body, P, tv - 0.05 / P.L, tv + 0.05 / P.L, 1, (t, u) => sgn * (66 + 114 * u) * D2R, 4, 0.035, COL.white, () => PU.grey);
         patch(body, P, tc, tv, 3, (t, u) => sgn * (65.4 + 1.2 * u) * D2R, 1, 0.035, COL.white, () => PU.grey); }
+      if (P.ramp) { const r0 = P.tt + 0.06, r1 = 0.955, L1 = 0.06 / P.L;   // the C-17's cargo ramp: hinge line and side seams
+        for (const sgn of [-1, 1]) patch(body, P, r0, r1, 6, (t, u) => sgn * (128 + 1.6 * u) * D2R, 1, 0.035, COL.white, () => PU.dark);
+        for (const tc of [r0, r0 - 0.035]) patch(body, P, tc - L1, tc + L1, 1, (t, u) => (128 + 104 * u) * D2R, 8, 0.035, COL.white, () => PU.dark); }
       if (P.deck === 2) for (const sgn of [-1, 1]) for (const dt of [0.2, 0.45, 0.7]) for (const e of [-1, 1]) { const tc = dt + e * 0.5 / P.L;
         patch(body, P, tc - 0.05 / P.L, tc + 0.05 / P.L, 1, (t, u) => sgn * (40 + 18 * u) * D2R, 1, 0.035, COL.white, () => PU.grey); }
       // landing gear: in the body mesh, flagged with its pivot height so the shader can retract it

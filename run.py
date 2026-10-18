@@ -92,7 +92,7 @@ async def main():
                 res['errors'] = len(errs)
                 print('RESULT', json.dumps(res))
                 break
-            if i > 4000:
+            if i > 12000:
                 print('timeout')
                 break
             await pg.wait_for_timeout(250)

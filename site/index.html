@@ -1898,7 +1898,7 @@ function guardShow(text,who){const g=$('#guard'),t=$('#guardTxt');if(!g)return;i
 // the bodyguard by default; set pieces bring their own character (badge + 116x150 svg). When sound is on the bodyguard
 // speaks, and his popup follows his voice line by line.
 function guard(lines,who,o){const g=$('#guard');if(!g)return;clearTimeout(guard.t1);clearTimeout(guard.t2);o=o||{};
-  if(!who&&speak(lines,{gap:o.gap,gaps:o.gaps,endGap:o.endGap,onLine:i=>{clearTimeout(guard.t2);guardShow(lines[i]);if(o.onLine)o.onLine(i);},onDone:()=>{guard.t2=setTimeout(()=>g.classList.remove('on'),1400);if(o.onDone)o.onDone();}}))return;
+  if(!who&&speak(lines,{gap:o.gap,gaps:o.gaps,endGap:o.endGap,valid:o.valid,onLine:i=>{clearTimeout(guard.t2);guardShow(lines[i]);if(o.onLine)o.onLine(i);},onDone:()=>{guard.t2=setTimeout(()=>g.classList.remove('on'),1400);if(o.onDone)o.onDone();}}))return;
   guardShow(lines[0],who);if(o.onLine)o.onLine(0);let i=0;const step=()=>{i++;if(i<lines.length){$('#guardTxt').textContent=lines[i];if(o.onLine)o.onLine(i);guard.t1=setTimeout(step,2600);}};
   if(lines.length>1)guard.t1=setTimeout(step,2600);guard.t2=setTimeout(()=>{g.classList.remove('on');if(o.onDone)o.onDone();},2600*(lines.length-1)+3600+(o.extra||0));}
 // the voice: pre-recorded earpiece clips (voice/spg_audio.js) one after another with pauses; a line without a clip falls back
@@ -1915,13 +1915,13 @@ function pickVoice(vs,lang){const sc=v=>(/en[-_]IN/i.test(v.lang)?4:/en[-_]GB/i.
   return vs.slice().sort((a,b)=>sc(b)-sc(a))[0]||null;}
 function vqNext(){if(vqOn)return;const it=VQ.shift();if(!it)return;if(it.valid&&!it.valid()){if(it.onEnd)it.onEnd();return vqNext();}vqOn=true;let fin=false;const done=()=>{if(fin)return;fin=true;vqCur=null;duck(false);if(it.onEnd)it.onEnd();setTimeout(()=>{vqOn=false;vqNext();},it.gap);};
   if(it.onStart)it.onStart();const clip=typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[it.text];
-  if(clip){const a=new Audio(clip);vqCur=a;a.volume=it.vol||0.95;a.onended=done;a.onerror=done;duck(true);const p=a.play();if(p&&p.catch)p.catch(done);return;}
+  if(clip){const a=new Audio(clip);vqCur=a;a.volume=it.vol||0.95;a.onended=done;a.onerror=done;duck(true);const p=a.play();if(p&&p.catch)p.catch(done);setTimeout(done,2500+it.text.split(/\s+/).length*520);return;}
   if(!it.radio&&window.speechSynthesis&&window.SpeechSynthesisUtterance){try{const S2=window.speechSynthesis,v=pickVoice(S2.getVoices(),it.lang);if(it.lang&&!v)return done();const u=new SpeechSynthesisUtterance(it.text.replace(/[\u{1F000}-\u{1FAFF}☀-➿️]/gu,'').trim());
     if(v){u.voice=v;u.lang=v.lang;}else u.lang='en-IN';u.rate=0.95;u.pitch=1;u.onend=done;u.onerror=done;duck(true);S2.speak(u);setTimeout(done,9000);return;}catch(e){}}
   done();}
 // speak(lines,{onLine,onDone,gap,endGap,gaps,lang}): lines one after another; the gap after each line is gaps[i], else gap
 // (1200 ms: the SPG takes his time), and endGap after the last line
-function speak(lines,o){o=o||{};if(!SND.on)return false;lines.forEach((t,i)=>{const last=i===lines.length-1;VQ.push({text:t,lang:o.lang,gap:o.gaps&&o.gaps[i]!=null?o.gaps[i]:last?(o.endGap!=null?o.endGap:900):(o.gap!=null?o.gap:1200),onStart:o.onLine?()=>o.onLine(i):null,onEnd:last?o.onDone:null});});vqNext();return true;}
+function speak(lines,o){o=o||{};if(!SND.on)return false;lines.forEach((t,i)=>{const last=i===lines.length-1;VQ.push({text:t,lang:o.lang,valid:o.valid,gap:o.gaps&&o.gaps[i]!=null?o.gaps[i]:last?(o.endGap!=null?o.endGap:900):(o.gap!=null?o.gap:1200),onStart:o.onLine?()=>o.onLine(i):null,onEnd:last?o.onDone:null});});vqNext();return true;}
 // a radio call in a speaker's own voice: shows on the ticker, and plays its recorded clip (keyed by the exact text) if there is one
 function say(src,text,o){o=o||{};radio(src,text);if(SND.on&&typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[text]){VQ.push({text,radio:true,gap:o.gap!=null?o.gap:500,vol:o.vol,valid:o.valid,onStart:o.onStart,onEnd:o.onEnd});vqNext();return true;}if(o.onEnd)o.onEnd();return false;}
 function voiceReset(){VQ.length=0;if(vqCur){try{vqCur.pause();}catch(e){}}vqCur=null;vqOn=false;if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}music(null,{now:true});}
@@ -2407,13 +2407,13 @@ const SBAN={REACH1:r=>['THE MOTORCADE ARRIVES FIRST',`US Air Force C-17s, carryi
   SA1:r=>['THE SAUDI DELEGATION',`A royal 747-8 on ${r[0].short}, then a 777 and a 787`,'Three aircraft. Two of them are luggage 🧳',icos('🇸🇦')],
   FR1:r=>['THE FRENCH DELEGATION',`French Republic A330 · the press A321 behind it`,'The press landed already writing 📰',icos('🇫🇷')],
   KR1:r=>['CODE ONE',`Republic of Korea Air Force 747-8 · ${r[0].short}`,'On the glide path. Exactly on it 📐',icos('🇰🇷')],
-  CN1:r=>['THE PRESIDENT OF CHINA',`Air China 747-8 · on final for ${r[0].short}`,'The red carpet was measured twice 📏',FLAG_CN],
+  CN1:r=>[`AIR CHINA ONE · BOEING 747-8 · ON FINAL FOR ${r[0].short}`,'The President of China','The red carpet was measured twice 📏',FLAG_CN],
   RU0:r=>['THE RUSSIAN FEDERATION','Two identical Ilyushin Il-96s on final','Nobody will say which one 🎶',FLAG_RU],
   RUC:r=>['THE OTHER MOTORCADE',`Russia Cargo · Antonov An-124 with the cars · ${r[1].short}`,'Every motorcade has its own aeroplane now 🚗',FLAG_RU],
   RU1:r=>['IS THE PRESIDENT ON THIS ONE…',`Russia · Ilyushin Il-96 · ${r[0].short}`,'Nobody will say 🎶',FLAG_RU],
   RU2:r=>['…OR ON THIS ONE?',`Russia Two · the identical Il-96 · ${r[1].short}`,'Two aircraft. One President. Zero answers 🎶',FLAG_RU],
   RU2B:r=>['…OR WAS IT THIS ONE?',`Russia Two · the identical Il-96 · ${r[0].short}`,'Two aircraft. One President. Zero answers 🎶',FLAG_RU],
-  AF1:r=>['AIR FORCE ONE',`The President of the United States · Boeing 747 on final for ${r[0].short}`,'Welcome to Zero Mile! 🤝',FLAG_US],
+  AF1:r=>[`AIR FORCE ONE · BOEING 747 · ON FINAL FOR ${r[0].short}`,'The President of the United States','Welcome to Zero Mile! 🤝',FLAG_US],
   SAM:r=>['THE SPARE AIR FORCE ONE',`An identical 747 · on final for ${r[0].short}`,'Spare aircraft, spare runway, nobody on board 🛬',FLAG_US],
   TRIO:r=>['THREE PRESIDENTS, ONE PHOTO',`Air China 747-8 · Il-96 · Air Force One · ${r.map(x=>x.short).join(', ')}`,'Nobody landed first 📸',FLAG_CN+FLAG_RU+FLAG_US]};
 // radio chatter (ticker only) that follows a delegation, so it always matches what just happened
@@ -2449,11 +2449,11 @@ function sumPlan(E,R3,trio){
         [tw,'lt',{ds:[d,s],q:twr.text,twr:true}],[tw,'say',twr],[-9,'shot',{i:0,ban,until:3}]]};};},
     ru(){return rw=>{const d0=DL.RUCARGO,d1=DL.RU1,d2=DL.RU2,ann=V('ru_announcer','PROTOCOL','Attention, please. The delegation of the Russian Federation. First, the cars. Then two aircraft. They are identical.'),
       c0=V('ru',d0.cs,fillC(d0.call,d0,rw[1])),c1=V('ru',d1.cs,fillC(d1.call,d1,rw[0])),c2=V('ru',d2.cs,fillC(d2.call,d2,rw[1])),twr=V('tower','TWR','Russia, Russia Two, welcome to Zero Mile. We will not ask which one.'),
-      s2=-7.4-c2.dur,s1=s2-0.4-c1.dur,s0=s1-0.4-c0.dur,as=s0-0.6-ann.dur,all=[d0,d1,d2];
-      return{ac:[{d:d0,off:-6,ri:1},{d:d1,off:0},{d:d2,off:7.5,ri:1}],a0:as,a1:10.4,stop:[-100,80],beats:[[as,'ban',SBAN.RU0(rw)],[as,'lt',{ds:all,q:ann.text,ann:true}],[as,'say',ann],
-        [s0,'lt',{ds:[d0],q:c0.text}],[s0,'say',c0],[s1,'lt',{ds:[d1,d2],q:c1.text}],[s1,'say',c1],[s2,'lt',{ds:[d1,d2],q:c2.text}],[s2,'say',c2],
-        [-12.2,'music','rasputin'],[-12.2,'shot',{i:0,ban:SBAN.RUC(rw),until:-5.5}],[-5.5,'shot',{i:1,ban:SBAN.RU1(rw),until:2.1}],[2.4,'lt',{ds:[d1,d2],q:twr.text,twr:true}],[2.4,'say',twr],
-        [2.1,'shot',{i:2,ban:SBAN.RU2(rw),until:10.1}],[9.3,'music',null]]};};},
+      as=-12.8-ann.dur,s2=2.2,tw=Math.max(5.9,s2+c2.dur+0.3),all=[d0,d1,d2];
+      return{ac:[{d:d0,off:-6,ri:1},{d:d1,off:0},{d:d2,off:7.5,ri:1}],a0:as,a1:Math.max(10.6,tw+twr.dur+0.2),stop:[-100,80],beats:[[as,'ban',SBAN.RU0(rw)],[as,'lt',{ds:all,q:ann.text,ann:true}],[as,'say',ann],
+        [-12.2,'music','rasputin'],[-12.2,'shot',{i:0,ban:SBAN.RUC(rw),until:-5.5}],[-12.2,'lt',{ds:[d0],q:c0.text}],[-12.2,'say',c0],
+        [-5.5,'shot',{i:1,ban:SBAN.RU1(rw),until:2.1}],[-5.5,'lt',{ds:[d1,d2],q:c1.text}],[-5.5,'say',c1],
+        [2.1,'shot',{i:2,ban:SBAN.RU2(rw),until:10.4}],[s2,'lt',{ds:[d2,d1],q:c2.text}],[s2,'say',c2],[tw,'lt',{ds:[d2,d1],q:twr.text,twr:true}],[tw,'say',twr],[9.3,'music',null]]};};},
     us(){return rw=>{const d=DL.AF1,s=DL.SAM,sp=SPARE_LINES(R3[2]),ann=V('announcer','ANNOUNCER',`Ladies and gentlemen. The aircraft carrying the President of the United States shall now be landing on runway ${rw[0].short}.`),
       call=V('us',d.cs,fillC(d.call,d,rw[0])),twr=V('tower','TWR',`${d.nm}, Zero Mile Tower, runway ${rw[0].short}, cleared to land. Welcome to India.`),stw=V('tower','TWR',`SAM 29000, the spare, runway ${rw[1].short}, cleared to land.`),
       tw=-2.4-twr.dur,cs=tw-0.4-call.dur,as=cs-0.6-ann.dur,g0=as-0.8-lineDur(sp[0],'spg')-1.2-lineDur(sp[1],'spg'),ban=SBAN.AF1(rw);sp.forEach(t=>tl.push({key:t,voice:'spg',say:spoken(t)}));
@@ -2466,9 +2466,9 @@ function sumPlan(E,R3,trio){
       return{ac:[{d:a,off:0,rw:R3[0]},{d:b,off:0,rw:R3[1]},{d:c,off:0,rw:R3[2]},{d:DL.CN2,off:12.5,rw:R3[0]}],a0:as,a1:4.2,stop:[-90,90],trio:1,beats:[[as,'ban',ban],[as,'lt',{ds:[a,b,c],q:ann.text,ann:true}],[as,'say',ann],
         [s1,'lt',{ds:[a],q:ca.text}],[s1,'say',ca],[s2,'lt',{ds:[b],q:cb.text}],[s2,'say',cb],[s3,'lt',{ds:[c],q:cc.text}],[s3,'say',cc],[tw,'lt',{ds:[a,b,c],q:twr.text,twr:true}],[tw,'say',twr],[-9,'shot',{view:'trio',ban,until:4}]]};};},
     ru2(){return rw=>{const d0=DL.RUCARGO,d=DL.RU2,ann=V('ru_announcer','PROTOCOL','Attention, please. The cars of the Russian Federation. Then the second aircraft. Also identical.'),c0=V('ru',d0.cs,fillC(d0.call,d0,rw[1])),
-      call=V('ru',d.cs,fillC(d.call,d,rw[0])),cs=-7.4-call.dur,s0=cs-0.4-c0.dur,as=s0-0.6-ann.dur,ban=SBAN.RU2B(rw);
-      return{ac:[{d:d0,off:-6,ri:1},{d,off:0}],a0:as,a1:4.6,beats:[[as,'ban',SBAN.RUC(rw)],[as,'lt',{ds:[d0,d],q:ann.text,ann:true}],[as,'say',ann],[s0,'lt',{ds:[d0],q:c0.text}],[s0,'say',c0],[cs,'lt',{ds:[d],q:call.text}],[cs,'say',call],
-        [-12.2,'music','rasputin'],[-12.2,'shot',{i:0,ban:SBAN.RUC(rw),until:-5.5}],[-5.5,'shot',{i:1,ban,until:3}],[3.4,'music',null]]};};},
+      call=V('ru',d.cs,fillC(d.call,d,rw[0])),as=-12.8-ann.dur,ban=SBAN.RU2B(rw);
+      return{ac:[{d:d0,off:-6,ri:1},{d,off:0}],a0:as,a1:4.6,beats:[[as,'ban',SBAN.RUC(rw)],[as,'lt',{ds:[d0,d],q:ann.text,ann:true}],[as,'say',ann],
+        [-12.2,'music','rasputin'],[-12.2,'shot',{i:0,ban:SBAN.RUC(rw),until:-5.5}],[-12.2,'lt',{ds:[d0],q:c0.text}],[-12.2,'say',c0],[-5.5,'shot',{i:1,ban,until:3}],[-5.5,'lt',{ds:[d],q:call.text}],[-5.5,'say',call],[3.4,'music',null]]};};},
     sam(){return rw=>{const d=DL.SAM,sp=SPARE_LINES(R3[2]),ann=V('announcer','ANNOUNCER','Ladies and gentlemen. The spare aircraft of the President of the United States.'),call=V('us',d.cs,fillC(d.call,d,rw[0])),cs=-10.6-call.dur+2,as=cs-0.6-ann.dur,
       g0=as-0.8-lineDur(sp[0],'spg')-1.2-lineDur(sp[1],'spg'),ban=SBAN.SAM(rw);sp.forEach(t=>tl.push({key:t,voice:'spg',say:spoken(t)}));
       return{ac:[{d,off:0}],a0:g0,a1:3.2,spare:g0,beats:[[g0,'guard',{lines:sp,gap:1200}],[as,'ban',ban],[as,'lt',{ds:[d],q:ann.text,ann:true}],[as,'say',ann],[cs,'lt',{ds:[d],q:call.text}],[cs,'say',call],[-10,'shot',{i:0,ban,until:3}]]};};},
@@ -2492,12 +2492,13 @@ function trioView(R3){const ys=R3.map(r=>r.y),cy=(Math.min(...ys)+Math.max(...ys
 // ---- the lower-third (who is landing, in their own words) and the delegation counter ----
 (function(){const st=document.createElement('style');st.textContent=`#delegLT{position:absolute;left:16px;bottom:200px;z-index:12;width:min(560px,calc(100% - var(--rail) - 70px));pointer-events:none;opacity:0;transform:translateY(14px);transition:opacity .35s,transform .35s}
 #delegLT.on{opacity:1;transform:none}#delegLT .cur{display:flex;gap:11px;align-items:center;background:linear-gradient(90deg,rgba(10,13,16,.96),rgba(10,13,16,.86));border-left:4px solid #f4c430;border-radius:6px;padding:8px 13px 9px;box-shadow:0 10px 26px rgba(0,0,0,.5)}
-#delegLT .fl{font-size:36px;line-height:40px;white-space:nowrap}#delegLT .tx{min-width:0}#delegLT .hd{font-family:var(--f-sign);font-weight:700;font-size:17.5px;color:#fff;letter-spacing:.02em;line-height:1.15}
-#delegLT .hd .rw{color:#f4c430}#delegLT .st{margin-left:8px;font-family:var(--f-mono);font-weight:600;font-size:10.5px;padding:1px 6px;border-radius:3px;background:#8a7cff;color:#0b0b0b;vertical-align:2px}#delegLT .st.ok{background:#3ad07f}
+#delegLT .fl{font-size:36px;line-height:40px;white-space:nowrap}#delegLT .tx{min-width:0;flex:1}#delegLT .hd{font-family:var(--f-sign);font-weight:700;font-size:17.5px;color:#fff;letter-spacing:.02em;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#delegLT .hd span{font-weight:500;color:#cfd8dd}
+#delegLT .mt{display:flex;flex-wrap:wrap;gap:3px 9px;align-items:center;margin-top:3px;font-family:var(--f-mono);font-size:11px;color:#9fb3c8}#delegLT .mt .rw{font-family:var(--f-sign);font-weight:700;font-size:15px;color:#f4c430}
+#delegLT .st{font-family:var(--f-mono);font-weight:600;font-size:10.5px;padding:1px 6px;border-radius:3px;background:#8a7cff;color:#0b0b0b;vertical-align:2px}#delegLT .st.ok{background:#3ad07f}
 #delegLT .sub{font-family:var(--f-mono);font-size:11px;color:#9fb3c8;margin-top:2px}#delegLT .q{font-family:var(--f-body);font-size:14.5px;color:#ffd27a;margin-top:3px;font-style:italic;line-height:1.25}
 #delegLT .q.ann{color:#fff;font-style:normal}#delegLT .q b{font-style:normal;font-family:var(--f-mono);font-size:10.5px;color:#9fb3c8;margin-right:6px}
 #delegLT .prev{margin-top:5px;display:inline-block;background:rgba(10,13,16,.86);border-radius:4px;padding:3px 9px;font-family:var(--f-mono);font-size:11.5px;color:#cfd8dd}#delegLT .prev:empty{display:none}
-#delegChip{position:absolute;left:16px;top:168px;z-index:12;padding:7px 13px;border-radius:8px;background:rgba(10,13,16,.92);border:1px solid #ff9933;font-family:var(--f-sign);font-weight:700;font-size:18px;letter-spacing:.03em;color:#fff;box-shadow:0 8px 20px rgba(0,0,0,.45)}
+#delegChip{position:absolute;left:16px;top:204px;z-index:12;padding:7px 13px;border-radius:8px;background:rgba(10,13,16,.92);border:1px solid #ff9933;font-family:var(--f-sign);font-weight:700;font-size:18px;letter-spacing:.03em;color:#fff;box-shadow:0 8px 20px rgba(0,0,0,.45)}
 #delegChip[hidden]{display:none}#delegChip b{color:#ffb35c;font-size:22px}#delegChip small{display:block;font-family:var(--f-mono);font-weight:500;font-size:10.5px;color:#9fb3c8;letter-spacing:.06em}#delegChip small i{font-style:normal;color:#ff5a4f}
 .speeds.live button[data-s]:not(#spP){opacity:.4}`;document.head.appendChild(st);
   const d=document.createElement('div');d.id='delegLT';d.setAttribute('aria-live','polite');d.innerHTML='<div class="cur"></div><div class="prev"></div>';$('#app').appendChild(d);
@@ -2510,10 +2511,10 @@ function ltRender(force){const el=$('#delegLT');if(!el)return;const c=LT.cur;
   const fs=c.ds.map(d=>c.fs[d.k]).filter(Boolean),allIn=fs.length&&fs.every(f=>f.landT!=null),lastIn=allIn?Math.max(...fs.map(f=>f.landT)):0;
   if(!force&&T>c.t+16*SUMP&&(allIn?T>lastIn+3*SUMP:false)){LT.cur=null;el.classList.remove('on');return;}
   const d=c.ds[0],f=c.fs[d.k],flags=[...new Set(c.ds.map(x=>x.flag))].join(''),st=ltStatus(f);
-  const hd=c.ann?`📣 <span>${c.ds.length>2&&new Set(c.ds.map(x=>x.country)).size>1?'THREE PRESIDENTS':d.country.toUpperCase()}</span>`:`${d.country.toUpperCase()} · ${d.disp}${f&&f.rwy?` · <span class="rw">${f.rwy.short}</span>`:''}${st?` <span class="st ${st==='LANDED'?'ok':''}">${st==='LANDED'?'LANDED ✓':st}</span>`:''}`;
-  const sub=!c.ann&&c.ds.length>1?`<div class="sub">${c.ds.slice(1).map(x=>{const g=c.fs[x.k];return `+ ${x.disp}${g&&g.rwy?' · '+g.rwy.short:''}${g&&g.landT!=null?' ✓':''}`;}).join('   ')}</div>`:'';
+  const hd=c.ann?`📣 ${c.ds.length>2&&new Set(c.ds.map(x=>x.country)).size>1?'THREE PRESIDENTS':d.country.toUpperCase()} <span>· the announcer</span>`:`${d.country.toUpperCase()} <span>· ${d.disp}</span>`;
+  const sub=c.ann?'':`<div class="mt">${f&&f.rwy?`<span class="rw">${f.rwy.short}</span>`:''}${st?`<span class="st ${st==='LANDED'?'ok':''}">${st==='LANDED'?'LANDED ✓':st}</span>`:''}${c.ds.slice(1).map(x=>{const g=c.fs[x.k];return `<span>+ ${x.disp}${g&&g.rwy?' · '+g.rwy.short:''}${g&&g.landT!=null?' ✓':''}</span>`;}).join('')}</div>`;
   const q=`<div class="q${c.ann?' ann':''}">${c.ann?'<b>ANNOUNCER</b>':c.twr?'<b>TOWER</b>':''}${c.ann||c.twr?c.q:'“'+c.q+'”'}</div>`;
-  const p=LT.prev;let ph='';if(p){const pf=p.ds.map(x=>p.fs[x.k]).filter(Boolean),n=pf.filter(g=>g.landT!=null).length;ph=`${p.ds[0].flag} ${p.ds[0].country} · ${n===pf.length?`landed ✓${pf.length===1&&pf[0].rwy?' '+pf[0].rwy.short:''}`:`${n}/${pf.length} landed`}`;}
+  const p=LT.prev;let ph='';if(p){const pf=p.ds.map(x=>p.fs[x.k]).filter(Boolean),n=pf.filter(g=>g.landT!=null).length;ph=`${p.ds[0].flag} ${p.ds[0].country} · ${n===pf.length?`landed ✓${pf.length===1&&pf[0].rwy?' '+pf[0].rwy.short:''}`:pf.length===1?(ltStatus(pf[0])||'inbound').toLowerCase():`${n} of ${pf.length} landed`}`;}
   const h=`<div class="cur"><span class="fl">${flags}</span><div class="tx"><div class="hd">${hd}</div>${sub}${q}</div></div><div class="prev">${ph}</div>`;
   if(h!==LT.html){el.innerHTML=h;LT.html=h;}if(!el.classList.contains('on')){const w=$('#wave').getBoundingClientRect(),app=$('#app').getBoundingClientRect();el.style.bottom=Math.round(app.bottom-w.top+10)+'px';el.classList.add('on');}}
 function ltReset(){LT.cur=LT.prev=null;LT.html='';const el=$('#delegLT');if(el)el.classList.remove('on');const c=$('#delegChip');if(c)c.hidden=true;document.querySelectorAll('.speeds').forEach(s=>s.classList.remove('live'));}
@@ -2571,9 +2572,9 @@ tick(c,t){const pl=c.pl;
     else if(ty==='lt')ltSet(Object.assign({fs:c.fs},p));
     else if(ty==='ban'){if(!CINE)vipBanner(true,p[0],p[1],p[2],p[3]);}
     else if(ty==='shot'){const until=it.td+p.until*SUMP;if(p.view){const v=trioView(c.R3);cinema(null,p.ban,{force:true,until,speed:PACE||0.5,view:v,at:[v.tx,v.ty]});}
-      else{const f=c.fs[it.ac[p.i].d.k];if(f&&f.state==='approach')cinema(f,p.ban,{force:true,until,speed:PACE||0.5,landed:true});}}
+      else{const f=c.fs[it.ac[p.i].d.k];if(f&&f.state==='approach')cinema(f,p.ban,{force:true,until,speed:PACE||0.5,landed:true});}if(p.lt)ltSet(Object.assign({fs:c.fs},p.lt));}
     else if(ty==='music'){if(p)music(p,{loop:false,vol:0.45});else music(null,{fadeOut:1200});}
-    else if(ty==='guard')guard(p.lines,null,{gap:p.gap||1500});
+    else if(ty==='guard')guard(p.lines,null,{gap:p.gap||1500,valid:()=>T<=at+5*SUMP});
     else if(ty==='radio'){radio(p[0],p[1]);logE(p[1]);}
     else if(ty==='mx'){const f=c.mx,txt=f&&f.landT!=null?MX_LINES[1]:MX_LINES[0];say('AEROMEXICO 92',txt,{gap:150,valid:()=>T<=late});ltSet({fs:c.fs,ds:[DL.MX],q:txt});}}
   // the banner of an announcement that never got its shot (or after it) goes when the item's airtime is over
@@ -2612,7 +2613,7 @@ tick(c,t){for(const o of c.sup){if(o.done||t<o.x[0])continue;o.done=true;const [
     const f=mk({kind:'dep',state:'start',al,type,intl:al!=='6E',to,toCode:code,dir:al==='6E'?'N':'W',std:T});Object.assign(f,{num:'1',callsign:cs2,disp,origStd:T,readyAt:T,x:pk.x,y:pk.y,heading:0,gateRef:{lane:PARK},startT:T-20,pushT:T,supDep:true});
     if(cs2==='PRESS 1')c.press=f;if(line){radio(line[0],line[1]);logE(line[1]);}}
   if(c.press&&c.press.counted&&!c.pressSaid){c.pressSaid=true;flashBanner(['THE PRESS PLANE','The press pool\'s A321 is airborne','Filing the story from the climb 📰',icos('📰')],4500);radio('TWR','Press 1, airborne. They are filing the story from the climb.');}
-  if(t>240&&!c.clear&&!flights.some(f=>f.state==='holding')){c.clear=true;flashBanner(['THE STACK IS EMPTY','Nobody is holding, for the first time since the summit began','The second-largest gathering in Nagpur has dispersed 🛬',icos('✅')],5000);logE('The holding stack cleared after the summit.');}}};
+  if(t>240&&!c.clear&&!flights.some(f=>f.state==='holding')){c.clear=true;flashBanner(['THE STACK IS EMPTY · FIRST TIME SINCE THE SUMMIT','Nobody is holding','The second-largest gathering in Nagpur has dispersed 🛬',icos('✅')],5000);logE('The holding stack cleared after the summit.');}}};
 
 // L3 · fog, a blocked taxiway, and the chain that leads to a runway collision. This one is played straight: no jokes once
 // the risk is live. Inspired by the 1977 Tenerife disaster; the two aircraft are fictional operators (a freighter and an
@@ -2989,7 +2990,7 @@ function windChip(){const d=$('#windChip');if(!d)return;const on=!!(LV&&LV.windD
 function kpi(id,txt,cls){const el=$(id);el.querySelector('.v').innerHTML=txt;el.className='kpi '+(cls||'');}
 const RATE={v:0};
 function hud(){
-  $('#clock').textContent=clk(T);$('#left').textContent=ended?'Level over':LV.windDown&&T>=LEN?`Last departures: ${depLeft()} to go`:`${Math.max(0,Math.ceil((LEN-T)/60))} min left`;windChip();
+  $('#clock').textContent=clk(T);$('#left').textContent=ended?'Level over':LV.windDown&&T>=LEN?`${depLeft()} to go`:`${Math.max(0,Math.ceil((LEN-T)/60))} min left`;windChip();
   while(moveLog.length&&moveLog[0]<T-1800)moveLog.shift();
   const rate=Math.round(moveLog.length*2);
   kpi('#kMov',`${S.moves}<small>/${LV.target}</small>`,S.moves>=LV.target?'good':'');
@@ -3186,7 +3187,7 @@ function menu(tab){
 }
 window.HUB={get T(){return T;},get S(){return S;},get LV(){return LV;},flights:()=>flights,RW,incidents:()=>incidents,setMode:(id,m)=>{const r=RW.find(x=>x.id===id||x.short===id);if(r)setMode(r,m);},startLevel,capNow,forceIncursion:()=>{const c=STO.find(o=>o.k==='fog');if(c&&c.sc)c.sc.go=true;},resolveAll:()=>{for(const I of incidents.slice()){const a=I.botPick!=null?I.acts[I.botPick]:I.acts.find(a=>!(a.dis&&a.dis()));if(a)a.fn();}},speed:s=>setSpeed(s),ops:()=>ops,cfg:CFG,
   // test hooks: run the sim forward synchronously, and point the camera
-  ff:secs=>{for(let i=0;i<secs&&!ended;i++){tick(1);if(CINE&&CINE.o.until==null){const ms=1000/BASE/Math.max(0.25,speed);CINE.t0-=ms;if(CINE.landAt)CINE.landAt-=ms;}}puffs.length=0;hud();drawWave();},look:(x,y,z)=>{camT.s=cam.fit*z;camT.anchor=null;camT.x=x-((cam.region.L+cam.region.R)/2)/camT.s;camT.y=y-((cam.region.Tp+cam.region.B)/2)/camT.s;clampCam(camT);Object.assign(cam,{x:camT.x,y:camT.y,s:camT.s});},spawn:(t,x)=>spawnInc(t,x),opsSpawn:(k,x)=>opsSpawn(k,x),pause:()=>{paused=true;},
+  ff:secs=>{VQ.length=0;for(let i=0;i<secs&&!ended;i++){tick(1);if(CINE&&CINE.o.until==null){const ms=1000/BASE/Math.max(0.25,speed);CINE.t0-=ms;if(CINE.landAt)CINE.landAt-=ms;}}puffs.length=0;hud();drawWave();},look:(x,y,z)=>{camT.s=cam.fit*z;camT.anchor=null;camT.x=x-((cam.region.L+cam.region.R)/2)/camT.s;camT.y=y-((cam.region.Tp+cam.region.B)/2)/camT.s;clampCam(camT);Object.assign(cam,{x:camT.x,y:camT.y,s:camT.s});},spawn:(t,x)=>spawnInc(t,x),opsSpawn:(k,x)=>opsSpawn(k,x),pause:()=>{paused=true;},
   view:v=>setView(v),ready3d:()=>new Promise(r=>{if(V3.ready||V3.failed)r(V3.ready);else{V3.waiters.push(r);init3D();}}),
   cam3d:o=>{if(o.mode&&o.mode!=='map'){setCam(o.mode,o.fid?flights.find(f=>f.id===o.fid):null);return;}setCam('map');Object.assign(C3.t,o);Object.assign(C3,C3.t);},
   // the Delhi summit's running order (both protocol orders) and every line it can voice, for tests and voice/lines/l4.json

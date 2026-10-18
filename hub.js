@@ -1809,7 +1809,10 @@ function fitCam(){
 }
 const sx=x=>(x-cam.x)*cam.s,sy=y=>(y-cam.y)*cam.s;
 function centerOn(x,y){if(!cam.region)return;const r=cam.region;if(camT.s<cam.fit*2.5)camT.s=cam.fit*3.5;camT.anchor=null;camT.x=x-((r.L+r.R)/2)/camT.s;camT.y=y-((r.Tp+r.B)/2)/camT.s;clampCam(camT);}
-function resize(){if(typeof resize3D==='function'&&V3.ready)setTimeout(resize3D,0);DPR=Math.min(window.devicePixelRatio||1,2);VW=cv.clientWidth;VH=cv.clientHeight;cv.width=Math.round(VW*DPR);cv.height=Math.round(VH*DPR);const wr=wcv.getBoundingClientRect();wcv.width=Math.round(wr.width*DPR);wcv.height=Math.round(wr.height*DPR);fitCam();placeToast();}
+// the 2D canvas is the HUD overlay over the 3D view (signs, tags, markers): at 2x on a Retina screen it is a 2880x1720 layer that
+// Safari re-composites every frame (about 12% of frames over 50 ms in a WebKit A/B), so it draws at 1.5x there
+const ovDpr=()=>Math.min(window.devicePixelRatio||1,document.body.classList.contains('v3')?1.5:2);
+function resize(){if(typeof resize3D==='function'&&V3.ready)setTimeout(resize3D,0);DPR=ovDpr();VW=cv.clientWidth;VH=cv.clientHeight;cv.width=Math.round(VW*DPR);cv.height=Math.round(VH*DPR);const wr=wcv.getBoundingClientRect();wcv.width=Math.round(wr.width*DPR);wcv.height=Math.round(wr.height*DPR);fitCam();placeToast();}
 window.addEventListener('resize',resize);
 if(window.ResizeObserver)new ResizeObserver(()=>{if(cv.clientWidth)resize();}).observe($('#app'));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){last=performance.now();resize();}});

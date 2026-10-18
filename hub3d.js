@@ -231,7 +231,7 @@ function setView(v,quiet){
   if(v==='3d'&&!V3.ready){V3.want=true;init3D();return;}
   V3.on=v==='3d'&&V3.ready;V3.want=v==='3d';store.set('zm_view',V3.want?'3d':'2d');
   const gl=$('#gl');if(gl)gl.style.display=V3.on?'block':'none';
-  document.body.classList.toggle('v3',V3.on);banFit();
+  document.body.classList.toggle('v3',V3.on);if(ovDpr()!==DPR)resize();banFit();
   if($('#zView'))$('#zView').textContent=V3.on?'2D':'3D';if($('#zCam'))$('#zCam').disabled=!V3.on;
   if(V3.on){resize3D();if(!quiet)radio('AOCC','3D view. Drag to pan, right-drag to orbit, C for cameras, G for quality, M for the map.');}
   camLabel();

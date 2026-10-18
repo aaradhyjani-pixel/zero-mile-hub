@@ -59,7 +59,7 @@ function build3D(THREE,ad){
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;   // one shadow render per frame, even with extra passes
   renderer.info.autoReset=false;
   const scene=new THREE.Scene();const camera=new THREE.PerspectiveCamera(42,1,4,160000);
-  Object.assign(Z,{renderer,scene,camera});Z.V3=V3;   // V3 on Z: test hooks (tools read the passes and quality state)
+  Object.assign(Z,{renderer,scene,camera});Z.V3=V3;   // V3 on Z: modules read the cinematic profile (V3.cine); test tools read the passes and quality state
   installFogChunks(THREE);
   // the atmosphere every module shares (weather.js writes it each frame, the core resets what it doesn't write)
   Z.atmo={fogColor:new THREE.Color('#c6d3de'),fogDensity:0.000035,hazeHeight:HAZE_H,skyTint:new THREE.Color('#c6d3de'),skyTintK:0,
@@ -404,7 +404,9 @@ function shadowFit(focus){
 }
 
 // screen <-> world
-function proj(x,y,h){const v=V3.v.set(x,h||0,y).project(Z.camera);if(v.z>1||v.z<-1)return null;return{X:(v.x+1)/2*VW,Y:(1-v.y)/2*VH,z:v.z};}
+// (one shared result object: every caller reads it at once; a hundred flights a frame would otherwise be a hundred objects)
+const PJ={X:0,Y:0,z:0};
+function proj(x,y,h){const v=V3.v.set(x,h||0,y).project(Z.camera);if(v.z>1||v.z<-1)return null;PJ.X=(v.x+1)/2*VW;PJ.Y=(1-v.y)/2*VH;PJ.z=v.z;return PJ;}
 function groundAt(mx,my){const THREE=Z.THREE;V3.ray.setFromCamera(new THREE.Vector2(mx/VW*2-1,-(my/VH)*2+1),Z.camera);const p=new THREE.Vector3();return V3.ray.ray.intersectPlane(V3.plane,p)?{x:p.x,y:p.z}:null;}
 const OFF3={sched:1,diverted:1,gone:1,cancelled:1,towed:1};
 function project3D(){
@@ -438,7 +440,7 @@ function cam3Fit(){setCam('map');Object.assign(C3.t,{tx:-700,ty:0,dist:10500,yaw
 // the overlay: incident markers, runway signs, stack signs, tags and MAYDAY beacons, drawn on the 2D canvas
 function drawOverlay3D(now){
   screenT();ctx.clearRect(0,0,VW,VH);
-  for(const st of STACKS){const n=flights.filter(f=>f.state==='holding'&&f.stack===st);if(!n.length)continue;const p=proj(st.x,st.y,2600*AIR_K);if(p)signText(p.X,p.Y-40,`STACK ${st.id} · ${n.length}`,0.95,n.some(f=>f.minFuel)?'#ff4d3f':'#f4c430');}
+  for(const st of STACKS){let n=0,mf=false;for(const f of flights)if(f.state==='holding'&&f.stack===st){n++;if(f.minFuel)mf=true;}if(!n)continue;const p=proj(st.x,st.y,2600*AIR_K);if(p)signText(p.X,p.Y-40,`STACK ${st.id} · ${n}`,0.95,mf?'#ff4d3f':'#f4c430');}
   rwSigns=[];for(const r of RW){const p=proj(r.x0+r.len*0.18,r.y,0);if(!p)continue;const s=rwSign(r);const rect=signText(p.X,p.Y-16,`${r.short} · ${s.lbl}`,r.locked?.6:1,s.col);rect.r=r;rwSigns.push(rect);}
   for(const f of flights){if(!f.mayday||f.landT!=null||f.sx==null)continue;const X=f.sx,Y=f.sy,pp=(now*1.4)%1;ctx.strokeStyle=`rgba(255,77,63,${1-pp})`;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(X,Y,10+pp*28,0,7);ctx.stroke();signText(X,Y-30,`MAYDAY ${fl(f)}`,1,'#ff4d3f');}
   for(const I of incidents){const q=incPos(I);const p=proj(q.x,q.y,I.f?altM(I.f):0);if(!p){I.sx=null;continue;}const X=p.X,Y=p.Y-(I.f?0:14);const ic=(I.icon||ICON[I.type]);const pulse=1+0.18*Math.sin(now*7);const R=13*pulse;
@@ -456,40 +458,49 @@ function drawOverlay3D(now){
   drawFloats(q=>proj(q.x,q.y,q.alt*AIR_K+40));
 }
 
+// mark the first n floats of an attribute for upload (one reused range object: addUpdateRange() allocates per call)
+function upRange(a,n){a.needsUpdate=true;const R=a.updateRanges;if(R){const r=a._zr||(a._zr={start:0,count:0});r.count=n;R.length=0;R.push(r);}}
 function guides3D(now){
   const g=V3.guides.geometry,P=g.attributes.position.array,Cc=g.attributes.color.array;let n=0;const cap=P.length/3-2;
   const seg=(x1,y1,h1,x2,y2,h2,r,gc,b)=>{if(n>=cap)return;const i=n*3;P[i]=x1;P[i+1]=h1;P[i+2]=y1;P[i+3]=x2;P[i+4]=h2;P[i+5]=y2;Cc[i]=Cc[i+3]=r;Cc[i+1]=Cc[i+4]=gc;Cc[i+2]=Cc[i+5]=b;n+=2;};
   const pulse=0.75+0.25*Math.sin(now*3);
-  for(const r of RW){if(r.locked)continue;const q=flights.filter(f=>f.state==='approach'&&f.rwy===r).sort((a,b)=>a.td-b.td).slice(0,2);
-    q.forEach((f,qi)=>{const path=f.path;if(!path)return;const k=qi?0.45:1;let d=f.pd,prev=null;const L=f.plen,step=Math.max(120,(L-d)/40);
-      for(;d<=L+1;d+=step){const pt=pointAt(path,Math.min(d,L));const fr=d>=f.finalStart?(d-f.finalStart)/f.finalLen:0;const a=(d>=f.finalStart?Math.max(0,700*(1-fr/0.96)):lerp(f.startAlt||1500,700,clamp(d/Math.max(1,f.finalStart),0,1)))*AIR_K;
-        if(prev)seg(prev[0],prev[1],prev[2],pt.x,pt.y,a,0.54*k*pulse,0.49*k*pulse,1*k*pulse);prev=[pt.x,pt.y,a];}});}
-  for(const st of STACKS){const busy=flights.some(f=>f.state==='holding'&&f.stack===st);if(!busy)continue;const P0=4*1100+2*Math.PI*560;let prev=null;
-    for(let u=0;u<=P0+1;u+=P0/48){const p=stackPos(st,u,0);const a=2100*AIR_K;if(prev&&((u/(P0/48))|0)%2===0)seg(prev.x,prev.y,a,p.x,p.y,a,0.95,0.78,0.2);prev=p;}}
+  // (allocation-free: the two next arrivals per runway picked in one pass, and each path walked once, segment by segment,
+  // instead of a filter/sort per runway and a pointAt() object per point)
+  for(const r of RW){if(r.locked)continue;let f0=null,f1=null;
+    for(const f of flights){if(f.state!=='approach'||f.rwy!==r||!f.path)continue;if(!f0||f.td<f0.td){f1=f0;f0=f;}else if(!f1||f.td<f1.td)f1=f;}
+    for(let qi=0;qi<2;qi++){const f=qi?f1:f0;if(!f)break;const path=f.path,k=qi?0.45:1,L=f.plen,step=Math.max(120,(L-f.pd)/40),cr=0.54*k*pulse,cg=0.49*k*pulse,cb=k*pulse;
+      let d=f.pd,first=true,px=0,py=0,pa=0,si=1,s0=0;
+      for(;d<=L+1;d+=step){const dd=Math.min(d,L);let x,y;
+        while(si<path.length-1&&dd>s0+dist(path[si-1].x,path[si-1].y,path[si].x,path[si].y)){s0+=dist(path[si-1].x,path[si-1].y,path[si].x,path[si].y);si++;}
+        if(path.length<2){x=path[0].x;y=path[0].y;}else{const A=path[si-1],B=path[si],sl=dist(A.x,A.y,B.x,B.y),t=sl?clamp((dd-s0)/sl,0,1):1;x=lerp(A.x,B.x,t);y=lerp(A.y,B.y,t);}
+        const fr=d>=f.finalStart?(d-f.finalStart)/f.finalLen:0;const a=(d>=f.finalStart?Math.max(0,700*(1-fr/0.96)):lerp(f.startAlt||1500,700,clamp(d/Math.max(1,f.finalStart),0,1)))*AIR_K;
+        if(!first)seg(px,py,pa,x,y,a,cr,cg,cb);first=false;px=x;py=y;pa=a;}}}
+  for(const st of STACKS){let busy=false;for(const f of flights)if(f.state==='holding'&&f.stack===st){busy=true;break;}if(!busy)continue;const P0=4*1100+2*Math.PI*560,a=2100*AIR_K;let px=0,py=0,first=true;
+    for(let u=0;u<=P0+1;u+=P0/48){const p=stackPos(st,u,0);if(!first&&((u/(P0/48))|0)%2===0)seg(px,py,a,p.x,p.y,a,0.95,0.78,0.2);first=false;px=p.x;py=p.y;}}
   // upload only the segments drawn (the buffers hold 6000 vertices: 144 KB a frame if sent whole)
-  g.setDrawRange(0,n);for(const a of [g.attributes.position,g.attributes.color]){if(a.addUpdateRange){a.clearUpdateRanges();a.addUpdateRange(0,Math.max(2,n)*3);}a.needsUpdate=true;}
+  g.setDrawRange(0,n);upRange(g.attributes.position,Math.max(2,n)*3);upRange(g.attributes.color,Math.max(2,n)*3);
 }
 // adaptive quality: a ladder of small steps (pixel ratio first, then AO, then bloom) walked down EARLY, as soon as the
 // median frame time sags for a second, and back up only after a long steady stretch (with a growing back-off, so it
 // never oscillates). G picks the top rung (High 0, Medium 2, Low 4); hitches (>100 ms) never count as "slow".
 // Cinematics have their own profile on top (V3.cine): no AO and no bloom (the two post passes that cost the most in a
-// low shot across the field), and the ladder holds still, because a pixel-ratio step reallocates every render target
-// (a 50-230 ms freeze) and would land mid-shot; the samples start afresh when the shot ends.
+// low shot across the field). The stutter rule still steps down mid-shot when frames really are slow, but nothing steps
+// back up until the shot is over: an up-step reallocates every render target (a 50-230 ms freeze) for a gain nobody
+// sees in a slow-motion cut. The samples start afresh at each cut.
 const QL=[{ao:true,bloom:true,pr:1.5},{ao:true,bloom:true,pr:1.25},{ao:false,bloom:true,pr:1.25},{ao:false,bloom:true,pr:1},{ao:false,bloom:false,pr:1},{ao:false,bloom:false,pr:0.85}];
 const QTOP=[0,2,4],QFT=new Float32Array(64);
 function qApply(){const q=QL[V3.ql],R=Z.renderer,bl=q.bloom&&!V3.cine;if(V3.ao)V3.ao.enabled=q.ao&&!V3.cine;if(V3.bloom)V3.bloom.enabled=bl;if(V3.gradeU)V3.gradeU.bloomK.value=bl&&V3.bloom?1:0;
   const pr=Math.min(window.devicePixelRatio||1,V3.comp?q.pr:Math.min(1.75,q.pr+0.25));if(R.getPixelRatio()!==pr){R.setPixelRatio(pr);resize3D();}}
 function quality3D(dtR){
   if(navigator.webdriver&&!Z.adaptive)return;
-  if(V3.cine)return;
   const ms=dtR*1000;if(ms>100||ms<=0)return;QFT[V3.qn++&63]=ms;V3.qAcc=(V3.qAcc||0)+dtR;if(V3.qAcc<0.5)return;V3.qAcc=0;
   const n=Math.min(V3.qn,64),a=Array.from(QFT.subarray(0,n)).sort((x,y)=>x-y),med=a[n>>1],p90=a[Math.floor(n*0.9)];V3.qn=0;
   const top=QTOP[V3.tier];if(V3.ql==null||V3.ql<top)V3.ql=top;
   // stutter counts as slow too: a fine median with 1 frame in 10 running double length is what players feel as lag
   if(med>18.5||p90>26){V3.qSlow=(V3.qSlow||0)+1;V3.qFast=0;
-    if(V3.qSlow>=2&&V3.ql<QL.length-1){V3.qSlow=0;if(performance.now()-(V3.qUpT||0)<6000)V3.qWait=Math.min(240,(V3.qWait||20)*2);V3.ql++;qApply();}}
+    if(V3.qSlow>=2&&V3.ql<QL.length-1){V3.qSlow=0;if(performance.now()-(V3.qUpT||0)<6000)V3.qWait=Math.min(240,(V3.qWait||20)*2);V3.ql++;while(V3.cine&&V3.ql<QL.length-1&&QL[V3.ql].pr===QL[V3.ql-1].pr)V3.ql++;qApply();}}   // (in a shot AO and bloom are already off: skip to a rung that changes something)
   else if(med<17.2&&p90<19){V3.qSlow=0;V3.qFast=(V3.qFast||0)+1;
-    if(V3.ql>top&&V3.qFast*0.5>=(V3.qWait||20)){V3.qFast=0;V3.ql--;V3.qUpT=performance.now();qApply();}}
+    if(!V3.cine&&V3.ql>top&&V3.qFast*0.5>=(V3.qWait||20)){V3.qFast=0;V3.ql--;V3.qUpT=performance.now();qApply();}}
   else{V3.qSlow=0;V3.qFast=0;}}
 // first-use hitches: compile every program once (in parallel where the browser can), then draw one hidden frame with
 // every object forced visible and unculled, so pipelines, buffers and textures are all created before the player
@@ -511,14 +522,18 @@ function draw3D(now,dtR){
   lightRig();camUpdate(dtR);
   // cinematics are the most expensive shots (a low camera looking across the whole field and sky): they run on the
   // cinematic profile (no AO, no bloom: nobody misses them in a slow-motion cut, everybody feels a stutter), switched at
-  // the cut, and the adaptive ladder holds still until the shot is over (see quality3D)
+  // the cut; the adaptive ladder only steps down until the shot is over (see quality3D)
   {const on=!!(CINE||(SUM&&SUM.cine));if(on!==!!V3.cine){V3.cine=on;V3.qn=0;V3.qAcc=0;V3.qSlow=0;V3.qFast=0;qApply();}}
   for(const k in Z.mods){const m=Z.mods[k];if(m&&m.update){try{m.update(dtR,now);}catch(err){console.error('3D '+k,err);m.update=null;}}}
   atmoApply(now);guides3D(now);overlayAtmo();
   try{envUpdate(now);}catch(err){console.warn('3D: environment map failed',err);V3.pmrem=null;}
   V3.sky.position.copy(Z.camera.position);
   if(!V3.warm&&Z.scene.environment&&LV)prewarm3D();
-  if(V3.warm===2){V3.warm=3;try{warmFrame(true);R.shadowMap.needsUpdate=true;if(V3.comp){const c=V3.comp;c.readBuffer=V3.rtMS;c.writeBuffer=c.renderTarget1;c.render(dtR);}else R.render(Z.scene,Z.camera);}
+  // (and a second time on the cinematic profile, AO and bloom off, so that pass chain has drawn once too: Safari builds its
+  // Metal pipelines lazily, at the first draw in each configuration, so the first summit shot would otherwise pay for it)
+  if(V3.warm===2){V3.warm=3;try{warmFrame(true);R.shadowMap.needsUpdate=true;if(V3.comp){const c=V3.comp;c.readBuffer=V3.rtMS;c.writeBuffer=c.renderTarget1;c.render(dtR);
+      const bk=V3.gradeU?V3.gradeU.bloomK.value:0;if(V3.ao)V3.ao.enabled=false;if(V3.bloom)V3.bloom.enabled=false;if(V3.gradeU)V3.gradeU.bloomK.value=0;
+      c.readBuffer=V3.rtMS;c.writeBuffer=c.renderTarget1;c.render(dtR);if(V3.gradeU)V3.gradeU.bloomK.value=bk;}else R.render(Z.scene,Z.camera);}
     catch(err){console.warn('3D: warm-up frame',err);}finally{warmFrame(false);}}
   R.info.reset();R.shadowMap.needsUpdate=true;V3.sceneCalls=-1;
   if(V3.comp){const c=V3.comp;c.readBuffer=V3.rtMS;c.writeBuffer=c.renderTarget1;

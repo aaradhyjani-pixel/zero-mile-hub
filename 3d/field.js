@@ -692,14 +692,14 @@ Z3MOD.field = function (Z) {
     im.instanceMatrix.setUsage(THREE.DynamicDrawUsage); im.instanceColor.setUsage(THREE.DynamicDrawUsage); im.frustumCulled = false; im.castShadow = shadow; im.receiveShadow = shadow; if (shadow) im.customDepthMaterial = treeDepth; root.add(im); return im; };
   const nearIM = TGEO.map((g, k) => mkTreeIM(g, NCAP[k], true)), farIM = mkTreeIM(FARG, Math.max(1, NT), false);
   // the far mesh holds every tree, written and uploaded once; the trees drawn by the near meshes are flagged (aNear) and
-  // dropped in its vertex shader, so a moving camera re-sends only the near trees and an 18 KB flag array (it used to
+  // dropped in its vertex shader, so a moving camera re-sends only the near trees and a 72 KB flag array (float, not byte: Metal wants 4-byte vertex formats) (it used to
   // re-send all 18,000 far matrices, 1.8 MB, up to four times a second in a cinematic: a long frame in Safari each time)
-  const nearF = new Uint8Array(Math.max(1, NT)), nearA = new THREE.InstancedBufferAttribute(nearF, 1); nearA.setUsage(THREE.DynamicDrawUsage); FARG.setAttribute('aNear', nearA);
+  const nearF = new Float32Array(Math.max(1, NT)), nearA = new THREE.InstancedBufferAttribute(nearF, 1); nearA.setUsage(THREE.DynamicDrawUsage); FARG.setAttribute('aNear', nearA);
   const farMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.82, metalness: 0, envMapIntensity: 0.6 });
   farMat.onBeforeCompile = sh => { swayHook(sh, true); sh.vertexShader = 'attribute float aNear;\n' + sh.vertexShader.replace('gl_Position=projectionMatrix*mvPosition;', 'gl_Position=projectionMatrix*mvPosition;if(aNear>0.5)gl_Position=vec4(0.0,0.0,-2.0,1.0);'); };
   farMat.customProgramCacheKey = () => 'zmhTreeFar'; farIM.material = farMat;
   farIM.instanceMatrix.array.set(TM); farIM.instanceColor.array.set(TCOL); farIM.count = NT;
-  const rng = (a, n) => { a.needsUpdate = true; if (a.addUpdateRange) { a.clearUpdateRanges(); a.addUpdateRange(0, Math.max(1, n) * a.itemSize); } };
+  const rng = (a, n) => { a.needsUpdate = true; const R = a.updateRanges; if (R) { const r = a._zr || (a._zr = { start: 0, count: 0 }); r.count = Math.max(1, n) * a.itemSize; R.length = 0; R.push(r); } };
   const camV = new THREE.Vector3(), lod = { t: -1, px: 1e9, pz: 1e9, fx: 1e9, fz: 1e9 }, ncount = [0, 0, 0];
   function lodTrees(force) {
     const cam = Z.camera; if (!cam) return; const px = cam.position.x, py = cam.position.y, pz = cam.position.z; cam.getWorldDirection(camV);

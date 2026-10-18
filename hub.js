@@ -563,7 +563,7 @@ function guardShow(text,who){const g=$('#guard'),t=$('#guardTxt');if(!g)return;i
 // the bodyguard by default; set pieces bring their own character (badge + 116x150 svg). When sound is on the bodyguard
 // speaks, and his popup follows his voice line by line.
 function guard(lines,who,o){const g=$('#guard');if(!g)return;clearTimeout(guard.t1);clearTimeout(guard.t2);o=o||{};
-  if(!who&&speak(lines,{onLine:i=>{clearTimeout(guard.t2);guardShow(lines[i]);if(o.onLine)o.onLine(i);},onDone:()=>{guard.t2=setTimeout(()=>g.classList.remove('on'),1400);if(o.onDone)o.onDone();}}))return;
+  if((!who||(typeof SPG_AUDIO!=='undefined'&&lines.every(t=>SPG_AUDIO[t])))&&speak(lines,{onLine:i=>{clearTimeout(guard.t2);guardShow(lines[i],who);if(o.onLine)o.onLine(i);},onDone:()=>{guard.t2=setTimeout(()=>g.classList.remove('on'),1400);if(o.onDone)o.onDone();}}))return;
   guardShow(lines[0],who);if(o.onLine)o.onLine(0);let i=0;const step=()=>{i++;if(i<lines.length){$('#guardTxt').textContent=lines[i];if(o.onLine)o.onLine(i);guard.t1=setTimeout(step,2600);}};
   if(lines.length>1)guard.t1=setTimeout(step,2600);guard.t2=setTimeout(()=>{g.classList.remove('on');if(o.onDone)o.onDone();},2600*(lines.length-1)+3600+(o.extra||0));}
 // the voice: pre-recorded earpiece clips (voice/spg_audio.js) one after another with pauses; a line without a clip falls back
@@ -628,7 +628,7 @@ function vipBanner(on,k,title,meme,icons){const b=$('#vipBanner');if(!on){b.clas
 //  RETURN  spgStaged: the SPG names each runway and it reopens a game minute later; then his sign-off; then the stack
 // A cinematic never lands its aircraft before the announcement has finished: the last 45 s of the approach run in slow
 // motion until it has. Everything here is event-driven and allocation-free per tick (no DOM work outside the events).
-const SUMT={pm:200,an:390,il1:550,il2:680,ret:800,cue:125,first:60,step:90,lead:50};
+const SUMT={pm:200,an:390,il1:550,il2:680,ret:800,cue:125,first:100,step:110,lead:60};
 // a staged announcement: each line goes on the ticker as it is spoken (its recorded clip in that speaker's accent, if there
 // is one; otherwise it stays up for a reading time), then onDone
 function announce(src,lines,o){o=o||{};const s0=S;let i=0;
@@ -653,8 +653,10 @@ function startSummit(){
   let nc=0,ka=0,kd=0;for(const f of flights){
     if(f.kind==='arr'&&f.state==='sched'&&!f.vip&&f.spawnT>T&&f.eta>E+120&&f.eta<tm.open[0]+300&&!refd.has(f)&&ka++%3===2){f.state='diverted';f.cancelled=true;f.turn=null;if(f.res){f.res.res=null;f.res=null;}nc++;}
     else if(f.kind==='dep'&&f.state==='at_gate'&&!f.charter&&f.std>E&&f.std<tm.open[0]&&kd++%4===3){if(f.gate){f.gate.occ=null;f.gate=null;}f.state='cancelled';nc++;}}
-  const a0=E+300,a1=tm.open[0]+600,b0=tm.open[0]-600;let held=0;
-  for(const f of flights)if(f.kind==='arr'&&f.state==='sched'&&!f.vip&&f.eta>a0&&f.eta<a1&&f.spawnT>T){const eta=b0+(f.eta-a0)*(a1-b0)/(a1-a0);if(eta>f.eta+30){f.spawnT+=eta-f.eta;f.eta=eta;held++;}}
+  // (due between E+4 min and the first reopening: released in order to arrive from 2 minutes before it to 10 minutes after
+  // the last one, so the stack afterwards is a recovery job of about 20 minutes, not an endless one)
+  const a0=E+240,a1=tm.open[0],b0=tm.open[0]-120,b1=tm.open[tm.open.length-1]+600;let held=0;
+  for(const f of flights)if(f.kind==='arr'&&f.state==='sched'&&!f.vip&&f.eta>a0&&f.eta<a1&&f.spawnT>T){const eta=b0+(f.eta-a0)*(b1-b0)/(a1-a0);if(eta>f.eta+30){f.spawnT+=eta-f.eta;f.eta=eta;held++;}}
   // the red carpet goes to the free stand nearest the runway exit each VIP will take, so the taxi in is short
   const pick=(type,r)=>{const T_=TYPES[type],need=T_.code==='F'?2200:T_.code==='E'?1900:1300,tx=r.x1-450,ex=r.exits.find(e=>tx-e.x>=need)||r.exits[r.exits.length-1],n=G.get(ex.to);
     return GATES.filter(g=>g.open&&!g.occ&&!g.res&&!marsBusy(g)&&CR[g.code]>=CR[T_.code]).sort((a,b)=>dist(a.x,a.y,n.x,n.y)-dist(b.x,b.y,n.x,n.y))[0]||null;};
@@ -682,7 +684,7 @@ function startSummit(){
   SUM.ev=[[15,()=>{if(held||nc){radio('ATC',`Airlines have cancelled ${nc} flights for the summit. Flow control is holding ${held} more on the ground at their origins until the runways come back.`);logE(`The summit: ${nc} flights cancelled, ${held} arrivals held at their origins.`);}}],
     [40,()=>say('SPG','Can you have one runway back? No. We have chosen the runways. We choose the order. We are very fast at saying no.')]];
   guard(['Sir. We have taken over your runways.','All of them. Yes, the long one too.']);
-  radio('TWR',`All stations, summit protocol: every runway at Zero Mile is closed.${waved?` ${waved} on final, go around.`:''} Everyone else, hold.`);
+  say('TWR',`All stations, summit protocol: every runway at Zero Mile is closed.${waved?` ${waved} on final, go around.`:''} Everyone else, hold.`);
   logE('The summit: the SPG took every runway.');renderRw();return true;
 }
 function vipCine(f){const s=SUM;s.cine={f,ann:false,landed:0};
@@ -698,17 +700,20 @@ function vipCineEnd(){const s=SUM,c=s.cine;s.cine=null;
   if(now){s.ci++;vipCine(nx);return;}
   vipBanner(false);if(s.prevSpeed!=null){speed=s.prevSpeed;s.prevSpeed=null;if(running)setSpeed(speed);}
   if(V3.on&&V3.ready&&s.prevCam){setCam('map');Object.assign(C3.t,s.prevCam.t);s.prevCam=null;}}
+// while anyone speaks during the summit the game runs at no more than 1x, so each line is heard with what it describes
+function sumHold(s,off){if(!off&&SND.on&&!s.cine&&!CINE&&(vqOn||VQ.length)){if(speed>1){if(s.hold==null)s.hold=speed;speed=1;if(running)setSpeed(1);}}
+  else if(s.hold!=null&&(off||(!vqOn&&!VQ.length&&!STAGED.length&&!s.cine&&!CINE))){speed=s.hold;s.hold=null;if(running)setSpeed(speed);}}
 function summitTick(){
-  const s=SUM;if(!s)return;const t=T-s.E;
+  const s=SUM;if(!s)return;const t=T-s.E;sumHold(s);
   while(s.ev.length&&t>=s.ev[0][0])s.ev.shift()[1]();
   for(const f of s.vips){
     if(f.state==='sched'&&T>=f.vipTd-D_APP-10){const r=f.vipRw;f.x=r.x1+14000;f.y=r.y+(r.y<0?-2600:2600);f.alt=2000;f.heading=Math.PI;f.state='inbound';beginApproach(f,r,f.vipTd);
-      if(f===s.pm)radio('APP',`Air India One, Nagpur Approach, radar contact. Expect runway ${r.short}.`);
-      else if(f===s.an)radio('APP',`An Antonov An-124 is inbound for ${r.short} with the Russian motorcade. The motorcade has its own aeroplane.`);}
+      if(f===s.pm)say('APP',`Air India One, Nagpur Approach, radar contact. Expect runway ${r.short}.`);
+      else if(f===s.an)say('APP',`An Antonov An-124 is inbound for ${r.short} with the Russian motorcade. The motorcade has its own aeroplane.`);}
     if(f.landT!=null&&!f.helloed){f.helloed=true;say('TWR',f.hello);}
     if(f.inBlock!=null&&!f.docked){f.docked=T;
-      if(f===s.pm){radio('PROTOCOL','The Honourable Prime Minister is on the red carpet, to receive His Excellency the President of the Russian Federation.');if(f.stand)MARKS.push({x:f.stand.x,y:f.stand.y,e:'🇮🇳',until:T+1500,px:24});}
-      else if(f===s.an&&f.stand){radio('RAMP','The motorcade is driving out of the Antonov. Ten cars. Nobody has asked where they will park.');
+      if(f===s.pm){say('PROTOCOL','The Honourable Prime Minister is on the red carpet, to receive His Excellency the President of the Russian Federation.');if(f.stand)MARKS.push({x:f.stand.x,y:f.stand.y,e:'🇮🇳',until:T+1500,px:24});}
+      else if(f===s.an&&f.stand){say('RAMP','The motorcade is driving out of the Antonov. Ten cars. Nobody has asked where they will park.');
         const g=s.pm.stand||f.stand;MARKS.push({e:'🚗',n:4,sp:120,px:18,path:[[f.stand.x,f.stand.y],[lerp(f.stand.x,g.x,0.5),lerp(f.stand.y,g.y,0.5)+80],[g.x,g.y+60]],t0:T,t1:T+240,until:T+700,x:f.stand.x,y:f.stand.y});}}}
   // one cinematic at a time, in the order they land
   const c=s.cine;
@@ -719,19 +724,23 @@ function summitTick(){
     if(c.landed&&performance.now()-c.landed>3600)vipCineEnd();}
   // the Prime Minister receives the President once both Il-96s are down and Russia One is on its stand
   if(!s.shook&&s.il1.docked&&s.il2.landT!=null&&!s.cine){s.shook=T;const g=s.il1.stand||s.pm.stand;
-    radio('PROTOCOL','The Honourable Prime Minister has received His Excellency the President of the Russian Federation on the red carpet. Handshake: eleven seconds.');logE('The Prime Minister received the President at the VIP stands.');
-    if(g){MARKS.push({x:g.x,y:g.y,e:'🤝',until:T+400,px:30});if(T<s.ret-70&&!CINE)cinema(null,['ZERO MILE · THE SUMMIT','The Prime Minister receives the President of the Russian Federation','Hindi-Rusi bhai bhai 🤝',FLAG_IN+FLAG_RU],{view:{tx:g.x,ty:g.y,dist:650,pitch:0.32,yaw:0.7},at:[g.x,g.y],ms:5500});}}
-  if(s.shook&&!s.gone&&T>=s.shook+60){s.gone=true;say('SPG','The motorcade has left for Tadoba. Every road from here to the tigers is closed. The tigers have been informed.');
+    say('PROTOCOL','The Honourable Prime Minister has received His Excellency the President of the Russian Federation on the red carpet. Handshake: eleven seconds.');logE('The Prime Minister received the President at the VIP stands.');
+    if(g){MARKS.push({x:g.x,y:g.y,e:'🤝',until:T+400,px:30});if(T<s.ret+80&&!CINE)cinema(null,['ZERO MILE · THE SUMMIT','The Prime Minister receives the President of the Russian Federation','Hindi-Rusi bhai bhai 🤝',FLAG_IN+FLAG_RU],{view:{tx:g.x,ty:g.y,dist:650,pitch:0.32,yaw:0.7},at:[g.x,g.y],ms:5500});}}
+  if(s.shook&&!s.gone&&T>=s.shook+40){s.gone=true;say('SPG','The motorcade has left for Tadoba. Every road from here to the tigers is closed. The tigers have been informed.');
     const g=s.il1.stand||s.pm.stand;if(g)MARKS.push({e:'🚗',n:6,sp:160,px:18,path:[[g.x,g.y],[lerp(g.x,procC.x,0.5),lerp(g.y,procC.y,0.5)],[procC.x-900,procC.y]],t0:T,t1:T+300,until:T+300,x:g.x,y:g.y});}
   // the staged return: he names a runway, it reopens a game minute later, then the next one
-  if(!s.back&&T>=s.ret&&!s.cine){s.back=T;S.summitBack=s.tm.open[0];
-    spgStaged(s.order,{at:s.ret,first:SUMT.first,step:SUMT.step,lead:SUMT.lead,open:(r,i)=>{r.blocks=r.blocks.filter(b=>b!==s.blk[i]);},done:()=>{s.done=T;}});}
+  // (anything still queued for the radio voice is stale by now: drop it so his lines keep step with the runways)
+  // (if a cinematic held it up, it starts now, and every runway's block moves to the time he will actually reopen it)
+  // he starts once the handshake has been shown (or at the latest 2 minutes after the plan)
+  if(!s.back&&T>=s.ret&&!s.cine&&!CINE&&(s.shook?T>=s.shook+50:T>=s.ret+120)){s.back=T;VQ.length=0;
+    const tm=spgStaged(s.order,{at:T,first:SUMT.first,step:SUMT.step,lead:SUMT.lead,open:(r,i)=>{r.blocks=r.blocks.filter(b=>b!==s.blk[i]);},done:()=>{s.done=T;}});
+    s.blk.forEach((b,i)=>{b.to=tm.open[i];});S.summitBack=tm.open[0];renderRw();}
   // then the stack the summit left: the approach controller calls it down
   if(s.done&&T>=(s.nextStack||0)){s.nextStack=T+30;let h=0;for(const f of flights)if(f.state==='holding')h++;
-    if(!s.peak){s.peak=Math.max(1,h);radio('APP',`The summit stack is ${h} aircraft${s.held?', and flow control is releasing the flights it held':''}. Give arrivals every runway you can.`);}
-    else if(!s.half&&h<=s.peak/2&&T>s.done+240){s.half=true;radio('APP',`Stack down to ${h}. Keep the arrival runways coming.`);}
-    else if(h<=3&&T>s.done+240){radio('APP',h?`The summit stack is cleared: ${h} left holding. Normal service.`:'The summit stack is cleared. Normal service.');logE('The stack from the summit was cleared.');SUM=null;}
-    else if(T>s.E+3000)SUM=null;}
+    if(!s.peak){s.peak=Math.max(1,h);say('APP',`The summit stack is ${h} aircraft. Give arrivals every runway you can.`);}
+    else if(!s.half&&h<=s.peak/2&&T>s.done+240){s.half=true;say('APP',`Stack down to ${h}. Keep the arrival runways coming.`);}
+    else if(h<=3&&T>s.done+240){say('APP',h?`The summit stack is cleared: ${h} left holding. Normal service.`:'The summit stack is cleared. Normal service.');logE('The stack from the summit was cleared.');sumHold(s,true);SUM=null;}
+    else if(T>s.E+3000){sumHold(s,true);SUM=null;}}
 }
 // ============ set pieces: the summit's siblings, one or two per level ============
 // Each is a story with a character on the dashboard, radio lines on a timeline, a disruption the sim really feels,
@@ -920,8 +929,8 @@ STORY.dabba={len:1100,start(c){const ds=CONC.filter(o=>o.id[0]==='D');if(!ds.len
     def:0,defText:'they cross anyway: Concourse D stops for 3 minutes.',
     acts:[{l:'Let them cross (3 min)',pri:1,fn(){cross(T,true);resolve(I,true,'The dabbawalas crossed Concourse D. On time, obviously.');}},
       {l:'Hold the bicycles',fn(){FX.chgK=1.5;FX.chgUntil=T+900;c.hangry=true;cross(T+300,false);renderRw();resolve(I,true,'');}}]});
-  c.lines.push([200,cc=>{if(cc.hangry){radio('TWR','The tower is hungry. Changeovers are taking longer. Nobody talk to the supervisor.');guard(['Lunch is late, saheb.','The tower is not happy. 🍱'],WHO.dabba);}
-    else radio('TWR','Lunch has arrived in the tower. Every dabba correct. Again.');}]);}};
+  c.lines.push([200,cc=>{if(cc.hangry){say('TWR','The tower is hungry. Changeovers are taking longer. Nobody talk to the supervisor.');guard(['Lunch is late, saheb.','The tower is not happy. 🍱'],WHO.dabba);}
+    else say('TWR','Lunch has arrived in the tower. Every dabba correct. Again.');}]);}};
 
 // L4 · Delhi moves in: five ops WhatsApp groups become one
 const WA=['Good afternoon to all 🌞🙏','Forwarded many times: NASA says Zero Mile is visible from space','R3 closed?? pls confirm urgent','Happy birthday to the Fire Chief\'s grandson 🎂🎂','Who has added me in this group','Pls do not send good morning msgs in official group',
@@ -1005,7 +1014,7 @@ STORY.gps={len:900,start(c){const gr=RW.filter(r=>!r.locked&&['R2','R5'].include
     acts:[{l:'ILS runways only (10 min)',pri:1,fn(){for(const r of gr)r.noArrUntil=T+600;renderRw();resolve(I,true,`Landings moved off the GPS runways ${nm} for 10 minutes.`);}},
       {l:'Keep landing on GPS',fn(){for(const r of gr)r.gpsUntil=T+600;renderRw();resolve(I,true,'');}}]});
   c.lines.push([0,'APP','Emirates 210, GPS spoofing reported in the area. … Unable RNP, request vectors for the ILS.']);
-  c.lines.push([600,'APP','GPS spoofing has stopped. The aircraft are back over Nagpur, where they always were.']);}};
+  c.lines.push([600,()=>say('APP','GPS spoofing has stopped. The aircraft are back over Nagpur, where they always were.')]);}};
 
 // L3 · the Chambani wedding: 40 private jets must land before the muhurat (the jokes are about the scale, not the couple).
 // The fleet always comes; the call is how. A chip counts the jets down, the camera rides the first one and the groom's
@@ -1033,7 +1042,7 @@ STORY.wedding={len:2200,start(c){const L=r=>r.tdList.length+flights.filter(f=>f.
       f.toPark=true;c.jets.push(f);}
     const pk=G.get(PARK),path=[[pk.x+1600,pk.y+900],[pk.x+700,pk.y+500],[pk.x+120,pk.y+80]];FXV.push({kind:'elephant',id:'haathi',path,t0:tA+300,t1:tM+600});
     MARKS.push({e:'🐘',k:'elephant',px:26,path,t0:tA+300,t1:tA+900,until:tM+600,x:path[0][0],y:path[0][1]});
-    c.lines.push([tA+300-T,'FSO','One elephant is arriving by road. It has been cleared.']);
+    c.lines.push([tA+300-T,()=>say('FSO','One elephant is arriving by road. It has been cleared.')]);
     wedChip(c,true);};
   const I=storyCard(c,{icon:{g:'💍',c:'#d4a017'},x:r.x1+1500,y:r.y,title:'The Chambani wedding: 40 jets before the muhurat',
     text:`Shananth Chambani weds Kanika Merchant at ${clk(tM)}, and the guest list has its own airline: 40 private jets, landing from ${clk(tA)}. Give the family ${r.short} to themselves until the muhurat: 40 landings in 19 minutes, but ${r.short} is shut to everyone else. Or fit the jets into normal traffic on your arrival runways: nothing closes, but the stack grows and some guests will miss the muhurat.`,
@@ -1060,8 +1069,8 @@ STORY.wedding={len:2200,start(c){const L=r=>r.tdList.length+flights.filter(f=>f.
   // what the radio says follows the count of jets actually down
   const k=c.kn||0;
   if(!c.m1&&c.jets[0].landT!=null){c.m1=true;say('TWR','Baraat 1, welcome to Zero Mile. Follow the car with the marigolds to the wedding apron.');if(!MUS.name)music('dj',{vol:0.35});}
-  if(!c.m10&&k>=10){c.m10=true;radio('PLANNER','Ten down, thirty to go. The groom\'s side has asked for a water salute. The bride\'s side has asked for a bigger one.');}
-  if(!c.m20&&k>=20){c.m20=true;radio('PLANNER','Half the guest list is down. Baraat 21 is carrying only the lehengas. Baraat 22 is carrying the jewellery for Baraat 21.');}
+  if(!c.m10&&k>=10){c.m10=true;say('PLANNER','Ten down, thirty to go. The groom\'s side has asked for a water salute. The bride\'s side has asked for a bigger one.');}
+  if(!c.m20&&k>=20){c.m20=true;say('PLANNER','Half the guest list is down. Baraat 21 is carrying only the lehengas. Baraat 22 is carrying the jewellery for Baraat 21.');}
   if(!c.m30&&c.jets[29].landT!=null){c.m30=true;say('PLANNER','The groom will now change to a horse. The horse is on Baraat 31.');}}};
 
 // L4 · Super Over at Jamtha: 16 fan charters sit on the bank chart all day, then the fans decide to stay
@@ -1182,7 +1191,7 @@ STORY.fog={len:1700,start(c){const r=LONGEST;if(r.locked)return false;c.r=r;
   VQ.length=0;music(null,{fadeOut:1500});
   voiced(['Sir, fog. In the afternoon. At 46 degrees.','We are as surprised as you are. 🌫️'],WHO.met);
   flashBanner(['FOG · RVR 350 m','A freak fog bank rolls in off Gorewada lake after the storm','Low visibility procedures: wider spacing on every runway',icos('🌫️')],5500);
-  c.lines.push([0,'ATC','Low visibility procedures in force. Runway visual range 350 metres. Increased spacing on all runways.']);
+  c.lines.push([0,()=>say('ATC','Low visibility procedures in force. Runway visual range 350 metres. Increased spacing on all runways.')]);
   const I=storyCard(c,{icon:{g:'🌫️',c:'#c9d3da'},x:r.x1-200,y:r.y,title:`Fog, and the taxiway to ${r.short} is blocked`,
     text:`A broken-down tug is blocking the taxiway to ${r.short}'s threshold for the next 12 minutes, in fog. Departures could still use ${r.short} by backtracking: entering midway, taxiing down the runway itself and turning around at the end. In this visibility the tower cannot see the runway, and backtracking on an active runway in fog is how runway collisions happen. Or stop departures on ${r.short} until the taxiway clears: it is the long runway, so heavy jets in this heat will wait or offload.`,
     // on purpose the bright button here is the dangerous one (press it blindly and the chain can end in a collision); the
@@ -1192,34 +1201,34 @@ STORY.fog={len:1700,start(c){const r=LONGEST;if(r.locked)return false;c.r=r;
         voiced(['Backtracking in this? I cannot see the runway from the cab.','Every read-back in full. Nobody rushes.'],WHO.sup);}},
       {l:`No backtracking: stop ${r.short} departures`,fn(){r.noDepUntil=T+720;renderRw();resolve(I,true,`${r.short} departures stopped while its taxiway was blocked in fog.`);}}]});
   c.lines.push([720,'OPS',`The tug is clear. ${r.short}'s taxiway is open again.`]);
-  c.lines.push([LV.fog[1]-T,cc=>{if(cc.out==='crash'){radio('ATC','The fog has lifted. Normal spacing on the open runways.');return;}
-    radio('ATC','The fog has lifted. Normal visibility, normal spacing.');voiced(['The fog has lifted.','Fifteen minutes of fog at 46 degrees. We are writing a paper.'],WHO.met);}]);},
+  c.lines.push([LV.fog[1]-T,cc=>{if(cc.out==='crash'){say('ATC','The fog has lifted. Normal spacing on the open runways.');return;}
+    say('ATC','The fog has lifted. Normal visibility, normal spacing.');voiced(['The fog has lifted.','Fifteen minutes of fog at 46 degrees. We are writing a paper.'],WHO.met);}]);},
 tick(c,t){const r=c.r;if(c.bt&&!c.sc&&T>=c.scenAt&&!r.occ&&T<r.btUntil-60)this.begin(c);if(c.sc)this.run(c);},
 begin(c){const r=c.r,side=procC.y>r.y?1:-1;
   const B=mk({kind:'dep',state:'xhold',al:'OCA',type:'B77W',intl:false,to:'Mumbai',toCode:'BOM',dir:'W',std:T});Object.assign(B,{num:'1801',disp:'Orange City Cargo 1801 (777F)',callsign:'ORANGE CITY 1801',x:r.x1-60,y:r.y,heading:Math.PI,v:0,rwy:r,origStd:T,readyAt:T,cargo:true});
   const A=mk({kind:'dep',state:'xbt',al:'SPC',type:'B748',intl:false,to:'Kolkata',toCode:'CCU',dir:'E',std:T+900});Object.assign(A,{num:'77',disp:'Satpura Cargo 77 (747-8F)',callsign:'SATPURA 77',x:r.x1-1500,y:r.y,heading:0,v:8,rwy:r,origStd:T+900,readyAt:T,cargo:true});
   r.occ=B;c.sc={A,B,t0:T,go:SIMR()<0.4,side,turn:0,phase:'bt'};
-  radio('TWR',`Satpura 77, backtrack runway ${r.short}, vacate at the next exit, report runway vacated.`);logE(`Satpura 77 backtracking on ${r.short} in fog.`);},
+  say('TWR',`Satpura 77, backtrack runway ${r.short}, vacate at the next exit, report runway vacated.`);logE(`Satpura 77 backtracking on ${r.short} in fog.`);},
 run(c){const s=c.sc,{A,B}=s,r=c.r,t=T-s.t0,dt=Math.min(1,T-(s.last||T));s.last=T;
   // the freighter backtracks east towards the threshold, then turns off towards the taxiway on the terminal side
   if(A.state==='xbt'){if(A.x<r.x1-1200&&!s.turn)A.x+=8*dt;else{s.turn=Math.min(1,s.turn+dt/16);A.heading=s.side*s.turn*Math.PI/2;A.x+=8*dt*Math.cos(A.heading);A.y+=8*dt*Math.sin(A.heading);
       if(Math.abs(A.y-r.y)>70){A.state='wedtaxi';const p=route(nearestNode(A.x,A.y).k,PARK);if(p)setPath(A,[{x:A.x,y:A.y}].concat(p),TAXI_R);else A.state='towed';
         if(B.state==='xhold'){radio('TWR',`Satpura 77 has vacated. Orange City 1801, runway ${r.short}, cleared for take-off.`);B.state='lineup';B.rollT=T;setPath(B,[{x:B.x,y:B.y},{x:B.x-1,y:B.y}],50);}
         if(s.phase==='bt'){s.phase='done';r.occ=B;}}}}
-  if(t>=10&&!s.lu){s.lu=1;radio('TWR',`Orange City 1801, line up and wait, runway ${r.short}.`);}
+  if(t>=10&&!s.lu){s.lu=1;say('TWR',`Orange City 1801, line up and wait, runway ${r.short}.`);}
   if(s.go&&!s.rolled&&t>=16){s.rolled=1;B.state='xroll';B.v=8;B.s=60;B.rollT=T;s.rollT=T;
-    radio('ORANGE CITY 1801','…we are now at take-off.');setTimeout(()=>radio('TWR','OK… [squeal] …stand by for take-off, I will call you.'),900);
+    let ok1=false;const l2=()=>say('TWR','OK… [squeal] …stand by for take-off, I will call you.');ok1=say('ORANGE CITY 1801','…we are now at take-off.',{gap:150,onEnd:()=>{if(ok1)l2();}});if(!ok1)setTimeout(l2,900);
     s.prevSpeed=speed;stopUI(c,true);
     cinema(null,['RUNWAY INCURSION · '+r.short,'Orange City 1801 is rolling. Satpura 77 is still on the runway.','STOP IT',''],{view:{tx:r.x1-700,ty:r.y,dist:1150,pitch:0.17,yaw:Math.PI/2},at:[r.x1-700,r.y],ms:60000,speed:0.15,force:true});s.stopMs=performance.now()+3000;}
-  if(B.state==='xroll'){if(speed!==0.15){speed=0.15;}const px=B.x;B.v=Math.min(95,B.v+(B.rto?-5:2.0)*dt);B.s+=B.v*dt;B.x=r.x1-B.s;if(t-(s.rollT-s.t0)>3&&!s.cry){s.cry=1;radio('SATPURA 77','We are still on the runway! Satpura 77 still on the runway!');}
+  if(B.state==='xroll'){if(speed!==0.15){speed=0.15;}const px=B.x;B.v=Math.min(95,B.v+(B.rto?-5:2.0)*dt);B.s+=B.v*dt;B.x=r.x1-B.s;if(t-(s.rollT-s.t0)>3&&!s.cry){s.cry=1;say('SATPURA 77','We are still on the runway! Satpura 77 still on the runway!');}
     stopUI(c,true);
     if(B.rto&&B.v<=0.5){B.v=0;s.stopped=1;this.end(c,'near');}
     else if(px>A.x+20&&B.x<=A.x+20){if(A.state==='xbt'&&Math.abs(A.y-r.y)<70)this.end(c,'crash');else{B.state='roll';r.occ=B;this.end(c,'clear');}}}},
-stop(c){const s=c.sc;if(!s||s.B.state!=='xroll'||s.B.rto||performance.now()>s.stopMs)return;s.B.rto=true;radio('TWR','ORANGE CITY 1801, STOP IMMEDIATELY! I say again, STOP IMMEDIATELY!');logE('You cancelled Orange City 1801\'s take-off roll.');stopUI(c,true);},
+stop(c){const s=c.sc;if(!s||s.B.state!=='xroll'||s.B.rto||performance.now()>s.stopMs)return;s.B.rto=true;VQ.length=0;say('TWR','ORANGE CITY 1801, STOP IMMEDIATELY! I say again, STOP IMMEDIATELY!');logE('You cancelled Orange City 1801\'s take-off roll.');stopUI(c,true);},
 end(c,how){const s=c.sc,{A,B}=s,r=c.r;stopUI(c,false);c.out=how;
   if(CINE&&CINE.o&&CINE.o.ms===60000)CINE.t0=performance.now()-CINE.o.ms+(how==='crash'?9000:3500);
   if(how==='near'){hitSafety(12,`Near collision on ${r.short} in fog: Orange City 1801 rolled without a clearance with Satpura 77 still on the runway. You stopped it.`);
-    B.state='taxi_out';B.rto=false;r.occ=null;assignDep(B,true);closeRw(r,900,'Runway incursion investigation');radio('TWR',`Orange City 1801 stopped. Runway ${r.short} closed for the investigation.`);
+    B.state='taxi_out';B.rto=false;r.occ=null;assignDep(B,true);closeRw(r,900,'Runway incursion investigation');say('TWR',`Orange City 1801 stopped. Runway ${r.short} closed for the investigation.`);
     flashBanner(['NEAR MISS · '+r.short,'Orange City 1801 stopped about 400 m short of Satpura 77','You broke the chain',''],5000);
     setTimeout(()=>{if(STO.includes(c))voiced(['Orange City has stopped. Four hundred metres short.','Nobody moves on that runway until I can see it.'],WHO.sup);},2500);}
   else if(how==='crash'){A.state='wreck';B.state='wreck';A.v=0;B.v=0;r.occ=null;r.closedUntil=1e9;r.why='Accident site';S.crash={t:T,r:r.short};
@@ -1229,11 +1238,11 @@ end(c,how){const s=c.sc,{A,B}=s,r=c.r;stopUI(c,false);c.out=how;
     const others=RW.filter(o=>!o.locked&&o!==r);takeRunways(others,T,600,0,'Accident: all runways closed','Accident: all runways closed');
     for(const f of flights)if(f.state==='approach'&&f.rwy===r)goAround(f,'runway accident');
     vipBanner(true,'RUNWAY COLLISION · '+r.short,'Two aircraft have collided in fog','Emergency services are responding. All runways closed.','');setTimeout(()=>{if(!CINE)vipBanner(false);},9000);
-    radio('ATC',`ALL STATIONS, ALL STATIONS: aircraft accident on runway ${r.short}. All runways closed. Fire services responding.`);
+    const allst=`ALL STATIONS, ALL STATIONS: aircraft accident on runway ${r.short}. All runways closed. Fire services responding.`;radio('ATC',allst);setTimeout(()=>{if(STO.includes(c))say('ATC',allst);},4200);
     c.lines.push([T-c.E+40,()=>{radio('FIRE',`Crash tenders on scene on ${r.short}. Foam going on now.`);voiced(['Crash tenders on scene. Foam going on now.','Both crews are out. The medics have them.'],WHO.arff);}]);
-    c.lines.push([T-c.E+120,()=>{radio('ATC','Arrivals: hold. Divert if your fuel requires.');voiced([`${r.short} is closed for the rest of the day.`,'We will run on the other four. Arrivals first.'],WHO.sup);}]);
-    c.lines.push([T-c.E+600,'ATC',`Runways other than ${r.short} reopening. ${r.short} is closed for the rest of the day.`]);}
-  else{radio('TWR','Orange City 1801 airborne. That was too close.');}},
+    c.lines.push([T-c.E+120,()=>{say('ATC','Arrivals: hold. Divert if your fuel requires.');voiced([`${r.short} is closed for the rest of the day.`,'We will run on the other four. Arrivals first.'],WHO.sup);}]);
+    c.lines.push([T-c.E+600,()=>say('ATC',`Runways other than ${r.short} reopening. ${r.short} is closed for the rest of the day.`)]);}
+  else{say('TWR','Orange City 1801 airborne. That was too close.');}},
 lesson(c){if(c.out==='crash')return{w:200,title:`A runway collision on ${c.r.short}`,text:'This is how it happened, one link at a time: fog; a blocked taxiway; backtracking departures on an active runway in that fog; a garbled clearance ("…we are now at take-off"); and no stop while there was still time. Each link was a choice. In low visibility, never run backtracks on an active runway: take the capacity hit instead. And when the incursion alarm sounds, stop the roll at once.'};
   if(c.out==='near')return{w:60,title:'A near collision in fog, and you stopped it',text:'Backtracking on an active runway in fog let a garbled clearance put two aircraft on the same runway. You stopped the roll in time. Next time break the chain earlier: in low visibility, stop departures on that runway instead of backtracking.'};
   return null;}};
@@ -1242,14 +1251,14 @@ function stopUI(c,on){const b=$('#stopBtn');if(!b)return;if(!on){b.hidden=true;r
   b.classList.toggle('late',late||!!B.rto);b.hidden=false;
   b.innerHTML=B.rto?'STOPPING…<small>Orange City 1801 rejecting take-off</small>':late?'COMMITTED<small>too late to stop</small>':`STOP! CANCEL TAKE-OFF<small>ORANGE CITY 1801 · SPACE</small><i style="width:${Math.round(k*100)}%"></i>`;}
 // test hooks for the Level 3 set pieces (headless probes)
-window.L3T={sum:()=>SUM,mus:()=>MUS.name,cine:()=>CINE&&{ban:CINE.ban[0],f:CINE.f&&CINE.f.disp},sto:()=>STO.map(c=>c.k),vq:()=>VQ.length+(vqOn?1:0),spd:()=>speed};
+window.L3T={vreset:()=>voiceReset(),sum:()=>SUM,mus:()=>MUS.name,cine:()=>CINE&&{ban:CINE.ban[0],f:CINE.f&&CINE.f.disp},sto:()=>STO.map(c=>c.k),vq:()=>VQ.length+(vqOn?1:0),spd:()=>speed};
 // L3 · the last stretch: after a collision, the recovery (played straight); otherwise a lighter evening; then the wind-down
 STORY.evening={len:2000,start(c){const cr=S.crash,w=(S.storyRec||[]).find(o=>o.k==='wedding');
   if(cr){c.lines.push([0,()=>{radio('FIRE',`The fire on ${cr.r} is out. The foam blanket is holding.`);voiced(['The fire is out.','The foam stays down until the investigators have seen it.'],WHO.arff);}]);
-    c.lines.push([450,'AOCC',`Investigators from the Aircraft Accident Investigation Bureau are on site at ${cr.r}. It stays closed for the rest of the day.`]);}
-  else{c.lines.push([0,'AOCC','Lost property from the summit: one fur hat, size large. At 46 degrees. It is being kept in the cold room.']);
-    if(w&&w.jets&&w.jets.length)c.lines.push([400,'PLANNER','The Chambanis thank the tower. The reception is tomorrow. Sixty jets.']);}
-  c.lines.push([Math.max(600,(LV.taper?LV.taper.arr[0]:LEN-1500)-T+200),'AOCC',`The evening shift takes over at ${clk(LEN)}. The last arrivals are on the bank chart: land them, clear the departure queue, and hand over.`]);}};
+    c.lines.push([450,()=>say('AOCC',`Investigators from the Aircraft Accident Investigation Bureau are on site at ${cr.r}. It stays closed for the rest of the day.`)]);}
+  else{c.lines.push([0,()=>say('AOCC','Lost property from the summit: one fur hat, size large. At 46 degrees. It is being kept in the cold room.')]);
+    if(w&&w.jets&&w.jets.length)c.lines.push([400,()=>say('PLANNER','The Chambanis thank the tower. The reception is tomorrow. Sixty jets.')]);}
+  c.lines.push([Math.max(600,(LV.taper?LV.taper.arr[0]:LEN-1500)-T+200),()=>say('AOCC',`The evening shift takes over at ${clk(LEN)}. The last arrivals are on the bank chart: land them, clear the departure queue, and hand over.`)]);}};
 document.addEventListener('keydown',e=>{if(e.code==='Space'){const b=$('#stopBtn');if(b&&!b.hidden){e.preventDefault();e.stopImmediatePropagation();if(!b.classList.contains('late'))b.click();}}},true);
 
 const tleft=I=>I.simFuse?`MAYDAY in ${Math.max(0,Math.ceil(I.left/Math.max(1,speed)))} s`:`${Math.max(0,Math.ceil(I.left))} s`;

@@ -104,7 +104,11 @@ function build3D(THREE,ad){
     tv:new THREE.Vector3(),tv2:new THREE.Vector3(),tv3:new THREE.Vector3(),tc:new THREE.Color(),envKey:null,envT:-9});
   Z.sunDir=new THREE.Vector3(0.45,0.75,-0.48).normalize();V3.keyDir=Z.sunDir;Z.sun=sun;Z.hemi=hemi;
   // image-based lighting: the sky (with a ground below the horizon) rendered into a PMREM cube, refreshed only when it changes
-  if(V3.skyKind==='preetham'){try{V3.pmrem=new THREE.PMREMGenerator(renderer);V3.envScene=new THREE.Scene();const es=new THREE.Mesh(sky.geometry,sky.material);es.scale.setScalar(50);es.frustumCulled=false;V3.envScene.add(es);}catch(err){console.warn('3D: no environment map',err);V3.pmrem=null;}}
+  if(V3.skyKind==='preetham'){try{V3.pmrem=new THREE.PMREMGenerator(renderer);V3.envScene=new THREE.Scene();const es=new THREE.Mesh(sky.geometry,sky.material);es.scale.setScalar(50);es.frustumCulled=false;V3.envScene.add(es);
+    // fromScene() makes and disposes a MeshBasicMaterial for its background box on every call, which frees that shader
+    // program, so each refresh compiled and linked it again: a 100-300 ms stall about once a second in the andhi, where
+    // the sky keeps changing. This invisible twin (same program, no colour or depth writes) keeps the program alive.
+    const keep=new THREE.Mesh(new THREE.BoxGeometry(),new THREE.MeshBasicMaterial({side:THREE.BackSide,depthWrite:false,depthTest:false,colorWrite:false}));keep.frustumCulled=false;V3.envScene.add(keep);}catch(err){console.warn('3D: no environment map',err);V3.pmrem=null;}}
   // guides: glowing ribbons for the next two arrivals per runway (no spaghetti), and the holding racetracks
   const gmat=new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:0.9,depthWrite:false,fog:false});
   const gg=new THREE.BufferGeometry();gg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(6000*3),3));gg.setAttribute('color',new THREE.BufferAttribute(new Float32Array(6000*3),3));

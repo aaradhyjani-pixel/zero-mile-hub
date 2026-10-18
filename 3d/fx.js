@@ -478,8 +478,10 @@ void main() {
     dust.count = MS.length * ND; dust.visible = nd > 0; if (nd) { dust.instanceMatrix.needsUpdate = true; dust.instanceColor.needsUpdate = true; }
   }
 
+  // the 3D troop replaces the flat 🐒 marks (2D keeps them); if the troop ever fails, the marks come back
+  const KS = Z.fxKinds || (Z.fxKinds = new Set()); KS.add('monkeys');
   let lastT = -1;
-  return {
+  const api = {
     state: () => ({ troop: troopS, show, walk: !!walkIM }),
     // where the flypast is at sim time T, for the cinematic camera (hub3d's chase): the formation's centre (true scale),
     // the lead's horizontal heading and the formation's spread in metres; null when no display is on
@@ -507,4 +509,7 @@ void main() {
       if (mk) updMonkeys(mk, dt, now, T, adv); else { troop.visible = false; shadows.visible = false; dust.visible = false; troopS.id = null; }
     },
   };
+  // the core drops a module whose update throws: then hide it all and give the marks back
+  const up = api.update; api.update = (dt, now) => { try { up(dt, now); } catch (e) { KS.delete('monkeys'); root.visible = false; throw e; } };
+  return api;
 };

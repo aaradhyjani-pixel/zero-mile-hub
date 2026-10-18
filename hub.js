@@ -1032,7 +1032,7 @@ STORY.monkeys={len:900,start(c){const pc=CONCI.FN;if(!pc)return false;const gs=G
   const pts=gs.map(g=>[g.x,g.y]).concat(gs.map(g=>{const n=G.get(g.lane);return [lerp(g.x,n.x,0.5),lerp(g.y,n.y,0.5)];}));
   const r=RW.filter(o=>!o.locked).sort((a,b)=>Math.abs(a.y-pc.cy)-Math.abs(b.y-pc.cy))[0];if(!r)return false;c.r=r;
   pc.laneShut=Math.max(pc.laneShut,T+600);const fx={kind:'monkeys',id:'pierF',t0:T,t1:T+600,pts,n:14,flee:null};FXV.push(fx);
-  const m1={x:pc.cx,y:pc.cy,e:'🐒',until:T+600,n:7,sp:700,px:22};MARKS.push(m1);
+  const m1={x:pc.cx,y:pc.cy,e:'🐒',until:T+600,n:7,sp:700,px:22,k:'monkeys'};MARKS.push(m1);
   guard(["Sir, I am not a langur. They don't know that.",'HOO-HOOP! 🐒'],WHO.langur);
   c.lines.push([0,'TWR','Emirates 510, monkeys on the airbridge, hold position. … Say again? … Affirm, monkeys.']);
   const f=flights.find(o=>o.gate&&o.gate.conc==='FN'&&o.state==='at_gate')||flights.find(o=>o.res&&o.res.conc==='FN');
@@ -1041,7 +1041,7 @@ STORY.monkeys={len:900,start(c){const pc=CONCI.FN;if(!pc)return false;const gs=G
     text:`A troop of Delhi's macaques has moved onto Pier F North's airbridges, and nothing can park or push back there. Call the langur-call men and the monkeys bolt within 90 seconds, straight across ${r.short}, which closes for 3 minutes. Or send the wildlife team with nets: gentler, but Pier F stays shut for 8 minutes.`,
     def:1,defText:'the wildlife team uses nets: Pier F shut for 8 minutes.',
     acts:[{l:'Langur-call men (90 s)',pri:1,fn(){pc.laneShut=T+90;fx.flee={t0:T+20,t1:T+110,x0:pc.cx,y0:pc.cy,x1:pc.cx+300,y1:r.y+(r.y>pc.cy?700:-700)};fx.t1=T+110;m1.until=T+20;
-        MARKS.push({x:pc.cx+150,y:r.y,e:'🐒',until:T+110,n:6,sp:500,px:22});takeRunways([r],T+30,180,0,'Monkeys crossing','Monkeys crossing');
+        MARKS.push({x:pc.cx+150,y:r.y,e:'🐒',until:T+110,n:6,sp:500,px:22,k:'monkeys'});takeRunways([r],T+30,180,0,'Monkeys crossing','Monkeys crossing');
         c.lines.push([T-c.E+25,'RAMP',`HOO-HOOP! … They are running. They are running towards ${r.short}.`]);resolve(I,true,`The langur-call men cleared Pier F; the monkeys crossed ${r.short}.`);}},
       {l:'Wildlife team, nets',fn(){pc.laneShut=T+480;fx.t1=T+480;m1.until=T+480;resolve(I,true,'');}}]});
   c.lines.push([300,'WILDLIFE',"One monkey has a passenger's boarding pass. He is not on the manifest."]);}};

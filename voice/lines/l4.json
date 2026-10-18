@@ -1,8 +1,8 @@
 [
  {
-  "key": "Ladies and gentlemen, the motorcade of the President of the United States.",
-  "voice": "announcer",
-  "say": "Ladies and gentlemen, the motorcade of the President of the United States. [[slnc 500]]"
+  "key": "Ladies and gentlemen, please welcome the motorcade of the President of the United States.",
+  "voice": "announcer_hi",
+  "say": "देवियो और सज्जनो, [[slnc 700]] कृपया स्वागत कीजिए, [[slnc 500]] संयुक्त राज्य अमेरिका के राष्ट्रपति के वाहन दल का।"
  },
  {
   "key": "Zero Mile Tower, Reach One, heavy, 27R. We have the cars. All of them.",
@@ -30,9 +30,9 @@
   "say": "Italian Air Force, two seven centre. [[slnc 300]] We are on time. [[slnc 300]] Please write it down."
  },
  {
-  "key": "Ladies and gentlemen: the United Arab Emirates.",
-  "voice": "announcer",
-  "say": "Ladies and gentlemen, [[slnc 400]] the United Arab Emirates. [[slnc 500]]"
+  "key": "Ladies and gentlemen, please welcome the United Arab Emirates.",
+  "voice": "announcer_hi",
+  "say": "देवियो और सज्जनो, [[slnc 700]] कृपया स्वागत कीजिए, [[slnc 500]] संयुक्त अरब अमीरात का।"
  },
  {
   "key": "Zero Mile Tower, Emirates One, super, 27R. One delegation, two decks.",
@@ -42,7 +42,7 @@
  {
   "key": "Thai One, 27R. Sawasdee, Nagpur.",
   "voice": "th",
-  "say": "Thai One, two seven right. [[slnc 300]] Sawasdee, Nagpur."
+  "say": "Tie One, two seven right. [[slnc 400]] Sawasdee, [[slnc 200]] Naag-pur."
  },
  {
   "key": "Malaysian One, 27C. We were told to land after Thailand. We did.",
@@ -60,9 +60,9 @@
   "say": "Portuguese Air Force One, two seven centre. [[slnc 300]] Obrigado for the slot. [[slnc 300]] Lovely stack."
  },
  {
-  "key": "Ladies and gentlemen: Japan.",
-  "voice": "announcer",
-  "say": "Ladies and gentlemen: [[slnc 600]] Japan. [[slnc 500]]"
+  "key": "Ladies and gentlemen, please welcome Japan.",
+  "voice": "announcer_hi",
+  "say": "देवियो और सज्जनो, [[slnc 700]] कृपया स्वागत कीजिए, [[slnc 500]] जापान का।"
  },
  {
   "key": "Zero Mile Tower, Japanese Air Force One, 27R. On time.",
@@ -82,17 +82,17 @@
  {
   "key": "Belgian Air Force, 27C. Chocolates for the tower are on board.",
   "voice": "be",
-  "say": "Belgian Air Force, two seven centre. [[slnc 300]] Chocolates for the tower are on board."
+  "say": "Belgian Air Force, two seven centre. [[slnc 400]] Chocolates for the tower [[slnc 150]] are on board."
  },
  {
   "key": "Singapore One, 27R. Touchdown planned at zero seconds past the minute.",
   "voice": "sg",
-  "say": "Singapore One, two seven right. [[slnc 300]] Touchdown planned at zero seconds past the minute."
+  "say": "Singapore One, two seven right. [[slnc 300]] Touch down, planned at zero seconds past the minute."
  },
  {
   "key": "Ladies and gentlemen. The aircraft carrying the President of the People's Republic of China shall now be landing on runway 27R.",
-  "voice": "announcer",
-  "say": "Ladies and gentlemen. [[slnc 700]] The aircraft carrying the President of the Peoples Republic of China, [[slnc 400]] shall now be landing, [[slnc 300]] on runway two seven right. [[slnc 500]]"
+  "voice": "announcer_hi",
+  "say": "देवियो और सज्जनो। [[slnc 800]] चीनी जनवादी गणराज्य के राष्ट्रपति का विमान, [[slnc 600]] अब रनवे दो सात दायाँ पर उतरने जा रहा है।"
  },
  {
   "key": "Zero Mile Tower, Air China One, established on the localiser, runway 27R.",
@@ -120,9 +120,9 @@
   "say": "Irish One, two seven right. [[slnc 300]] Grand day for it."
  },
  {
-  "key": "Ladies and gentlemen: the Federal Republic of Germany.",
-  "voice": "announcer",
-  "say": "Ladies and gentlemen, [[slnc 400]] the Federal Republic of Germany. [[slnc 500]]"
+  "key": "Ladies and gentlemen, please welcome the Federal Republic of Germany.",
+  "voice": "announcer_hi",
+  "say": "देवियो और सज्जनो, [[slnc 700]] कृपया स्वागत कीजिए, [[slnc 500]] जर्मनी संघीय गणराज्य का।"
  },
  {
   "key": "Zero Mile Tower, German Air Force One, 27R. We are four seconds early. We apologise.",
@@ -140,9 +140,9 @@
   "say": "Polish Air Force zero zero one, two seven centre. [[slnc 300]] Dzień dobry. [[slnc 300]] Who do we follow?"
  },
  {
-  "key": "Attention, please. The delegation of the Russian Federation. First, the cars. Then two aircraft. They are identical.",
+  "key": "Attention, please. The delegation of the President of the Russian Federation, Vladimir Putin. First, the cars. Then two aircraft. They are identical.",
   "voice": "ru_announcer",
-  "say": "Attention, please. [[slnc 600]] The delegation of the Russian Federation. [[slnc 600]] First, the cars. [[slnc 600]] Then two aircraft. [[slnc 600]] They are identical. [[slnc 500]]"
+  "say": "Attention, please. [[slnc 600]] The delegation of the President of the Russian Federation, [[slnc 400]] Vladimir Putin. [[slnc 600]] First, the cars. [[slnc 600]] Then two aircraft. [[slnc 600]] They are identical."
  },
  {
   "key": "Russia Cargo, Antonov, heavy, 27C. The cars are on board.",
@@ -185,9 +185,9 @@
   "say": "Zero Mile Tower, Aeromexico ninety-two, on the ground. [[slnc 300]] Mexico flew commercial."
  },
  {
-  "key": "Ladies and gentlemen: the United Kingdom.",
-  "voice": "announcer",
-  "say": "Ladies and gentlemen, [[slnc 400]] the United Kingdom. [[slnc 500]]"
+  "key": "Ladies and gentlemen, please welcome the United Kingdom.",
+  "voice": "announcer_hi",
+  "say": "देवियो और सज्जनो, [[slnc 700]] कृपया स्वागत कीजिए, [[slnc 500]] यूनाइटेड किंगडम का।"
  },
  {
   "key": "Zero Mile Tower, Ascot One, 27R. Lovely holding stack. Very orderly queue.",
@@ -202,7 +202,7 @@
  {
   "key": "Vietnam One, 27R. Xin chào. Ready for the red carpet.",
   "voice": "vn",
-  "say": "Vietnam One, two seven right. [[slnc 300]] Xin chào. [[slnc 300]] Ready for the red carpet."
+  "say": "Vietnam One, two seven right. [[slnc 300]] Sin jow. [[slnc 300]] Ready for the red carpet."
  },
  {
   "key": "South African One, 27R. Howzit, Nagpur.",
@@ -210,18 +210,18 @@
   "say": "South African One, two seven right. [[slnc 300]] Howzit, Nagpur."
  },
  {
-  "key": "Ladies and gentlemen: the Kingdom of Saudi Arabia.",
-  "voice": "announcer",
-  "say": "Ladies and gentlemen, [[slnc 400]] the Kingdom of Saudi Arabia. [[slnc 500]]"
+  "key": "Ladies and gentlemen, please welcome the Kingdom of Saudi Arabia.",
+  "voice": "announcer_hi",
+  "say": "देवियो और सज्जनो, [[slnc 700]] कृपया स्वागत कीजिए, [[slnc 500]] सऊदी अरब साम्राज्य का।"
  },
  {
   "key": "Zero Mile Tower, Saudi One, heavy, 27R. Two more aircraft behind us. Luggage.",
-  "voice": "ae",
+  "voice": "gb",
   "say": "Zero Mile Tower, Saudi One, heavy, two seven right. [[slnc 300]] Two more aircraft behind us. [[slnc 300]] Luggage."
  },
  {
   "key": "Amiri One, heavy, 27C. The gifts are in the forward hold.",
-  "voice": "ae",
+  "voice": "in",
   "say": "Amiri One, heavy, two seven centre. [[slnc 300]] The gifts are in the forward hold."
  },
  {
@@ -230,9 +230,9 @@
   "say": "Turkish Government, two seven right. [[slnc 300]] We heard about the carpet. [[slnc 300]] We have brought a carpet."
  },
  {
-  "key": "Ladies and gentlemen: the French Republic.",
-  "voice": "announcer",
-  "say": "Ladies and gentlemen, [[slnc 400]] the French Republic. [[slnc 500]]"
+  "key": "Ladies and gentlemen, please welcome the French Republic.",
+  "voice": "announcer_hi",
+  "say": "देवियो और सज्जनो, [[slnc 700]] कृपया स्वागत कीजिए, [[slnc 500]] फ़्रांसीसी गणराज्य का।"
  },
  {
   "key": "Zero Mile Tower, Cotam 001, 27R. The press is in the second aircraft. They are already writing.",
@@ -250,9 +250,9 @@
   "say": "Nigerian One, heavy, two seven centre. [[slnc 300]] Our delegation is bigger than our aircraft."
  },
  {
-  "key": "Ladies and gentlemen: the Republic of Korea.",
-  "voice": "announcer",
-  "say": "Ladies and gentlemen, [[slnc 400]] the Republic of Korea. [[slnc 500]]"
+  "key": "Ladies and gentlemen, please welcome the Republic of Korea.",
+  "voice": "announcer_hi",
+  "say": "देवियो और सज्जनो, [[slnc 700]] कृपया स्वागत कीजिए, [[slnc 500]] कोरिया गणराज्य का।"
  },
  {
   "key": "Zero Mile Tower, Korean Air Force One, 27R. Code One, on the glide path. Exactly on it.",
@@ -275,9 +275,9 @@
   "say": "E U zero one, two seven right. [[slnc 300]] Twenty-seven countries, one aircraft."
  },
  {
-  "key": "Ladies and gentlemen. The aircraft carrying the President of the United States shall now be landing on runway 27R.",
-  "voice": "announcer",
-  "say": "Ladies and gentlemen. [[slnc 600]] The aircraft carrying the President of the United States shall now be landing on runway two seven right. [[slnc 500]]"
+  "key": "Ladies and gentlemen. The aircraft carrying the President of the United States, Donald Trump, shall now be landing on runway 27R.",
+  "voice": "announcer_hi",
+  "say": "देवियो और सज्जनो। [[slnc 800]] संयुक्त राज्य अमेरिका के राष्ट्रपति, श्री डोनाल्ड ट्रम्प का विमान, [[slnc 600]] अब रनवे दो सात दायाँ पर उतरने जा रहा है।"
  },
  {
   "key": "Zero Mile Tower, Air Force One, established on the localiser, runway 27R.",
@@ -305,8 +305,8 @@
  },
  {
   "key": "Ladies and gentlemen. Three Presidents shall now be landing at the same time, on three runways. Nobody will be first.",
-  "voice": "announcer",
-  "say": "Ladies and gentlemen. [[slnc 600]] Three Presidents shall now be landing at the same time, on three runways. [[slnc 600]] Nobody will be first. [[slnc 500]]"
+  "voice": "announcer_hi",
+  "say": "देवियो और सज्जनो। [[slnc 800]] तीन राष्ट्रपतियों के विमान, [[slnc 600]] अब एक ही समय पर, तीन रनवे पर उतरने जा रहे हैं। [[slnc 800]] कोई भी प्रथम नहीं होगा।"
  },
  {
   "key": "Air China One, runway 27R.",
@@ -345,8 +345,8 @@
  },
  {
   "key": "Ladies and gentlemen. The spare aircraft of the President of the United States.",
-  "voice": "announcer",
-  "say": "Ladies and gentlemen. [[slnc 600]] The spare aircraft of the President of the United States. [[slnc 500]]"
+  "voice": "announcer_hi",
+  "say": "देवियो और सज्जनो। [[slnc 800]] संयुक्त राज्य अमेरिका के राष्ट्रपति का अतिरिक्त विमान।"
  },
  {
   "key": "Zero Mile Tower, SAM 29000, the spare, runway 27R. Nobody on board.",

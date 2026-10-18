@@ -396,6 +396,10 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
     if (tv.y < -0.03) { const t = Math.min(-camPos.y / tv.y, cd * 1.6); focus.copy(camPos).addScaledVector(tv, t); } else focus.copy(camPos).addScaledVector(tv, Math.min(cd, 4000));
     focus.y = 0;
     const camY = Math.max(1, camPos.y), hi = smooth(300, 2500, camY);
+    // sk: the strategic view (any camera well above the field). There the storm is a light dust tint only, so every
+    // runway, aircraft and label stays readable; the dark inside, the sheets, masses, field streaks and the wall belong
+    // to the low and close cameras
+    const sk = smooth(600, 2600, camY);
     const refX = mix(camPos.x, focus.x, hi), refZ = mix(camPos.z, focus.z, hi);
 
     // ---- storm timeline (sim seconds) ----
@@ -414,7 +418,8 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
       tail = smooth(d0 + 0.7 * len, d0 + 0.8 * len, T) * (1 - smooth(d1 + 40, d1 + 190, T));
     }
     const I = inside * env, rain = tail * inside;
-    Object.assign(S, { front, inside, appr, I, tail, rain, wall });
+    S.front = front; S.inside = inside; S.appr = appr; S.I = I; S.tail = tail; S.rain = rain; S.wall = wall;
+    const Il = I * (1 - 0.65 * sk), apL = appr * (1 - 0.5 * sk);   // how much of the storm's light and grade this camera gets
     const gust = gustAt(time) * (0.25 + 0.75 * Math.max(I, appr * 0.5));
 
     // ---- wind (dir = heading the air moves toward, 2D frame: 0 east, +PI/2 south) ----
@@ -436,7 +441,7 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
       L.next = time + 3.5 + Rl() * 8;
     }
     const fl = canFlash || L.t > 0 ? lightningEnv(time - L.t) * L.k : 0;
-    A.lightning = fl;
+    A.lightning = fl * (1 - 0.6 * sk);
     U.uFlash.value = fl; U.uFlashD.value.set(L.x - camPos.x, 900, L.z - camPos.z).normalize();
     bolt.visible = fl > 0.01;
     if (bolt.visible) { boltU.uBP.value.set(L.x, 0, L.z); boltU.uBH.value = I > 0.5 ? 1700 : 3200; boltU.uBW.value = boltU.uBH.value * 0.5; boltU.uBI.value = fl; boltU.uIdx.value = L.idx; }
@@ -444,20 +449,20 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
     // ---- atmosphere (the core has just reset Z.atmo to this level's clear-day values: read them as the baseline) ----
     if (A.fogDensity !== wrote.den) { base.fog.copy(A.fogColor); base.den = A.fogDensity; base.haze = A.hazeHeight; }
     cA.copy(base.fog).lerp(P.preFog, appr * 0.5);
-    cB.copy(P.inFog).lerp(P.inFogDark, 0.45 * gust + 0.2 * (1 - tail)).lerp(P.tailFog, tail * 0.65);
-    A.fogColor.copy(cA).lerp(cB, I).multiplyScalar(1 + fl * 1.6);
-    // in the storm, visibility of ~1.5-2 km near the ground; from far out, enough to keep the field readable
-    const inDen = Math.min(0.0009, Math.max(0.00007, 0.95 / Math.max(cd, 500))) * (1 + 0.22 * gust) * mix(1, 0.5, tail);
-    A.fogDensity = mix(base.den * (1 + 0.5 * appr), inDen, I); wrote.den = A.fogDensity;
+    cB.copy(P.inFog).lerp(P.inFogDark, (0.45 * gust + 0.2 * (1 - tail)) * (1 - sk)).lerp(P.tailFog, tail * 0.65).lerp(P.preFog, 0.6 * sk);
+    A.fogColor.copy(cA).lerp(cB, I).multiplyScalar(1 + fl * 1.6 * (1 - 0.6 * sk));
+    // in the storm, visibility of ~1.5-2 km near the ground; from high up only a light tint over the field
+    const inDen = Math.min(0.0009, Math.max(mix(0.00007, 0.00002, sk), mix(0.95, 0.8, sk) / Math.max(cd, 500))) * (1 + 0.22 * gust * (1 - sk)) * mix(1, 0.5, tail);
+    A.fogDensity = mix(base.den * (1 + 0.5 * apL), inDen, I); wrote.den = A.fogDensity;
     A.hazeHeight = mix(base.haze, 300, I);
-    A.skyTint.copy(P.preFog).lerp(P.skyIn, I); A.skyTintK = Math.max(I * 0.92, appr * wall * 0.25);
-    A.sunDim = mix(mix(1, 0.45, appr * wall), 0.28 + 0.14 * tail, I);
-    A.sunTint.copy(P.white).lerp(P.sunIn, Math.max(I, appr * 0.25));
-    A.ambientK = mix(1 - 0.4 * appr * wall, 0.6 + 0.1 * tail, I);
+    A.skyTint.copy(P.preFog).lerp(P.skyIn, I); A.skyTintK = Math.max(Il * 0.92, apL * wall * 0.25);
+    A.sunDim = mix(mix(1, 0.45, apL * wall), 0.28 + 0.14 * tail, Il);
+    A.sunTint.copy(P.white).lerp(P.sunIn, Math.max(Il, apL * 0.25));
+    A.ambientK = mix(1 - 0.4 * apL * wall, 0.6 + 0.1 * tail, Il);
     const G = A.grade;
-    G.exposure = DG.exposure * mix(1, 1.05, I); G.contrast = DG.contrast * mix(1, 0.88, I); G.saturation = DG.saturation * mix(1 - 0.25 * appr * wall, 0.75 + 0.1 * tail, I);
-    G.warmth = DG.warmth + mix(0.06 * appr, 0.3, I); G.vignette = DG.vignette + mix(0.05 * appr, 0.2, I); G.grain = DG.grain + mix(0, 0.045, I);
-    A.bloom = mix(1, 1.35, I);
+    G.exposure = DG.exposure * mix(1, 1.05, Il); G.contrast = DG.contrast * mix(1, 0.88, Il); G.saturation = DG.saturation * mix(1 - 0.25 * apL * wall, 0.75 + 0.1 * tail, Il);
+    G.warmth = DG.warmth + mix(0.06 * apL, 0.3, Il); G.vignette = DG.vignette + mix(0.05 * apL, 0.2, Il); G.grain = DG.grain + mix(0, 0.045, Il);
+    A.bloom = mix(1, 1.35, Il);
     A.visibility = 1.73 / Math.max(1e-6, A.fogDensity);
 
     // ---- fallback: a core without Z.atmo (round 1) gets the fog and the sun directly ----
@@ -502,14 +507,15 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
     for (let i = 0; i < NCL; i++) { const c = CLU[i], v = clU[i]; if (!c) { v.w = 0; continue; }
       let x = ((c[0] + cumX % dom) % dom + dom * 1.5) % dom - dom * 0.5, z = ((c[1] + cumZ % dom) % dom + dom * 1.5) % dom - dom * 0.5;
       v.set(x, z, c[2] * 1.05, cumA * smooth(dom * 0.5, dom * 0.5 - 6000, Math.max(Math.abs(x), Math.abs(z)))); }
-    shU.uCloudSh.value = mix(0.95, 0.4, smooth(800, 3000, camY)); shU.uStormSh.value = appr * wall * 0.8;
+    shU.uCloudSh.value = mix(0.95, 0.4, smooth(800, 3000, camY)); shU.uStormSh.value = appr * wall * 0.8 * (1 - 0.5 * sk);
     shU.uCen.value.set(camPos.x, 0, camPos.z); shU.uSize.value = 90000; shU.uH.value = Math.min(40, Math.max(0.5, camY * 0.25));
     shadow.visible = cumA > 0.01 || shU.uStormSh.value > 0.01;
 
     // ---- billows ----
-    // inside the storm the wall and the cells are lost in the dust anyway: stop drawing them (the 2 km wall is a lot of fill)
-    billU.uWallA.value = wall * (1 - 0.6 * I) * (1 - smooth(0.6, 0.95, I)); billU.uSkirtA.value = wall * 0.9 * (1 - smooth(0.6, 0.95, I));
-    billU.uCellA.value = wall * (1 - 0.7 * I) * (1 - smooth(0.6, 0.95, I));
+    // inside the storm the wall and the cells are lost in the dust anyway: stop drawing them (the 2 km wall is a lot of fill);
+    // from the strategic view the wall is only a thin haze, so nothing climbing out into it disappears
+    billU.uWallA.value = wall * (1 - 0.6 * I) * (1 - smooth(0.6, 0.95, I)) * (1 - 0.7 * sk); billU.uSkirtA.value = wall * 0.9 * (1 - smooth(0.6, 0.95, I)) * (1 - 0.8 * sk);
+    billU.uCellA.value = wall * (1 - 0.7 * I) * (1 - smooth(0.6, 0.95, I)) * (1 - 0.7 * sk);
     if (!fieldBox) { let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; const add = (x, y) => { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); };
       for (const r of Z.RW || []) { add(r.x0, r.y); add(r.x1, r.y); } for (const g of Z.GATES || []) add(g.x, g.y);
       fieldBox = x0 < x1 ? [(x0 + x1) / 2, (y0 + y1) / 2, (x1 - x0) / 2 + 500, (y1 - y0) / 2 + 500] : [0, 0, 4000, 3000]; billU.uField.value.set(...fieldBox); }
@@ -519,7 +525,7 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
     shtU.uCen.value.set(Math.round(camPos.x / 500) * 500, 0, Math.round(camPos.z / 500) * 500);
     shtU.uSize.value = Math.min(60000, Math.max(9000, cd * 4.5)); shtU.uFade.value = shtU.uSize.value * 0.5;
     const sheetOn = dust ? smooth(dust[0] - 500, dust[0] - 300, T) : 0;
-    shtU.uSheetA.value = sheetOn * mix(1, 0.5, hi) * env * (1 - 0.55 * tail) * (0.85 + 0.3 * gust);
+    shtU.uSheetA.value = sheetOn * mix(1, 0.5, hi) * env * (1 - 0.55 * tail) * (0.85 + 0.3 * gust) * (1 - 0.75 * sk);
     shtU.uLead.value = 900;
     shtU.uDustA.value.copy(P.dustA).multiplyScalar(0.6 + 0.6 * A.sunDim);
     shtU.uDustB.value.copy(P.dustB).multiplyScalar(0.55 + 0.75 * A.sunDim);
@@ -532,7 +538,7 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
     parU.uWindV.value.set(wx * wSpd, 0, wz * wSpd); parU.uFieldV.value.set(wx * wSpd * kv * 1.6, 0, wz * wSpd * kv * 1.6);
     const lowCam = 1 - smooth(250, 900, camY);
     const dustAmt = Math.max(I * (1 - 0.7 * tail), frontNear * (dust && T > dust[0] - 200 ? 1 : 0));
-    parU.uAmt.value.set(dustAmt * lowCam * (0.6 + 0.4 * gust) * 0.85, dustAmt * lowCam * gust, Math.max(I, frontNear) * env * (1 - 0.6 * tail) * 0.6 * smooth(250, 1500, camY), rain * lowCam);
+    parU.uAmt.value.set(dustAmt * lowCam * (0.6 + 0.4 * gust) * 0.85, dustAmt * lowCam * gust, Math.max(I, frontNear) * env * (1 - 0.6 * tail) * 0.6 * smooth(250, 1200, camY) * (1 - sk), rain * lowCam);
     parU.uFarRain.value = rain * (1 - lowCam * 0.4) * 0.8;
     parU.uDustP.value.copy(P.dustP).multiplyScalar(0.95 + 0.7 * A.sunDim + fl);
     const pq = Z.quality >= 2 ? 0.6 : Z.quality === 1 ? 0.42 : 0.28, pAk = 1 / Math.sqrt(pq);   // fewer streaks, each a little denser
@@ -541,7 +547,7 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
     massFlow += dt * wSpd * kv * 1.1;
     billU.uMB.value.set(mix(camPos.x, focus.x, hi), 0, mix(camPos.z, focus.z, hi), Math.min(24000, Math.max(2600, cd * 2.2)));
     billU.uMV.value.set(wx * massFlow, 0, wz * massFlow);
-    billU.uMassA.value = sheetOn * env * (1 - 0.45 * tail) * mix(0.75, 0.55, hi);
+    billU.uMassA.value = sheetOn * env * (1 - 0.45 * tail) * mix(0.75, 0.55, hi) * (1 - sk);
     bill.visible = billU.uCumA.value > 0.003 || wall > 0.003 || billU.uMassA.value > 0.003;
   }
 

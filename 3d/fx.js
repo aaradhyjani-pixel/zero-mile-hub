@@ -210,14 +210,15 @@ void main() {
 }` });
   const trails = new THREE.Mesh(trGeo, trMat); trails.frustumCulled = false; trails.renderOrder = 6; trails.visible = false; root.add(trails);
 
-  const show = { bake: null, S: 1 };
+  const show = { bake: null, S: 1, k: [0, 0, 0, 0, 0] };
   const _p = new THREE.Vector3(), _p0 = new THREE.Vector3(), _f = new THREE.Vector3(), _u = new THREE.Vector3(), _r = new THREE.Vector3(), _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vector3();
   const jetAt = (B, i, s, S, o) => {   // a jet's position at nominal time s, its formation offset scaled by S
     const x = s / DT, wF = 1 - sstep(B.sB - 1, B.sB + 1.5, s) * (1 - sstep(B.sG - 6, B.sG - 0.5, s));
     cr(B.J[i].A, B.NS, x, o); if (i && wF > 0 && S !== 1) { cr(B.J[0].A, B.NS, x, _p0); o.x += (o.x - _p0.x) * (S - 1) * wF; o.y += (o.y - _p0.y) * (S - 1) * wF; o.z += (o.z - _p0.z) * (S - 1) * wF; }
     return o; };
   function updFlypast(it, dt, T) {
-    if (!show.bake || show.bake.id !== it.id || show.key !== [it.t0, it.t1, it.cx, it.cy, it.r].join()) { show.bake = bakeShow(it); show.key = [it.t0, it.t1, it.cx, it.cy, it.r].join(); }
+    const kk = show.k; if (!show.bake || show.bake.id !== it.id || kk[0] !== it.t0 || kk[1] !== it.t1 || kk[2] !== it.cx || kk[3] !== it.cy || kk[4] !== it.r) {
+      show.bake = bakeShow(it); kk[0] = it.t0; kk[1] = it.t1; kk[2] = it.cx; kk[3] = it.cy; kk[4] = it.r; }
     const B = show.bake, D = Math.max(30, it.t1 - it.t0), kT = B.TEND / D, s = (T - it.t0) * kT, cam = Z.camera.position;
     const fade = sstep(0, 2.5, s);   // the smoke outlives the display: after t1 it just ages away
     jetAt(B, 0, s, 1, _p); const St = clamp(cam.distanceTo(_p) / 2100, 1, 5);
@@ -300,7 +301,7 @@ void main() {
   const troopS = { id: null, M: [], S: 1 };
   const rnd = (m, k) => { const x = Math.sin(m * 127.1 + k * 311.7) * 43758.5453; return x - Math.floor(x); };
   function setupTroop(it) {
-    troopS.id = it.id; troopS.M = []; troopS.key = it.t0 + ',' + it.t1;
+    troopS.id = it.id; troopS.M = []; troopS.k0 = it.t0; troopS.k1 = it.t1;
     let pts = Array.isArray(it.pts) && it.pts.length ? it.pts : Z.GATES.filter(g => g.conc === 'FN').map(g => [g.x, g.y]);
     if (!pts.length) pts = [[160, -450]];
     const n = clamp(Math.round(num(it.n, 14)), 3, MCAP);
@@ -336,11 +337,11 @@ void main() {
     for (let s = 0; s < 2; s++) { ik(J.sh[s], J.ha[s], 0.13, 0.14, BB, J.el[s]); J.el[s].z = (s ? 1 : -1) * Math.max(Math.abs(J.el[s].z), 0.1); }
     tailFrom(J, [-55, -8, 0, 0, 0], 1.5, 0.052); for (let i = 1; i < 6; i++) J.tl[i].y = Math.max(0.014, J.tl[i].y);
   }
+  const LEGS = [[0, -1, 1], [0.5, 1, 1], [0.25, -1, 0], [0.75, 1, 0]];   // lateral-sequence walk: phase, side, hind?
   function poseWalk(J, ph) {
     const bob = Math.sin(ph * TAU * 2) * 0.008;
     J.pt.set(-0.2, 0.27 + bob, 0); J.pm.set(-0.04, 0.27 + bob, 0); J.pn.set(0.11, 0.255 + bob, 0); J.hd.set(0.21, 0.305 + bob, 0);
-    const legs = [[0, -1, 1], [0.5, 1, 1], [0.25, -1, 0], [0.75, 1, 0]];   // phase, side, hind?
-    for (const [o, sd, hind] of legs) { const p = (ph + o) % 1, s = sd > 0 ? 1 : 0, str = 0.2; let fx, fy;
+    for (let L = 0; L < 4; L++) { const o = LEGS[L][0], sd = LEGS[L][1], hind = LEGS[L][2]; const p = (ph + o) % 1, s = sd > 0 ? 1 : 0, str = 0.2; let fx, fy;
       if (p < 0.62) { fx = str * (0.5 - p / 0.62); fy = 0; } else { const q = (p - 0.62) / 0.38; fx = str * (-0.5 + q); fy = 0.05 * Math.sin(Math.PI * q); }
       if (hind) { J.hp[s].set(-0.17, 0.245 + bob, sd * 0.065); J.ft[s].set(-0.15 + fx, fy + 0.01, sd * 0.07); ik(J.hp[s], J.ft[s], 0.14, 0.15, BF, J.kn[s]); }
       else { J.sh[s].set(0.11, 0.225 + bob, sd * 0.065); J.ha[s].set(0.14 + fx, fy + 0.01, sd * 0.065); ik(J.sh[s], J.ha[s], 0.13, 0.14, BB, J.el[s]); } }
@@ -357,8 +358,9 @@ void main() {
         else { J.sh[s].set(J.pn.x - 0.01, J.pn.y - 0.03, sd * 0.065); J.ha[s].set(0.15 + fx, fy + 0.01, sd * 0.06); ik(J.sh[s], J.ha[s], 0.13, 0.14, BB, J.el[s]); } } }
     tailFrom(J, [18, 14, 10, 6, 2], 0, 0.05);
   }
-  const lerpJ = (A, B, w, O) => { for (const k of ['pt', 'pm', 'pn', 'hd']) O[k].lerpVectors(A[k], B[k], w);
-    for (const k of ['sh', 'el', 'ha', 'hp', 'kn', 'ft', 'tl']) for (let i = 0; i < A[k].length; i++) O[k][i].lerpVectors(A[k][i], B[k][i], w); };
+  const JK1 = ['pt', 'pm', 'pn', 'hd'], JK2 = ['sh', 'el', 'ha', 'hp', 'kn', 'ft', 'tl'];
+  const lerpJ = (A, B, w, O) => { for (let j = 0; j < 4; j++) { const k = JK1[j]; O[k].lerpVectors(A[k], B[k], w); }
+    for (let j = 0; j < 7; j++) { const k = JK2[j]; for (let i = 0; i < A[k].length; i++) O[k][i].lerpVectors(A[k][i], B[k][i], w); } };
   const copyJ = (A, O) => lerpJ(A, A, 0, O);
   // place one ellipsoid instance along a bone (A -> B) or at a point with a quaternion
   const _mq = new THREE.Quaternion(), _mq2 = new THREE.Quaternion(), _mp = new THREE.Vector3(), _ms = new THREE.Vector3(), _md = new THREE.Vector3(), _mm = new THREE.Matrix4(), _base = new THREE.Vector3(), _qy = new THREE.Quaternion(), _e = new THREE.Euler();
@@ -384,7 +386,7 @@ void main() {
     blob(b + 2, J.hd, _hq, 0.066, 0.064, 0.06);
     _hv.copy(J.hd).addScaledVector(_hf, 0.036).addScaledVector(_hu, -0.006); blob(b + 3, _hv, _hq, 0.034, 0.046, 0.046);
     _hv.copy(J.hd).addScaledVector(_hf, 0.062).addScaledVector(_hu, -0.024); blob(b + 4, _hv, _hq, 0.026, 0.022, 0.028);
-    for (const sd of [-1, 1]) { _hv.copy(J.hd).addScaledVector(_hf, 0.066).addScaledVector(_hu, 0.012).addScaledVector(_hr, sd * 0.019); blob(b + (sd < 0 ? 5 : 6), _hv, _hq, 0.008, 0.009, 0.009);
+    for (let sd = -1; sd <= 1; sd += 2) { _hv.copy(J.hd).addScaledVector(_hf, 0.066).addScaledVector(_hu, 0.012).addScaledVector(_hr, sd * 0.019); blob(b + (sd < 0 ? 5 : 6), _hv, _hq, 0.008, 0.009, 0.009);
       _hv.copy(J.hd).addScaledVector(_hr, sd * 0.056).addScaledVector(_hu, 0.008).addScaledVector(_hf, -0.008); blob(b + (sd < 0 ? 7 : 8), _hv, _hq, 0.012, 0.019, 0.008); }
     for (let s = 0; s < 2; s++) { bone(b + 9 + s * 2, J.sh[s], J.el[s], 0.03); bone(b + 10 + s * 2, J.el[s], J.ha[s], 0.023, 0.023, 1.22);
       bone(b + 13 + s * 2, J.hp[s], J.kn[s], 0.04, 0.036, 1.25); bone(b + 14 + s * 2, J.kn[s], J.ft[s], 0.026, 0.026, 1.22); }
@@ -411,7 +413,7 @@ void main() {
   }
   function updMonkeys(it, dt, now, T, adv) {
     if (!walkIM && now - walkScan > 2) { walkScan = now; walkIM = findWalk(); if (walkIM && troopS.id === it.id) troopS.id = null; }
-    if (troopS.id !== it.id || troopS.key !== it.t0 + ',' + it.t1) setupTroop(it);
+    if (troopS.id !== it.id || troopS.k0 !== it.t0 || troopS.k1 !== it.t1) setupTroop(it);
     const MS = troopS.M, cam = Z.camera, rdt = adv ? Math.min(dt, 0.1) : 0;
     // scale: keep a monkey ~5 px long, never below life size, capped for the strategic view
     let cx = 0, cz = 0; for (const M of MS) { cx += M.wx; cz += M.wz; } cx /= MS.length || 1; cz /= MS.length || 1;

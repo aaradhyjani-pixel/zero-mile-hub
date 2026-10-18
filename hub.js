@@ -58,8 +58,11 @@ function route(a,b){
 const RW=SPEC.runways.map(r=>{const o=Object.assign({},r);o.exits=(r.exits||[]).map(e=>({x:e.x,to:ensureNode(e.to[0],e.to[1]).k})).sort((a,b)=>b.x-a.x);o.holds=(r.holds||[]).map(h=>ensureNode(h.x,h.y).k);o.len=r.x1-r.x0;o.mode='OFF';o.locked=true;o.changeUntil=-1;o.closedUntil=-1;o.why='';o.tdList=[];o.lastSchedTd=-1e9;o.lastDep=-1e9;o.lastDepWake='M';o.lastArrWake='M';o.arrExit=-1e9;o.occ=null;o.ops=0;o.blocks=[];o.short=o.name.split('/')[1]||o.name;return o;}).sort((a,b)=>a.y-b.y);
 const LONGEST=RW.reduce((a,b)=>b.len>a.len?b:a,RW[0]);
 const GATES=[];
-(SPEC.concourses||[]).forEach((c,ci)=>c.gates.forEach(g=>GATES.push({id:g.id,x:g.x,y:g.y,a:compA(g.nose),code:g.code,zone:g.zone,bridge:g.bridge!==false,lane:ensureNode(g.lane[0],g.lane[1]).k,conc:c.id,ci,occ:null,res:null,open:true})));
-(SPEC.remote||[]).forEach(g=>GATES.push({id:g.id,x:g.x,y:g.y,a:compA(g.nose),code:g.code,zone:g.zone||'swing',bridge:false,lane:ensureNode(g.lane[0],g.lane[1]).k,conc:'REM',ci:-1,occ:null,res:null,open:true,remote:true}));
+(SPEC.concourses||[]).forEach((c,ci)=>c.gates.forEach(g=>GATES.push({id:g.id,x:g.x,y:g.y,a:compA(g.nose),code:g.code,zone:g.zone,bridge:g.bridge!==false,lane:ensureNode(g.lane[0],g.lane[1]).k,conc:c.id,ci,occ:null,res:null,open:true,mars:g.mars,marsRole:g.marsRole})));
+(SPEC.remote||[]).forEach(g=>GATES.push({id:g.id,x:g.x,y:g.y,a:compA(g.nose),code:g.code,zone:g.zone||'swing',bridge:false,lane:ensureNode(g.lane[0],g.lane[1]).k,conc:'REM',ci:-1,occ:null,res:null,open:true,remote:true,mars:g.mars,marsRole:g.marsRole}));
+// MARS stands (Bengaluru T2 builds every gate this way): the wide position and its two narrowbody halves exclude each other
+const MARS=new Map();GATES.forEach(g=>{if(g.mars){if(!MARS.has(g.mars))MARS.set(g.mars,[]);MARS.get(g.mars).push(g);}});
+const marsBusy=g=>!!g.mars&&MARS.get(g.mars).some(o=>o!==g&&(o.occ||o.res)&&(o.marsRole==='wide'||g.marsRole==='wide'));
 const CONC=(SPEC.concourses||[]).map((c,i)=>{const gs=GATES.filter(g=>g.ci===i);const cx=gs.reduce((s,g)=>s+g.x,0)/Math.max(1,gs.length),cy=gs.reduce((s,g)=>s+g.y,0)/Math.max(1,gs.length);const ln=gs.map(g=>G.get(g.lane));const lx=ln.reduce((s,n)=>s+n.x,0)/Math.max(1,ln.length),ly=ln.reduce((s,n)=>s+n.y,0)/Math.max(1,ln.length);return{id:c.id,name:c.name,zone:c.zone,cx,cy,lx,ly,apm:c.apm,gates:gs,path:c.outline?new Path2D(c.outline):null};});
 const CONCI=Object.fromEntries(CONC.map(c=>[c.id,c]));
 const laneShut=g=>{const c=g&&CONCI[g.conc];return !!(c&&c.laneShut>T);};
@@ -104,16 +107,20 @@ const DIRSTACK={N:0,W:1,E:1,S:2};
 /* ============ levels ============ */
 const LEVELS=[
   {n:1,name:'Opening day',sub:'Bengaluru moves in',from:'BLR',clock:'06:00',arr:42,dep:42,amp:0.9,rw:2,rwOpen:{R3:'ARR',R4:'DEP'},concs:'AB',intl:0.08,wide:0.06,a380:0,target:110,light:'dawn',
-   blurb:'The first airline traffic arrives: Bengaluru\'s morning wave. Two runways, two concourses. Learn the bank chart and the runway desk.',
+   blurb:'Kempegowda International closes at dawn and Bengaluru\'s airlines move in. Two runways, two concourses. Learn the bank chart and the runway desk.',
+   last:{t:'Last flight out of Kempegowda',d:'<p>At 05:55, IndiGo 6E 6101 pushed back from Bengaluru\'s Kempegowda International: the last departure before it closed. Bengaluru\'s airlines now fly from here.</p><p>Look for its terminal-in-a-garden in ZMI: the gardens under the oculus, the planted valley where the Hall becomes the Mall, and a garden court at every pier root. And every stand built two ways, for one widebody or two narrowbodies, as at Bengaluru\'s T2.</p>'},
    script:[[900,'medical']],ops:[[700,'birds'],[2100,'fod']]},
-  {n:2,name:'Hyderabad joins',sub:'+ Hyderabad',from:'BLR+HYD',clock:'09:00',arr:76,dep:76,amp:0.9,rw:4,rwOpen:{R2:'ARR',R3:'DEP',R4:'DEP',R5:'MIX'},concs:'ABC',intl:0.12,wide:0.10,a380:0,target:205,light:'day',
-   blurb:'Four runways and two traffic streams. The waves get taller. Flip runways between arrivals and departures as each bank comes through.',
+  {n:2,name:'Ahmedabad and Hyderabad',sub:'+ Ahmedabad, Hyderabad',from:'BLR+AMD+HYD',clock:'09:00',arr:76,dep:76,amp:0.9,rw:4,rwOpen:{R2:'ARR',R3:'DEP',R4:'DEP',R5:'MIX'},concs:'ABC',intl:0.12,wide:0.10,a380:0,target:205,light:'day',
+   blurb:'Sardar Vallabhbhai Patel International closes and Ahmedabad\'s flights move in, with Hyderabad\'s hub traffic. Four runways, taller waves: flip runways as each bank comes through.',
+   last:{t:'Last flight out of Sardar Vallabhbhai Patel',d:'<p>At 08:50, IndiGo 6E 6202 left Ahmedabad and SVPIA closed. Ahmedabad\'s flights and Hyderabad\'s connecting banks now run through ZMI.</p><p>Ahmedabad lives on in the building\'s edges: jaali screens shade every sun-facing glass wall, and the forecourt is a stepwell, terraces stepping down to shaded water. Sardar Patel brought more than 560 princely states into one India; the unity marker under the oculus remembers it.</p>'},
    script:[[1500,'strike'],[3000,'medical']],ops:[[400,'birds'],[1200,'tug'],[2400,'fod'],[3800,'birds']]},
-  {n:3,name:'Mumbai and the Gulf',sub:'+ Mumbai',from:'BLR+HYD+BOM',clock:'14:00',arr:94,dep:94,amp:0.85,rw:5,rwOpen:{R1:'ARR',R2:'MIX',R3:'DEP',R4:'DEP',R5:'MIX'},concs:'ABCDE',intl:0.22,wide:0.18,a380:4,target:260,light:'heat',
-   blurb:'46 °C. Hot air is thin, so heavy jets need the long runway to get airborne. Widebodies, A380s and the Gulf wave on top of the domestic banks.',
+  {n:3,name:'Mumbai and the Gulf',sub:'+ Mumbai',from:'BLR+AMD+HYD+BOM',clock:'14:00',arr:94,dep:94,amp:0.85,rw:5,rwOpen:{R1:'ARR',R2:'MIX',R3:'DEP',R4:'DEP',R5:'MIX'},concs:'ABCDE',intl:0.22,wide:0.18,a380:4,target:260,light:'heat',
+   blurb:'Chhatrapati Shivaji Maharaj International closes: Mumbai\'s airlines and the Gulf wave arrive. 46 °C. Hot air is thin, so heavy jets need the long runway to get airborne.',
+   last:{t:'Last flight out of Chhatrapati Shivaji Maharaj',d:'<p>At 13:50, Air India AI 629 left Mumbai\'s Terminal 2 and the airport closed. Mumbai\'s widebodies and the Gulf carriers now fly from here.</p><p>Mumbai holds up ZMI\'s roof: branching columns that flare into a field of coffers with coloured lenses, a 40 m cantilever over the kerb, and an art wall along the transfer route.</p>'},
    script:[[1200,'vvip'],[3000,'medical']],ops:[[600,'birds'],[1500,'fod'],[2300,'tug'],[3900,'birds']]},
-  {n:4,name:'Delhi. Full hub.',sub:'+ Delhi',from:'DEL+BOM+BLR+HYD',clock:'19:00',arr:116,dep:116,amp:0.75,rw:6,rwOpen:{R1:'ARR',R2:'ARR',R3:'DEP',R4:'DEP',R5:'DEP',R6:'MIX'},concs:'ABCDEF',intl:0.25,wide:0.20,a380:6,target:315,light:'dusk',dust:[2400,3300],
-   blurb:'Four airports\' worth of traffic through one hub at the evening peak: about 230 movements an hour, with peaks well above. Then an andhi (dust storm) rolls in from the west.',
+  {n:4,name:'Delhi. Full hub.',sub:'+ Delhi',from:'ALL 5 CITIES',clock:'19:00',arr:116,dep:116,amp:0.75,rw:6,rwOpen:{R1:'ARR',R2:'ARR',R3:'DEP',R4:'DEP',R5:'DEP',R6:'MIX'},concs:'ABCDEF',intl:0.25,wide:0.20,a380:6,target:315,light:'dusk',dust:[2400,3300],
+   blurb:'Delhi\'s hub banks move in: four airports\' worth of traffic at the evening peak, about 230 movements an hour with peaks well above. Then a pre-monsoon squall kicks up an andhi (dust storm).',
+   last:{t:'Delhi\'s banks move in',d:'<p>Delhi\'s own airport stays open for its city, but from tonight its connecting banks run through ZMI. Four cities\' traffic, three cities\' building, at the old Zero Mile.</p><p>The north lobe of the Hall points almost exactly at Delhi.</p>'},
    script:[[1000,'lights'],[1800,'lane'],[2550,'shear'],[3700,'medical']],ops:[[500,'birds'],[1400,'tug'],[3000,'fod'],[4400,'birds']]}
 ];
 
@@ -185,7 +192,7 @@ function mk(o){const f=Object.assign({id:++FID,x:0,y:0,heading:Math.PI,alt:0,v:0
 function zoneOk(g,f){return g.zone==='swing'||(f.intl?g.zone==='intl':g.zone==='dom');}
 function freeGate(f,initial){
   const code=CR[f.T.code];let best=null,bs=1e18;
-  for(const g of GATES){if(g.occ||g.res||!g.open||CR[g.code]<code||!zoneOk(g,f))continue;let s=(CR[g.code]-code)*400+(g.remote?2500:0);s+=dist(g.x,g.y,procC.x,procC.y)*(initial?0.02:0.1);if(s<bs){bs=s;best=g;}}
+  for(const g of GATES){if(g.occ||g.res||!g.open||CR[g.code]<code||!zoneOk(g,f)||marsBusy(g))continue;let s=(CR[g.code]-code)*400+(g.remote?2500:0);s+=dist(g.x,g.y,procC.x,procC.y)*(initial?0.02:0.1);if(s<bs){bs=s;best=g;}}
   return best;
 }
 function toDep(f){const t=f.turn;f.kind='dep';f.num=t.num;f.to=t.to;f.toCode=t.toCode;f.dir=t.dir;f.std=t.std;f.origStd=t.std;f.state='at_gate';f.links=f.turnLinks;f.readyAt=Math.max(f.std-120,f.inBlock+f.T.turn*60+(f.gate&&f.gate.remote?300:0));f.prio=false;f.held=false;}
@@ -420,7 +427,7 @@ function spawnInc(type,target,extra){
   case 'heavy':{const f=target;const I0=incidents.find(i=>i.type==='heavy');if(I0){if(!I0.fs.includes(f)){I0.fs.push(f);f.heavyInc=I0;I0.title=`${I0.fs.length} heavy jets can't take off here`;renderInc();}return true;}f.heavyInc=I;
     Object.assign(I,{f,fs:[f],title:`${fl(f)} can't take off here`,text:`At ${LV.n===3?'46':'40'} °C a ${f.T.name} needs the long runway, ${LONGEST.short}, to get airborne. Send it there (${LONGEST.short} must be on DEP or MIX), or offload 40 passengers to cut weight and go from here.`,def:1,defText:'ops offloads 40 passengers from each jet; they miss their flight.',
       acts:[{l:`Taxi to ${LONGEST.short}`,pri:1,dis:()=>!depModeOk(LONGEST),fn(){for(const g of I.fs)if(g.state==='hp'||g.state==='taxi_out')sendLong(g);resolve(I,true,`Heavy jets sent to the long runway.`);}},{l:'Offload and go',fn(){for(const g of I.fs){g.offloaded=true;S.cnxMiss+=40;}resolve(I,true,`${I.fs.length*40} passengers offloaded so heavy jets could leave from a short runway.`);}}]});explain('heat');break;}
-  case 'nogate':{const f=target;const swing=()=>GATES.filter(g=>!g.remote&&g.open&&!g.occ&&!g.res&&CR[g.code]>=CR[f.T.code]).sort((a,b)=>dist(a.x,a.y,f.x,f.y)-dist(b.x,b.y,f.x,f.y))[0];
+  case 'nogate':{const f=target;const swing=()=>GATES.filter(g=>!g.remote&&g.open&&!g.occ&&!g.res&&!marsBusy(g)&&CR[g.code]>=CR[f.T.code]).sort((a,b)=>dist(a.x,a.y,f.x,f.y)-dist(b.x,b.y,f.x,f.y))[0];
     Object.assign(I,{f,title:`${fl(f)} has no stand`,text:`Every stand that fits, contact and remote, is taken. It is waiting on the taxiway and blocking traffic behind it. Swing a gate from the other zone, or let it wait for the next free stand.`,def:1,defText:'it waits on the taxiway until a stand frees up.',
       acts:[{l:'Swing a gate',pri:1,dis:()=>!swing(),fn(){const g=swing();if(g){g.zone='swing';g.res=f;f.res=g;resolve(I,true,`Gate ${g.id} swung for ${fl(f)}.`);}}},{l:'Wait',fn(){resolve(I,true,'');}}]});explain('gate');break;}
   case 'connex':{const f=target;const n=extra.n;lastCnx=T;Object.assign(I,{f,title:`Hold ${fl(f)} for ${n} connecting passengers?`,text:`Their inbound flight hasn't reached the gate. Holding up to 10 minutes saves the connections but makes ${fl(f)} late.`,def:1,defText:`${fl(f)} leaves on time and ${n} passengers miss it.`,
@@ -595,7 +602,12 @@ function drawAirfield(now){
   // buildings
   for(const b of BLD){if(!b.p)continue;ctx.fillStyle=b.kind==='processor'?'#dcd6c8':b.kind==='tower'?'#c9cfd4':b.kind==='fire'?'#b8423a':b.kind==='cargo'?'#9c958a':b.kind==='mro'?'#a9a49a':b.kind==='fuel'?'#9a978e':b.kind==='rail'?'#7f8790':'#b8b2a6';ctx.fill(b.p);ctx.strokeStyle='rgba(0,0,0,.25)';ctx.lineWidth=2*px;ctx.stroke(b.p);}
   for(const c of CONC){if(!c.path)continue;const open=c.open!==false;ctx.fillStyle=open?'#e4dfd2':'#8b877f';ctx.fill(c.path);ctx.strokeStyle=open?'rgba(120,100,60,.45)':'rgba(0,0,0,.3)';ctx.lineWidth=3*px;ctx.stroke(c.path);}
-  if(PROC&&PROC.outline){}
+  const RF=SPEC.roof;if(RF){
+    if(z>1.6){ctx.fillStyle='rgba(120,170,200,.55)';const k=z>3.5?1:2;for(let i=0;i<RF.skylights.length;i+=k){const q=RF.skylights[i];ctx.save();ctx.translate(q.x,q.y);ctx.rotate(q.a*D2R);ctx.fillRect(-q.l/2,-q.w/2,q.l,q.w);ctx.restore();}}
+    for(const g of RF.gardens){ctx.fillStyle=g.kind==='belt'?'rgba(86,130,70,.75)':'rgba(96,142,74,.8)';if(g.kind==='belt')ctx.fillRect(g.x-g.w/2,g.y-g.l/2,g.w,g.l);else{ctx.beginPath();ctx.arc(g.x,g.y,g.r,0,7);ctx.fill();}}
+    const o=RF.oculus;ctx.fillStyle='#cfe8f2';ctx.beginPath();ctx.arc(o.x,o.y,o.r*0.62,0,7);ctx.fill();ctx.fillStyle='#f4c430';ctx.beginPath();ctx.arc(o.x,o.y,Math.max(6,3*px),0,7);ctx.fill();
+    if(z>2.2){ctx.strokeStyle='rgba(160,120,70,.7)';ctx.lineWidth=Math.max(2,1.4*px);ctx.setLineDash([6,5]);for(const j of RF.jaali){ctx.beginPath();j.pts.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke();}ctx.setLineDash([]);}
+  }
   // stands
   if(z>3){ctx.strokeStyle='rgba(217,169,31,.8)';ctx.lineWidth=1.2*px;for(const g of GATES){if(!g.open)continue;const L=G.get(g.lane);ctx.beginPath();ctx.moveTo(L.x,L.y);ctx.lineTo(g.x+Math.cos(g.a)*30,g.y+Math.sin(g.a)*30);ctx.stroke();}}
   if(z>4.5){ctx.font='600 13px Barlow Condensed, sans-serif';ctx.fillStyle='rgba(30,30,30,.65)';ctx.textAlign='center';ctx.textBaseline='middle';for(const g of GATES){if(!g.open)continue;ctx.fillText(g.id,g.x-Math.cos(g.a)*52,g.y-Math.sin(g.a)*52);}}
@@ -771,7 +783,7 @@ function setSpeed(s){if(!running)return;if(s===0)paused=!paused;else{speed=s;pau
 window.addEventListener('keydown',e=>{if(e.key===' '&&!(e.target.closest&&e.target.closest('button'))){e.preventDefault();setSpeed(0);}if(e.key==='1')setSpeed(1);if(e.key==='2')setSpeed(2);if(e.key==='3')setSpeed(4);if(e.key==='Escape')closePop();if(e.key==='+'||e.key==='=')zoomCenter(1.6);if(e.key==='-')zoomCenter(1/1.6);if(e.key==='f')fitCam();});
 
 /* ============ levels: start and finish ============ */
-function stars(L,s){let n=0;const otp=s.dep+s.arr?(s.depOnTime+s.arrOnTime)/(s.dep+s.arr)*100:0,ct=s.cnxMade+s.cnxMiss,cx=ct?s.cnxMade/ct*100:100;if(s.safety>=70)n=1;if(n>=1&&s.moves>=L.target&&otp>=84&&cx>=88)n=2;if(n>=2&&otp>=88&&cx>=92&&s.safety>=90)n=3;return n;}
+function stars(L,s){let n=0;const otp=s.dep+s.arr?(s.depOnTime+s.arrOnTime)/(s.dep+s.arr)*100:0,ct=s.cnxMade+s.cnxMiss,cx=ct?s.cnxMade/ct*100:100;if(s.safety>=70)n=1;if(n>=1&&s.moves>=L.target&&otp>=87&&cx>=88)n=2;if(n>=2&&otp>=90&&cx>=92&&s.safety>=90)n=3;return n;}
 function starStr(n){return '<b>'+'★'.repeat(n)+'</b>'+'★'.repeat(3-n);}
 function startLevel(n){
   LV=Object.assign({},LEVELS[n-1]);LV.script=LV.script.map(s=>s.slice());T0C=+LV.clock.split(':')[0]*3600+ +LV.clock.split(':')[1]*60;
@@ -785,8 +797,9 @@ function startLevel(n){
   renderRw();renderInc();$('#coachList').innerHTML='';coachItems.length=0;seen.clear();
   $('#overlay').hidden=true;running=true;paused=false;ended=false;speed=1;setSpeed(1);resize();
   for(let i=0;i<30;i++)tick(1);
-  explain('hub');setTimeout(()=>{if(running&&LV.n===1)explain('bank');},9000);
-  radio('AOCC',`Level ${LV.n}: ${LV.name}. ${LV.blurb}`);
+  if(LV.last){coach(LV.last.t,LV.last.d);radio('AOCC',LV.last.t+'.');setTimeout(()=>{if(running)explain('hub');},8000);}else explain('hub');
+  setTimeout(()=>{if(running&&LV.n===1)explain('bank');},16000);
+
 }
 function finish(){
   ended=true;paused=true;closePop();
@@ -800,7 +813,7 @@ function finish(){
   $('#sheet').innerHTML=`<div class="band"><span>Level ${LV.n} · ${LV.name}</span><span>${clk(0)} to ${clk(LEN)}</span></div><div class="in">
    <div class="bigstars">${starStr(st)}</div><h1 style="margin-top:8px">${st?'Level complete':'Level failed'}</h1><p>${verdict}</p>
    <div class="score"><div><div class="k">Movements</div><div class="v">${S.moves}/${LV.target}</div></div><div><div class="k">On time</div><div class="v">${otp}%</div><div class="sub">arrivals ${otpA}% · departures ${otpD}%</div></div><div><div class="k">Connections</div><div class="v">${cx}%</div></div><div><div class="k">Safety</div><div class="v">${Math.round(S.safety)}</div></div><div><div class="k">Your calls</div><div class="v">${S.incOk}/${S.incOk+S.incDef}</div><div class="sub">${S.incDef?`${S.incDef} left to ops`:'all made by you'}</div></div><div><div class="k">Runway flips</div><div class="v">${S.flips}</div></div></div>
-   <p class="src">Stars: one for keeping safety at 70 or above. Two for reaching the movement target with 84% on time and 88% of connections. Three for 88% on time, 92% of connections and safety 90.</p>
+   <p class="src">Stars: one for keeping safety at 70 or above. Two for reaching the movement target with 87% on time and 88% of connections. Three for 90% on time, 92% of connections and safety 90.</p>
    ${why.length?`<h2>Where the stars went</h2><ul>${why.map(w=>`<li>${w}</li>`).join('')}</ul>`:''}
    <h2>What happened</h2><ul>${S.log.slice(-10).map(l=>`<li><span class="mono">${l.t}</span> ${l.text}</li>`).join('')||'<li>A quiet shift.</li>'}</ul>
    <button class="go" id="again">Replay level ${LV.n}</button> ${next?`<button class="go" id="nextL">Level ${next.n}: ${next.name}</button>`:''} <button class="go ghost" id="toMenu">All levels</button></div>`;
@@ -812,11 +825,11 @@ function menu(tab){
   const planSvg=document.getElementById('planTpl').innerHTML;
   const D=window.__DESIGN||{};
   const lv=LEVELS.map(L=>`<button class="lc" data-n="${L.n}"><span class="n">LEVEL ${L.n} · ${L.from}</span><h3>${L.name}</h3><p>${L.blurb}</p><span class="meta">${L.clock} · ${L.rw} runways · ~${L.arr+L.dep} movements an hour</span><span class="stars">${starStr(best[L.n]||0)}</span></button>`).join('');
-  $('#sheet').innerHTML=`<div class="band"><span>${SPEC.name} · ${SPEC.code}</span><span>Nagpur, Maharashtra</span></div><div class="in">
+  $('#sheet').innerHTML=`<div class="band"><span>${SPEC.name} · ${SPEC.code}</span><span>AMD + BOM + BLR → ZMI · Nagpur</span></div><div class="in">
    <div class="tabs2" role="tablist"><button data-t="levels" class="${tab!=='plan'?'on':''}">Play</button><button data-t="plan" class="${tab==='plan'?'on':''}">The airport</button></div>
    <div id="tLevels" ${tab==='plan'?'hidden':''}>
-    <h1>Run the busiest airport ever built</h1>
-    <p>Delhi, Mumbai, Bengaluru and Hyderabad now fly from one hub at India's geographic centre: about 3,630 movements and 209 million passengers a year's worth of traffic, 1.7 times Atlanta. The airlines move in one city at a time. Each level adds a city and runways, and the waves get taller.</p>
+    <h1>Three airports. One roof.</h1>
+    <p>Ahmedabad (SVPIA), Mumbai (CSMIA) and Bengaluru (KIA) close and merge into one airport near Nagpur's Zero Mile, long held to mark the centre of India. You run it. It is sized for the combined traffic of Delhi, Mumbai, Bengaluru and Hyderabad: about 3,630 movements and 209 million passengers a year, 1.7 times Atlanta. The airlines move in one city at a time, and the waves get taller.</p>
     <div class="levels">${lv}</div>
     <div class="cfgrow"><b>Incidents</b><div class="seg2" role="group" aria-label="Incidents"><button data-inc="std" class="${CFG.inc!=='off'?'on':''}">Standard</button><button data-inc="off" class="${CFG.inc==='off'?'on':''}">Off: runways only</button></div><small>${CFG.inc==='off'?'Just you, the bank chart and the runways. Fuel emergencies still happen if the stack grows.':'A few real calls per level. The ops teams handle the routine.'}</small></div>
     <h2>How to play</h2>

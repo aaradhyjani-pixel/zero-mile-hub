@@ -54,7 +54,8 @@ async def main():
         errs = []
         pg.on('pageerror', lambda e: errs.append(str(e)))
         pg.on('console', lambda m: errs.append('console:' + m.text) if m.type == 'error' else None)
-        await pg.goto('file://' + os.path.abspath(HUB))
+        pg.set_default_timeout(120000)
+        await pg.goto('file://' + os.path.abspath(HUB), timeout=120000)
         await pg.wait_for_timeout(1500)
         await pg.evaluate("window.HUB.view('2d')")   # the bots test the sim, not the renderer
         await pg.screenshot(path=os.path.join(OUT, 'menu.png'))

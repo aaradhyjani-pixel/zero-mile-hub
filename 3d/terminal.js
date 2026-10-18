@@ -205,7 +205,10 @@ Z3MOD.terminal = function (Z) {
       sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying float vPan;')
         .replace('#include <beginnormal_vertex>', '#include <beginnormal_vertex>\n#ifdef USE_INSTANCING\nvPan = float(gl_InstanceID) * 1.618 + dot(objectNormal, vec3(1.7, 3.1, 5.3));\n#else\nvPan = dot(objectNormal, vec3(1.7, 3.1, 5.3));\n#endif');
       sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vPan;')
-        .replace('#include <metalnessmap_fragment>', 'if (vSel > 0.5 && vSel < 1.5) { float panR = fract(sin(vPan * 12.9898) * 43758.5453); roughnessFactor = 0.03 + 0.18 * panR * panR; }\n#include <metalnessmap_fragment>'); };
+        .replace('#include <metalnessmap_fragment>', 'if (vSel > 0.5 && vSel < 1.5) { float panR = fract(sin(vPan * 12.9898) * 43758.5453); roughnessFactor = 0.03 + 0.18 * panR * panR; }\n#include <metalnessmap_fragment>')
+        // from the strategic view a coffer is two or three pixels: eight random lens colours there read as confetti on the
+        // roof, so far away the glass and lens settle to one sky-blue tone and the rows read as an ordered skylight pattern
+        .replace('#include <color_fragment>', '#include <color_fragment>\nif (vSel > 0.5) diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.16, 0.3, 0.4), 0.85 * smoothstep(2200.0, 6500.0, length(vViewPosition)));'); };
     return m;
   }
   // curtain-wall glass: a mullion grid, low-iron glass reflecting the sky, and behind it a lit interior faked by
@@ -874,12 +877,14 @@ vec3 gInterior() {
     for (let k = 0; k < dockF.length; k++) dockF[k] = null;
     const fl = Z.flights ? Z.flights() : [];
     for (let k = 0; k < fl.length; k++) { const f = fl[k]; if (f.state === 'dock' && f.res) { const i = gIdx.get(f.res); if (i !== undefined) dockF[i] = f; } }
-    const kE = Z.kEx || 1, ke = 1 - Math.exp(-(dt || 0.016) * 1.3);
+    // aircraft.js draws a parked aircraft at most 1.5x (KPARK), set back so its nose stays at the life-size spot: the door
+    // is then (0.5 - 0.15 k) of its length ahead of the stand point (0.35 at life size)
+    const kE = Math.min(Z.kEx || 1, 1.5), ke = 1 - Math.exp(-(dt || 0.016) * 1.3);
     for (let k = 0; k < BR.length; k++) {
       const b = BR[k], g = b.g, o = g.occ; let f = null;
       if (o && (o.state === 'at_gate' || o.state === 'parked')) f = o; else if (dockF[k]) f = dockF[k];
-      if (f && f.T) { const Ln = f.T.len * kE, ca = Math.cos(g.a), sa = Math.sin(g.a);
-        let dx = g.x + ca * 0.35 * Ln + b.lx * 2, dy = g.y + sa * 0.35 * Ln + b.ly * 2;
+      if (f && f.T) { const ca = Math.cos(g.a), sa = Math.sin(g.a);
+        const dr = (0.5 - 0.15 * kE) * f.T.len; let dx = g.x + ca * dr + b.lx * 2, dy = g.y + sa * dr + b.ly * 2;
         const pr = (dx - b.rx) * b.fs; if (pr < 6) dx += (6 - pr) * b.fs;
         b.dx = dx; b.dy = dy; }
       const tgt = f ? 1 : 0; if (b.e < 0) b.e = tgt; else b.e += (tgt - b.e) * ke;

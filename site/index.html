@@ -2272,7 +2272,7 @@ function recordShift(){let hold=0,q=0,aDue=0,dDue=0;for(const f of flights){if(f
   const md={};for(const r of RW)if(!r.locked)md[r.short]=T<r.changeUntil?'CHG':r.mode;
   S.tl.push({t:T,hold,q,aDue,dDue,capA:Math.round(capNow('arr')),capD:Math.round(capNow('dep')),md,moves:S.moves});}
 // the expert autopilot's result on the same schedule (headless runs, run_all.py)
-const EXPERT={1:{st:3,moves:131,otp:97,cx:100},2:{st:3,moves:236,otp:95,cx:99},3:{st:3,moves:287,otp:92,cx:97},4:{st:3,moves:352,otp:92,cx:96}};
+const EXPERT={1:{st:3,moves:131,otp:97,cx:100},2:{st:3,moves:236,otp:95,cx:99},3:{st:3,moves:331,otp:87,cx:98},4:{st:3,moves:352,otp:92,cx:96}};
 const NEXT_TIP={1:'Level 2 opens with only one arrival runway and one MIX. The first purple wave arrives about 10 minutes in: have two runways on ARR before it.',
   2:'Level 3 is 46 °C: 777s and A380s can only take off from 27L, the 4,500 m runway. Keep 27L on DEP or MIX through the heat. And keep some slack in hand around 14:50: Nagpur has visitors today.',
   3:'Level 4 is all six runways at once, with a dust storm at 12:40 that widens the gaps between landings by 40%. Put an extra runway on ARR just before the storm, not during it.',

@@ -922,7 +922,7 @@ STORY.lastball={len:900,start(c){
     if(cc.pa)for(const f of flights)if(f.state==='at_gate'&&f.readyAt>T){f.readyAt=Math.max(T,f.readyAt-240);}FXV.push({kind:'fireworks',id:'six',x:procC.x,y:procC.y,t0:T,t1:T+200});
     // the cut goes to the fireworks over the terminal, seen from above them so they burst against the field, not the sky
     const b=['LAST BALL · SIX TO WIN','SIX! India win the World Cup','IN-DI-A! IN-DI-A! 🏆',icos('🏏')+FLAG_IN+icos('🏆')];
-    cinema(null,b,{view:{tx:procC.x,ty:procC.y,dist:2200,pitch:0.22,yaw:0.4},at:[procC.x,procC.y],track:orbitShot({x:procC.x,y:procC.y,h:330,dist:1650,pitch:0.1,yaw:0.4,rate:0.035,right:470}),ms:8000});
+    cinema(null,b,{view:{tx:procC.x,ty:procC.y,dist:2200,pitch:0.22,yaw:0.4},at:[procC.x,procC.y],track:orbitShot({x:procC.x,y:procC.y,h:320,dist:1350,pitch:0.1,yaw:0.4,rate:0.035,right:330}),ms:8000});
     guard([cc.pa?'The crews are back. They are running.':'They are back. Slowly. Smiling.','Who is honking? … Fine. Honk. 📣'],WHO.tower);});c.len=4000;
 },tick(c){if(c.six&&T>=c.six&&!c.sixed){c.sixed=true;c.sixFn(c);}}};
 

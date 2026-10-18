@@ -461,7 +461,7 @@ function signHit(rc,blk,taken){const g=cam.region||{L:0,R:VW,Tp:0,B:VH};
 // ones, then the nearest (a sign already up keeps its place over one that isn't). Each takes the first clear spot
 // along its runway (last frame's spot first, so signs don't hop; above the runway, else below it), in full, then
 // shortened ("28L · MIXED", then "28L"); with no clear spot it is left out (the runway desk still says it all).
-// Low cameras graze the field, where signs stack up along the horizon: they fade there.
+// Low cameras graze the field, where signs stack up along the horizon: they fade out there (the selected runway's stays).
 const RWA=[0.18,0.5,0.82,0.34,0.66,0.06,0.94,0.26,0.42,0.58,0.74];
 function rwSigns3D(blk,taken){
   const cp=Z.camera.position;ctx.font='700 12px Barlow Condensed, Arial Narrow, sans-serif';
@@ -470,11 +470,13 @@ function rwSigns3D(blk,taken){
   for(const o of L){const r=o.r,txt=[`${r.short} · ${o.s.lbl}`,`${r.short} · ${o.s.lbl.split(' · ')[0]}`,r.short];
     const ord=RWA.map((_,i)=>i);if(r._sa!=null){ord.splice(r._sa,1);ord.unshift(r._sa);}
     let put=null;r._sOn=false;
+    // camera elevation over the runway's middle, in degrees: below ~1.5 the sign is a smear on the horizon, so it goes
+    const ex=r.x0+r.len*0.5,el=Math.atan2(cp.y,Math.hypot(cp.x-ex,cp.z-r.y))/D2R,fa=r===selRw?clamp((el-0.5)/2,0.8,1):clamp((el-1.5)/3,0,1);
+    if(fa<0.1)continue;
     for(let ti=0;ti<3&&!put;ti++){if(ti&&txt[ti]===txt[ti-1])continue;const w=ctx.measureText(txt[ti]).width+12;
       for(const ai of ord){const x=r.x0+r.len*RWA[ai],p=proj(x,r.y,0);if(!p)continue;
         for(const dy of [-16,16]){const rc={x:p.X-w/2,y:p.Y+dy-9,w,h:18};if(!signHit(rc,blk,taken)){put={p,dy,t:txt[ti],ai,x};break;}}if(put)break;}}
     if(!put)continue;r._sa=put.ai;r._sOn=true;
-    const el=Math.atan2(cp.y,Math.hypot(cp.x-put.x,cp.z-r.y))/D2R,fa=clamp((el-0.8)/3.2,0.45,1);
     const rect=signText(put.p.X,put.p.Y+put.dy,put.t,(r.locked?0.6:1)*fa,o.s.col);rect.r=r;rwSigns.push(rect);taken.push(rect);}
 }
 // the overlay: incident markers, runway signs, stack signs, tags and MAYDAY beacons, drawn on the 2D canvas

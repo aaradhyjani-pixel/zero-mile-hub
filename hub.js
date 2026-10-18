@@ -131,17 +131,17 @@ const LEVELS=[
    blurb:'Chhatrapati Shivaji Maharaj International closes: Mumbai\'s airlines and the Gulf wave arrive. 46 °C. Hot air is thin, so heavy jets need the long runway to get airborne.',
    last:{t:'Last flight out of Chhatrapati Shivaji Maharaj',d:'<p>At 13:50, Air India AI 629 left Mumbai\'s Terminal 2 and the airport closed. Mumbai\'s widebodies and the Gulf carriers now fly from here.</p><p>Mumbai holds up ZMI\'s roof: branching columns that flare into a field of coffers with coloured lenses, a 40 m cantilever over the kerb, and an art wall along the transfer route.</p>'},
    script:[[1500,'st_dabba'],[2100,'st_gps'],[3000,'summit'],[4200,'st_wedding'],[4800,'medical'],[6000,'st_fog']],ops:[[600,'birds'],[1500,'fod'],[2300,'tug'],[3900,'birds']]},
-  {n:4,name:'Delhi. Full hub.',sub:'+ Delhi',from:'ALL 5 CITIES',clock:'12:00',len:7200,arr:116,dep:116,amp:0.75,starsAt:{otp2:78,cx2:76,otp3:84,cx3:82},rw:6,charters:{n:16,std:3900},rwOpen:{R1:'ARR',R2:'ARR',R3:'DEP',R4:'DEP',R5:'DEP',R6:'MIX'},concs:'ABCDEF',intl:0.25,wide:0.20,a380:6,target:420,light:'day',dust:[2400,3300],
+  {n:4,name:'Delhi. Full hub.',sub:'+ Delhi',from:'ALL 5 CITIES',clock:'12:00',len:7200,arr:116,dep:116,amp:0.75,starsAt:{otp2:78,cx2:76,otp3:84,cx3:82},rw:6,rwOpen:{R1:'ARR',R2:'ARR',R3:'DEP',R4:'DEP',R5:'DEP',R6:'MIX'},concs:'ABCDEF',intl:0.25,wide:0.20,a380:6,target:420,light:'day',dust:[2400,3300],
    blurb:'Delhi\'s hub banks move in: four airports\' worth of traffic at the peak, about 230 movements an hour with peaks well above. Then a pre-monsoon squall kicks up an andhi (dust storm).',
    last:{t:'Delhi\'s banks move in',d:'<p>Delhi\'s own airport stays open for its city, but from today its connecting banks run through ZMI. Four cities\' traffic, three cities\' building, at the old Zero Mile.</p><p>The north lobe of the Hall points almost exactly at Delhi.</p>'},
-   script:[[600,'st_whatsapp'],[1000,'lights'],[1200,'st_superover'],[1500,'st_monkeys'],[2550,'shear'],[3700,'medical'],[4000,'st_trophy'],[4800,'st_delhisummit']],ops:[[500,'birds'],[1400,'tug'],[3000,'fod'],[4400,'birds']]}
+   script:[[1000,'lights'],[1500,'st_monkeys'],[2550,'shear'],[3700,'medical'],[4000,'st_trophy'],[4800,'st_delhisummit']],ops:[[500,'birds'],[1400,'tug'],[3000,'fod'],[4400,'birds']]}
 ];
 
 /* ============ state ============ */
 let flights=[],FID=0,S=null,incidents=[],INC=0,selected=null,hover=null,selRw=null;
 const puffs=[],moveLog=[];
 function resetState(){
-  SUM=null;STO=[];CINE=null;MARKS=[];FXV=[];{const kc=$('#kiteChip');if(kc)kc.hidden=true;const sb=$('#stopBtn');if(sb)sb.hidden=true;const ft=$('#fogTag');if(ft)ft.hidden=true;fogF=0;}cinema.q=[];specialArr.list=[];flights=[];FID=0;incidents=[];INC=0;selected=null;hover=null;selRw=null;puffs.length=0;moveLog.length=0;ops.length=0;opsClock=0;lastCnx=-1e9;
+  SUM=null;STO=[];CINE=null;MARKS=[];FXV=[];voiceReset();{const kc=$('#kiteChip');if(kc)kc.hidden=true;const sb=$('#stopBtn');if(sb)sb.hidden=true;const ft=$('#fogTag');if(ft)ft.hidden=true;fogF=0;}cinema.q=[];specialArr.list=[];flights=[];FID=0;incidents=[];INC=0;selected=null;hover=null;selRw=null;puffs.length=0;moveLog.length=0;ops.length=0;opsClock=0;lastCnx=-1e9;
   S={tl:[],flipLog:[],tlNext:0,combo:0,bestCombo:0,moves:0,arr:0,dep:0,depOnTime:0,arrOnTime:0,cnxMade:0,cnxMiss:0,safety:100,incOk:0,incDef:0,incTypes:{},hits:[],holdMin:0,div:0,goArounds:0,log:[],delaySum:0,flips:0};
   GATES.forEach(g=>{g.occ=null;g.res=null;});
   RW.forEach(r=>{r.tdList=[];r.lastSchedTd=-1e9;r.lastDep=-1e9;r.arrExit=-1e9;r.occ=null;r.changeUntil=-1;r.closedUntil=-1;r.why='';r.ops=0;r.flash=0;r.blocks=[];r.gapReq=false;r.degraded=false;r.strike=null;r.shear=false;r.sepK=1;r.sepUntil=-1;r.kiteUntil=-1;r.kiteFrom=-1;r.kiteP=0.25;r.noArrUntil=-1;r.gpsUntil=-1;r.noDepUntil=-1;r.btUntil=-1;});
@@ -552,12 +552,33 @@ const FLAG_RU='<svg viewBox="0 0 90 60" class="flag"><rect width="90" height="20
 <rect class="glint" x="42" y="54" width="6" height="2" rx="1" fill="#fff"/><path d="M50 74 Q58 77 66 74" stroke="#7a4a36" stroke-width="2.2" fill="none" stroke-linecap="round"/>
 <path d="M80 58 C88 62 90 74 86 88 C84 96 82 100 80 104" stroke="#d8d8d8" stroke-width="1.6" fill="none"/><circle cx="80" cy="58" r="3" fill="#2a2a2a"/>
 <path d="M96 132 C100 116 96 100 86 92 C84 84 88 70 82 62 C78 58 74 62 76 68 C78 76 74 86 78 96" fill="#1a1d23"/><ellipse cx="80" cy="62" rx="5" ry="6" fill="#c89070"/></svg>`;$('#app').appendChild(g);})();
-function guard(lines,who){const g=$('#guard'),t=$('#guardTxt');if(!g)return;clearTimeout(guard.t1);clearTimeout(guard.t2);
-  // the bodyguard by default; set pieces bring their own character (badge + 116x150 svg)
-  if(!guard.svg)guard.svg=g.querySelector('svg').outerHTML;g.querySelector('.bub small').textContent=who?who.badge:'SECURITY · SPG';
-  const sv=g.querySelector('svg'),want=who&&who.svg?who.svg:guard.svg;if(guard.cur!==want){sv.outerHTML=want;guard.cur=want;}
-  t.textContent=lines[0];g.classList.add('on');if(!who)speak(lines);
-  if(lines[1])guard.t1=setTimeout(()=>{t.textContent=lines[1];},2600);guard.t2=setTimeout(()=>g.classList.remove('on'),lines[1]?6200:4200);}
+function guardShow(text,who){const g=$('#guard'),t=$('#guardTxt');if(!g)return;if(!guard.svg)guard.svg=g.querySelector('svg').outerHTML;
+  g.querySelector('.bub small').textContent=who?who.badge:'SECURITY · SPG';const sv=g.querySelector('svg'),want=who&&who.svg?who.svg:guard.svg;if(guard.cur!==want){sv.outerHTML=want;guard.cur=want;}
+  t.textContent=text;g.classList.add('on');}
+// the bodyguard by default; set pieces bring their own character (badge + 116x150 svg). When sound is on the bodyguard
+// speaks, and his popup follows his voice line by line.
+function guard(lines,who,o){const g=$('#guard');if(!g)return;clearTimeout(guard.t1);clearTimeout(guard.t2);o=o||{};
+  if(!who&&speak(lines,{onLine:i=>{clearTimeout(guard.t2);guardShow(lines[i]);if(o.onLine)o.onLine(i);},onDone:()=>{guard.t2=setTimeout(()=>g.classList.remove('on'),1400);if(o.onDone)o.onDone();}}))return;
+  guardShow(lines[0],who);if(o.onLine)o.onLine(0);
+  if(lines[1])guard.t1=setTimeout(()=>{$('#guardTxt').textContent=lines[1];},2600);guard.t2=setTimeout(()=>{g.classList.remove('on');if(o.onDone)o.onDone();},(lines[1]?6200:4200)+(o.extra||0));}
+// the voice: pre-recorded earpiece clips (voice/spg_audio.js) one after another with pauses; a line without a clip falls back
+// to the browser's speech at a natural pitch, with the best Indian English voice the device has
+/*@@VOICE@@*/
+const VQ=[];let vqOn=false,vqCur=null;
+function pickVoice(vs){const sc=v=>(/en[-_]IN/i.test(v.lang)?4:/en[-_]GB/i.test(v.lang)?2:/^en/i.test(v.lang)?1:0)+(/enhanced|premium|natural|neural|google/i.test(v.name)?3:0)+(/aman/i.test(v.name)?2:0)-(/rishi|compact/i.test(v.name)?1:0);return vs.slice().sort((a,b)=>sc(b)-sc(a))[0]||null;}
+function vqNext(){if(vqOn)return;const it=VQ.shift();if(!it)return;vqOn=true;let fin=false;const done=()=>{if(fin)return;fin=true;vqCur=null;if(it.onEnd)it.onEnd();setTimeout(()=>{vqOn=false;vqNext();},it.gap);};
+  if(it.onStart)it.onStart();const clip=typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[it.text];
+  if(clip){const a=new Audio(clip);vqCur=a;a.volume=0.95;a.onended=done;a.onerror=done;const p=a.play();if(p&&p.catch)p.catch(done);return;}
+  if(window.speechSynthesis&&window.SpeechSynthesisUtterance){try{const S2=window.speechSynthesis,v=pickVoice(S2.getVoices());const u=new SpeechSynthesisUtterance(it.text.replace(/[\u{1F000}-\u{1FAFF}☀-➿️]/gu,'').trim());
+    if(v){u.voice=v;u.lang=v.lang;}else u.lang='en-IN';u.rate=0.95;u.pitch=1;u.onend=done;u.onerror=done;S2.speak(u);setTimeout(done,9000);return;}catch(e){}}
+  done();}
+function speak(lines,o){o=o||{};if(!SND.on)return false;lines.forEach((t,i)=>{const last=i===lines.length-1;VQ.push({text:t,gap:last?750:450,onStart:o.onLine?()=>o.onLine(i):null,onEnd:last?o.onDone:null});});vqNext();return true;}
+function voiceReset(){VQ.length=0;if(vqCur){try{vqCur.pause();}catch(e){}}vqCur=null;vqOn=false;if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}}
+// after a summit the SPG hands the runways back one by one, then signs off
+function spgReturn(){guard(['Your runways shall now be returned.','One at a time. In the order we choose.']);}
+function spgOpen(r){guard([`Runway ${r.short}.`,'You shall now be allowed to open.']);}
+function spgFinale(){guard(['Thank you for serving the nation.','We are happy that we were able to serve the nation of India, with your support. Jai Hind.'],null,
+  {extra:3000,onLine:i=>{if(i===0)vipBanner(true,'SECURITY · SPG','Thank you for serving the nation','Jai Hind 🇮🇳',FLAG_IN);},onDone:()=>setTimeout(()=>{if(!CINE)vipBanner(false);},1800)});}
 function vipBanner(on,k,title,meme,icons){const b=$('#vipBanner');if(!on){b.classList.remove('on');return;}const g=$('#guard');if(g&&icons==null)g.classList.remove('on');b.innerHTML=`<div class="flags">${icons==null?FLAG_IN+FLAG_RU:icons}</div><div class="k">${k}</div><h3>${title}</h3><div class="meme">${meme}</div>`;b.classList.add('on');}
 function startSummit(){
   S.summitAt=T;const open=RW.filter(r=>!r.locked&&r.mode!=='OFF');if(open.length<2)return false;
@@ -596,9 +617,9 @@ function summitTick(){
   for(const f of SUM.vips){if(f.state==='sched'&&T>=f.vipTd-D_APP-10){const r=f.vipRw;f.x=r.x1+14000;f.y=r.y+(r.y<0?-2600:2600);f.alt=2000;f.heading=Math.PI;f.state='inbound';beginApproach(f,r,f.vipTd);}
     if(f.state==='approach'&&!f.cineAsked&&T>=f.vipTd-95){f.cineAsked=true;vipCinema(f);}}
   const c=SUM.cine;if(c){if(!V3.on)centerOn(c.f.x,c.f.y);if(c.f.landT!=null&&!c.landed){c.landed=now;}if(c.landed&&now-c.landed>(SUM.queue&&SUM.queue.length?2200:4500))vipCinemaEnd();}
-  for(const r of SUM.order){const b=r.blocks.find(b=>b.summit);if(b&&!b.said&&T>=b.to){b.said=true;const left=SUM.order.filter(o=>{const q=o.blocks.find(x=>x.summit);return q&&T<q.to;}).length;
-    radio('TWR',`Runway ${r.short} back in service${left?`, ${left} to go`:'. The leaders have seen a tiger and two orange trees; your holding stack is the third most talked-about thing in Nagpur today'}.`);}}
-  if(t>=600&&!SUM.guardBack){SUM.guardBack=true;guard(['Your runways. One at a time.','Have a nice day, sir.']);}
+  if(t>=600&&!SUM.guardBack){SUM.guardBack=true;spgReturn();}
+  SUM.order.forEach((r,i)=>{const at=SUM.reopen0+60*i;SUM.open=SUM.open||new Set();if(!SUM.open.has(i)&&T>=at){SUM.open.add(i);const left=SUM.order.length-SUM.open.size;
+    radio('TWR',`Runway ${r.short} back in service${left?`, ${left} to go`:'. The leaders have seen a tiger and two orange trees; your holding stack is the third most talked-about thing in Nagpur today'}.`);spgOpen(r);if(!left)spgFinale();}});
   if(T>SUM.reopen0+60*SUM.order.length+5&&!SUM.cine)SUM=null;
 }
 // ============ set pieces: the summit's siblings, one or two per level ============
@@ -978,7 +999,7 @@ STORY.delhisummit={len:2600,start(c){const open=RW.filter(r=>!r.locked);if(open.
     [900,'SPG','Japan has brought two aircraft. In case.'],
     [1050,'FSO','The VIP apron has run out of red carpet. Ops is borrowing the carpet from the lounge.'],
     [1260,cc=>{guard(['Your holding stack is now the second-largest gathering in Nagpur today.','Very impressive, sir.']);}],
-    [D0+DUR,cc=>{guard(['We are returning your runways. One at a time.','Thank you for your cooperation. Have a nice summit.']);radio('SPG','Runways returning one at a time. We pick the order.');}]];
+    [D0+DUR-20,cc=>{spgReturn();radio('SPG','Runways returning one at a time. We pick the order.');}]];
   guard(['Sir. Delhi has brought its summit. We have taken over your runways.','Thank you for giving us your runways. Thank you for your support.']);
   flashBanner(['THE DELHI SUMMIT','Delhi moved in, and brought its summit: 20 delegations, 40 aircraft','No Bharat 1 today: the Prime Minister is already on the red carpet 🙏',FLAG_IN+icos('🌍')],6500);
   const I=storyCard(c,{icon:{g:'V',c:'#ff9933'},x:spg[0].x1+1500,y:spg[0].y,title:'Who lands first? The big three disagree',
@@ -992,14 +1013,10 @@ STORY.delhisummit={len:2600,start(c){const open=RW.filter(r=>!r.locked);if(open.
       {l:'Let them negotiate',fn(){c.bigBlocks.push(...stopAll(T+30,480,'Summit: negotiating who lands first'));c.lines.push([T-E+500,'SPG','They have agreed. Alphabetical. As originally planned.']);renderRw();resolve(I,true,'The big three negotiated for 8 minutes, then landed alphabetically.');}}]});
   c.I=I;renderRw();},
 tick(c){for(const f of c.vips){if(!f.cineAsked&&f.ban&&f.state==='approach'&&f.td-T<95){f.cineAsked=true;cinema(f,f.ban,{landed:true});}}
-  for(const r of c.spg){const b=r.blocks.find(b=>b.summit);if(b&&!b.said&&T>=b.to){b.said=true;radio('TWR',`Runway ${r.short} back from the summit.`);}}},
+  c.spg.forEach((r,i)=>{const at=c.E+60+1500+60*i;c.open=c.open||new Set();if(!c.open.has(i)&&T>=at){c.open.add(i);radio('TWR',`Runway ${r.short} back from the summit.`);spgOpen(r);if(c.open.size===c.spg.length)spgFinale();}});},
 lesson(c,tl){const at=c.E,w=tl.filter(s=>s.t>=at&&s.t<=at+1800),pk=w.reduce((a,s)=>s.hold>a.hold?s:a,w[0]||{hold:0,t:at});
   return{w:45,title:`The Delhi summit took two runways at ${clk(at)}`,text:`The stack peaked at ${pk.hold} around ${clk(pk.t)}. With two runways gone for 25 minutes and every runway stopped for the big three, the four you keep have to do everything: lean them towards arrivals before the stops (the bank chart shows them), then hand departures back as each stop ends. Landing the big three together saves 6 minutes of runway time; it costs an apron gridlock.`};}};
 
-// speech: the SPG says his lines out loud (Web Speech; Indian English if the device has it; follows the Sound toggle)
-function speak(lines){if(!SND.on||!window.speechSynthesis)return;try{const S2=window.speechSynthesis;S2.cancel();const vs=S2.getVoices();
-  const v=vs.find(v=>/en[-_]IN/i.test(v.lang)&&/rishi|male|ravi/i.test(v.name))||vs.find(v=>/en[-_]IN/i.test(v.lang))||vs.find(v=>/en[-_]GB/i.test(v.lang))||null;
-  for(const t of lines){const u=new SpeechSynthesisUtterance(t.replace(/[\u{1F000}-\u{1FAFF}☀-➿️]/gu,'').trim());if(v){u.voice=v;u.lang=v.lang;}else u.lang='en-IN';u.rate=0.9;u.pitch=0.72;S2.speak(u);}}catch(e){}}
 // L3 · fog, a blocked taxiway, and the chain that leads to a runway collision. This one is played straight: no jokes once
 // the risk is live. Inspired by the 1977 Tenerife disaster; the two aircraft are fictional operators (a freighter and an
 // empty ferry flight). It can only happen if the player backtracks departures on an active runway in fog, a clearance gets

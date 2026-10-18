@@ -21,6 +21,9 @@ for f in [os.path.join(d,'hub3d.js')]+sorted(glob.glob(os.path.join(d,'3d','*.js
             print('SKIPPED (syntax):',os.path.relpath(f,d),chk.stderr.strip().splitlines()[0] if chk.stderr else ''); continue
     parts.append('/* ---- '+os.path.relpath(f,d)+' ---- */\n'+src)
 js=js.replace('/*@@3D@@*/','\n'.join(parts))
+# the SPG's recorded voice lines (voice/make_voice.py)
+vp=os.path.join(d,'voice','spg_audio.js')
+js=js.replace('/*@@VOICE@@*/',open(vp,encoding='utf-8').read() if os.path.exists(vp) else '')
 out=head+body+'\n<template id="planTpl">'+plan+'</template>\n<script type="application/json" id="specData">'+json.dumps(spec,separators=(',',':')).replace('</','<\\/')+'</script>\n<script>window.__DESIGN={html:'+json.dumps(design).replace('</','<\\/')+'};</script>\n<script>\n'+js+'\n</script>\n'
 open(os.path.join(d,'hub.html'),'w',encoding='utf-8').write(out)
 os.makedirs(os.path.join(d,'site'),exist_ok=True);open(os.path.join(d,'site','index.html'),'w',encoding='utf-8').write(out)

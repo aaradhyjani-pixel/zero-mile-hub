@@ -4,3 +4,4 @@ __pycache__/
 hub.html
 .venv/
 qa/
+voice/cache/

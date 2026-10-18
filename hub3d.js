@@ -346,7 +346,7 @@ function camUpdate(dt){
   if(V3.mode==='map'){
     if(!running){C3.t.yaw+=dt*0.035;C3.t.dist=Math.max(C3.t.dist,8000);}
     if(CINE&&CINE.o.track&&C3.t.dist<CINE.o.view.dist*3){const p=CINE.o.track();if(Array.isArray(p)){C3.t.tx=p[0];C3.t.ty=p[1];}}   // a cinematic keeps its moving subject in frame (until the player zooms out)
-    const ke=C3.intro>0?1-Math.exp(-dt*1.6):k;if(C3.intro>0)C3.intro-=dt;
+    const ke=C3.intro>0?1-Math.exp(-dt*1.6):C3.glide>0?1-Math.exp(-dt*2.2):k;if(C3.intro>0)C3.intro-=dt;if(C3.glide>0)C3.glide-=dt;
     // a cinematic can drive the orbit itself (o.track: the flypast, the fireworks), aiming th metres above the ground;
     // it cuts straight to the shot and holds it exactly (no easing lag on a fast target), then eases home after
     const tr0=CINE&&CINE.o.track?CINE.o.track():null,tr=tr0&&!Array.isArray(tr0)&&tr0.tx!=null?tr0:null;   // [x,y] = keep a subject in frame; {tx,ty,dist,yaw,pitch,th} = drive the orbit
@@ -372,7 +372,7 @@ function camUpdate(dt){
       if(V3.mode==='approach'&&f.landT!=null){C3.apT+=dt;if(C3.apT>9){const n=nextArrival();if(n&&n!==f){C3.follow=n;C3.fpos=null;C3.apT=0;camLabel();}}}
     }
   }
-  cam.updateProjectionMatrix();cam.updateMatrixWorld();
+  viewOff(cam);cam.updateProjectionMatrix();cam.updateMatrixWorld();
   if(focus)shadowFit(focus);
 }
 // camera tracks for set-piece cinematics (cinema's o.track). The flypast: ride alongside the formation like a chase
@@ -439,15 +439,20 @@ function project3D(){
 
 // controls (called from the 2D canvas's pointer and wheel handlers)
 function cam3Drag(dx,dy,orbit){
+  FRM.userT=performance.now();C3.glide=0;
   if(V3.mode==='tower'){C3.tower.yaw-=dx*0.003*(C3.tower.fov/48);C3.tower.pitch=clamp(C3.tower.pitch+dy*0.002,-0.6,0.4);return;}
   if(V3.mode!=='map')setCam('map');
   if(orbit){C3.t.yaw-=dx*0.005;C3.t.pitch=clamp(C3.t.pitch+dy*0.004,0.18,1.52);return;}
+  panT(dx,dy);Object.assign(C3,{tx:C3.t.tx,ty:C3.t.ty});
+}
+// move the strategic camera's target so the ground under the view centre slides by (dx, dy) screen pixels
+function panT(dx,dy){
   const upp=C3.t.dist*2*Math.tan(Z.camera.fov*D2R/2)/Math.max(1,VH)/Math.max(0.35,Math.sin(C3.t.pitch));
   const rx=Math.cos(C3.t.yaw),rz=-Math.sin(C3.t.yaw),fx=-Math.sin(C3.t.yaw),fz=-Math.cos(C3.t.yaw);
   C3.t.tx-=rx*dx*upp;C3.t.ty-=rz*dx*upp;C3.t.tx+=fx*dy*upp*Math.sin(C3.t.pitch);C3.t.ty+=fz*dy*upp*Math.sin(C3.t.pitch);clampC3();
-  Object.assign(C3,{tx:C3.t.tx,ty:C3.t.ty});
 }
 function cam3Zoom(f,mx,my){
+  FRM.userT=performance.now();C3.glide=0;
   if(V3.mode==='tower'){C3.tower.fov=clamp(C3.tower.fov*f,10,70);return;}
   if(V3.mode!=='map')setCam('map');
   const nd=clamp(C3.t.dist*f,220,30000),g=mx!=null?groundAt(mx,my):null;
@@ -491,6 +496,59 @@ function rwSigns3D(blk,taken){
     if(!put)continue;r._sa=put.ai;r._sOn=true;
     const rect=signText(put.p.X,put.p.Y+put.dy,put.t,(r.locked?0.6:1)*fa,o.s.col);rect.r=r;rwSigns.push(rect);taken.push(rect);}
 }
+
+// The rail and the HUD cover part of the canvas: every camera centres on the visible part (cam.region, set by fitCam),
+// not on the canvas centre, by shifting the projection (same field of view and scale, so nothing else changes).
+function viewOff(c){const g=cam.region;
+  const ox=g&&VW?Math.round(VW/2-(g.L+g.R)/2):0,oy=g&&VH?Math.round(VH/2-(g.Tp+g.B)/2):0,v=c.view;
+  if(!ox&&!oy){if(v&&v.enabled)c.clearViewOffset();return;}
+  if(!v||!v.enabled||v.offsetX!==ox||v.offsetY!==oy||v.fullWidth!==VW||v.fullHeight!==VH)c.setViewOffset(VW,VH,ox,oy,VW,VH);}
+// Set pieces start in sight: when a set piece (a Z.fx item or a story card) goes live outside the visible part of the
+// strategic view, the camera glides just far enough to bring it in, once per item. It never moves while the player is
+// steering (a drag, orbit or zoom in the last 12 s), during a cinematic, in the other cameras, or when zoomed in close.
+const FRM={seen:new WeakSet(),userT:-1e9,cam:null,v:null};
+function frameSpots(o,P){
+  const A=o.kind==='fireworks'?280:o.kind==='flypast'?200:o.kind==='ghosts'?150:(+o.alt||0);
+  // the ghosts jump in from their point back towards the field (fx4), the kites fill a cloud o.sp across (fx2)
+  if(o.pts)for(const p of o.pts){P.push([p[0],p[1],A]);if(o.kind==='ghosts')P.push([p[0]-1400,p[1],A]);}
+  else if(o.sp&&o.x!=null)P.push([o.x-o.sp*0.5,o.y,A],[o.x+o.sp*0.5,o.y,A]);
+  else if(o.path&&o.path.length){const a=o.path[0],b=o.path[o.path.length-1];P.push([a[0],a[1],A],[b[0],b[1],A]);}
+  else if(o.x0!=null&&o.x1!=null)P.push([o.x0,o.y0,0],[o.x1,o.y1,0]);
+  else if(o.cx!=null)P.push([o.cx,o.cy,A]);
+  else if(o.x!=null&&o.y!=null)P.push([o.x,o.y,A]);
+}
+function frameTick(){
+  if(!running||!LV||V3.mode!=='map'||CINE||(SUM&&SUM.cine)||C3.intro>0)return;
+  const P=[],fresh=[];
+  for(const o of FXV){if(!o||FRM.seen.has(o)||T<o.t0||T>o.t1)continue;FRM.seen.add(o);fresh.push(o);}
+  for(const I of incidents){if(I.type!=='story'||FRM.seen.has(I))continue;FRM.seen.add(I);if(!I.f&&I.x!=null)fresh.push(I);}
+  if(!fresh.length||performance.now()-FRM.userT<12000||C3.t.dist<4500||!cam.region)return;
+  for(const o of fresh)frameSpots(o,P);if(!P.length)return;
+  // the open runways stay in the frame too (the view zooms out a little, at most 1.25x, when both can't fit)
+  const F=[],rs=RW.filter(r=>!r.locked);for(const r of rs)F.push([r.x0,r.y,0],[r.x1,r.y,0]);
+  const THREE=Z.THREE,c=FRM.cam||(FRM.cam=new THREE.PerspectiveCamera()),v=FRM.v||(FRM.v=new THREE.Vector3()),g=cam.region,t=C3.t,d0=t.dist;
+  // where a set piece should land: clear of the edges, and below the character pop-ups and banners along the top
+  const w=g.R-g.L,h=g.B-g.Tp,IN=[g.L+w*0.12,g.R-w*0.12,g.Tp+h*0.2,g.B-h*0.12],OUT=[g.L+8,g.R-8,g.Tp+8,g.B-8];
+  // and above the coach card while it is up (it sits in the bottom right of the view)
+  {const el=$('#toast');if(el&&!el.hidden){const r=el.getBoundingClientRect(),a=cv.getBoundingClientRect();if(r.height)IN[3]=Math.max(IN[2]+40,Math.min(IN[3],r.top-a.top-16));}}
+  const box=(Q,b)=>{b[0]=b[2]=1e9;b[1]=b[3]=-1e9;for(const p of Q){v.set(p[0],p[2],p[1]).project(c);if(v.z>1)continue;const X=(v.x+1)/2*VW,Y=(1-v.y)/2*VH;
+    b[0]=Math.min(b[0],X);b[1]=Math.max(b[1],X);b[2]=Math.min(b[2],Y);b[3]=Math.max(b[3],Y);}return b[0]<=b[1];};
+  // the shift (px) on one axis that puts span [a0,a1] inside [lo,hi], or the range of shifts that do
+  const need=(a0,a1,lo,hi)=>a1-a0>hi-lo?[(lo+hi-a0-a1)/2,(lo+hi-a0-a1)/2]:[lo-a0,hi-a1];
+  const pick=(p,f)=>{const lo=Math.max(p[0],f[0]),hi=Math.min(p[1],f[1]);if(lo<=hi)return [clamp(0,lo,hi),true];return [clamp(0,p[0],p[1]),false];};
+  const bp=[0,0,0,0],bf=[0,0,0,0];
+  for(let it=0;it<8;it++){
+    const cp=Math.cos(t.pitch);c.fov=42;c.aspect=VW/Math.max(1,VH);c.near=10;c.far=Z.camera.far;
+    c.position.set(t.tx+Math.sin(t.yaw)*cp*t.dist,Math.sin(t.pitch)*t.dist,t.ty+Math.cos(t.yaw)*cp*t.dist);c.lookAt(t.tx,0,t.ty);viewOff(c);c.updateProjectionMatrix();c.updateMatrixWorld();
+    if(!box(P,bp))return;const hasF=F.length&&box(F,bf);
+    const fx=hasF?need(bf[0],bf[1],OUT[0],OUT[1]):[-1e9,1e9],fy=hasF?need(bf[2],bf[3],OUT[2],OUT[3]):[-1e9,1e9];
+    const [sx,okx]=pick(need(bp[0],bp[1],IN[0],IN[1]),fx),[sy,oky]=pick(need(bp[2],bp[3],IN[2],IN[3]),fy);
+    if((!okx||!oky)&&t.dist<d0*1.25){t.dist=Math.min(d0*1.25,t.dist*1.08);C3.glide=2.5;continue;}
+    if(Math.abs(sx)<4&&Math.abs(sy)<4)break;
+    panT(sx,sy);C3.glide=2.5;
+  }
+}
+
 // the overlay: incident markers, runway signs, stack signs, tags and MAYDAY beacons, drawn on the 2D canvas
 function drawOverlay3D(now){
   screenT();ctx.clearRect(0,0,VW,VH);const blk=hudRects(now),taken=[];
@@ -578,7 +636,7 @@ function warmFrame(on){
 function draw3D(now,dtR){
   if(!Z.renderer)return;const t0=performance.now(),R=Z.renderer;
   if(R.domElement.width!==Math.round(VW*R.getPixelRatio()))resize3D();
-  lightRig();camUpdate(dtR);
+  lightRig();frameTick();camUpdate(dtR);
   // cinematics are the most expensive shots (a low camera looking across the whole field and sky): they run on the
   // cinematic profile (no AO, no bloom: nobody misses them in a slow-motion cut, everybody feels a stutter), switched at
   // the cut; the adaptive ladder only steps down until the shot is over (see quality3D)

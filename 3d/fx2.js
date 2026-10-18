@@ -533,11 +533,11 @@ vec3 fxCol(vec3 P,float reg,float t){
     if (it.cutAt == null) st.cutT = null; else if (st.cutT !== it.cutAt) { st.cutT = it.cutAt; st.cutNow = now; }
     // scale by the camera's distance to the ribbon itself (the follow-cam cinematic frames the aircraft, a few hundred metres off)
     const cp = Z.camera.position, cd = Math.max(Z.camDist * 0.5, Math.hypot(cp.x - st.x, cp.y, cp.z - st.y));
-    const T = Z.T, k = clamp(cd / 110, 1, 30), w0 = it.w || 75, P = RB.pos, NS = RB.NS, NR = RB.NR;
+    const T = Z.T, k = clamp(cd / 110, 1, 36), w0 = it.w || 75, P = RB.pos, NS = RB.NS, NR = RB.NR;
     const fade = smooth(it.t0, it.t0 + 4, T) * (1 - smooth(it.t1 - 25, it.t1 - 2, T));
     const tau = st.cutT != null ? Math.max(10 * (now - st.cutNow), 2 * (T - st.cutT) - 100) : -1, cut = tau >= RB_SNIP, tf = cut ? (tau - RB_SNIP) / 10 : 0;   // tf: real seconds of fall
     // strategic: a longer, proportionally slimmer band, turned about its span axis to face the camera
-    const kS = 1 + 1.6 * smooth(2500, 9000, cd), sW = smooth(2500, 9000, cd), sF = smooth(1500, 5000, cd), w = w0 * mix(1, 3, sW);
+    const kS = 1 + 1.6 * smooth(2500, 9000, cd), sW = smooth(2500, 9000, cd), sF = smooth(1500, 5000, cd), w = w0 * mix(1, 4, sW);
     const PH = 2.9 * k * kS, RH = Math.min(0.6 * k * kS * kS, w * 0.4), yc = PH * 0.74 - RH * 0.5, sag = Math.min(w * 0.03, 0.3 * PH);
     const ox = st.x, oz = st.y, wind = Z.atmo && Z.atmo.wind ? Z.atmo.wind.speed || 4 : 4, gy = 0.025 * k;
     let thF = Math.atan2(-(cp.y - yc), cp.x - ox); if (thF > Math.PI / 2) thF -= Math.PI; else if (thF < -Math.PI / 2) thF += Math.PI;

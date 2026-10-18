@@ -561,7 +561,7 @@ vec3 fxCol(vec3 P,float reg,float t){
     slab([[-19, 1.5, 0], [-26, 12, 0], [-29.5, 12, 0], [-28.5, 1.5, 0]], 0.35, 1);
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(Nn, 3));
     const N = 64, aG = new THREE.InstancedBufferAttribute(new Float32Array(N * 4), 4); aG.setUsage(THREE.DynamicDrawUsage); g.setAttribute('aG', aG);
-    const U = { uTime: { value: 0 } };
+    const U = { uTime: { value: 0 }, uPR: { value: 1 } };
     // premultiplied 'over' blending: every channel stays under 1, so the cyan never washes out to white and the ghosts
     // darken a bright sky instead of vanishing into it
     const mat = new THREE.ShaderMaterial({ uniforms: U, transparent: true, depthWrite: false, side: THREE.DoubleSide, forceSinglePass: true,
@@ -571,33 +571,36 @@ vec3 fxCol(vec3 P,float reg,float t){
         void main(){
           vec3 p=position;float fr=floor(uTime*11.);
           float band=floor(p.x*0.22+fr*3.1+aG.z);float g=h1(band+aG.z*13.);
-          p.z+=g>0.8?(h1(band*1.7+aG.z)-0.5)*7.:0.;p.y+=g>0.92?(h1(band*2.3)-0.5)*3.:0.;
+          p.z+=g>0.72?(h1(band*1.7+aG.z)-0.5)*9.:0.;p.y+=g>0.9?(h1(band*2.3)-0.5)*4.:0.;
           p.x*=1.+aG.w*1.8;
           vec4 wp=modelMatrix*instanceMatrix*vec4(p,1.);
           vN=normalize(mat3(modelMatrix)*mat3(instanceMatrix)*normal);vV=cameraPosition-wp.xyz;vL=position;vA=aG.y;vC=aG.x;
           gl_Position=projectionMatrix*viewMatrix*wp;
         }`,
-      fragmentShader: `uniform float uTime;varying vec3 vN,vV,vL;varying float vA,vC;
+      // hologram look that reads at any distance: rolling screen-space scanlines a few pixels apart (dark gaps you can see
+      // through), a saturated cyan body with a bright rim, and a refresh bar sweeping nose to tail; the twin is magenta
+      fragmentShader: `uniform float uTime,uPR;varying vec3 vN,vV,vL;varying float vA,vC;
         void main(){
           vec3 n=normalize(vN),v=normalize(vV);float f=1.-abs(dot(n,v));float rim=f*f;
-          float scan=0.62+0.38*sin(gl_FragCoord.y*1.1-uTime*24.);
+          float scan=fract(gl_FragCoord.y/(4.*uPR)-uTime*1.6)<0.5?1.:0.12;
+          float bar=exp(-pow((fract(-vL.x*0.022+uTime*0.6)-0.5)*9.,2.));
           float lx=smoothstep(0.42,0.5,abs(fract(vL.x/3.)-0.5)),lz=smoothstep(0.44,0.5,abs(fract(vL.z/3.)-0.5));
-          vec3 col=vC<0.5?vec3(0.0,0.78,1.0):vec3(1.0,0.08,0.22);
-          float e=min(0.95,(0.18+1.1*rim+0.45*max(lx,lz))*scan)*vA;
-          float cov=clamp((0.22+0.55*rim)*vA,0.,0.8)*(vC<0.5?1.:0.35);
+          vec3 col=vC<0.5?vec3(0.0,0.7,1.0):vec3(1.0,0.08,0.6);
+          float e=min(0.92,(0.5+0.8*rim+0.3*max(lx,lz)+0.6*bar)*scan)*vA;
+          float cov=clamp((0.72+0.3*rim+0.2*bar)*scan*vA,0.,0.94)*(vC<0.5?1.:0.5);
           gl_FragColor=vec4(col*e,cov);
         }` });
     const mesh = new THREE.InstancedMesh(g, mat, N); mesh.frustumCulled = false; mesh.count = 0; mesh.visible = false; mesh.renderOrder = 31; mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); root.add(mesh);
     return { mesh, aG, U, N, tris: P.length / 9 };
   })();
   function ghostsUpdate(list, dt, now) {
-    let n = 0; const T = Z.T, k = Z.kEx || 1, E = 7, J = 7, arr = GH.aG.array, cp = Z.camera.position, tw = 0.004 * camD();
+    let n = 0; const T = Z.T, k = Z.kEx || 1, E = 7, J = 7, arr = GH.aG.array, cp = Z.camera.position, tw = 0.006 * camD();
     for (let li = 0; li < list.length; li++) {
       const it = list[li], pts = it.pts; if (!pts) continue;
       const fade = smooth(it.t0, it.t0 + 8, T) * (1 - smooth(it.t1 - 20, it.t1, T)); if (fade <= 0.01) continue;
       for (let pi = 0; pi < pts.length; pi++) {
         const px = pts[pi][0], py = pts[pi][1];
-        for (let e = 0; e < E && n + 2 <= GH.N; e++) {
+        for (let e = 0; e < E && n + 3 <= GH.N; e++) {
           const per = 6.5 + hash(pi, e) * 2, ph = now / per + e / E + pi * 0.37, cyc = Math.floor(ph), f = ph - cyc, j = Math.floor(f * J), jf = f * J - j;
           const stp = 330 + 60 * k;
           const x = px - (j + 0.3 + 0.5 * hash(e + j, cyc)) * stp, y = py + (hash(e * 3 + j, cyc + 1) - 0.5) * 140 * (0.5 + j * 0.3);
@@ -607,8 +610,12 @@ vec3 fxCol(vec3 P,float reg,float t){
           const bp = 1.1 + 0.8 * hash(e + 11, pi), bq = (now + 7 * hash(e, pi + 5)) / bp;
           if (bq - Math.floor(bq) < 0.3 / bp) { const fl = hash(e * 5 + pi, Math.floor(now * 7)); if (fl < 0.4) a *= 0.25; else if (fl > 0.75) a *= 1.35; }
           const smear = 1 - smooth(0, 0.14, jf), sd = hash(e * 13 + pi * 7, cyc) * 10;
-          _e.set((hash(e, cyc + j) - 0.5) * 0.14, Math.PI + (hash(e + 3, cyc + j) - 0.5) * 0.16, -0.05, 'YXZ'); _q.setFromEuler(_e); _s.setScalar(k);
+          _e.set((hash(e, cyc + j) - 0.5) * 0.14, Math.PI + (hash(e + 3, cyc + j) - 0.5) * 0.16, -0.05, 'YXZ'); _q.setFromEuler(_e); _s.setScalar(k * 1.4);
           _v.set(x, alt, y); _m.compose(_v, _q, _s); GH.mesh.setMatrixAt(n, _m); arr[n * 4] = 0; arr[n * 4 + 1] = a; arr[n * 4 + 2] = sd; arr[n * 4 + 3] = smear; n++;
+          // an afterimage left behind at the previous jump, fading out as the ghost settles
+          if (j > 0 && jf < 0.5) {
+            _v.set(px - (j - 0.7 + 0.5 * hash(e + j - 1, cyc)) * stp, alt, py + (hash(e * 3 + j - 1, cyc + 1) - 0.5) * 140 * (0.2 + j * 0.3)); _m.compose(_v, _q, _s);
+            GH.mesh.setMatrixAt(n, _m); arr[n * 4] = 0; arr[n * 4 + 1] = fade * Math.pow(1 - (j - 1) / J, 1.1) * 0.5 * (1 - jf * 2); arr[n * 4 + 2] = sd + 7; arr[n * 4 + 3] = 0.35; n++; }
           // the red twin sits a little to one side across the view direction, so its fringe always shows
           let qx = -(y - cp.z), qz = x - cp.x; const ql = Math.hypot(qx, qz) || 1, off = tw * (1 + 1.5 * smear); qx *= off / ql; qz *= off / ql;
           _v.set(x + qx - smear * 20 * k, alt + 0.15 * tw, y + qz); _m.compose(_v, _q, _s);
@@ -617,7 +624,7 @@ vec3 fxCol(vec3 P,float reg,float t){
       }
     }
     GH.mesh.count = n; GH.mesh.visible = n > 0;
-    if (n) { GH.mesh.instanceMatrix.needsUpdate = true; GH.aG.needsUpdate = true; GH.U.uTime.value = now; }
+    if (n) { GH.mesh.instanceMatrix.needsUpdate = true; GH.aG.needsUpdate = true; GH.U.uTime.value = now; GH.U.uPR.value = Z.renderer.getPixelRatio(); }
   }
   KS.add('ghosts');
 

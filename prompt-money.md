@@ -12,9 +12,80 @@ Read `build.md`, `progress.md` and the top of `hub.js` (LEVELS, resetState, buil
 
 **Evidence so far:** 7 people played the game, and each replayed levels at least three times to earn more stars. The core loop works: switch runways between ARR/DEP/MIX/OFF to match the arrival and departure waves on the bank chart, and handle the calls as they come.
 
-**Your job:** add money, so every decision has a price, and the four levels become one campaign that people replay to run the airport better, not just to collect stars. Do not build a second game next to the first. Money must hang off the decisions that already exist.
+**Your job:** add money, so every decision has a price, and the four levels become a 60-year concession that people replay to run the airport better, not just to collect stars. Step 0 sets the frame. Do not build a second game next to the first. Money must hang off the decisions that already exist.
 
 **Out of scope for this session:** a hijack scenario, new set pieces, 3D work beyond showing money in the overlay, and new levels.
+
+## Step 0 — The frame: you are a concessionaire, not a manager (this changes everything below)
+
+The money layer lives inside a **public-private partnership (PPP) concession**, the way India's private airports really work. It is modelled on two real plays:
+- **Adani:** bid aggressively, win big, grow fast. Adani won six AAI airports on 50-year leases, paying a per-passenger fee to AAI plus an upfront fee, and bought 74% of Mumbai's MIAL.
+- **Fairfax:** buy in patiently and compound. Fairfax India built its BIAL stake step by step to 74%, with AAI and Karnataka's KSIIDC holding 13% each.
+
+Benchmarks to verify and cite:
+- Delhi's DIAL shares 45.99% of revenue with AAI, and Mumbai's MIAL 38.7%.
+- AAI holds 26% of each.
+- Those concessions run 30 years, extendable by 30.
+
+**Onboarding (first launch, about 90 seconds, skippable later):**
+1. **Name your company.** The player types a parent company name (for example "Jani Infra"), which is stored as `zm_campaign.parent`.
+2. **The SPV.** The parent forms **Zero Mile International Airport Limited (ZMIAL)**, a special-purpose company that holds the concession. Ownership is 80% the player's parent and 20% the state: AAI 10% and MADC (Maharashtra Airport Development Company, which runs Nagpur's MIHAN today) 10%. Verify MADC's role before using its name; otherwise use "the State of Maharashtra". The state contributes the **land** on a nominal lease. You pay for everything else.
+3. **The bid.** This is the first strategic decision, and the whole 60 years depends on it. Three rival consortia (fictional names; no real companies) bid for the concession. The player chooses the bid type and level:
+   - **Revenue share** to AAI (Delhi-style, 30 to 50%), or
+   - **Per-passenger fee** (the Adani-style model).
+
+   Bid high and you win, but the margin is squeezed for decades. Bid low and you may lose the concession. A rival's winning bid and a short "what this means" explainer show either way.
+4. **Financial close.**
+   - The phase 1 capex comes from research. Benchmarks: Navi Mumbai and Noida (Jewar) costs per million passengers of capacity, and Al Maktoum's ~$35bn terminal. Write the number used, and its derivation, into `money.json`.
+   - Fund it about 30% equity (80% of that from your parent) and about 70% debt: a rupee term loan from an infrastructure lender consortium, tenor and rate researched (expect around 15 to 20 years at a high single-digit to low double-digit rate; verify).
+   - The player picks a gearing level and a repayment profile (sculpted vs equal instalments), with the trade-off explained: more debt means a higher return on equity and higher default risk.
+5. **The 60-year clock starts.** Construction years follow, with a few quick decisions: a cost overrun, a monsoon delay, an early phase 2 option. Then opening day.
+
+**Mapping 60 years to playable time (the key design call):**
+- **One era is five years**, matching AERA's real five-year tariff **control periods**. That makes 12 eras across the concession, preceded by construction.
+- **Each era has two halves:**
+  - **Board meeting** (strategic, 2 to 4 minutes): financing, investments, tariff filing, dividend or debt-prepayment choice, stake sales.
+  - **One peak shift** (operational, one of the existing levels, about 5 to 8 real minutes).
+- **The shift drives the era.** A real planner turns a design day into annual numbers, so the shift is the *sample day* for the whole era. Its OTP, connections, safety and profit per passenger are annualised (peak day → year, using a researched peak-day-to-annual factor) and set airline growth and retail yield for the next five years.
+- **Traffic migration maps onto the eras.** These are the existing levels with years attached:
+  - Years 5 to 7: opening and Bengaluru moving in (Level 1).
+  - Year 8: Ahmedabad and Hyderabad (Level 2).
+  - Year 11: Mumbai (Level 3).
+  - Year 14: Delhi (Level 4).
+  - Later eras replay Level 4 with traffic growth, the phase 2 decision (satellites G and H), new set pieces and rising competition.
+- **Real-time length:** a full concession is about 12 shifts plus 12 board meetings, so roughly 1.5 to 2 hours, saved after every era (localStorage `zm_campaign`, wrapped in try/catch). Also offer a "quick concession" setting with 6 eras of 10 years.
+
+**The regulator (the lesson that makes this an airport game, not a shop game):**
+- **AERA sets aeronautical tariffs each control period** from your **regulated asset base (RAB)** and a fair rate of return, under a **hybrid till**: part of non-aeronautical revenue is used to lower aeronautical charges. Research the current AERA till policy and percentage, and model it.
+- The result is the real truth of Indian airports: you can't get rich on landing fees, which the regulator caps. **You make your money in the Mall** (retail, F&B, duty-free, parking, the hotel, cargo) and through efficiency.
+- **Every board meeting shows the AERA order:** "Your aero tariff for 2041–46: ₹X per passenger, because your RAB is ₹Y and the allowed return is Z%." The player can appeal (a gamble) or accept.
+
+**Debt and survival:**
+- **Lenders track DSCR** (debt service coverage ratio: cash available ÷ loan payments due).
+  - Below 1.2, a covenant warning.
+  - Below 1.0 for two eras, the lenders exercise **step-in rights**, and AAI can **terminate** the concession. That's game over, with a debrief.
+- **Shocks:** an interest-rate spike, a pandemic year (like FY21, when Delhi airport invoked force majeure on revenue sharing; cite it), a fuel shock, a new competing airport.
+- **Options:**
+  - Refinance once traffic is proven.
+  - Sell part of your 80% (the Siemens → Fairfax or GVK → Adani play) to raise cash, at a price that depends on your track record.
+  - Prepay debt or pay dividends.
+
+**Endgame, year 60: handback.** The airport returns to the state in the condition the concession requires (a maintenance-standard check). Score the concession like a real investor would:
+- **Equity IRR** (internal rate of return on your parent's money).
+- **Total dividends.**
+- **Peak valuation.**
+- **Debt fully repaid**, yes or no.
+- **Safety record** and **operational stars** across all eras.
+
+Compare with real benchmarks you can cite: infrastructure equity return expectations in India, and Fairfax's reported BIAL valuation. Then end on one line: "*[Parent name]* ran Zero Mile for 60 years. ₹X crore returned on ₹Y crore invested."
+
+**What this means for Steps 1 to 5 below:**
+- Per-shift money (Steps 2 and 4) stays as designed. It becomes the *sample day* that drives each era.
+- The board meeting (Step 3) becomes the era screen: financing, AERA order, investments, dividends.
+- The bots (Step 5) also play a full quick concession. The expert must finish with debt repaid and a positive equity IRR. `miser` and `spender` must end lower. `lazy` should trigger the lenders' step-in.
+- Build it in two ships:
+  - **Ship A:** onboarding, the bid, financial close, per-shift money, and eras with annualisation and debt.
+  - **Ship B:** AERA orders with the hybrid till, shocks, stake sales, handback and endgame scoring.
 
 ## Step 1 — Research real Indian airport economics (keep it short and sourced)
 
@@ -28,6 +99,7 @@ Use web search. Write `research/money.md` with sources, and `money.json` with ev
   - Holding fuel burn per minute for an A320neo, a 777-300ER and an A380.
   - Indian ATF (jet fuel) price per kilolitre.
 - **Passenger rights.** DGCA's Civil Aviation Requirements on facilities for passengers facing denied boarding, cancellations and delays (CAR Section 3, Series M, Part IV): what airlines owe and when.
+- **Concession finance:** AERA control periods and the till policy (single, dual or hybrid, and the current percentage); typical Indian airport project gearing, loan tenor and interest rate; DSCR covenants; capex per million passengers of capacity at Navi Mumbai and Noida; and the revenue-share and per-passenger-fee bids in recent airport PPPs.
 - **Benchmarks** to compare the end-of-campaign result against: revenue per passenger and EBITDA margin for Delhi, Mumbai and Bengaluru airports.
 
 Express money in ₹ crore and ₹ lakh. Scale the numbers honestly, then apply one clearly labelled game multiplier if the real values feel too small to matter in a 90-minute shift. Document that multiplier in `money.md`.

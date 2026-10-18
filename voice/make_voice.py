@@ -8,7 +8,7 @@ Keys are the exact on-screen lines, so the game plays a clip whenever the bodygu
 """
 import base64, json, os, subprocess, tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
-P = '[[slnc 450]]'
+P = '[[slnc 800]]'
 RW = {'27R': 'two seven right', '27C': 'two seven centre', '27L': 'two seven left', '28R': 'two eight right', '28C': 'two eight centre', '28L': 'two eight left'}
 LINES = {
   'Sir. We have taken over your runways.': f'Sir. {P} We have taken over your runways.',
@@ -22,7 +22,7 @@ LINES = {
   'Your runways shall now be cleared, in a staged manner.': 'Your runways shall now be cleared, in a staged manner.',
   'Thank you, sir, for this.': 'Thank you, sir, for this.',
   'And thank you for serving the nation.': 'And thank you, for serving the nation.',
-  'Jai Hind.': 'Jai Hind.',
+  'Jai Hind.': 'Jye, Hinnd.',  # spelled so Aman says /dʒaɪ hɪnd/, not 'Jay Hynd' (checked with a phone recogniser)
 }
 for k, v in RW.items():
     LINES[f'Runway {k} shall be cleared first.'] = f'Runway {v} shall be cleared first.'
@@ -32,7 +32,7 @@ out = {}
 with tempfile.TemporaryDirectory() as td:
     for i, (key, text) in enumerate(LINES.items()):
         a, m = os.path.join(td, f'{i}.aiff'), os.path.join(td, f'{i}.mp3')
-        subprocess.run(['say', '-v', 'Aman', '-r', '158', '-o', a, text], check=True)
+        subprocess.run(['say', '-v', 'Aman', '-r', '152', '-o', a, text], check=True)
         fc = ('[0:a]aresample=24000,aformat=sample_fmts=fltp:channel_layouts=mono,highpass=f=300,lowpass=f=3400,'
               'acompressor=threshold=-20dB:ratio=5:attack=4:release=80,volume=1.9,asoftclip=type=tanh[s];'
               '[1:a]aresample=24000,aformat=sample_fmts=fltp:channel_layouts=mono,highpass=f=1500,volume=0.6[c1];'

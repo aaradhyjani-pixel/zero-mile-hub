@@ -2502,7 +2502,7 @@ function startSummit(){
   // the SPG's joke: only if it can be finished before the Prime Minister's announcement is due (it is on the log either way)
   SUM.fill.push({src:'SPG',text:'Can you have one runway back? No. We have chosen the runways. We choose the order. We are very fast at saying no.',from:E+40,slack:-1,ok:()=>SUM.ci<1});
   say('TWR',`All stations, summit protocol: every runway at Zero Mile is closed.${waved?` ${waved} on final, go around.`:''} Everyone else, hold.`,{pri:2});
-  guard(['Sir. We have taken over your runways.','All of them. Yes, the long one too.']);
+  guard(['Sir. We have taken over your runways.','All of them. Yes, the long one too.'],null,{valid:()=>!SUM||SUM.ci<1});
   logE('The summit: the SPG took every runway.');renderRw();return true;
 }
 // a VIP's turn begins: the announcement (it jumps the queue; dropped if the aircraft is somehow down first, cut if it lands
@@ -3360,7 +3360,7 @@ STORY.fog={len:1700,start(c){const r=LONGEST;if(r.locked)return false;c.r=r;
     // bots and the timeout default take the safe one, so balance is unchanged
     def:1,botPick:1,defText:`departures on ${r.short} stop until the taxiway clears.`,
     acts:[{l:`Backtrack on ${r.short}`,pri:1,fn(){r.btUntil=T+720;c.bt=true;c.scenAt=T+200;renderRw();resolve(I,true,`${r.short} departures backtracking on the runway in fog.`);
-        voiced(['Backtracking in this? I cannot see the runway from the cab.','Every read-back in full. Nobody rushes.'],WHO.sup);}},
+        voiced(['Backtracking in this? I cannot see the runway from the cab.','Every read-back in full. Nobody rushes.'],WHO.sup,{pri:3,valid:()=>!c.sc||c.sc.phase==='bt'});}},
       {l:`No backtracking: stop ${r.short} departures`,fn(){r.noDepUntil=T+720;renderRw();resolve(I,true,`${r.short} departures stopped while its taxiway was blocked in fog.`);}}]});
   c.lines.push([720,'OPS',`The tug is clear. ${r.short}'s taxiway is open again.`]);
   c.lines.push([LV.fog[1]-T,cc=>{if(cc.out==='crash'){say('ATC','The fog has lifted. Normal spacing on the open runways.');return;}

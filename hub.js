@@ -565,20 +565,53 @@ function guard(lines,who,o){const g=$('#guard');if(!g)return;clearTimeout(guard.
 // to the browser's speech at a natural pitch, with the best Indian English voice the device has
 /*@@VOICE@@*/
 const VQ=[];let vqOn=false,vqCur=null;
-function pickVoice(vs){const sc=v=>(/en[-_]IN/i.test(v.lang)?4:/en[-_]GB/i.test(v.lang)?2:/^en/i.test(v.lang)?1:0)+(/enhanced|premium|natural|neural|google/i.test(v.name)?3:0)+(/aman/i.test(v.name)?2:0)-(/rishi|compact/i.test(v.name)?1:0);return vs.slice().sort((a,b)=>sc(b)-sc(a))[0]||null;}
-function vqNext(){if(vqOn)return;const it=VQ.shift();if(!it)return;vqOn=true;let fin=false;const done=()=>{if(fin)return;fin=true;vqCur=null;if(it.onEnd)it.onEnd();setTimeout(()=>{vqOn=false;vqNext();},it.gap);};
+// a line can carry an accent (lang, e.g. 'ru-RU'): its clip is recorded in that voice; without a clip the browser's voice for
+// that language reads it (accented English), and a radio call with no clip and no matching voice stays silent
+function pickVoice(vs,lang){const sc=v=>(/en[-_]IN/i.test(v.lang)?4:/en[-_]GB/i.test(v.lang)?2:/^en/i.test(v.lang)?1:0)+(/enhanced|premium|natural|neural|google/i.test(v.name)?3:0)+(/aman/i.test(v.name)?2:0)-(/rishi|compact/i.test(v.name)?1:0);
+  if(lang){const L=lang.toLowerCase().replace('_','-'),m=vs.filter(v=>v.lang.toLowerCase().replace('_','-').startsWith(L.split('-')[0])&&(L.indexOf('-')<0||v.lang.toLowerCase().replace('_','-')===L||true));
+    const q=v=>(v.lang.toLowerCase().replace('_','-')===L?2:0)+(/enhanced|premium|natural|neural|google/i.test(v.name)?1:0);return m.sort((a,b)=>q(b)-q(a))[0]||null;}
+  return vs.slice().sort((a,b)=>sc(b)-sc(a))[0]||null;}
+function vqNext(){if(vqOn)return;const it=VQ.shift();if(!it)return;vqOn=true;let fin=false;const done=()=>{if(fin)return;fin=true;vqCur=null;duck(false);if(it.onEnd)it.onEnd();setTimeout(()=>{vqOn=false;vqNext();},it.gap);};
   if(it.onStart)it.onStart();const clip=typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[it.text];
-  if(clip){const a=new Audio(clip);vqCur=a;a.volume=0.95;a.onended=done;a.onerror=done;const p=a.play();if(p&&p.catch)p.catch(done);return;}
-  if(window.speechSynthesis&&window.SpeechSynthesisUtterance){try{const S2=window.speechSynthesis,v=pickVoice(S2.getVoices());const u=new SpeechSynthesisUtterance(it.text.replace(/[\u{1F000}-\u{1FAFF}☀-➿️]/gu,'').trim());
-    if(v){u.voice=v;u.lang=v.lang;}else u.lang='en-IN';u.rate=0.95;u.pitch=1;u.onend=done;u.onerror=done;S2.speak(u);setTimeout(done,9000);return;}catch(e){}}
+  if(clip){const a=new Audio(clip);vqCur=a;a.volume=it.vol||0.95;a.onended=done;a.onerror=done;duck(true);const p=a.play();if(p&&p.catch)p.catch(done);return;}
+  if(!it.radio&&window.speechSynthesis&&window.SpeechSynthesisUtterance){try{const S2=window.speechSynthesis,v=pickVoice(S2.getVoices(),it.lang);if(it.lang&&!v)return done();const u=new SpeechSynthesisUtterance(it.text.replace(/[\u{1F000}-\u{1FAFF}☀-➿️]/gu,'').trim());
+    if(v){u.voice=v;u.lang=v.lang;}else u.lang='en-IN';u.rate=0.95;u.pitch=1;u.onend=done;u.onerror=done;duck(true);S2.speak(u);setTimeout(done,9000);return;}catch(e){}}
   done();}
-function speak(lines,o){o=o||{};if(!SND.on)return false;lines.forEach((t,i)=>{const last=i===lines.length-1;VQ.push({text:t,gap:last?750:450,onStart:o.onLine?()=>o.onLine(i):null,onEnd:last?o.onDone:null});});vqNext();return true;}
-function voiceReset(){VQ.length=0;if(vqCur){try{vqCur.pause();}catch(e){}}vqCur=null;vqOn=false;if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}}
+// speak(lines,{onLine,onDone,gap,endGap,gaps,lang}): lines one after another; the gap after each line is gaps[i], else gap
+// (1200 ms: the SPG takes his time), and endGap after the last line
+function speak(lines,o){o=o||{};if(!SND.on)return false;lines.forEach((t,i)=>{const last=i===lines.length-1;VQ.push({text:t,lang:o.lang,gap:o.gaps&&o.gaps[i]!=null?o.gaps[i]:last?(o.endGap!=null?o.endGap:900):(o.gap!=null?o.gap:1200),onStart:o.onLine?()=>o.onLine(i):null,onEnd:last?o.onDone:null});});vqNext();return true;}
+// a radio call in a speaker's own voice: shows on the ticker, and plays its recorded clip (keyed by the exact text) if there is one
+function say(src,text,o){o=o||{};radio(src,text);if(SND.on&&typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[text]){VQ.push({text,radio:true,gap:o.gap!=null?o.gap:500,vol:o.vol,onStart:o.onStart,onEnd:o.onEnd});vqNext();return true;}if(o.onEnd)o.onEnd();return false;}
+function voiceReset(){VQ.length=0;if(vqCur){try{vqCur.pause();}catch(e){}}vqCur=null;vqOn=false;if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}music(null,{now:true});}
+// music for set pieces: music('dj') plays music/dj.mp3 (looped unless {loop:false}), crossfading from whatever was playing;
+// music(null) fades it out. It ducks under voice lines. A missing file is simply silent, so tracks can be dropped in later.
+var MUS={el:null,name:null,vol:0.4,tm:null,fi:null};
+function musFade(a,to,ms,cb){const from=a.volume,t0=performance.now();const st=()=>{const k=Math.min(1,(performance.now()-t0)/ms);try{a.volume=Math.max(0,Math.min(1,from+(to-from)*k));}catch(e){}if(k<1)a._f=requestAnimationFrame(st);else if(cb)cb();};cancelAnimationFrame(a._f);st();}
+function music(name,o){o=o||{};if(!MUS)return;if(name&&MUS.name===name&&MUS.el)return;clearTimeout(MUS.tm);const old=MUS.el;MUS.el=null;MUS.name=null;
+  if(old){if(o.now){old.pause();}else musFade(old,0,o.fadeOut||1500,()=>old.pause());}
+  if(!name||!SND.on)return;const src=(typeof MUSIC_SRC!=='undefined'&&MUSIC_SRC[name])||`music/${name}.mp3`;const a=new Audio(src);a.loop=o.loop!==false;a.volume=0;
+  MUS.el=a;MUS.name=name;MUS.vol=o.vol!=null?o.vol:0.4;a.onerror=()=>{if(MUS.el===a){MUS.el=null;MUS.name=null;}};const p=a.play();if(p&&p.catch)p.catch(()=>{});musFade(a,vqCur?MUS.vol*0.35:MUS.vol,o.fadeIn||1200);
+  if(!a.loop)a.onended=()=>{if(MUS.el===a){MUS.el=null;MUS.name=null;}};if(o.ms)MUS.tm=setTimeout(()=>{if(MUS.el===a)music(null);},o.ms);}
+function duck(on){const a=MUS&&MUS.el;if(a)musFade(a,on?MUS.vol*0.35:MUS.vol,on?250:700);}
 // after a summit the SPG hands the runways back one by one, then signs off
 function spgReturn(order){const n=order.length;guard(['Your runways shall now be cleared, in a staged manner.'].concat(order.map((r,i)=>i===0?`Runway ${r.short} shall be cleared first.`:i===n-1?`And finally, runway ${r.short}.`:`Then runway ${r.short}.`)));}
 function spgOpen(r){}
 function spgFinale(){setTimeout(()=>guard(['Thank you, sir, for this.','And thank you for serving the nation.','Jai Hind.'],null,
   {extra:2500,onLine:i=>{if(i===0)vipBanner(true,'SECURITY · SPG','Thank you for serving the nation','Jai Hind 🇮🇳',FLAG_IN);},onDone:()=>setTimeout(()=>{if(!CINE)vipBanner(false);},1800)}),2500);}
+// the SPG hands the runways back one at a time, in step with his voice: he names a runway, it reopens about a minute later
+// (lead), and only then does he name the next one (step apart); then a pause and his sign-off. It runs in sim time, so bots
+// and fast-forward see the same schedule; while he speaks with sound on, the game is held at 1x so his voice keeps up.
+// spgStaged.times(t0,n,o) gives the reopen times, so a set piece can end its runway blocks to match.
+const STAGED=[];
+function spgStaged(rws,o){o=o||{};const t0=o.at!=null?o.at:T,n=rws.length,tm=spgStaged.times(t0,n,o),s={lv:LV,t0,ev:[],prev:null};
+  const line=i=>i===0?`Runway ${rws[0].short} shall be cleared first.`:i===n-1?`And finally, runway ${rws[i].short}.`:`Then runway ${rws[i].short}.`;
+  const hold=()=>{if(SND.on&&speed>1&&s.prev==null){s.prev=speed;speed=1;if(running)setSpeed(1);}};
+  s.ev.push([t0,()=>{hold();guard(['Your runways shall now be cleared, in a staged manner.']);}]);
+  rws.forEach((r,i)=>{s.ev.push([tm.say[i],()=>{hold();guard([line(i)]);}]);s.ev.push([tm.open[i],()=>{if(o.open)o.open(r,i);radio('TWR',`Runway ${r.short} is back in service.`);renderRw();}]);});
+  s.ev.push([tm.open[n-1]+1,()=>{if(s.prev!=null){speed=s.prev;if(running)setSpeed(speed);s.prev=null;}if(o.done)o.done();if(o.finale!==false)spgFinale();}]);
+  s.ev.sort((a,b)=>a[0]-b[0]);STAGED.push(s);return tm;}
+spgStaged.times=(t0,n,o)=>{o=o||{};const first=o.first||100,lead=o.lead||60,step=o.step||110,say=[],open=[];for(let i=0;i<n;i++){say.push(t0+first+step*i);open.push(t0+first+step*i+lead);}return{say,open};};
+function stagedTick(){for(const s of STAGED.slice()){if(s.lv!==LV||T<s.t0-5){STAGED.splice(STAGED.indexOf(s),1);continue;}while(s.ev.length&&T>=s.ev[0][0])s.ev.shift()[1]();if(!s.ev.length)STAGED.splice(STAGED.indexOf(s),1);}}
 function vipBanner(on,k,title,meme,icons){const b=$('#vipBanner');if(!on){b.classList.remove('on');return;}const g=$('#guard');if(g&&icons==null)g.classList.remove('on');b.innerHTML=`<div class="flags">${icons==null?FLAG_IN+FLAG_RU:icons}</div><div class="k">${k}</div><h3>${title}</h3><div class="meme">${meme}</div>`;b.classList.add('on');}
 function startSummit(){
   S.summitAt=T;const open=RW.filter(r=>!r.locked&&r.mode!=='OFF');if(open.length<2)return false;
@@ -641,7 +674,7 @@ function cinema(f,ban,o){o=o||{};if(f?['gone','diverted'].includes(f.state):!o.v
   CINE={f,ban,o,c:o.c,t0:performance.now(),prevSpeed:speed,prevCam:V3.on&&V3.ready?{t:Object.assign({},C3.t)}:null};speed=o.speed||0.5;
   vipBanner(true,ban[0],ban[1],ban[2],ban[3]==null?'':ban[3]);
   if(V3.on&&V3.ready){if(f){V3.mode=f.state==='approach'?'approach':'follow';C3.follow=f;C3.fpos=null;C3.apT=-99;camLabel();}else{setCam('map');Object.assign(C3.t,o.view);}}else if(f)centerOn(f.x,f.y);else if(o.at)centerOn(o.at[0],o.at[1]);}
-function cineTick(){
+function cineTick(){stagedTick();
   if(!CINE){const q=cinema.q;if(q&&q.length&&!(SUM&&SUM.cine)){const [f,b,o]=q.shift();cinema(f,b,o);}return;}
   const c=CINE,now=performance.now();if(!V3.on&&c.f)centerOn(c.f.x,c.f.y);
   if(c.o.landed&&c.f&&c.f.landT!=null&&!c.landAt)c.landAt=now;
@@ -687,7 +720,7 @@ const SPEECH=['Brothers and sisters of Vidarbha, namaskar!','From the Zero Mile 
 function speech(c,t0,len){SPEECH.forEach((l,i)=>c.lines.push([t0-c.E+Math.round(i*len/SPEECH.length),'CM ON STAGE',l]));}
 STORY.ribbon={len:2000,start(c){const r=rwBy('dep')[0];if(!r)return false;c.r=r;
   c.blk={from:T,to:T+1e6,open:true,why:'Inauguration ribbon',desk:'Ribbon across it, until it is cut'};r.blocks.push(c.blk);r.blocks.sort((a,b)=>a.from-b.from);
-  const hx=r.holds.length?G.get(r.holds[0]).x:r.x1-300;c.mark={x:hx,y:r.y,e:'🎀',until:T+1e6,px:30,k:'ribbon'};MARKS.push(c.mark);
+  const hx=r.x1-220;c.mark={x:hx,y:r.y,e:'🎀',until:T+1e6,px:30,k:'ribbon'};MARKS.push(c.mark);
   c.fx={kind:'ribbon',id:'ribbon',x:hx,y:r.y,w:75,t0:T,t1:T+1e6,cutAt:null};FXV.push(c.fx);
   c.stage={kind:'stage',id:'stage1',x:hx-260,y:r.y,a:0,t0:T,t1:T+1e6,speaker:null};FXV.push(c.stage);MARKS.push(c.smark={x:hx-260,y:r.y,e:'🎤',until:T+1e6,px:26,k:'stage'});
   c.wait=T+240+Math.floor(SIMR()*240);
@@ -1440,7 +1473,7 @@ function pick(mx,my){let best=null,bd=1e9;for(const f of flights){if(f.sx==null|
 function pickInc(mx,my){for(const I of incidents)if(I.sx!=null&&Math.hypot(I.sx-mx,I.sy-my)<20)return I;return null;}
 function pickRw(mx,my){for(const s of rwSigns)if(mx>=s.x&&mx<=s.x+s.w&&my>=s.y-3&&my<=s.y+s.h+3)return s.r;let wx=mx/cam.s+cam.x,wy=my/cam.s+cam.y,tol=10/cam.s;if(V3.on){const g=groundAt(mx,my);if(!g)return null;wx=g.x;wy=g.y;tol=45;}for(const r of RW){if(wx>=r.x0&&wx<=r.x1&&Math.abs(wy-r.y)<Math.max(r.width/2+10,tol))return r;}return null;}
 document.querySelectorAll('.speeds button').forEach(b=>b.onclick=()=>setSpeed(+b.dataset.s));
-(function(){const b=$('#snd');const paint=()=>{b.textContent=SND.on?'Sound on':'Sound off';b.classList.toggle('on',SND.on);};paint();b.onclick=()=>{SND.on=!SND.on;store.set('zm_snd',SND.on);paint();if(SND.on)tickSound(true);};})();
+(function(){const b=$('#snd');const paint=()=>{b.textContent=SND.on?'Sound on':'Sound off';b.classList.toggle('on',SND.on);};paint();b.onclick=()=>{SND.on=!SND.on;store.set('zm_snd',SND.on);paint();if(SND.on)tickSound(true);else voiceReset();};})();
 function setSpeed(s){if(!running)return;if(s===0)paused=!paused;else{speed=s;paused=false;}document.querySelectorAll('.speeds button').forEach(b=>{const v=+b.dataset.s;b.classList.toggle('on',v===0?paused:(!paused&&v===speed));});$('#spP').textContent=paused?'Resume':'Pause';}
 window.addEventListener('keydown',e=>{if(e.key===' '&&!(e.target.closest&&e.target.closest('button'))){e.preventDefault();setSpeed(0);}if(e.key==='1')setSpeed(1);if(e.key==='2')setSpeed(2);if(e.key==='3')setSpeed(4);if(e.key==='Escape'){closePop();if(V3.on&&V3.mode!=='map')setCam('map');}if(e.key==='+'||e.key==='=')zoomCenter(1.6);if(e.key==='-')zoomCenter(1/1.6);if(e.key==='f')V3.on?cam3Fit():fitCam();if(e.key==='m'||e.key==='M')setView(V3.on?'2d':'3d');if(e.key==='c'||e.key==='C')cycleCam();if(V3.on&&(e.key==='q'||e.key==='Q'))C3.t.yaw+=0.25;if(V3.on&&(e.key==='e'||e.key==='E'))C3.t.yaw-=0.25;});
 

@@ -4,3 +4,7 @@ __pycache__/
 hub.html
 .venv/
 qa/
+
+# third-party music stays local (not published)
+music/*.mp3
+site/music/

@@ -27,4 +27,8 @@ js=js.replace('/*@@VOICE@@*/',open(vp,encoding='utf-8').read() if os.path.exists
 out=head+body+'\n<template id="planTpl">'+plan+'</template>\n<script type="application/json" id="specData">'+json.dumps(spec,separators=(',',':')).replace('</','<\\/')+'</script>\n<script>window.__DESIGN={html:'+json.dumps(design).replace('</','<\\/')+'};</script>\n<script>\n'+js+'\n</script>\n'
 open(os.path.join(d,'hub.html'),'w',encoding='utf-8').write(out)
 os.makedirs(os.path.join(d,'site'),exist_ok=True);open(os.path.join(d,'site','index.html'),'w',encoding='utf-8').write(out)
+# set-piece music (music/*.mp3, played by music() in hub.js) ships next to the page
+md=os.path.join(d,'music')
+if os.path.isdir(md):
+    shutil.rmtree(os.path.join(d,'site','music'),ignore_errors=True);shutil.copytree(md,os.path.join(d,'site','music'))
 print(len(out))

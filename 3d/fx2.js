@@ -679,54 +679,108 @@ vec3 fxCol(vec3 P,float reg,float t){
   KS.add('cyclists');
 
   // =====================================================================================================
-  // FIREWORKS: GPU-only particle shells (rocket, peony burst with drag and gravity, crackle), HDR colours for bloom
+  // FIREWORKS, built to read in daylight: one instanced draw of camera-facing quads. Big saturated shells (saffron, white, green,
+  // gold, tiranga) as velocity-stretched HDR streaks with white-hot cores and a burst flash, rocket smoke trails, lingering
+  // coloured smoke puffs that drift with the wind, and four ground fountains. Premultiplied blending lets one draw mix
+  // occluding smoke (drawn first) with glowing sparks. All motion is in the vertex shader; the CPU sets a few uniforms.
   // =====================================================================================================
   const FW = (() => {
-    const S = 22, PP = 150, n = S * PP, sd = new Float32Array(n * 4), R = mulberry(77);
-    for (let s = 0; s < S; s++) for (let p = 0; p < PP; p++) {
-      const i = s * PP + p, u = R() * 2 - 1, a = R() * Math.PI * 2, q = Math.sqrt(1 - u * u), k = 0.82 + 0.18 * R();
-      sd[i * 4] = s + p / PP * 0.999; sd[i * 4 + 1] = Math.cos(a) * q * k; sd[i * 4 + 2] = u * k; sd[i * 4 + 3] = Math.sin(a) * q * k;
-    }
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3)); g.setAttribute('aSd', new THREE.BufferAttribute(sd, 4));
-    const U = { uTime: { value: 0 }, uC: { value: new THREE.Vector3() }, uFade: { value: 0 }, uK: { value: 1 }, uPx: { value: 1 } };
-    const mat = new THREE.ShaderMaterial({ uniforms: U, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-      vertexShader: `uniform float uTime,uFade,uK,uPx;uniform vec3 uC;attribute vec4 aSd;varying vec3 vCol;varying float vA;
+    const S = 16, PP = 230, NSB = 10, NST = 8, NF = 4, FP = 170, FS = 10;
+    const nSmoke = S * (NSB + NST) + NF * FS, nSpark = NF * FP + S * PP, n = nSmoke + nSpark;
+    const A = new Float32Array(n * 4), B = new Float32Array(n * 4), R = mulberry(77);
+    let i = 0;
+    const put = (type, slot, j, dx, dy, dz) => { A[i * 4] = type; A[i * 4 + 1] = slot; A[i * 4 + 2] = j; A[i * 4 + 3] = R(); B[i * 4] = dx; B[i * 4 + 1] = dy; B[i * 4 + 2] = dz; B[i * 4 + 3] = R(); i++; };
+    const dir = (k) => { const u = R() * 2 - 1, a = R() * Math.PI * 2, q = Math.sqrt(1 - u * u); return [Math.cos(a) * q * k, u * k, Math.sin(a) * q * k]; };
+    // smoke first (it occludes), then fountain sparks, then shell sparks
+    for (let s = 0; s < S; s++) for (let j = 0; j < NSB; j++) put(0, s, j / NSB, ...dir(1));
+    for (let s = 0; s < S; s++) for (let j = 0; j < NST; j++) put(1, s, (j + 0.5) / NST, ...dir(1));
+    for (let f = 0; f < NF; f++) for (let j = 0; j < FS; j++) put(2, f, j / FS, ...dir(1));
+    for (let f = 0; f < NF; f++) for (let j = 0; j < FP; j++) put(3, f, j / FP, ...dir(1));
+    for (let s = 0; s < S; s++) for (let j = 0; j < PP; j++) put(4, s, j, ...dir(0.84 + 0.16 * R()));
+    const g = new THREE.InstancedBufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute([-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0], 3)); g.setIndex([0, 1, 2, 0, 2, 3]);
+    g.setAttribute('aA', new THREE.InstancedBufferAttribute(A, 4)); g.setAttribute('aB', new THREE.InstancedBufferAttribute(B, 4)); g.instanceCount = n;
+    const U = { uTime: { value: 0 }, uC: { value: new THREE.Vector3() }, uFade: { value: 0 }, uK: { value: 1 }, uPix: { value: 0.001 }, uWind: { value: new THREE.Vector2(3, 0) } };
+    const mat = new THREE.ShaderMaterial({ uniforms: U, transparent: true, depthWrite: false, depthTest: true,
+      blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
+      blendSrcAlpha: THREE.OneFactor, blendDstAlpha: THREE.OneMinusSrcAlphaFactor,
+      vertexShader: `uniform float uTime,uFade,uK,uPix;uniform vec3 uC;uniform vec2 uWind;attribute vec4 aA,aB;
+        varying vec2 vUv;varying vec3 vCol;varying float vA,vT,vSeed;
         float h1(float x){return fract(sin(x*78.233)*43758.5453);}
+        const float PER=0.62,RISE=1.25;const float CYC=${S}.*PER;
+        vec3 shellCol(float ci,vec3 d,float pi){
+          if(ci<1.)return vec3(1.,.30,.02);if(ci<2.)return vec3(1.,.93,.82);if(ci<3.)return vec3(.04,1.,.16);if(ci<4.)return vec3(1.,.58,.06);
+          return d.y>.33?vec3(1.,.30,.02):d.y<-.33?vec3(.04,1.,.16):vec3(1.,.95,.88);}   // tiranga: saffron over white over green
+        // shell parameters for slot s at time t: burst point, kind, colour index, age in the cycle
+        void shell(float s,out vec3 bp,out float kind,out float ci,out float age){
+          float tt=uTime-s*PER,c=floor(tt/CYC);age=tt-c*CYC;float sh=s*7.13+c*31.7;
+          bp=uC+vec3((h1(sh)-.5)*560.,190.+h1(sh+1.)*230.,(h1(sh+2.)-.5)*560.);kind=h1(sh+3.);ci=floor(h1(sh+4.)*5.);}
+        vec3 sparkAt(vec3 bp,vec3 d,float kind,float t){
+          float big=step(.72,kind),R=mix(150.,200.,big)*(1.-exp(-t*mix(2.6,1.7,big)));
+          return bp+d*R-vec3(0.,mix(15.,9.,big)*t*t+mix(6.,3.,big)*t,0.);}
         void main(){
-          float slot=floor(aSd.x),pi=fract(aSd.x)*150.,per=0.42,cyc=${S}.*per;
-          float tt=uTime-slot*per,c=floor(tt/cyc),age=tt-c*cyc,sh=slot*7.13+c*31.7;
-          vec3 bp=uC+vec3((h1(sh)-.5)*520.,170.+h1(sh+1.)*230.,(h1(sh+2.)-.5)*520.);
-          float kind=h1(sh+3.);int ci=int(h1(sh+4.)*4.);
-          vec3 col=ci==0?vec3(1.,.42,.06):ci==1?vec3(1.,.95,.85):ci==2?vec3(.12,1.,.3):vec3(1.,.72,.18);
-          vec3 col2=ci==2?vec3(1.,.42,.06):vec3(1.,.95,.85);
-          float rise=0.9;vec3 p;float a=0.,sz=1.;
-          if(age<rise){ // the rocket and its sparks
-            float f=age/rise;f=1.-(1.-f)*(1.-f);vec3 g0=vec3(bp.x,0.,bp.z);
-            float lag=pi<1.?0.:pi/150.*0.25;p=mix(g0,bp,max(0.,f-lag));a=pi<1.?3.:(pi<40.?max(0.,1.-lag*4.)*0.6:0.);col=vec3(1.,.75,.4);sz=pi<1.?1.6:0.7;
-            p+=vec3(h1(pi+c)-.5,0.,h1(pi*1.7+c)-.5)*4.*lag*30.;
-          } else {
-            float t=age-rise,r=(kind>0.7?150.:115.)*(1.-exp(-t*2.6));
-            vec3 d=aSd.yzw;
-            p=bp+d*r-vec3(0.,14.*t*t+6.*t,0.);
-            float life=kind>0.7?3.2:2.6;a=pow(max(0.,1.-t/life),1.6)*2.2;
-            if(t<0.12)a+=(1.-t/0.12)*4.;
-            if(kind>0.45&&kind<0.7){a*=step(0.45,h1(pi*3.1+floor(uTime*18.)));col=mix(col,vec3(1.,.9,.6),.5);}   // crackle
-            col=mix(col,col2,step(0.66,fract(pi*0.618))*step(0.35,kind));
-            sz=1.+0.6*step(0.7,kind);
+          float type=aA.x,s=aA.y,j=aA.z,r=aA.w;vec3 d=aB.xyz;float r2=aB.w;
+          vec3 p=uC,pp=uC;float w=1.,a=0.;vec3 col=vec3(1.);float smoke=0.;
+          vec3 bp;float kind,ci,age;
+          if(type<1.5){                                   // shell smoke: burst puffs (0) and rocket trail (1)
+            shell(s,bp,kind,ci,age);smoke=1.;vec3 g0=vec3(bp.x,0.,bp.z);
+            if(type<0.5){float t=age-RISE-.05;a=t>0.?.62*smoothstep(0.,.35,t)*exp(-t/5.5):0.;
+              vec3 sc=shellCol(ci,d,0.);col=mix(vec3(.78,.76,.74),sc,ci==1.?0.:.62);
+              p=bp+d*(80.+55.*r)*(1.-exp(-t*1.6))-vec3(0.,4.*t,0.)+vec3(uWind.x,0.,uWind.y)*t*2.2;w=(32.+26.*r)*(.55+.45*min(t,3.)/3.)+t*5.;}
+            else{float te=j*RISE*.92,t=age-te;float f=j;f=1.-(1.-f)*(1.-f);
+              a=t>0.?.5*exp(-t/3.2)*smoothstep(0.,.15,t):0.;col=vec3(.86,.85,.83);
+              p=mix(g0,bp,f*.92)+vec3(uWind.x,0.,uWind.y)*t*2.+vec3(d.x,0.,d.z)*3.*t;w=7.+t*5.5+r*3.;}
+            a*=1.-smoothstep(CYC-2.2,CYC-.2,age);w*=pow(uK,.8);
+          } else if(type<2.5){                            // fountain smoke rising from each gerb
+            float fa=s*1.5708+.785,life=4.5,t=mod(uTime+j*life+r,life);vec3 base=uC+vec3(cos(fa),0.,sin(fa))*110.;smoke=1.;
+            p=base+vec3(0.,8.+t*9.,0.)*sqrt(uK)+vec3(uWind.x,0.,uWind.y)*t*1.8+d*4.;w=(8.+t*5.)*sqrt(uK);a=.4*smoothstep(0.,.6,t)*(1.-t/life);col=vec3(.9,.88,.84);
+          } else if(type<3.5){                            // fountain sparks (gerbs): golden arcs
+            float fa=s*1.5708+.785,life=1.25+.35*r2,t=mod(uTime*1.+j*7.31+r*life,life);vec3 base=uC+vec3(cos(fa),0.,sin(fa))*110.;
+            float kf=sqrt(uK);vec3 v=vec3(d.x*9.,30.+9.*r,d.z*9.)*kf;
+            p=base+(v*t-vec3(0.,.5*30.*kf*t*t,0.));float tq=max(0.,t-.06);pp=base+(v*tq-vec3(0.,.5*30.*kf*tq*tq,0.));
+            a=(1.-t/life)*1.3*(.6+.4*step(.5,h1(j*91.+floor(uTime*24.))));col=mix(vec3(1.,.5,.08),vec3(1.,.8,.45),r2)*2.4;w=1.4*kf;
+          } else {                                       // shell sparks: rocket, then the burst
+            shell(s,bp,kind,ci,age);vec3 g0=vec3(bp.x,0.,bp.z);
+            if(age<RISE){float f=age/RISE;f=1.-(1.-f)*(1.-f);float lag=j<1.?0.:j/${PP}.*.35;
+              float f2=max(0.,f-lag);p=mix(g0,bp,f2)+vec3(d.x,0.,d.z)*lag*40.;pp=mix(g0,bp,max(0.,f2-.035));
+              a=j<1.?3.:(j<60.?max(0.,1.-lag*3.)*.9:0.);col=vec3(1.,.62,.25)*2.6;w=j<1.?2.6:1.3;
+            } else {
+              float t=age-RISE,big=step(.72,kind),life=mix(2.8,4.4,big);
+              p=sparkAt(bp,d,kind,t);pp=sparkAt(bp,d,kind,max(0.,t-mix(.13,.24,big)));
+              a=pow(max(0.,1.-t/life),1.2)*1.25;if(t<.12)a+=(1.-t/.12)*1.5;
+              col=shellCol(ci,d,j);if(big>.5&&ci!=4.)col=mix(col,vec3(1.,.62,.12),.55);
+              if(kind>.45&&kind<.72&&t>.9){a*=step(.5,h1(j*3.1+floor(uTime*20.)))*1.6;col=mix(col,vec3(1.,.95,.75),.6);}   // crackle
+              col*=1.45;w=2.0*(1.+.35*big);
+              if(t<.15){w*=1.+3.*(1.-t/.15);}
+            }
+            w*=pow(uK,.75);
           }
-          vCol=col*3.2;vA=a*uFade*1.4;
-          vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;
-          gl_PointSize=vA>0.003?max(2.6*uPx,sz*uK*uPx*4200./-mv.z):0.;
+          vA=a*uFade;vT=smoke;vSeed=r*17.+s;
+          vec4 m0=modelViewMatrix*vec4(p,1.);vec3 c=m0.xyz;
+          if(smoke>.5){float an=r*6.283+uTime*.05*(r-.5);mat2 R2=mat2(cos(an),-sin(an),sin(an),cos(an));c.xy+=R2*position.xy*w;vUv=position.xy;
+            vCol=col*(.85+.25*position.y);}   // lit from above
+          else{w=max(w,uPix*-m0.z*(type<3.5?1.0:1.1));vec4 m1=modelViewMatrix*vec4(pp,1.);vec2 ax=m0.xy-m1.xy;float L=length(ax);vec2 dr=L>1e-3?ax/L:vec2(0.,1.);vec2 sd=vec2(dr.y,-dr.x);
+            c=mix(m1.xyz,m0.xyz,position.y*.5+.5);c.xy+=sd*position.x*w+dr*position.y*w;vUv=vec2(position.x,position.y*(L+2.*w)/(2.*w));vUv.y=position.y;vCol=col;}
+          gl_Position=vA>.002?projectionMatrix*vec4(c,1.):vec4(2.,2.,2.,1.);
         }`,
-      fragmentShader: `varying vec3 vCol;varying float vA;void main(){vec2 q=gl_PointCoord*2.-1.;float r=dot(q,q);if(r>1.)discard;float a=vA*(1.-r)*(1.-r);gl_FragColor=vec4(vCol*a,a);}` });
-    const pts = new THREE.Points(g, mat); pts.frustumCulled = false; pts.visible = false; root.add(pts);
-    return { pts, U };
+      fragmentShader: `varying vec2 vUv;varying vec3 vCol;varying float vA,vT,vSeed;
+        ${GLSL_NOISE}
+        void main(){
+          if(vT>.5){float n=fx2n(vUv*2.2+vSeed)*.6+fx2n(vUv*5.1-vSeed)*.4;float m=smoothstep(1.,.25,length(vUv)+(n-.5)*.7);float a=m*vA;
+            if(a<.004)discard;gl_FragColor=vec4(vCol*a,a);}
+          else{float r=length(vec2(vUv.x,vUv.y*.6));float core=exp(-r*r*5.);float hot=smoothstep(.28,0.,r)*.35;float a=min(1.,vA*core);
+            if(a<.003)discard;gl_FragColor=vec4((vCol+vec3(hot))*a,a*.88);}
+        }` });
+    const mesh = new THREE.Mesh(g, mat); mesh.frustumCulled = false; mesh.visible = false; root.add(mesh);
+    return { mesh, U };
   })();
   function fireworksUpdate(list, dt, now) {
-    const it = list[0]; if (!it) { FW.pts.visible = false; return; }
+    const it = list[0]; if (!it) { FW.mesh.visible = false; return; }
     const T = Z.T, f = smooth(it.t0, it.t0 + 6, T) * (1 - smooth(it.t1 - 25, it.t1, T));
-    FW.U.uTime.value = now; FW.U.uC.value.set(it.x, 0, it.y); FW.U.uFade.value = f; FW.U.uK.value = clamp(Z.camDist / 1600, 1, 7);
-    FW.U.uPx.value = Z.renderer.getPixelRatio(); FW.pts.visible = f > 0.01;
+    FW.U.uTime.value = now; FW.U.uC.value.set(it.x, 0, it.y); FW.U.uFade.value = f; FW.U.uK.value = clamp(Z.camDist / 1500, 1, 7);
+    const wd = Z.atmo && Z.atmo.wind; if (wd) FW.U.uWind.value.set(Math.cos(wd.dir) * (wd.speed || 3), Math.sin(wd.dir) * (wd.speed || 3));
+    FW.U.uPix.value = 2 / (Z.camera.projectionMatrix.elements[5] * Z.renderer.domElement.height);
+    FW.mesh.visible = f > 0.01;
   }
   KS.add('fireworks');
 

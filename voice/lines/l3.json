@@ -171,8 +171,8 @@
  },
  {
   "key": "The Honourable Prime Minister is on the red carpet, to receive His Excellency the President of the Russian Federation.",
-  "voice": "announcer_hi",
-  "say": "माननीय प्रधानमंत्री, [[slnc 600]] रूसी संघ के महामहिम राष्ट्रपति के स्वागत हेतु, [[slnc 600]] लाल कालीन पर उपस्थित हैं।"
+  "voice": "announcer",
+  "say": "The Honourable Prime Minister is on the red carpet, [[slnc 400]] to receive His Excellency the President of the Russian Federation. [[slnc 500]]"
  },
  {
   "key": "The motorcade is driving out of the Antonov. Ten cars. Nobody has asked where they will park.",
@@ -181,8 +181,8 @@
  },
  {
   "key": "The Honourable Prime Minister has received His Excellency the President of the Russian Federation on the red carpet. Handshake: eleven seconds.",
-  "voice": "announcer_hi",
-  "say": "माननीय प्रधानमंत्री ने लाल कालीन पर, [[slnc 600]] रूसी संघ के महामहिम राष्ट्रपति का स्वागत किया। [[slnc 900]] करमर्दन: [[slnc 600]] ग्यारह सेकंड।"
+  "voice": "announcer",
+  "say": "The Honourable Prime Minister has received His Excellency the President of the Russian Federation on the red carpet. [[slnc 800]] Handshake: [[slnc 400]] eleven seconds. [[slnc 500]]"
  },
  {
   "key": "The motorcade has left for Tadoba. Every road from here to the tigers is closed. The tigers have been informed.",

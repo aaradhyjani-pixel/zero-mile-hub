@@ -493,10 +493,84 @@ vec3 fxCol(vec3 P,float reg,float t){
   KS.add('ribbon');
 
   // =====================================================================================================
+  // DABBAWALAS: instanced riders on black roadsters, white kurta and Gandhi cap, tiffin crates; pedalling in the vertex shader
+  // =====================================================================================================
+  const CY = (() => {
+    const N = 160, P = [], Nn = [], C = [], A = [];
+    const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), E = new THREE.Euler(), V = new THREE.Vector3(), S = new THREE.Vector3(), NM = new THREE.Matrix3();
+    const add = (geo, x, y, z, rx, ry, rz, sx, sy, sz, hex, part) => {
+      const g = geo.index ? geo.toNonIndexed() : geo; E.set(rx, ry, rz); Q.setFromEuler(E); V.set(x, y, z); S.set(sx, sy, sz); M.compose(V, Q, S); NM.getNormalMatrix(M);
+      const gp = g.attributes.position, gn = g.attributes.normal, col = new THREE.Color(hex), t = new THREE.Vector3();
+      for (let i = 0; i < gp.count; i++) { t.fromBufferAttribute(gp, i).applyMatrix4(M); P.push(t.x, t.y, t.z); t.fromBufferAttribute(gn, i).applyMatrix3(NM).normalize(); Nn.push(t.x, t.y, t.z); C.push(col.r, col.g, col.b); A.push(part); }
+    };
+    const BOX = new THREE.BoxGeometry(1, 1, 1), CYL = new THREE.CylinderGeometry(1, 1, 1, 8), SPH = new THREE.SphereGeometry(1, 10, 8), TOR = new THREE.TorusGeometry(0.33, 0.028, 5, 18);
+    const bar = (x0, y0, x1, y1, z, th, hex, part) => { const dx = x1 - x0, dy = y1 - y0, l = Math.hypot(dx, dy); add(BOX, (x0 + x1) / 2, (y0 + y1) / 2, z, 0, 0, Math.atan2(dy, dx), l, th, th, hex, part); };
+    const BLK = '#1d1f1c', WHT = '#f3f1ea', SKIN = '#7a4a2c', WOOD = '#8a5a2b', STEEL = '#b9bdc2';
+    add(TOR, 0.52, 0.35, 0, 0, 0, 0, 1, 1, 1, BLK, 1); add(TOR, -0.52, 0.35, 0, 0, 0, 0, 1, 1, 1, BLK, 2);
+    bar(-0.1, 0.38, 0.42, 0.8, 0, 0.04, BLK, 0); bar(-0.1, 0.38, -0.2, 0.92, 0, 0.04, BLK, 0); bar(-0.18, 0.84, 0.42, 0.84, 0, 0.035, BLK, 0);
+    bar(-0.1, 0.38, -0.52, 0.35, 0.05, 0.025, BLK, 0); bar(-0.1, 0.38, -0.52, 0.35, -0.05, 0.025, BLK, 0); bar(0.42, 0.86, 0.52, 0.35, 0, 0.035, BLK, 0);
+    bar(-0.2, 0.92, -0.52, 0.35, 0, 0.025, BLK, 0); add(BOX, 0.42, 1.0, 0, 0, 0, 0, 0.04, 0.04, 0.56, BLK, 0); bar(0.42, 0.86, 0.42, 1.0, 0, 0.035, BLK, 0);
+    add(BOX, -0.2, 0.95, 0, 0, 0, 0, 0.22, 0.05, 0.12, '#3b2a1a', 0);   // saddle
+    add(BOX, -0.5, 0.72, 0, 0, 0, 0, 0.5, 0.04, 0.34, BLK, 0);          // carrier
+    add(BOX, -0.5, 0.92, 0, 0, 0, 0, 0.56, 0.34, 0.5, WOOD, 0);         // tiffin crate
+    for (let i = 0; i < 6; i++) add(CYL, -0.68 + (i % 3) * 0.17, 1.14, (i < 3 ? -0.12 : 0.12), 0, 0, 0, 0.065, 0.12, 0.065, STEEL, 0);
+    for (const z of [-0.22, 0.22]) add(BOX, 0.5, 0.82, z, 0, 0, 0, 0.26, 0.3, 0.16, z < 0 ? '#2d6a4f' : '#b5651d', 0);   // tiffin bags on the bars
+    // rider: kurta torso, skirt, head + cap, arms (part 6), legs (parts 3/4 swing at the hip)
+    add(BOX, -0.04, 1.32, 0, 0, 0, -0.32, 0.26, 0.6, 0.36, WHT, 0); add(BOX, -0.14, 1.0, 0, 0, 0, -0.1, 0.34, 0.24, 0.4, WHT, 0);
+    add(SPH, 0.1, 1.74, 0, 0, 0, 0, 0.11, 0.125, 0.105, SKIN, 5); add(BOX, 0.1, 1.86, 0, 0, 0, 0, 0.23, 0.09, 0.15, WHT, 5); add(BOX, 0.1, 1.83, 0, 0, 0, 0, 0.24, 0.03, 0.16, '#e0ddd2', 5);
+    for (const z of [-0.2, 0.2]) { bar(0.02, 1.56, 0.4, 1.02, z, 0.08, WHT, z > 0 ? 6 : 0); add(SPH, 0.41, 1.0, z, 0, 0, 0, 0.045, 0.045, 0.045, SKIN, z > 0 ? 6 : 0); }
+    for (const z of [-0.11, 0.11]) { const pt = z > 0 ? 3 : 4; bar(-0.14, 0.98, 0.1, 0.62, z, 0.12, WHT, pt); bar(0.1, 0.62, -0.02, 0.32, z, 0.1, WHT, pt); add(BOX, 0.0, 0.29, z, 0, 0, 0, 0.18, 0.05, 0.08, '#2a2018', pt); }
+    const g = new THREE.InstancedBufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(Nn, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3)); g.setAttribute('aPart', new THREE.Float32BufferAttribute(A, 1));
+    const an = new THREE.InstancedBufferAttribute(new Float32Array(N * 2), 2); an.setUsage(THREE.DynamicDrawUsage); g.setAttribute('aAn', an);
+    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0 });
+    mat.onBeforeCompile = sh => {
+      sh.vertexShader = 'attribute float aPart;attribute vec2 aAn;\nvec2 fxRot(vec2 p,vec2 c,float a){p-=c;float s=sin(a),k=cos(a);return c+vec2(p.x*k-p.y*s,p.x*s+p.y*k);}\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+        float ph=aAn.x,hold=aAn.y;
+        if(aPart>2.5&&aPart<4.5){float a=mix(0.42*sin(ph+(aPart>3.5?3.1416:0.)),-0.18+0.06*sin(ph*0.37+aPart),hold);transformed.xy=fxRot(transformed.xy,vec2(-0.14,0.98),a);}
+        if(aPart>4.5&&aPart<5.5){float a=hold>0.5?0.6*sin(ph*0.21):0.12*sin(ph*0.3);transformed.xz=fxRot(transformed.xz,vec2(0.08,0.),a);}
+        if(aPart>5.5){float u=pow(max(0.,sin(ph*0.17+1.)),10.)*hold;transformed.xy=fxRot(transformed.xy,vec2(0.02,1.56),1.9*u);}
+        if(aPart<0.5||aPart>4.5){transformed.y+=0.015*sin(ph*2.)*(1.-hold);}`);
+    };
+    const mesh = new THREE.InstancedMesh(g, mat, N); mesh.frustumCulled = false; mesh.count = 0; mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); root.add(mesh);
+    const rnd = new Float32Array(N * 4); { const R = mulberry(31); for (let i = 0; i < rnd.length; i++) rnd[i] = R(); }
+    return { mesh, an, rnd, N };
+  })();
+  function cyclistsUpdate(list, dt, now) {
+    let n = 0; const T = Z.T, kc = clamp(Z.camDist / 140, 1, 55), N = CY.N, rnd = CY.rnd;
+    for (const it of list) {
+      const m = Math.min(it.n || 30, N - n), dx = it.x1 - it.x0, dy = it.y1 - it.y0, L = Math.hypot(dx, dy), hold = it.hold || L < 1;
+      const hx = hold ? 1 : dx / L, hy = hold ? 0 : dy / L, hd = Math.atan2(hy, hx), fade = smooth(it.t0 - 1, it.t0 + 2, T) * (1 - smooth(it.t1 - 3, it.t1, T));
+      const gap = 2.6 * kc, D = it.t1 - it.t0, v = (L + m * gap / 3) / Math.max(10, D);
+      for (let j = 0; j < m; j++) {
+        const r0 = rnd[j * 4], r1 = rnd[j * 4 + 1], r2 = rnd[j * 4 + 2], r3 = rnd[j * 4 + 3];
+        let x, y, h = hd, mode = 0;
+        const row = Math.floor(j / 3), lane = (j % 3) - 1;
+        if (hold) {
+          x = it.x0 - row * 2.3 * kc + (r0 - 0.5) * 0.9 * kc; y = it.y0 + lane * 1.5 * kc + (r1 - 0.5) * 0.6 * kc; h = hd + (r2 - 0.5) * 0.3; mode = 1;
+        } else {
+          const d = v * (T - it.t0) - row * gap + (r0 - 0.5) * gap * 0.6;
+          if (d < -0.5 || d > L + 0.5) continue;
+          const lat = lane * 1.5 * kc + (r1 - 0.5) * 0.8 * kc + Math.sin(now * 0.6 + j) * 0.15 * kc;
+          x = it.x0 + hx * d - hy * lat; y = it.y0 + hy * d + hx * lat; h = hd + Math.sin(now * 1.1 + j * 2) * 0.04;
+        }
+        const ph = mode ? now + r3 * 40 : now * (7 + r2 * 2) + r3 * 6;
+        _e.set(mode ? Math.sin(now * 0.5 + j) * 0.04 : Math.sin(ph) * 0.03, -h, 0, 'YXZ'); _q.setFromEuler(_e);
+        _v.set(x, 0.12, y); _s.setScalar(kc * Math.max(0.01, fade)); _m.compose(_v, _q, _s); CY.mesh.setMatrixAt(n, _m); CY.an.setXY(n, ph, mode);
+        blob(x, y, -h, 1.9 * kc, 0.55 * kc, 0.45 * fade);
+        n++;
+      }
+    }
+    CY.mesh.count = n; CY.mesh.visible = n > 0; if (n) { CY.mesh.instanceMatrix.needsUpdate = true; CY.an.needsUpdate = true; }
+  }
+  KS.add('cyclists');
+
+  // =====================================================================================================
   // per frame
   // =====================================================================================================
   let lastT = null;
-  const L = { tiger: [], kites: [], ribbon: [] };
+  const L = { tiger: [], kites: [], ribbon: [], cyclists: [] };
   return {
     update(dt, now) {
       const fx = Z.fx || [], T = Z.T;
@@ -509,6 +583,7 @@ vec3 fxCol(vec3 P,float reg,float t){
       tigerUpdate(L.tiger, dt, now, dTs);
       kitesUpdate(L.kites, dt, now);
       ribbonUpdate(L.ribbon, dt, now);
+      cyclistsUpdate(L.cyclists, dt, now);
       blobs.count = nBlob; blobs.visible = nBlob > 0;
       if (nBlob) { blobs.instanceMatrix.needsUpdate = true; blobOp.needsUpdate = true; }
     },

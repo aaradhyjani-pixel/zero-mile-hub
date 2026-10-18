@@ -1029,11 +1029,11 @@ const WED_C=[['Mumbai','BOM',0],['London','LHR',1],['Dubai','DXB',1],['Jamnagar'
 // the jets the camera picks out: [number, banner, landed?]; the groom is on 30
 const WED_CUTS={1:[['THE CHAMBANI WEDDING','Baraat 1 of 40 · Gulfstream G650 on final for RWY','The guest list has its own airline 💍',icos('💍','🛩️','🐘')],true],
   21:[['BARAAT 21 OF 40','This one carries only the lehengas','Baraat 22 carries the jewellery for Baraat 21 💎',icos('👗','🛩️','💎')],false],
-  30:[['THE GROOM HAS LANDED','Baraat 30 · the groom, on RWY, under a water salute','The bride\'s side asked for a bigger one 💦',icos('🤵','💦','🐎')],true],
+  30:[['THE GROOM ARRIVES','Baraat 30 · the groom · on final for RWY','A water salute waits on the runway. The bride\'s side asked for a bigger one 💦',icos('🤵','💦','🐎')],true],
   36:[['BARAAT 36 OF 40','The DJ\'s speakers','The DJ came on Baraat 1. He has not stopped 🎧',icos('🎧','🔊','💃')],false]};
 STORY.wedding={len:2200,start(c){const L=r=>r.tdList.length+flights.filter(f=>f.rwy===r&&['hp','taxi_out'].includes(f.state)).length;
   const MK={DEP:0,MIX:1,ARR:2};const r=RW.filter(o=>!o.locked&&o.mode!=='OFF'&&o!==LONGEST).sort((a,b)=>(MK[a.mode]-MK[b.mode])||(L(a)-L(b)))[0];if(!r)return false;c.r=r;
-  const n=40,gap=28,tA=T+300,tM=tA+n*gap+15;Object.assign(c,{n,gap,tA,tM,jets:[],cut:{}});
+  const n=40,gap=28,tA=T+300,tM=tA+n*gap+15;Object.assign(c,{n,gap,tA,tM,jets:[],cut:{}});VQ.length=0;
   voiced(['Sir, forty jets. One muhurat.','Not one minute after. 💍'],WHO.planner);
   c.lines.push([0,'AOCC',`The Chambani family's wedding guests are inbound: 40 private jets from ${clk(tA)}. Shananth Chambani weds Kanika Merchant at ${clk(tM)}.`]);
   const mkJets=own=>{for(let i=0;i<n;i++){const k=WED_C[i%8],td=tA+i*gap,o={al:'CHW',type:'GLF6',num:String(i+1),disp:`Baraat ${i+1}`,callsign:`BARAAT ${i+1}`,from:k[0],fromCode:k[1],intl:!!k[2]};let f;
@@ -1055,11 +1055,11 @@ STORY.wedding={len:2200,start(c){const L=r=>r.tdList.length+flights.filter(f=>f.
     flashBanner(['THE MUHURAT',`Shananth weds Kanika · ${k} of 40 jets made it`,'Shubh vivah! 💐',icos('💍','💐','🐘')],5000);wedChip(cc,true);}]);
   c.lines.push([tM-T+60,cc=>{if(cc.jets.length)say('TWR','Return gift for the tower: one silver box of kaju katli. Each. We have accepted.');}]);
   c.lines.push([tM-T+130,cc=>{music(null,{fadeOut:3500});}]);
-  c.lines.push([tM-T+320,cc=>{wedChip(cc,false);}]);
+  c.lines.push([tM-T+150,cc=>{wedChip(cc,false);}]);
 },tick(c){
   // the first jet will not wait for the card: if it is still open when Baraat 1 is due in, ops gives the family the runway
   if(!c.jets.length){if(c.I&&incidents.includes(c.I)&&T>=c.tA-D_APP-40)expire(c.I);if(!c.jets.length)return;}
-  if(T<c.tM+320&&T>=(c.chipAt||0)){c.chipAt=T+10;wedChip(c,true);}
+  if(T<Math.min(c.tM+150,LV.fog?LV.fog[0]-5:1e9)&&T>=(c.chipAt||0)){c.chipAt=T+10;wedChip(c,true);}
   // cuts: one at a time, never over another cinematic
   for(const n in WED_CUTS){const f=c.jets[n-1];if(!f||c.cut[n]||f.state!=='approach')continue;
     if(+n===30&&!c.arch){c.arch=true;FXV.push({kind:'waterarch',id:'groom',x:f.rwy.x1-1700,y:f.rwy.y,a:Math.PI,t0:f.td-40,t1:f.td+160});}
@@ -1188,7 +1188,7 @@ WHO.met={badge:'MET OFFICE · NAGPUR',svg:face('🌫️','#2a3440')};
 // airport's fire chief (never the SPG: anything of his still queued is dropped when the fog rolls in)
 WHO.sup={badge:'TOWER SUPERVISOR · ZERO MILE',svg:face('🎧','#123a22')};WHO.arff={badge:'FIRE CHIEF · AIRPORT RESCUE & FIREFIGHTING',svg:face('🚒','#4a1010')};
 STORY.fog={len:1700,start(c){const r=LONGEST;if(r.locked)return false;c.r=r;
-  VQ.length=0;music(null,{fadeOut:1500});
+  VQ.length=0;music(null,{fadeOut:1500});{const wc=$('#wedChip');if(wc)wc.hidden=true;}
   voiced(['Sir, fog. In the afternoon. At 46 degrees.','We are as surprised as you are. 🌫️'],WHO.met);
   flashBanner(['FOG · RVR 350 m','A freak fog bank rolls in off Gorewada lake after the storm','Low visibility procedures: wider spacing on every runway',icos('🌫️')],5500);
   c.lines.push([0,()=>say('ATC','Low visibility procedures in force. Runway visual range 350 metres. Increased spacing on all runways.')]);
@@ -1233,6 +1233,7 @@ end(c,how){const s=c.sc,{A,B}=s,r=c.r;stopUI(c,false);c.out=how;
     setTimeout(()=>{if(STO.includes(c))voiced(['Orange City has stopped. Four hundred metres short.','Nobody moves on that runway until I can see it.'],WHO.sup);},2500);}
   else if(how==='crash'){A.state='wreck';B.state='wreck';A.v=0;B.v=0;r.occ=null;r.closedUntil=1e9;r.why='Accident site';S.crash={t:T,r:r.short};
     voiceReset();music('collision',{loop:false,vol:0.9,fadeIn:60});
+    for(const f of flights)if(f.rwy===r&&['taxi_out','hp'].includes(f.state))assignDep(f,true); // nobody waits for a runway that will not reopen
     hitSafety(100,`Runway collision on ${r.short} in fog: Orange City 1801 took off without a clearance into Satpura 77, which was backtracking on the runway.`);
     FXV.push({kind:'crash',id:'crash',x:(A.x+B.x)/2,y:(A.y+B.y)/2,t0:T,t1:T+1e6,a:A.heading,b:B.heading});MARKS.push({x:(A.x+B.x)/2,y:r.y,e:'🔥',until:T+1e6,px:34,k:'crash'});
     const others=RW.filter(o=>!o.locked&&o!==r);takeRunways(others,T,600,0,'Accident: all runways closed','Accident: all runways closed');
@@ -1251,7 +1252,7 @@ function stopUI(c,on){const b=$('#stopBtn');if(!b)return;if(!on){b.hidden=true;r
   b.classList.toggle('late',late||!!B.rto);b.hidden=false;
   b.innerHTML=B.rto?'STOPPING…<small>Orange City 1801 rejecting take-off</small>':late?'COMMITTED<small>too late to stop</small>':`STOP! CANCEL TAKE-OFF<small>ORANGE CITY 1801 · SPACE</small><i style="width:${Math.round(k*100)}%"></i>`;}
 // test hooks for the Level 3 set pieces (headless probes)
-window.L3T={vreset:()=>voiceReset(),sum:()=>SUM,mus:()=>MUS.name,cine:()=>CINE&&{ban:CINE.ban[0],f:CINE.f&&CINE.f.disp},sto:()=>STO.map(c=>c.k),vq:()=>VQ.length+(vqOn?1:0),spd:()=>speed};
+window.L3T={clearCine:()=>{CINE=null;cinema.q.length=0;vipBanner(false);},vreset:()=>voiceReset(),sum:()=>SUM,mus:()=>MUS.name,cine:()=>CINE&&{ban:CINE.ban[0],f:CINE.f&&CINE.f.disp},sto:()=>STO.map(c=>c.k),vq:()=>VQ.length+(vqOn?1:0),spd:()=>speed};
 // L3 · the last stretch: after a collision, the recovery (played straight); otherwise a lighter evening; then the wind-down
 STORY.evening={len:2000,start(c){const cr=S.crash,w=(S.storyRec||[]).find(o=>o.k==='wedding');
   if(cr){c.lines.push([0,()=>{radio('FIRE',`The fire on ${cr.r} is out. The foam blanket is holding.`);voiced(['The fire is out.','The foam stays down until the investigators have seen it.'],WHO.arff);}]);

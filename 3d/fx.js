@@ -92,10 +92,10 @@ Z3MOD.fx = function (Z) {
   function bakeShow(it) {
     const cx = num(it.cx, -700), cy = num(it.cy, 0), R = clamp(num(it.r, 3000), 1600, 3200);
     const V = 160, H0 = 110, RHO = 480, HW = 650, RL = clamp(R * 0.25, 600, 850), RP = 420, RB = 700;
-    const xA0 = cx - R, xA1 = cx + 0.75 * R, yN = cy - 2 * RHO, xW = cx - 0.65 * R, xP = cx - RP;
+    const xA0 = cx - 1.4 * R, xA1 = cx + 0.75 * R, yN = cy - 2 * RHO, xW = cx - 0.65 * R, xP = cx - RP;
     const segs = []; const add = (d, f) => segs.push([d, f]);
     const tB = Math.PI * RHO / V * 1.3, tD = TAU * RL / 170, tF1 = Math.PI / 2 * RP / V * 1.1, tF2 = 5, CL = 650;
-    add(1.75 * R / V, (t, o) => o.set(xA0 + V * t, H0, cy));
+    add((xA1 - xA0) / V, (t, o) => o.set(xA0 + V * t, H0, cy));
     add(tB, (t, o) => { const th = Math.PI * t / tB; o.set(xA1 + RHO * Math.sin(th), H0 + HW * Math.sin(th) ** 2, cy - RHO * (1 - Math.cos(th))); });
     add((xA1 - cx) / V, (t, o) => o.set(xA1 - V * t, H0, yN));
     add(tD, (t, o) => { const u = t / tD, ph = TAU * (u + 0.05 * Math.sin(TAU * u)); o.set(cx - RL * Math.sin(ph), H0 + RL * (1 - Math.cos(ph)), yN); });
@@ -111,7 +111,7 @@ Z3MOD.fx = function (Z) {
     const L = new Float32Array(NS * 3);
     for (let k = 0; k < NS; k++) { const s = k * DT;
       if (k <= kB + 2) { let t = s, i = 0; while (i < segs.length - 1 && t > segs[i][0]) { t -= segs[i][0]; i++; } segs[i][1](Math.min(t, segs[i][0] * 1.2), tv); }
-      else tv.set(xG0 + V * (s - sG), H0 + 10, cy);
+      else { const c = Math.max(0, s - sG - 27); tv.set(xG0 + V * (s - sG) - 2.2 * c * c, H0 + 10 + 4.5 * c * c, cy); }   // the finale: pull up into the vertical
       L[k * 3] = tv.x; L[k * 3 + 1] = tv.y; L[k * 3 + 2] = tv.z; }
     const smooth = (A, k0, k1, w, pass) => { const tmp = new Float32Array(A.length);
       for (let p = 0; p < pass; p++) { tmp.set(A); for (let k = k0 + w; k <= k1 - w; k++) for (let c = 0; c < 3; c++) { let s = 0; for (let j = -w; j <= w; j++) s += tmp[(k + j) * 3 + c]; A[k * 3 + c] = s / (2 * w + 1); } } };
@@ -219,11 +219,11 @@ void main() {
   function updFlypast(it, dt, T) {
     if (!show.bake || show.bake.id !== it.id || show.key !== [it.t0, it.t1, it.cx, it.cy, it.r].join()) { show.bake = bakeShow(it); show.key = [it.t0, it.t1, it.cx, it.cy, it.r].join(); }
     const B = show.bake, D = Math.max(30, it.t1 - it.t0), kT = B.TEND / D, s = (T - it.t0) * kT, cam = Z.camera.position;
-    const fade = sstep(0, 2.5, s) * (1 - sstep(B.TEND - 5, B.TEND, s));
+    const fade = sstep(0, 2.5, s);   // the smoke outlives the display: after t1 it just ages away
     jetAt(B, 0, s, 1, _p); const St = clamp(cam.distanceTo(_p) / 2100, 1, 5);
     show.S = show.S + (St - show.S) * (1 - Math.exp(-Math.min(dt, 0.1) * 4)); const S = Z.fxDbg && Z.fxDbg.jetS ? Z.fxDbg.jetS : show.S;   // fxDbg: inspection hook
     // jets
-    const js = S * sstep(0, 1.5, s) * (1 - sstep(B.TEND - 2, B.TEND, s));
+    const js = S * sstep(0, 1.5, s) * (1 - sstep(B.TEND - 2.5, B.TEND, s));
     for (let i = 0; i < NJ; i++) { const x = s / DT, J = B.J[i];
       jetAt(B, i, s, S, _p); lin(J.F, B.NS, x, _f).normalize(); lin(J.U, B.NS, x, _u); _u.addScaledVector(_f, -_u.dot(_f)).normalize(); _r.crossVectors(_f, _u);
       _m.makeBasis(_f, _u, _r); _q.setFromRotationMatrix(_m); _s.setScalar(Math.max(1e-4, js)); _m.compose(_p, _q, _s); jets.setMatrixAt(i, _m); }
@@ -238,7 +238,7 @@ void main() {
         const wob = Math.sin(se * 0.9 + i * 1.7) * 0.6 + Math.sin(se * 2.3 + i) * 0.3;
         _p.x += wx * a + wob * a * 0.5; _p.y -= 0.5 * a; _p.z += wz * a + Math.cos(se * 1.1 + i) * a * 0.4;
         trPos[o * 3] = _p.x; trPos[o * 3 + 1] = _p.y; trPos[o * 3 + 2] = _p.z; trPos[o * 3 + 3] = _p.x; trPos[o * 3 + 4] = _p.y; trPos[o * 3 + 5] = _p.z;
-        const on = se < 0 ? 0 : lin1(J.SM, B.NS, se / DT);
+        const on = se < 0 || se > B.TEND - 1 ? 0 : lin1(J.SM, B.NS, se / DT);
         const al = fade * on * Math.pow(1 - a / LIFE, 1.25) * sstep(0, 0.35, a) * 0.92, hw = S * (1.0 + 10 * (1 - Math.exp(-a / 2.5)) + 0.5 * a);
         trD[o * 4] = -1; trD[o * 4 + 1] = al; trD[o * 4 + 2] = se; trD[o * 4 + 3] = hw; trD[o * 4 + 4] = 1; trD[o * 4 + 5] = al; trD[o * 4 + 6] = se; trD[o * 4 + 7] = hw; }
       for (let j = 0; j < TV; j++) { const a = (i * TV + Math.max(0, j - 1)) * 6, b = (i * TV + Math.min(NT, j + 1)) * 6, o = (i * TV + j) * 6;
@@ -477,7 +477,7 @@ void main() {
     update(dt, now) {
       const list = Z.fx, T = Z.T; let fly = null, mk = null;
       if (list && list.length) for (const it of list) { if (!it) continue;
-        if (it.kind === 'flypast' && !fly && T >= it.t0 - 1 && T <= it.t1 + 1) fly = it;
+        if (it.kind === 'flypast' && !fly && T >= it.t0 - 1 && T <= it.t1 + LIFE + 1) fly = it;
         else if (it.kind === 'monkeys' && !mk && T >= it.t0 && T <= Math.max(it.t1, it.flee ? it.flee.t1 : -1e9) + 1) mk = it; }
       const adv = T !== lastT; lastT = T;
       if (fly) {

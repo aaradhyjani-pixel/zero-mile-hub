@@ -16,7 +16,7 @@ const AIR_K=0.55;   // sim altitude units to metres: a 700-unit final over 7.45 
 function altM(f){return f.alt>2?f.alt*AIR_K:0;}
 const Z={THREE:null,scene:null,camera:null,renderer:null,SPEC,mods:{},kEx:1,camDist:9000,quality:2,tier:'High',sunDir:null,addons:{},atmo:null,
   get T(){return T;},get LV(){return LV;},get nightF(){return nightF;},get dustNow(){return dustNow;},get heatNow(){return heatNow;},
-  get selected(){return selected;},get running(){return running;},get fx(){return FXV;},
+  get selected(){return selected;},get running(){return running;},get fx(){return FXV;},get fogF(){return fogF;},
   flights:()=>flights,incidents:()=>incidents,ops:()=>ops,RW,GATES,CONC,TYPES,AL,EXT,STACKS,procC,G,BLD,
   terrain:()=>TERR,altM,clk:t=>clk(t),stackPos:(st,u,l)=>stackPos(st,u,l),LONGEST,
   canArr:r=>canArr(r),canDep:r=>canDep(r),blockAt:(r,t)=>blockAt(r,t),CHANGE,OPSW,

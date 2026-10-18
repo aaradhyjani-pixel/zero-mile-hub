@@ -627,12 +627,14 @@ Z3MOD.fx3 = function (Z) {
     const post = cut != null && snipAt < 1e8 && T > pStart;
 
     // aircraft about to use the runway through the stage: strike it fast (and re-erect only if it has time left)
-    let hit = false, near = 1e9;
+    let hit = false, fit = 1e9;
     const F = Z.flights ? Z.flights() : null;
     if (F) { const ca = Math.cos(it.a || 0), sa = Math.sin(it.a || 0), reach = HW * Math.max(1, scl) + 250;
       for (let i = 0; i < F.length; i++) { const f = F[i]; if (!f || !MOVING[f.state]) continue;
         const dx = f.x - it.x, dy = f.y - it.y, al = dx * ca + dy * sa, lat = -dx * sa + dy * ca, alt = f.alt || 0;
-        if (alt < 300) { const d = Math.sqrt(dx * dx + dy * dy); if (d < near) near = d; }
+        // the biggest scale that keeps the stage's footprint (canopy x +-7, z -5 behind to ~+9 in front once squeezed) 40 m clear
+        if (alt < 300) { const d = Math.sqrt(dx * dx + dy * dy);
+          if (d < 1500) { const s = Math.max((Math.abs(al) - 40) / 7.5, lat > 0 ? (lat - 40) / 9.5 : (-lat - 40) / 5.5); if (s < fit) fit = s; } }
         if (Math.abs(lat) < 60 && Math.abs(al) < reach && alt < 150) hit = true;
         else if (f.state === 'approach' && f.rwy && Math.abs(f.rwy.y - it.y) < 60 && it.x > f.rwy.x0 && it.x < f.rwy.x1 &&
           Math.hypot(f.x - (f.rwy.x1 - 450), f.y - f.rwy.y) < 1500) hit = true; } }
@@ -647,8 +649,9 @@ Z3MOD.fx3 = function (Z) {
 
     // placement and scale: bigger with the real camera distance so it reads from the strategic camera, capped near aircraft
     const cp = Z.camera.position, cdx = cp.x - it.x, cdz = cp.z - it.y, cd = Math.sqrt(cdx * cdx + cp.y * cp.y + cdz * cdz);
-    let tgt = clamp(Math.max(Math.sqrt(Math.max(1, cd) / 38), cd / 500), 1, 22);
-    if (near < 600) tgt = Math.min(tgt, 2.5 * (Z.kEx || 1));
+    let tgt = clamp(Math.max(Math.sqrt(Math.max(1, cd) / 38), cd / 280), 1, 40);
+    // near aircraft it stays clear of them (but never under 2.5x their own boost)
+    tgt = Math.min(tgt, Math.max(2.5 * (Z.kEx || 1), fit));
     if (scl < 0 || !isFinite(scl)) scl = tgt; else scl += (tgt - scl) * (1 - Math.exp(-dt * 3));
     root.position.set(it.x, 0, it.y); root.rotation.y = -(it.a || 0); root.scale.setScalar(scl);
     const kz = clamp((32 / scl - Z0) / (21.6 - Z0), 0.12, 1), kc = Math.max(kz, 0.45), sqz = z => z > Z0 ? Z0 + (z - Z0) * kc : z;

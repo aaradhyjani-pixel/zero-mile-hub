@@ -2401,20 +2401,23 @@ STORY.ribbon={len:2000,start(c){const r=rwBy('dep')[0];if(!r)return false;c.r=r;
   c.blk={from:T,to:T+1e6,open:true,why:'Inauguration ribbon',desk:'Ribbon across it, until it is cut'};r.blocks.push(c.blk);r.blocks.sort((a,b)=>a.from-b.from);
   const hx=r.holds.length?G.get(r.holds[0]).x:r.x1-300;c.mark={x:hx,y:r.y,e:'🎀',until:T+1e6,px:30,k:'ribbon'};MARKS.push(c.mark);
   c.fx={kind:'ribbon',id:'ribbon',x:hx,y:r.y,w:75,t0:T,t1:T+1e6,cutAt:null};FXV.push(c.fx);
-  c.stage={kind:'stage',id:'stage1',x:hx-260,y:r.y,a:0,t0:T,t1:T+1e6,speaker:null};FXV.push(c.stage);MARKS.push(c.smark={x:hx-260,y:r.y,e:'🎤',until:T+1e6,px:26,k:'stage'});
+  c.stage={kind:'stage',id:'stage1',x:hx-720,y:r.y,a:0,t0:T,t1:T+1e6,speaker:null};FXV.push(c.stage);MARKS.push(c.smark={x:hx-720,y:r.y,e:'🎤',until:T+1e6,px:26,k:'stage'});
   c.wait=T+240+Math.floor(SIMR()*240);
   guard(['Sir, no departures yet. The Chief Minister will cut the ribbon.','He is five minutes away. 🙏'],WHO.protocol);
   c.lines.push([0,'PROTOCOL',`A stage and a ceremonial ribbon are on ${r.short}. No departures until the Chief Minister cuts it. He is five minutes away.`]);
-  const go=()=>{r.blocks=r.blocks.filter(b=>b!==c.blk);c.mark.until=T;c.fx.cutAt=T;c.fx.t1=T+150;c.stage.t1=T+90;c.smark.until=T;renderRw();const f=flights.find(o=>o.rwy===r&&['lineup','hp'].includes(o.state))||flights.find(o=>o.rwy===r&&o.state==='taxi_out');
-    if(f)cinema(f,['OPENING DAY',`The first departure rolls through the ribbon on ${r.short}`,'BAS PAANCH MINUTE 🙏',icos('🎀','✂️','🛫')],{ms:7000});};
+  // after the cut the stage packs away before anything rolls: the runway stays shut until it is gone, then the first departure goes
+  const PACK=40,go=()=>{Object.assign(c.blk,{to:T+PACK,open:false,why:'Stage packing away',desk:'Ribbon cut: the stage is packing away'});c.mark.until=T;c.fx.cutAt=T;c.fx.t1=T+150;c.stage.t1=T+PACK-4;c.smark.until=T;renderRw();
+    c.lines.push([T-c.E+PACK,()=>{const f=flights.find(o=>o.rwy===r&&['lineup','hp'].includes(o.state))||flights.find(o=>o.rwy===r&&o.state==='taxi_out');
+      if(f)cinema(f,['OPENING DAY',`The first departure rolls through the ribbon on ${r.short}`,'BAS PAANCH MINUTE 🙏',icos('🎀','✂️','🛫')],{ms:7000});}]);};
   c.go=go;
   const I=storyCard(c,{icon:{g:'🎀',c:'#ff9933'},x:hx,y:r.y,title:`A stage and a ribbon on ${r.short}`,
     text:`The opening ceremony has put a stage and a ribbon on ${r.short}, and the first departures are queuing behind it. Cut the ribbon yourselves and traffic flows now, but Protocol will re-stage the whole ceremony, speech included, in about 15 minutes in the middle of the arrivals runway, for 3 minutes. Or wait: the Chief Minister is "five minutes away".`,
     def:1,defText:'you wait for the Chief Minister.',
     acts:[{l:'Cut it ourselves',pri:1,fn(){go();const ra=rwBy('arr').sort((a,b)=>b.tdList.length-a.tdList.length)[0];c.cut=true;
         if(ra){const t2=T+900,mx=(ra.x0+ra.x1)/2;takeRunways([ra],t2,180,0,'Inauguration, take two','Inauguration, take two: a stage mid-runway');
-          const st={kind:'stage',id:'stage2',x:mx,y:ra.y,a:0,t0:t2-40,t1:t2+200,speaker:{t0:t2+5,t1:t2+165},cutAt:t2+165};FXV.push(st);MARKS.push({x:mx,y:ra.y,e:'🎤',until:t2+180,px:26,k:'stage'});
-          speech(c,t2+5,160);
+          // the stage stands only inside the closure: it goes up as the runway shuts and is packed away before it reopens
+          const st={kind:'stage',id:'stage2',x:mx,y:ra.y,a:0,t0:t2,t1:t2+180,speaker:{t0:t2+30,t1:t2+160},cutAt:t2+160};FXV.push(st);MARKS.push({x:mx,y:ra.y,e:'🎤',until:t2+180,px:26,k:'stage'});
+          speech(c,t2+30,130);
           c.lines.push([t2-c.E,()=>{guard(['The Chief Minister has arrived. We will now inaugurate again.','Only two minutes. Mid-runway, please. 🎤'],WHO.protocol);
             cinema(null,['OPENING DAY · TAKE TWO',`The Chief Minister's speech, in the middle of ${ra.short}`,'"I will be brief." 🎤',icos('🎤','🎀','📸')],{view:{tx:mx,ty:ra.y+60,dist:520,pitch:0.32,yaw:0.9},at:[mx,ra.y],ms:9000});}]);
           c.lines.push([t2-c.E+178,'PROTOCOL','The speech ran three minutes. That is a record. For brevity.']);}
@@ -3438,7 +3441,7 @@ cv.addEventListener('pointerdown',e=>{if(V3.on){drag={x:e.clientX,y:e.clientY,lx
 cv.addEventListener('pointermove',e=>{const r=cv.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;if(drag&&V3.on){if(Math.abs(e.clientX-drag.x)+Math.abs(e.clientY-drag.y)>4){drag.moved=true;cv.classList.add('drag');}if(drag.moved)cam3Drag(e.clientX-drag.lx,e.clientY-drag.ly,drag.orbit);drag.lx=e.clientX;drag.ly=e.clientY;}else if(drag){const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>4){drag.moved=true;cv.classList.add('drag');}if(drag.moved){camT.x=drag.cx-dx/camT.s;camT.y=drag.cy-dy/camT.s;clampCam(camT);cam.x=camT.x;cam.y=camT.y;}}else{hover=pick(mx,my);cv.classList.toggle('point',!!(hover||pickInc(mx,my)||pickRw(mx,my)));}});
 cv.addEventListener('pointerup',e=>{const r=cv.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;if(drag&&!drag.moved&&running){const I=pickInc(mx,my);if(I)openIncPop(I);else{const f=pick(mx,my);if(f)openFlightPop(f,mx,my);else{const rw=pickRw(mx,my);if(rw)openRwPop(rw,mx,my);else{closePop();selected=null;}}}}drag=null;cv.classList.remove('drag');});
 cv.addEventListener('wheel',e=>{e.preventDefault();const r=cv.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;const line=e.deltaMode===1;const mw=line||(e.deltaX===0&&Math.abs(e.deltaY)>=40&&Math.abs(e.deltaY)%1===0);if(V3.on){if(e.ctrlKey||e.metaKey)cam3Zoom(Math.exp(e.deltaY*0.012),mx,my);else if(mw)cam3Zoom(Math.exp((line?e.deltaY*33:e.deltaY)*0.0016),mx,my);else cam3Drag(-e.deltaX,-e.deltaY,false);return;}if(e.ctrlKey||e.metaKey)zoomAt(mx,my,Math.exp(-e.deltaY*0.012));else if(mw)zoomAt(mx,my,Math.exp(-(line?e.deltaY*33:e.deltaY)*0.0016));else{camT.anchor=null;camT.x+=e.deltaX/camT.s;camT.y+=e.deltaY/camT.s;clampCam(camT);}},{passive:false});
-$('#zIn').onclick=()=>V3.on?cam3Zoom(1/1.6,VW/2,VH/2):zoomCenter(1.6);$('#zOut').onclick=()=>V3.on?cam3Zoom(1.6):zoomCenter(1/1.6);$('#zFit').onclick=()=>V3.on?cam3Fit():fitCam();
+$('#zIn').onclick=()=>V3.on?cam3Zoom(1/1.6):zoomCenter(1.6);$('#zOut').onclick=()=>V3.on?cam3Zoom(1.6):zoomCenter(1/1.6);$('#zFit').onclick=()=>V3.on?cam3Fit():fitCam();
 function pick(mx,my){let best=null,bd=1e9;for(const f of flights){if(f.sx==null||['sched','diverted','gone','cancelled','towed'].includes(f.state))continue;const d=Math.hypot(f.sx-mx,f.sy-my);const lim=Math.max(9,f.sr||0);if(d<lim&&d<bd){bd=d;best=f;}}return best;}
 function pickInc(mx,my){for(const I of incidents)if(I.sx!=null&&Math.hypot(I.sx-mx,I.sy-my)<20)return I;return null;}
 function pickRw(mx,my){for(const s of rwSigns)if(mx>=s.x&&mx<=s.x+s.w&&my>=s.y-3&&my<=s.y+s.h+3)return s.r;let wx=mx/cam.s+cam.x,wy=my/cam.s+cam.y,tol=10/cam.s;if(V3.on){const g=groundAt(mx,my);if(!g)return null;wx=g.x;wy=g.y;tol=45;}for(const r of RW){if(wx>=r.x0&&wx<=r.x1&&Math.abs(wy-r.y)<Math.max(r.width/2+10,tol))return r;}return null;}
@@ -3945,7 +3948,7 @@ function camUpdate(dt){
   if(V3.mode==='map'){
     if(!running){C3.t.yaw+=dt*0.035;C3.t.dist=Math.max(C3.t.dist,8000);}
     if(CINE&&CINE.o.track&&C3.t.dist<CINE.o.view.dist*3){const p=CINE.o.track();if(Array.isArray(p)){C3.t.tx=p[0];C3.t.ty=p[1];}}   // a cinematic keeps its moving subject in frame (until the player zooms out)
-    const ke=C3.intro>0?1-Math.exp(-dt*1.6):k;if(C3.intro>0)C3.intro-=dt;
+    const ke=C3.intro>0?1-Math.exp(-dt*1.6):C3.glide>0?1-Math.exp(-dt*2.2):k;if(C3.intro>0)C3.intro-=dt;if(C3.glide>0)C3.glide-=dt;
     // a cinematic can drive the orbit itself (o.track: the flypast, the fireworks), aiming th metres above the ground;
     // it cuts straight to the shot and holds it exactly (no easing lag on a fast target), then eases home after
     const tr0=CINE&&CINE.o.track?CINE.o.track():null,tr=tr0&&!Array.isArray(tr0)&&tr0.tx!=null?tr0:null;   // [x,y] = keep a subject in frame; {tx,ty,dist,yaw,pitch,th} = drive the orbit
@@ -3971,7 +3974,7 @@ function camUpdate(dt){
       if(V3.mode==='approach'&&f.landT!=null){C3.apT+=dt;if(C3.apT>9){const n=nextArrival();if(n&&n!==f){C3.follow=n;C3.fpos=null;C3.apT=0;camLabel();}}}
     }
   }
-  cam.updateProjectionMatrix();cam.updateMatrixWorld();
+  viewOff(cam);cam.updateProjectionMatrix();cam.updateMatrixWorld();
   if(focus)shadowFit(focus);
 }
 // camera tracks for set-piece cinematics (cinema's o.track). The flypast: ride alongside the formation like a chase
@@ -4038,15 +4041,20 @@ function project3D(){
 
 // controls (called from the 2D canvas's pointer and wheel handlers)
 function cam3Drag(dx,dy,orbit){
+  FRM.userT=performance.now();C3.glide=0;
   if(V3.mode==='tower'){C3.tower.yaw-=dx*0.003*(C3.tower.fov/48);C3.tower.pitch=clamp(C3.tower.pitch+dy*0.002,-0.6,0.4);return;}
   if(V3.mode!=='map')setCam('map');
   if(orbit){C3.t.yaw-=dx*0.005;C3.t.pitch=clamp(C3.t.pitch+dy*0.004,0.18,1.52);return;}
+  panT(dx,dy);Object.assign(C3,{tx:C3.t.tx,ty:C3.t.ty});
+}
+// move the strategic camera's target so the ground under the view centre slides by (dx, dy) screen pixels
+function panT(dx,dy){
   const upp=C3.t.dist*2*Math.tan(Z.camera.fov*D2R/2)/Math.max(1,VH)/Math.max(0.35,Math.sin(C3.t.pitch));
   const rx=Math.cos(C3.t.yaw),rz=-Math.sin(C3.t.yaw),fx=-Math.sin(C3.t.yaw),fz=-Math.cos(C3.t.yaw);
   C3.t.tx-=rx*dx*upp;C3.t.ty-=rz*dx*upp;C3.t.tx+=fx*dy*upp*Math.sin(C3.t.pitch);C3.t.ty+=fz*dy*upp*Math.sin(C3.t.pitch);clampC3();
-  Object.assign(C3,{tx:C3.t.tx,ty:C3.t.ty});
 }
 function cam3Zoom(f,mx,my){
+  FRM.userT=performance.now();C3.glide=0;
   if(V3.mode==='tower'){C3.tower.fov=clamp(C3.tower.fov*f,10,70);return;}
   if(V3.mode!=='map')setCam('map');
   const nd=clamp(C3.t.dist*f,220,30000),g=mx!=null?groundAt(mx,my):null;
@@ -4090,6 +4098,59 @@ function rwSigns3D(blk,taken){
     if(!put)continue;r._sa=put.ai;r._sOn=true;
     const rect=signText(put.p.X,put.p.Y+put.dy,put.t,(r.locked?0.6:1)*fa,o.s.col);rect.r=r;rwSigns.push(rect);taken.push(rect);}
 }
+
+// The rail and the HUD cover part of the canvas: every camera centres on the visible part (cam.region, set by fitCam),
+// not on the canvas centre, by shifting the projection (same field of view and scale, so nothing else changes).
+function viewOff(c){const g=cam.region;
+  const ox=g&&VW?Math.round(VW/2-(g.L+g.R)/2):0,oy=g&&VH?Math.round(VH/2-(g.Tp+g.B)/2):0,v=c.view;
+  if(!ox&&!oy){if(v&&v.enabled)c.clearViewOffset();return;}
+  if(!v||!v.enabled||v.offsetX!==ox||v.offsetY!==oy||v.fullWidth!==VW||v.fullHeight!==VH)c.setViewOffset(VW,VH,ox,oy,VW,VH);}
+// Set pieces start in sight: when a set piece (a Z.fx item or a story card) goes live outside the visible part of the
+// strategic view, the camera glides just far enough to bring it in, once per item. It never moves while the player is
+// steering (a drag, orbit or zoom in the last 12 s), during a cinematic, in the other cameras, or when zoomed in close.
+const FRM={seen:new WeakSet(),userT:-1e9,cam:null,v:null};
+function frameSpots(o,P){
+  const A=o.kind==='fireworks'?280:o.kind==='flypast'?200:o.kind==='ghosts'?150:(+o.alt||0);
+  // the ghosts jump in from their point back towards the field (fx4), the kites fill a cloud o.sp across (fx2)
+  if(o.pts)for(const p of o.pts){P.push([p[0],p[1],A]);if(o.kind==='ghosts')P.push([p[0]-1400,p[1],A]);}
+  else if(o.sp&&o.x!=null)P.push([o.x-o.sp*0.5,o.y,A],[o.x+o.sp*0.5,o.y,A]);
+  else if(o.path&&o.path.length){const a=o.path[0],b=o.path[o.path.length-1];P.push([a[0],a[1],A],[b[0],b[1],A]);}
+  else if(o.x0!=null&&o.x1!=null)P.push([o.x0,o.y0,0],[o.x1,o.y1,0]);
+  else if(o.cx!=null)P.push([o.cx,o.cy,A]);
+  else if(o.x!=null&&o.y!=null)P.push([o.x,o.y,A]);
+}
+function frameTick(){
+  if(!running||!LV||V3.mode!=='map'||CINE||(SUM&&SUM.cine)||C3.intro>0)return;
+  const P=[],fresh=[];
+  for(const o of FXV){if(!o||FRM.seen.has(o)||T<o.t0||T>o.t1)continue;FRM.seen.add(o);fresh.push(o);}
+  for(const I of incidents){if(I.type!=='story'||FRM.seen.has(I))continue;FRM.seen.add(I);if(!I.f&&I.x!=null)fresh.push(I);}
+  if(!fresh.length||performance.now()-FRM.userT<12000||C3.t.dist<4500||!cam.region)return;
+  for(const o of fresh)frameSpots(o,P);if(!P.length)return;
+  // the open runways stay in the frame too (the view zooms out a little, at most 1.25x, when both can't fit)
+  const F=[],rs=RW.filter(r=>!r.locked);for(const r of rs)F.push([r.x0,r.y,0],[r.x1,r.y,0]);
+  const THREE=Z.THREE,c=FRM.cam||(FRM.cam=new THREE.PerspectiveCamera()),v=FRM.v||(FRM.v=new THREE.Vector3()),g=cam.region,t=C3.t,d0=t.dist;
+  // where a set piece should land: clear of the edges, and below the character pop-ups and banners along the top
+  const w=g.R-g.L,h=g.B-g.Tp,IN=[g.L+w*0.12,g.R-w*0.12,g.Tp+h*0.2,g.B-h*0.12],OUT=[g.L+8,g.R-8,g.Tp+8,g.B-8];
+  // and above the coach card while it is up (it sits in the bottom right of the view)
+  {const el=$('#toast');if(el&&!el.hidden){const r=el.getBoundingClientRect(),a=cv.getBoundingClientRect();if(r.height)IN[3]=Math.max(IN[2]+40,Math.min(IN[3],r.top-a.top-16));}}
+  const box=(Q,b)=>{b[0]=b[2]=1e9;b[1]=b[3]=-1e9;for(const p of Q){v.set(p[0],p[2],p[1]).project(c);if(v.z>1)continue;const X=(v.x+1)/2*VW,Y=(1-v.y)/2*VH;
+    b[0]=Math.min(b[0],X);b[1]=Math.max(b[1],X);b[2]=Math.min(b[2],Y);b[3]=Math.max(b[3],Y);}return b[0]<=b[1];};
+  // the shift (px) on one axis that puts span [a0,a1] inside [lo,hi], or the range of shifts that do
+  const need=(a0,a1,lo,hi)=>a1-a0>hi-lo?[(lo+hi-a0-a1)/2,(lo+hi-a0-a1)/2]:[lo-a0,hi-a1];
+  const pick=(p,f)=>{const lo=Math.max(p[0],f[0]),hi=Math.min(p[1],f[1]);if(lo<=hi)return [clamp(0,lo,hi),true];return [clamp(0,p[0],p[1]),false];};
+  const bp=[0,0,0,0],bf=[0,0,0,0];
+  for(let it=0;it<8;it++){
+    const cp=Math.cos(t.pitch);c.fov=42;c.aspect=VW/Math.max(1,VH);c.near=10;c.far=Z.camera.far;
+    c.position.set(t.tx+Math.sin(t.yaw)*cp*t.dist,Math.sin(t.pitch)*t.dist,t.ty+Math.cos(t.yaw)*cp*t.dist);c.lookAt(t.tx,0,t.ty);viewOff(c);c.updateProjectionMatrix();c.updateMatrixWorld();
+    if(!box(P,bp))return;const hasF=F.length&&box(F,bf);
+    const fx=hasF?need(bf[0],bf[1],OUT[0],OUT[1]):[-1e9,1e9],fy=hasF?need(bf[2],bf[3],OUT[2],OUT[3]):[-1e9,1e9];
+    const [sx,okx]=pick(need(bp[0],bp[1],IN[0],IN[1]),fx),[sy,oky]=pick(need(bp[2],bp[3],IN[2],IN[3]),fy);
+    if((!okx||!oky)&&t.dist<d0*1.25){t.dist=Math.min(d0*1.25,t.dist*1.08);C3.glide=2.5;continue;}
+    if(Math.abs(sx)<4&&Math.abs(sy)<4)break;
+    panT(sx,sy);C3.glide=2.5;
+  }
+}
+
 // the overlay: incident markers, runway signs, stack signs, tags and MAYDAY beacons, drawn on the 2D canvas
 function drawOverlay3D(now){
   screenT();ctx.clearRect(0,0,VW,VH);const blk=hudRects(now),taken=[];
@@ -4174,7 +4235,7 @@ function warmFrame(on){
 function draw3D(now,dtR){
   if(!Z.renderer)return;const t0=performance.now(),R=Z.renderer;
   if(R.domElement.width!==Math.round(VW*R.getPixelRatio()))resize3D();
-  lightRig();camUpdate(dtR);
+  lightRig();frameTick();camUpdate(dtR);
   // cinematics are the most expensive shots (a low camera looking across the whole field and sky): they run on the
   // cinematic profile (no AO, no bloom: nobody misses them in a slow-motion cut, everybody feels a stutter), switched at
   // the cut; the adaptive ladder only steps down until the shot is over (see quality3D)
@@ -7231,11 +7292,11 @@ vec3 fxCol(vec3 P,float reg,float t){
     if (it.cutAt == null) st.cutT = null; else if (st.cutT !== it.cutAt) { st.cutT = it.cutAt; st.cutNow = now; }
     // scale by the camera's distance to the ribbon itself (the follow-cam cinematic frames the aircraft, a few hundred metres off)
     const cp = Z.camera.position, cd = Math.max(Z.camDist * 0.5, Math.hypot(cp.x - st.x, cp.y, cp.z - st.y));
-    const T = Z.T, k = clamp(cd / 110, 1, 30), w0 = it.w || 75, P = RB.pos, NS = RB.NS, NR = RB.NR;
+    const T = Z.T, k = clamp(cd / 110, 1, 36), w0 = it.w || 75, P = RB.pos, NS = RB.NS, NR = RB.NR;
     const fade = smooth(it.t0, it.t0 + 4, T) * (1 - smooth(it.t1 - 25, it.t1 - 2, T));
     const tau = st.cutT != null ? Math.max(10 * (now - st.cutNow), 2 * (T - st.cutT) - 100) : -1, cut = tau >= RB_SNIP, tf = cut ? (tau - RB_SNIP) / 10 : 0;   // tf: real seconds of fall
     // strategic: a longer, proportionally slimmer band, turned about its span axis to face the camera
-    const kS = 1 + 1.6 * smooth(2500, 9000, cd), sW = smooth(2500, 9000, cd), sF = smooth(1500, 5000, cd), w = w0 * mix(1, 3, sW);
+    const kS = 1 + 1.6 * smooth(2500, 9000, cd), sW = smooth(2500, 9000, cd), sF = smooth(1500, 5000, cd), w = w0 * mix(1, 4, sW);
     const PH = 2.9 * k * kS, RH = Math.min(0.6 * k * kS * kS, w * 0.4), yc = PH * 0.74 - RH * 0.5, sag = Math.min(w * 0.03, 0.3 * PH);
     const ox = st.x, oz = st.y, wind = Z.atmo && Z.atmo.wind ? Z.atmo.wind.speed || 4 : 4, gy = 0.025 * k;
     let thF = Math.atan2(-(cp.y - yc), cp.x - ox); if (thF > Math.PI / 2) thF -= Math.PI; else if (thF < -Math.PI / 2) thF += Math.PI;
@@ -8206,12 +8267,14 @@ Z3MOD.fx3 = function (Z) {
     const post = cut != null && snipAt < 1e8 && T > pStart;
 
     // aircraft about to use the runway through the stage: strike it fast (and re-erect only if it has time left)
-    let hit = false, near = 1e9;
+    let hit = false, fit = 1e9;
     const F = Z.flights ? Z.flights() : null;
     if (F) { const ca = Math.cos(it.a || 0), sa = Math.sin(it.a || 0), reach = HW * Math.max(1, scl) + 250;
       for (let i = 0; i < F.length; i++) { const f = F[i]; if (!f || !MOVING[f.state]) continue;
         const dx = f.x - it.x, dy = f.y - it.y, al = dx * ca + dy * sa, lat = -dx * sa + dy * ca, alt = f.alt || 0;
-        if (alt < 300) { const d = Math.sqrt(dx * dx + dy * dy); if (d < near) near = d; }
+        // the biggest scale that keeps the stage's footprint (canopy x +-7, z -5 behind to ~+9 in front once squeezed) 40 m clear
+        if (alt < 300) { const d = Math.sqrt(dx * dx + dy * dy);
+          if (d < 1500) { const s = Math.max((Math.abs(al) - 40) / 7.5, lat > 0 ? (lat - 40) / 9.5 : (-lat - 40) / 5.5); if (s < fit) fit = s; } }
         if (Math.abs(lat) < 60 && Math.abs(al) < reach && alt < 150) hit = true;
         else if (f.state === 'approach' && f.rwy && Math.abs(f.rwy.y - it.y) < 60 && it.x > f.rwy.x0 && it.x < f.rwy.x1 &&
           Math.hypot(f.x - (f.rwy.x1 - 450), f.y - f.rwy.y) < 1500) hit = true; } }
@@ -8226,8 +8289,9 @@ Z3MOD.fx3 = function (Z) {
 
     // placement and scale: bigger with the real camera distance so it reads from the strategic camera, capped near aircraft
     const cp = Z.camera.position, cdx = cp.x - it.x, cdz = cp.z - it.y, cd = Math.sqrt(cdx * cdx + cp.y * cp.y + cdz * cdz);
-    let tgt = clamp(Math.max(Math.sqrt(Math.max(1, cd) / 38), cd / 500), 1, 22);
-    if (near < 600) tgt = Math.min(tgt, 2.5 * (Z.kEx || 1));
+    let tgt = clamp(Math.max(Math.sqrt(Math.max(1, cd) / 38), cd / 280), 1, 40);
+    // near aircraft it stays clear of them (but never under 2.5x their own boost)
+    tgt = Math.min(tgt, Math.max(2.5 * (Z.kEx || 1), fit));
     if (scl < 0 || !isFinite(scl)) scl = tgt; else scl += (tgt - scl) * (1 - Math.exp(-dt * 3));
     root.position.set(it.x, 0, it.y); root.rotation.y = -(it.a || 0); root.scale.setScalar(scl);
     const kz = clamp((32 / scl - Z0) / (21.6 - Z0), 0.12, 1), kc = Math.max(kz, 0.45), sqz = z => z > Z0 ? Z0 + (z - Z0) * kc : z;
@@ -8900,7 +8964,7 @@ vec3 fxCol(vec3 P,float reg,float t){
     slab([[-19, 1.5, 0], [-26, 12, 0], [-29.5, 12, 0], [-28.5, 1.5, 0]], 0.35, 1);
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(Nn, 3));
     const N = 64, aG = new THREE.InstancedBufferAttribute(new Float32Array(N * 4), 4); aG.setUsage(THREE.DynamicDrawUsage); g.setAttribute('aG', aG);
-    const U = { uTime: { value: 0 } };
+    const U = { uTime: { value: 0 }, uPR: { value: 1 } };
     // premultiplied 'over' blending: every channel stays under 1, so the cyan never washes out to white and the ghosts
     // darken a bright sky instead of vanishing into it
     const mat = new THREE.ShaderMaterial({ uniforms: U, transparent: true, depthWrite: false, side: THREE.DoubleSide, forceSinglePass: true,
@@ -8910,33 +8974,36 @@ vec3 fxCol(vec3 P,float reg,float t){
         void main(){
           vec3 p=position;float fr=floor(uTime*11.);
           float band=floor(p.x*0.22+fr*3.1+aG.z);float g=h1(band+aG.z*13.);
-          p.z+=g>0.8?(h1(band*1.7+aG.z)-0.5)*7.:0.;p.y+=g>0.92?(h1(band*2.3)-0.5)*3.:0.;
+          p.z+=g>0.72?(h1(band*1.7+aG.z)-0.5)*9.:0.;p.y+=g>0.9?(h1(band*2.3)-0.5)*4.:0.;
           p.x*=1.+aG.w*1.8;
           vec4 wp=modelMatrix*instanceMatrix*vec4(p,1.);
           vN=normalize(mat3(modelMatrix)*mat3(instanceMatrix)*normal);vV=cameraPosition-wp.xyz;vL=position;vA=aG.y;vC=aG.x;
           gl_Position=projectionMatrix*viewMatrix*wp;
         }`,
-      fragmentShader: `uniform float uTime;varying vec3 vN,vV,vL;varying float vA,vC;
+      // hologram look that reads at any distance: rolling screen-space scanlines a few pixels apart (dark gaps you can see
+      // through), a saturated cyan body with a bright rim, and a refresh bar sweeping nose to tail; the twin is magenta
+      fragmentShader: `uniform float uTime,uPR;varying vec3 vN,vV,vL;varying float vA,vC;
         void main(){
           vec3 n=normalize(vN),v=normalize(vV);float f=1.-abs(dot(n,v));float rim=f*f;
-          float scan=0.62+0.38*sin(gl_FragCoord.y*1.1-uTime*24.);
+          float scan=fract(gl_FragCoord.y/(4.*uPR)-uTime*1.6)<0.5?1.:0.12;
+          float bar=exp(-pow((fract(-vL.x*0.022+uTime*0.6)-0.5)*9.,2.));
           float lx=smoothstep(0.42,0.5,abs(fract(vL.x/3.)-0.5)),lz=smoothstep(0.44,0.5,abs(fract(vL.z/3.)-0.5));
-          vec3 col=vC<0.5?vec3(0.0,0.78,1.0):vec3(1.0,0.08,0.22);
-          float e=min(0.95,(0.18+1.1*rim+0.45*max(lx,lz))*scan)*vA;
-          float cov=clamp((0.22+0.55*rim)*vA,0.,0.8)*(vC<0.5?1.:0.35);
+          vec3 col=vC<0.5?vec3(0.0,0.7,1.0):vec3(1.0,0.08,0.6);
+          float e=min(0.92,(0.5+0.8*rim+0.3*max(lx,lz)+0.6*bar)*scan)*vA;
+          float cov=clamp((0.72+0.3*rim+0.2*bar)*scan*vA,0.,0.94)*(vC<0.5?1.:0.5);
           gl_FragColor=vec4(col*e,cov);
         }` });
     const mesh = new THREE.InstancedMesh(g, mat, N); mesh.frustumCulled = false; mesh.count = 0; mesh.visible = false; mesh.renderOrder = 31; mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); root.add(mesh);
     return { mesh, aG, U, N, tris: P.length / 9 };
   })();
   function ghostsUpdate(list, dt, now) {
-    let n = 0; const T = Z.T, k = Z.kEx || 1, E = 7, J = 7, arr = GH.aG.array, cp = Z.camera.position, tw = 0.004 * camD();
+    let n = 0; const T = Z.T, k = Z.kEx || 1, E = 7, J = 7, arr = GH.aG.array, cp = Z.camera.position, tw = 0.006 * camD();
     for (let li = 0; li < list.length; li++) {
       const it = list[li], pts = it.pts; if (!pts) continue;
       const fade = smooth(it.t0, it.t0 + 8, T) * (1 - smooth(it.t1 - 20, it.t1, T)); if (fade <= 0.01) continue;
       for (let pi = 0; pi < pts.length; pi++) {
         const px = pts[pi][0], py = pts[pi][1];
-        for (let e = 0; e < E && n + 2 <= GH.N; e++) {
+        for (let e = 0; e < E && n + 3 <= GH.N; e++) {
           const per = 6.5 + hash(pi, e) * 2, ph = now / per + e / E + pi * 0.37, cyc = Math.floor(ph), f = ph - cyc, j = Math.floor(f * J), jf = f * J - j;
           const stp = 330 + 60 * k;
           const x = px - (j + 0.3 + 0.5 * hash(e + j, cyc)) * stp, y = py + (hash(e * 3 + j, cyc + 1) - 0.5) * 140 * (0.5 + j * 0.3);
@@ -8946,8 +9013,12 @@ vec3 fxCol(vec3 P,float reg,float t){
           const bp = 1.1 + 0.8 * hash(e + 11, pi), bq = (now + 7 * hash(e, pi + 5)) / bp;
           if (bq - Math.floor(bq) < 0.3 / bp) { const fl = hash(e * 5 + pi, Math.floor(now * 7)); if (fl < 0.4) a *= 0.25; else if (fl > 0.75) a *= 1.35; }
           const smear = 1 - smooth(0, 0.14, jf), sd = hash(e * 13 + pi * 7, cyc) * 10;
-          _e.set((hash(e, cyc + j) - 0.5) * 0.14, Math.PI + (hash(e + 3, cyc + j) - 0.5) * 0.16, -0.05, 'YXZ'); _q.setFromEuler(_e); _s.setScalar(k);
+          _e.set((hash(e, cyc + j) - 0.5) * 0.14, Math.PI + (hash(e + 3, cyc + j) - 0.5) * 0.16, -0.05, 'YXZ'); _q.setFromEuler(_e); _s.setScalar(k * 1.4);
           _v.set(x, alt, y); _m.compose(_v, _q, _s); GH.mesh.setMatrixAt(n, _m); arr[n * 4] = 0; arr[n * 4 + 1] = a; arr[n * 4 + 2] = sd; arr[n * 4 + 3] = smear; n++;
+          // an afterimage left behind at the previous jump, fading out as the ghost settles
+          if (j > 0 && jf < 0.5) {
+            _v.set(px - (j - 0.7 + 0.5 * hash(e + j - 1, cyc)) * stp, alt, py + (hash(e * 3 + j - 1, cyc + 1) - 0.5) * 140 * (0.2 + j * 0.3)); _m.compose(_v, _q, _s);
+            GH.mesh.setMatrixAt(n, _m); arr[n * 4] = 0; arr[n * 4 + 1] = fade * Math.pow(1 - (j - 1) / J, 1.1) * 0.5 * (1 - jf * 2); arr[n * 4 + 2] = sd + 7; arr[n * 4 + 3] = 0.35; n++; }
           // the red twin sits a little to one side across the view direction, so its fringe always shows
           let qx = -(y - cp.z), qz = x - cp.x; const ql = Math.hypot(qx, qz) || 1, off = tw * (1 + 1.5 * smear); qx *= off / ql; qz *= off / ql;
           _v.set(x + qx - smear * 20 * k, alt + 0.15 * tw, y + qz); _m.compose(_v, _q, _s);
@@ -8956,7 +9027,7 @@ vec3 fxCol(vec3 P,float reg,float t){
       }
     }
     GH.mesh.count = n; GH.mesh.visible = n > 0;
-    if (n) { GH.mesh.instanceMatrix.needsUpdate = true; GH.aG.needsUpdate = true; GH.U.uTime.value = now; }
+    if (n) { GH.mesh.instanceMatrix.needsUpdate = true; GH.aG.needsUpdate = true; GH.U.uTime.value = now; GH.U.uPR.value = Z.renderer.getPixelRatio(); }
   }
   KS.add('ghosts');
 

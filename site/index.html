@@ -1465,7 +1465,7 @@ const LEVELS=[
    blurb:'Chhatrapati Shivaji Maharaj International closes: Mumbai\'s airlines and the Gulf wave arrive. 46 °C. Hot air is thin, so heavy jets need the long runway to get airborne.',
    last:{t:'Last flight out of Chhatrapati Shivaji Maharaj',d:'<p>At 13:50, Air India AI 629 left Mumbai\'s Terminal 2 and the airport closed. Mumbai\'s widebodies and the Gulf carriers now fly from here.</p><p>Mumbai holds up ZMI\'s roof: branching columns that flare into a field of coffers with coloured lenses, a 40 m cantilever over the kerb, and an art wall along the transfer route.</p>'},
    script:[[1500,'st_dabba'],[2100,'st_gps'],[3000,'summit'],[4200,'st_wedding'],[4800,'medical'],[6000,'st_fog']],ops:[[600,'birds'],[1500,'fod'],[2300,'tug'],[3900,'birds']]},
-  {n:4,name:'Delhi. Full hub.',sub:'+ Delhi',from:'ALL 5 CITIES',clock:'12:00',len:7200,arr:116,dep:116,amp:0.75,starsAt:{otp2:78,cx2:76,otp3:84,cx3:82},rw:6,rwOpen:{R1:'ARR',R2:'ARR',R3:'DEP',R4:'DEP',R5:'DEP',R6:'MIX'},concs:'ABCDEF',intl:0.25,wide:0.20,a380:6,target:420,light:'day',dust:[2400,3300],
+  {n:4,name:'Delhi. Full hub.',sub:'+ Delhi',from:'ALL 5 CITIES',clock:'12:00',len:9630,windDown:true,evening:[7800,9630,0.5,0.15,1.3,0.25],arr:116,dep:116,amp:0.75,starsAt:{otp2:78,cx2:76,otp3:84,cx3:82},rw:6,rwOpen:{R1:'ARR',R2:'ARR',R3:'DEP',R4:'DEP',R5:'DEP',R6:'MIX'},concs:'ABCDEF',intl:0.25,wide:0.20,a380:6,target:420,light:'day',dust:[2400,3300],
    blurb:'Delhi\'s hub banks move in: four airports\' worth of traffic at the peak, about 230 movements an hour with peaks well above. Then a pre-monsoon squall kicks up an andhi (dust storm).',
    last:{t:'Delhi\'s banks move in',d:'<p>Delhi\'s own airport stays open for its city, but from today its connecting banks run through ZMI. Four cities\' traffic, three cities\' building, at the old Zero Mile.</p><p>The north lobe of the Hall points almost exactly at Delhi.</p>'},
    script:[[1000,'lights'],[1500,'st_monkeys'],[2550,'shear'],[3700,'medical'],[4000,'st_trophy'],[4800,'st_delhisummit']],ops:[[500,'birds'],[1400,'tug'],[3000,'fod'],[4400,'birds']]}
@@ -1475,7 +1475,7 @@ const LEVELS=[
 let flights=[],FID=0,S=null,incidents=[],INC=0,selected=null,hover=null,selRw=null;
 const puffs=[],moveLog=[];
 function resetState(){
-  SUM=null;STO=[];CINE=null;MARKS=[];FXV=[];voiceReset();{const kc=$('#kiteChip');if(kc)kc.hidden=true;const sb=$('#stopBtn');if(sb)sb.hidden=true;const ft=$('#fogTag');if(ft)ft.hidden=true;fogF=0;}cinema.q=[];specialArr.list=[];flights=[];FID=0;incidents=[];INC=0;selected=null;hover=null;selRw=null;puffs.length=0;moveLog.length=0;ops.length=0;opsClock=0;lastCnx=-1e9;
+  SUM=null;STO=[];CINE=null;PACE=null;MARKS=[];FXV=[];voiceReset();{const kc=$('#kiteChip');if(kc)kc.hidden=true;const sb=$('#stopBtn');if(sb)sb.hidden=true;const ft=$('#fogTag');if(ft)ft.hidden=true;fogF=0;}cinema.q=[];specialArr.list=[];flights=[];FID=0;incidents=[];INC=0;selected=null;hover=null;selRw=null;puffs.length=0;moveLog.length=0;ops.length=0;opsClock=0;lastCnx=-1e9;
   S={tl:[],flipLog:[],tlNext:0,combo:0,bestCombo:0,moves:0,arr:0,dep:0,depOnTime:0,arrOnTime:0,cnxMade:0,cnxMiss:0,safety:100,incOk:0,incDef:0,incTypes:{},hits:[],holdMin:0,div:0,goArounds:0,log:[],delaySum:0,flips:0};
   GATES.forEach(g=>{g.occ=null;g.res=null;});
   RW.forEach(r=>{r.tdList=[];r.lastSchedTd=-1e9;r.lastDep=-1e9;r.arrExit=-1e9;r.occ=null;r.changeUntil=-1;r.closedUntil=-1;r.why='';r.ops=0;r.flash=0;r.blocks=[];r.gapReq=false;r.degraded=false;r.strike=null;r.shear=false;r.sepK=1;r.sepUntil=-1;r.kiteUntil=-1;r.kiteFrom=-1;r.kiteP=0.25;r.noArrUntil=-1;r.gpsUntil=-1;r.noDepUntil=-1;r.btUntil=-1;});
@@ -1503,8 +1503,10 @@ function buildLevel(L){
   }
   const per=3600;const amp=L.amp;
   const wv=t=>{const s=Math.sin(2*Math.PI*(t-600)/per);return Math.sign(s)*Math.pow(Math.abs(s),0.45);};
-  const rateA=t=>L.arr/3600*(1+amp*wv(t));
-  const rateD=t=>L.dep/3600*(1-amp*wv(t));
+  // evening:[t0,t1,a0,a1,d0,d1]: from t0 the waves stop; arrivals and departures run at a0..a1 and d0..d1 of their mean rate (a wind-down)
+  const eve=L.evening,ek=(t,a,b)=>a+(b-a)*clamp((t-eve[0])/(eve[1]-eve[0]),0,1);
+  const rateA=t=>eve&&t>=eve[0]?L.arr/3600*ek(t,eve[2],eve[3]):L.arr/3600*(1+amp*wv(t));
+  const rateD=t=>eve&&t>=eve[0]?L.dep/3600*ek(t,eve[4],eve[5]):L.dep/3600*(1-amp*wv(t));
   const times=(rate,t0,t1)=>{const out=[];let acc=R();for(let t=t0;t<t1;t+=10){acc+=rate(t)*10;while(acc>=1){acc-=1;out.push(t+Math.floor(R()*10));}}return out;};
   const arrT=times(rateA,60,LEN);const depT=times(rateD,-600,LEN);
   const arrs=arrT.map(t=>Object.assign(mkSpec(),{eta:t}));
@@ -1741,7 +1743,8 @@ function updateFlight(f,dt){
   if(f.alt>30&&['approach','roll','climb','goaround','inbound','divert'].includes(f.state)){const tr=f.trail;if(!tr.length||Math.hypot(tr[tr.length-1].x-f.x,tr[tr.length-1].y-f.y)>160){tr.push({x:f.x,y:f.y});if(tr.length>20)tr.shift();}}
 }
 function fuelCheck(f){
-  if(!f.minFuel&&f.endurance<14){f.minFuel=true;radio(f.al,`${cs(f)}, minimum fuel.`);if(!f.prio)spawnInc('fuel',f);}
+  if(f.notam&&f.endurance<11&&['holding','inbound','goaround'].includes(f.state)){S.notamDiv=(S.notamDiv||0)+1;radio(f.al,`${cs(f)}, diverting to Nagpur's old airport, as planned for the summit.`);divert(f,'planned under the summit NOTAM');return;}
+  if(!f.minFuel&&f.endurance<14&&!f.notam){f.minFuel=true;radio(f.al,`${cs(f)}, minimum fuel.`);if(!f.prio)spawnInc('fuel',f);}
   if(!f.mayday&&f.endurance<6){f.mayday=true;f.prio=true;radio(f.al,`MAYDAY MAYDAY MAYDAY, ${cs(f)}, fuel.`);hitSafety(5,`${fl(f)} declared MAYDAY fuel after holding.`);
     const I=incidents.find(i=>i.type==='fuel'&&i.fs.includes(f));if(I){I.fs=I.fs.filter(g=>g!==f);S.incDef++;if(!I.fs.length)drop(I);else{I.title=I.fs.length>1?`${I.fs.length} aircraft on minimum fuel`:`${fl(I.fs[0])} is on minimum fuel`;renderInc();}}
     coach(`MAYDAY: ${fl(f)}`,`<p>It held so long that it is now an emergency. It lands next, ahead of everyone, and safety drops 5.</p><p>A smaller stack prevents this: give arrivals more runways before the wave peaks, not during it.</p>`,true);}
@@ -1892,7 +1895,7 @@ function guardShow(text,who){const g=$('#guard'),t=$('#guardTxt');if(!g)return;i
 // the bodyguard by default; set pieces bring their own character (badge + 116x150 svg). When sound is on the bodyguard
 // speaks, and his popup follows his voice line by line.
 function guard(lines,who,o){const g=$('#guard');if(!g)return;clearTimeout(guard.t1);clearTimeout(guard.t2);o=o||{};
-  if(!who&&speak(lines,{onLine:i=>{clearTimeout(guard.t2);guardShow(lines[i]);if(o.onLine)o.onLine(i);},onDone:()=>{guard.t2=setTimeout(()=>g.classList.remove('on'),1400);if(o.onDone)o.onDone();}}))return;
+  if(!who&&speak(lines,{gap:o.gap,gaps:o.gaps,endGap:o.endGap,onLine:i=>{clearTimeout(guard.t2);guardShow(lines[i]);if(o.onLine)o.onLine(i);},onDone:()=>{guard.t2=setTimeout(()=>g.classList.remove('on'),1400);if(o.onDone)o.onDone();}}))return;
   guardShow(lines[0],who);if(o.onLine)o.onLine(0);let i=0;const step=()=>{i++;if(i<lines.length){$('#guardTxt').textContent=lines[i];if(o.onLine)o.onLine(i);guard.t1=setTimeout(step,2600);}};
   if(lines.length>1)guard.t1=setTimeout(step,2600);guard.t2=setTimeout(()=>{g.classList.remove('on');if(o.onDone)o.onDone();},2600*(lines.length-1)+3600+(o.extra||0));}
 // the voice: pre-recorded earpiece clips (voice/spg_audio.js) one after another with pauses; a line without a clip falls back
@@ -1907,7 +1910,7 @@ function pickVoice(vs,lang){const sc=v=>(/en[-_]IN/i.test(v.lang)?4:/en[-_]GB/i.
   if(lang){const L=lang.toLowerCase().replace('_','-'),m=vs.filter(v=>v.lang.toLowerCase().replace('_','-').startsWith(L.split('-')[0])&&(L.indexOf('-')<0||v.lang.toLowerCase().replace('_','-')===L||true));
     const q=v=>(v.lang.toLowerCase().replace('_','-')===L?2:0)+(/enhanced|premium|natural|neural|google/i.test(v.name)?1:0);return m.sort((a,b)=>q(b)-q(a))[0]||null;}
   return vs.slice().sort((a,b)=>sc(b)-sc(a))[0]||null;}
-function vqNext(){if(vqOn)return;const it=VQ.shift();if(!it)return;vqOn=true;let fin=false;const done=()=>{if(fin)return;fin=true;vqCur=null;duck(false);if(it.onEnd)it.onEnd();setTimeout(()=>{vqOn=false;vqNext();},it.gap);};
+function vqNext(){if(vqOn)return;const it=VQ.shift();if(!it)return;if(it.valid&&!it.valid()){if(it.onEnd)it.onEnd();return vqNext();}vqOn=true;let fin=false;const done=()=>{if(fin)return;fin=true;vqCur=null;duck(false);if(it.onEnd)it.onEnd();setTimeout(()=>{vqOn=false;vqNext();},it.gap);};
   if(it.onStart)it.onStart();const clip=typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[it.text];
   if(clip){const a=new Audio(clip);vqCur=a;a.volume=it.vol||0.95;a.onended=done;a.onerror=done;duck(true);const p=a.play();if(p&&p.catch)p.catch(done);return;}
   if(!it.radio&&window.speechSynthesis&&window.SpeechSynthesisUtterance){try{const S2=window.speechSynthesis,v=pickVoice(S2.getVoices(),it.lang);if(it.lang&&!v)return done();const u=new SpeechSynthesisUtterance(it.text.replace(/[\u{1F000}-\u{1FAFF}☀-➿️]/gu,'').trim());
@@ -1917,7 +1920,7 @@ function vqNext(){if(vqOn)return;const it=VQ.shift();if(!it)return;vqOn=true;let
 // (1200 ms: the SPG takes his time), and endGap after the last line
 function speak(lines,o){o=o||{};if(!SND.on)return false;lines.forEach((t,i)=>{const last=i===lines.length-1;VQ.push({text:t,lang:o.lang,gap:o.gaps&&o.gaps[i]!=null?o.gaps[i]:last?(o.endGap!=null?o.endGap:900):(o.gap!=null?o.gap:1200),onStart:o.onLine?()=>o.onLine(i):null,onEnd:last?o.onDone:null});});vqNext();return true;}
 // a radio call in a speaker's own voice: shows on the ticker, and plays its recorded clip (keyed by the exact text) if there is one
-function say(src,text,o){o=o||{};radio(src,text);if(SND.on&&typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[text]){VQ.push({text,radio:true,gap:o.gap!=null?o.gap:500,vol:o.vol,onStart:o.onStart,onEnd:o.onEnd});vqNext();return true;}if(o.onEnd)o.onEnd();return false;}
+function say(src,text,o){o=o||{};radio(src,text);if(SND.on&&typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[text]){VQ.push({text,radio:true,gap:o.gap!=null?o.gap:500,vol:o.vol,valid:o.valid,onStart:o.onStart,onEnd:o.onEnd});vqNext();return true;}if(o.onEnd)o.onEnd();return false;}
 function voiceReset(){VQ.length=0;if(vqCur){try{vqCur.pause();}catch(e){}}vqCur=null;vqOn=false;if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}music(null,{now:true});}
 // music for set pieces: music('dj') plays music/dj.mp3 (looped unless {loop:false}), crossfading from whatever was playing;
 // music(null) fades it out. It ducks under voice lines. A missing file is simply silent, so tracks can be dropped in later.
@@ -1933,7 +1936,7 @@ function duck(on){const a=MUS&&MUS.el;if(a)musFade(a,on?MUS.vol*0.35:MUS.vol,on?
 function spgReturn(order){const n=order.length;guard(['Your runways shall now be cleared, in a staged manner.'].concat(order.map((r,i)=>i===0?`Runway ${r.short} shall be cleared first.`:i===n-1?`And finally, runway ${r.short}.`:`Then runway ${r.short}.`)));}
 function spgOpen(r){}
 function spgFinale(){setTimeout(()=>guard(['Thank you, sir, for this.','And thank you for serving the nation.','Jai Hind.'],null,
-  {extra:2500,onLine:i=>{if(i===0)vipBanner(true,'SECURITY · SPG','Thank you for serving the nation','Jai Hind 🇮🇳',FLAG_IN);},onDone:()=>setTimeout(()=>{if(!CINE)vipBanner(false);},1800)}),2500);}
+  {extra:2500,gaps:[1800,2300],endGap:1500,onLine:i=>{if(i===0)vipBanner(true,'SECURITY · SPG','Thank you for serving the nation','Jai Hind 🇮🇳',FLAG_IN);},onDone:()=>setTimeout(()=>{if(!CINE)vipBanner(false);},1800)}),4000);}
 // the SPG hands the runways back one at a time, in step with his voice: he names a runway, it reopens about a minute later
 // (lead), and only then does he name the next one (step apart); then a pause and his sign-off. It runs in sim time, so bots
 // and fast-forward see the same schedule; while he speaks with sound on, the game is held at 1x so his voice keeps up.
@@ -1994,7 +1997,7 @@ function summitTick(){
 // ============ set pieces: the summit's siblings, one or two per level ============
 // Each is a story with a character on the dashboard, radio lines on a timeline, a disruption the sim really feels,
 // and often a cinematic cut with a banner. Defined in STORY; a level's script starts one like any incident ('st_<key>').
-let STO=[],CINE=null;
+let STO=[],CINE=null,PACE=null;   // PACE: while a set piece runs live (the Delhi summit), the sim runs at this speed whatever the buttons say
 const face=(e,bg)=>`<svg viewBox="0 0 116 150" aria-hidden="true"><circle cx="58" cy="82" r="50" fill="${bg||'#1d232b'}" stroke="#f4c430" stroke-width="3"/><text x="58" y="108" font-size="68" text-anchor="middle">${e}</text></svg>`;
 const icos=(...e)=>e.map(x=>`<span class="ico">${x}</span>`).join('');
 function startStory(k){const d=STORY[k];if(!d)return false;const c={k,E:T,said:new Set(),lines:[],len:d.len||900};if(d.start(c)===false)return false;
@@ -2006,15 +2009,17 @@ function storyTick(){
   cineTick();
 }
 // a cinematic cut on one aircraft: the sim slows to half speed, the camera follows it, a banner names the moment
-function cinema(f,ban,o){o=o||{};if(f?['gone','diverted'].includes(f.state):!o.view)return;if(o.force&&CINE){const p=CINE;CINE=null;speed=p.prevSpeed;}if(!o.force&&(CINE||(SUM&&SUM.cine))){(cinema.q=cinema.q||[]).push([f,ban,o]);return;}
-  CINE={f,ban,o,c:o.c,t0:performance.now(),prevSpeed:speed,prevCam:V3.on&&V3.ready?{t:Object.assign({},C3.t)}:null};speed=o.speed||0.5;
+function cinema(f,ban,o){o=o||{};if(f?['gone','diverted'].includes(f.state):!o.view)return;let keep=null;if(o.force&&CINE){keep=CINE;CINE=null;speed=keep.prevSpeed;}if(!o.force&&(CINE||(SUM&&SUM.cine))){(cinema.q=cinema.q||[]).push([f,ban,o]);return;}
+  CINE={f,ban,o,c:o.c,t0:performance.now(),prevSpeed:keep?keep.prevSpeed:speed,prevCam:keep?keep.prevCam:V3.on&&V3.ready?{t:Object.assign({},C3.t)}:null};speed=o.speed||0.5;
   vipBanner(true,ban[0],ban[1],ban[2],ban[3]==null?'':ban[3]);
   if(V3.on&&V3.ready){if(f){V3.mode=f.state==='approach'?'approach':'follow';C3.follow=f;C3.fpos=null;C3.apT=-99;camLabel();}else{setCam('map');Object.assign(C3.t,o.view);}}else if(f)centerOn(f.x,f.y);else if(o.at)centerOn(o.at[0],o.at[1]);}
+// a queued shot whose moment has passed (its aircraft landed a while ago, or its sim-time window is over) is dropped, not shown late
+const cineStale=(f,o)=>(o.until!=null&&T>=o.until-2)||(f&&['gone','diverted','towed'].includes(f.state))||(o.landed&&f&&f.landT!=null&&T-f.landT>25);
 function cineTick(){stagedTick();
-  if(!CINE){const q=cinema.q;if(q&&q.length&&!(SUM&&SUM.cine)){const [f,b,o]=q.shift();cinema(f,b,o);}return;}
+  if(!CINE){const q=cinema.q;while(q&&q.length&&!(SUM&&SUM.cine)){const [f,b,o]=q.shift();if(cineStale(f,o))continue;cinema(f,b,o);break;}return;}
   const c=CINE,now=performance.now();if(!V3.on&&c.f)centerOn(c.f.x,c.f.y);
   if(c.o.landed&&c.f&&c.f.landT!=null&&!c.landAt)c.landAt=now;
-  const over=(c.f&&['gone','diverted'].includes(c.f.state))||(c.landAt&&now-c.landAt>3500)||now-c.t0>(c.o.ms||(c.o.landed?20000:6500));
+  const over=(c.f&&['gone','diverted'].includes(c.f.state))||(c.o.until!=null?T>=c.o.until||now-c.t0>40000:(c.landAt&&now-c.landAt>3500)||now-c.t0>(c.o.ms||(c.o.landed?20000:6500)));
   if(over){CINE=null;vipBanner(false);speed=c.prevSpeed;if(running)setSpeed(speed);if(V3.on&&V3.ready&&c.prevCam){setCam('map');Object.assign(C3.t,c.prevCam.t);}}
 }
 // a special arrival that appears 14 km out and lands on runway r at sim time td (holds a stand if one is given)
@@ -2056,7 +2061,7 @@ const SPEECH=['Brothers and sisters of Vidarbha, namaskar!','From the Zero Mile 
 function speech(c,t0,len){SPEECH.forEach((l,i)=>c.lines.push([t0-c.E+Math.round(i*len/SPEECH.length),'CM ON STAGE',l]));}
 STORY.ribbon={len:2000,start(c){const r=rwBy('dep')[0];if(!r)return false;c.r=r;
   c.blk={from:T,to:T+1e6,open:true,why:'Inauguration ribbon',desk:'Ribbon across it, until it is cut'};r.blocks.push(c.blk);r.blocks.sort((a,b)=>a.from-b.from);
-  const hx=r.x1-220;c.mark={x:hx,y:r.y,e:'🎀',until:T+1e6,px:30,k:'ribbon'};MARKS.push(c.mark);
+  const hx=r.holds.length?G.get(r.holds[0]).x:r.x1-300;c.mark={x:hx,y:r.y,e:'🎀',until:T+1e6,px:30,k:'ribbon'};MARKS.push(c.mark);
   c.fx={kind:'ribbon',id:'ribbon',x:hx,y:r.y,w:75,t0:T,t1:T+1e6,cutAt:null};FXV.push(c.fx);
   c.stage={kind:'stage',id:'stage1',x:hx-260,y:r.y,a:0,t0:T,t1:T+1e6,speaker:null};FXV.push(c.stage);MARKS.push(c.smark={x:hx-260,y:r.y,e:'🎤',until:T+1e6,px:26,k:'stage'});
   c.wait=T+240+Math.floor(SIMR()*240);
@@ -2331,31 +2336,35 @@ const DELEG=[['USAF','C17','REACH 1','US Air Force C-17 (the motorcade)','Washin
   ['GOV','B38M','SOUTH AFRICAN 1','South African state BBJ','Pretoria','WKF',''],['GOV','B38M','TANGO 01','Argentine state BBJ','Buenos Aires','EZE',''],['GOV','A333','EGYPTIAN 1','Egyptian state A330','Cairo','CAI',''],
   ['GOV','A333','SPANISH AIR FORCE','Spanish state A330','Madrid','TOJ',''],['GOV','B38M','NETHERLANDS 1','Dutch state BBJ','Amsterdam','AMS',''],['GOV','B77W','NIGERIAN 1','Nigerian state 777','Abuja','ABV',''],
   ['GOV','A21N','KAZAKH 1','Kazakh state A321','Astana','NQZ',''],['AM','B789','AEROMEXICO 92','Aeromexico 787 (scheduled, economy)','Mexico City','MEX','com']];
-const BIG={CN:{t:420,ban:['AIR CHINA 747-8','The President of China · on final','The red carpet was measured twice 📏',FLAG_CN]},
-  RU:{t:780,ban:['TWO IDENTICAL IL-96s','The President of Russia is on one of them','Nobody will say which one 🎶',FLAG_RU]},
-  US:{t:1140,ban:['AIR FORCE ONE','The President of the United States · Boeing 747 on final','Welcome to Zero Mile! 🤝',FLAG_US]}};
+const BIG={CN:{t:600,ban:['AIR CHINA 747-8','The President of China · on final','The red carpet was measured twice 📏',FLAG_CN]},
+  RU:{t:1300,ban:['TWO IDENTICAL IL-96s','The President of Russia is on one of them','Nobody will say which one 🎶',FLAG_RU]},
+  US:{t:2100,ban:['AIR FORCE ONE','The President of the United States · Boeing 747 on final','Welcome to Zero Mile! 🤝',FLAG_US]}};
 const CINE_BAN={'REACH 1':['THE MOTORCADE ARRIVES FIRST','US Air Force C-17, carrying "The Beast"','The car has its own aeroplane. Again. 🚗',FLAG_US],
   'EMIRATES 1':['THE UAE DELEGATION','An Emirates A380. All of it.','Business class: the whole aeroplane ✨',icos('🇦🇪')],
-  'JAPANESE AIR FORCE 1':['JAPAN AIR FORCE ONE','Two 777s, as always','One is the backup. Both are on time. 🇯🇵',icos('🇯🇵')]};
-STORY.delhisummit={len:2600,start(c){const open=RW.filter(r=>!r.locked);if(open.length<4)return false;
+  'JAPANESE AIR FORCE 1':['JAPAN AIR FORCE ONE','Two 777s, as always','One is the backup. Both are on time. 🇯🇵',icos('🇯🇵')],
+  'JAPANESE AIR FORCE 2':['…AND THE BACKUP','Japanese Air Force Two · the identical 777','Also on time. To the second ⏱️',icos('🇯🇵')],
+  'RUSSIA 2':['…OR WAS IT THIS ONE?','Russia Two · the identical Il-96','Two aircraft. One President. Zero answers 🎶',FLAG_RU]};
+STORY.delhisummit={len:3000,start(c){const open=RW.filter(r=>!r.locked);if(open.length<4)return false;
   const E=T,spg=open.filter(r=>r.id==='R1'||r.id==='R2');if(spg.length<2)spg.splice(0,spg.length,...open.slice(0,2));c.spg=spg;c.E=E;
-  const D0=60,DUR=1500;spg.forEach((r,i)=>r.blocks.push({from:E+D0,to:E+D0+DUR+60*i,why:'Security (VVIP)',summit:true}));spg.forEach(r=>r.blocks.sort((a,b)=>a.from-b.from));
+  const D0=60,DUR=2400,ret=spgStaged.times(E+D0+DUR,spg.length,{});c.ret=ret;spg.forEach((r,i)=>r.blocks.push({from:E+D0,to:ret.open[i],why:'Security (VVIP)',summit:true}));spg.forEach(r=>r.blocks.sort((a,b)=>a.from-b.from));
   for(const f of flights)if(f.state==='approach'&&spg.includes(f.rwy)&&f.td-T>25&&f.td>=E+D0-20)goAround(f,'summit protocol');
   // airlines thin the afternoon: a quarter of the flights in the window are cancelled
   let nc=0,k=0;for(const f of flights){const inW=f.kind==='arr'?f.state==='sched'&&f.eta>E+120&&f.eta<E+DUR+300:f.kind==='dep'&&f.state==='at_gate'&&!f.charter&&f.std>E+120&&f.std<E+DUR+300;
-    if(inW&&(k++%4===3)){if(f.gate){f.gate.occ=null;f.gate=null;}if(f.res){f.res.res=null;f.res=null;}f.state='cancelled';nc++;}}
+    if(inW&&(k++%3===2)){if(f.gate){f.gate.occ=null;f.gate=null;}if(f.res){f.res.res=null;f.res=null;}f.state='cancelled';nc++;}}
   // the big three: every runway stops for 3 minutes around each landing (alphabetical: China, Russia, the US)
   c.bigBlocks=[];const all=()=>RW.filter(r=>!r.locked);
   const stopAll=(t,secs,why)=>{const out=[];for(const r of all()){const b={from:t,to:t+secs,why,desk:why,big:true};r.blocks.push(b);r.blocks.sort((a,b)=>a.from-b.from);out.push([r,b]);}
     for(const f of flights)if(f.state==='approach'&&f.td>=t-20&&f.td<t+secs&&!f.vip)goAround(f,'summit protocol, all runways');return out;};
   for(const k2 of ['CN','RU','US'])c.bigBlocks.push(...stopAll(E+BIG[k2].t-90,180,'Summit: every runway stopped'));
   // schedule the delegations on the SPG runways, 75 s apart, around the big-three windows
-  const slots=[];for(const r of spg)for(let t=E+D0+60;t<E+D0+DUR-30;t+=75){if(Object.values(BIG).some(b=>Math.abs(t-(E+b.t))<130))continue;slots.push([t,r]);}
+  // the published NOTAM: flights due in the summit window carry 25 minutes of extra holding fuel and a planned diversion
+  for(const f of flights)if(f.kind==='arr'&&f.landT==null&&['sched','inbound','holding','goaround'].includes(f.state)&&f.origEta>E-1200&&f.origEta<E+DUR+1500){f.endurance+=25;f.notam=true;}
+  const slots=[];spg.forEach((r,ri)=>{for(let t=E+D0+60+ri*37;t<E+D0+DUR-30;t+=75){if(Object.values(BIG).some(b=>Math.abs(t-(E+b.t))<100))continue;slots.push([t,r]);}});
   slots.sort((a,b)=>a[0]-b[0]);let si=0;c.vips=[];
   for(const d of DELEG){const [al,type,call,disp,from,code,role]=d;
     if(role==='com'){const f=mk({kind:'arr',state:'sched',al,type,intl:true,from,fromCode:code,dir:'W',eta:E+600,endurance:40});f.num='92';f.origEta=E+600;f.spawnT=E+600-D_APP-150;f.disp='Aeromexico 92';c.mx=f;continue;}
-    let td,r;if(BIG[role]){r=spg[role==='RU'?1:0];td=E+BIG[role].t;}else{const s=slots[si++];if(!s)continue;[td,r]=s;}
-    const f=specialArr({al,type,num:'1',disp,callsign:call,from,fromCode:code,intl:true,vip:true},r,td,null);f.toPark=true;f.parkText='To the VIP apron (red carpet)';f.role=role;f.ban=BIG[role]?BIG[role].ban:CINE_BAN[call];c.vips.push(f);}
+    let td,r;if(BIG[role]){r=spg[role==='RU'?1:0];td=E+BIG[role].t;}else if(call==='RUSSIA 2'){r=spg[0];td=E+BIG.RU.t+50;}else{const s=slots[si++];if(!s)continue;[td,r]=s;}
+    const f=specialArr({al,type,num:'1',disp,callsign:call,from,fromCode:code,intl:true,vip:true},r,td,null);f.toPark=true;f.parkText='To the VIP apron (red carpet)';f.role=role;f.ban=BIG[role]?BIG[role].ban:CINE_BAN[call];f.deleg=true;c.vips.push(f);}
   c.lines=[[0,'SPG',`The Delhi summit has moved to Zero Mile. Twenty delegations, forty aircraft. We have taken ${spg.map(r=>r.short).join(' and ')}. Thank you for your support.`],
     [15,'TWR','All airlines: summit protocol in force. Expect holding. Then expect more holding.'],
     [90,'AOCC',`Airlines have cancelled ${nc} flights for the summit. The rest are coming anyway.`],
@@ -2368,23 +2377,22 @@ STORY.delhisummit={len:2600,start(c){const open=RW.filter(r=>!r.locked);if(open.
     [900,'SPG','Japan has brought two aircraft. In case.'],
     [1050,'FSO','The VIP apron has run out of red carpet. Ops is borrowing the carpet from the lounge.'],
     [1260,cc=>{guard(['Your holding stack is now the second-largest gathering in Nagpur today.','Very impressive, sir.']);}],
-    [D0+DUR-20,cc=>{spgReturn(cc.spg);radio('SPG','Runways returning one at a time. We pick the order.');}]];
+    [D0+DUR,cc=>{spgStaged(cc.spg,{at:T,done:()=>{if(STORY.evening)startStory('evening');}});}]];
   guard(['Sir. Delhi has brought its summit. We have taken over your runways.','Thank you for giving us your runways. Thank you for your support.']);
   flashBanner(['THE DELHI SUMMIT','Delhi moved in, and brought its summit: 20 delegations, 40 aircraft','No Bharat 1 today: the Prime Minister is already on the red carpet 🙏',FLAG_IN+icos('🌍')],6500);
   const I=storyCard(c,{icon:{g:'V',c:'#ff9933'},x:spg[0].x1+1500,y:spg[0].y,title:'Who lands first? The big three disagree',
     text:'The United States wants to land before Russia. Russia wants to land before the United States. China would like to land at the same time as both. Protocol stops every runway for 3 minutes around each of them, alphabetically: China, Russia, then the US (9 minutes in all). Land all three at once and it is a single 3-minute stop, but their three motorcades meet on the apron and nobody will reverse: pushbacks stop for 6 minutes. Or let them negotiate.',
     def:1,defText:"protocol's alphabetical order stands: three 3-minute stops.",
-    acts:[{l:'All three at once',pri:1,fn(){for(const [r,b] of c.bigBlocks)r.blocks=r.blocks.filter(x=>x!==b);const t=E+780,rs=[spg[0],spg[1],all().find(r=>!spg.includes(r))];
+    acts:[{l:'All three at once',pri:1,fn(){for(const [r,b] of c.bigBlocks)r.blocks=r.blocks.filter(x=>x!==b);const t=E+BIG.CN.t,rs=[spg[0],spg[1],all().find(r=>!spg.includes(r))];
         c.bigBlocks=stopAll(t-90,180,'Summit: three presidents, one photo');['CN','RU','US'].forEach((k2,i)=>{const f=c.vips.find(v=>v.role===k2);if(f&&f.state==='sched'){f.spTd=t+i*8;f.spRw=rs[i]||spg[0];}});
         c.lines.push([t-E+120,()=>{FX.pushFreeze=Math.max(FX.pushFreeze,T+360);guard(['The three motorcades have met on the apron.','Nobody will reverse. Talks are under way.']);radio('FSO','Three motorcades, one apron road, zero reversing. Pushbacks stopped for 6 minutes.');}]);
         renderRw();resolve(I,true,'The big three landed together: one photo, one gridlocked apron.');}},
       {l:'Alphabetical, as planned',fn(){resolve(I,true,'');}},
       {l:'Let them negotiate',fn(){c.bigBlocks.push(...stopAll(T+30,480,'Summit: negotiating who lands first'));c.lines.push([T-E+500,'SPG','They have agreed. Alphabetical. As originally planned.']);renderRw();resolve(I,true,'The big three negotiated for 8 minutes, then landed alphabetically.');}}]});
   c.I=I;renderRw();},
-tick(c){for(const f of c.vips){if(!f.cineAsked&&f.ban&&f.state==='approach'&&f.td-T<95){f.cineAsked=true;cinema(f,f.ban,{landed:true});}}
-  c.spg.forEach((r,i)=>{const at=c.E+60+1500+60*i;c.open=c.open||new Set();if(!c.open.has(i)&&T>=at){c.open.add(i);radio('TWR',`Runway ${r.short} back from the summit.`);spgOpen(r);if(c.open.size===c.spg.length)spgFinale();}});},
+tick(c){for(const f of c.vips){if(!f.cineAsked&&f.ban&&f.state==='approach'&&f.td-T<95){f.cineAsked=true;cinema(f,f.ban,{landed:true});}}},
 lesson(c,tl){const at=c.E,w=tl.filter(s=>s.t>=at&&s.t<=at+1800),pk=w.reduce((a,s)=>s.hold>a.hold?s:a,w[0]||{hold:0,t:at});
-  return{w:45,title:`The Delhi summit took two runways at ${clk(at)}`,text:`The stack peaked at ${pk.hold} around ${clk(pk.t)}. With two runways gone for 25 minutes and every runway stopped for the big three, the four you keep have to do everything: lean them towards arrivals before the stops (the bank chart shows them), then hand departures back as each stop ends. Landing the big three together saves 6 minutes of runway time; it costs an apron gridlock.`};}};
+  return{w:45,title:`The Delhi summit took two runways at ${clk(at)}`,text:`The stack peaked at ${pk.hold} around ${clk(pk.t)}. With two runways gone for 40 minutes and every runway stopped for the big three, the four you keep have to do everything: lean them towards arrivals before the stops (the bank chart shows them), then hand departures back as each stop ends. Landing the big three together saves 6 minutes of runway time; it costs an apron gridlock.`};}};
 
 // L3 · fog, a blocked taxiway, and the chain that leads to a runway collision. This one is played straight: no jokes once
 // the risk is live. Inspired by the 1977 Tenerife disaster; the two aircraft are fictional operators (a freighter and an
@@ -2752,10 +2760,16 @@ function rwStatus(){
 }
 
 /* ============ HUD ============ */
+// near the end of a windDown level: how many departures still have to get away before the day is done
+(function(){const st=document.createElement('style');st.textContent=`#windChip{position:absolute;left:16px;top:168px;z-index:12;padding:7px 13px;border-radius:8px;background:rgba(10,13,16,.92);border:1px solid #2fd3c6;font-family:var(--f-sign);font-weight:700;font-size:18px;letter-spacing:.03em;color:#fff;box-shadow:0 8px 20px rgba(0,0,0,.45)}
+#windChip[hidden]{display:none}#windChip b{color:#2fd3c6;font-size:21px}#windChip small{display:block;font-family:var(--f-mono);font-weight:500;font-size:10.5px;color:#9fb3c8;letter-spacing:.06em}`;document.head.appendChild(st);
+  const d=document.createElement('div');d.id='windChip';d.hidden=true;d.setAttribute('aria-live','polite');$('#app').appendChild(d);})();
+function windChip(){const d=$('#windChip');if(!d)return;const on=!!(LV&&LV.windDown&&!ended&&T>=LEN-600);if(d.hidden===on)d.hidden=!on;if(!on)return;const n=depLeft();
+  const h=`🛫 Last departures: <b>${n}</b> to go<small>${T<LEN?`THE EVENING BANK · ${Math.ceil((LEN-T)/60)} MIN OF SCHEDULE LEFT`:'THE DAY ENDS WHEN THEY ARE AWAY'}</small>`;if(d.innerHTML!==h)d.innerHTML=h;}
 function kpi(id,txt,cls){const el=$(id);el.querySelector('.v').innerHTML=txt;el.className='kpi '+(cls||'');}
 const RATE={v:0};
 function hud(){
-  $('#clock').textContent=clk(T);$('#left').textContent=ended?'Level over':`${Math.max(0,Math.ceil((LEN-T)/60))} min left`;
+  $('#clock').textContent=clk(T);$('#left').textContent=ended?'Level over':LV.windDown&&T>=LEN?`Last departures: ${depLeft()} to go`:`${Math.max(0,Math.ceil((LEN-T)/60))} min left`;windChip();
   while(moveLog.length&&moveLog[0]<T-1800)moveLog.shift();
   const rate=Math.round(moveLog.length*2);
   kpi('#kMov',`${S.moves}<small>/${LV.target}</small>`,S.moves>=LV.target?'good':'');
@@ -2792,8 +2806,11 @@ function tick(dt){
   incSpawner(dt);
   if(T>=S.tlNext&&T>=0){S.tlNext=T+60;recordShift();}
   summitTick();specialTick();storyTick();
-  if(T>=LEN&&!ended)finish();
+  if(!ended&&endDue())finish();
 }
+// the level ends at LEN; a level with windDown:true runs on (at most 15 minutes) until its departure backlog is nearly clear
+const depLeft=()=>flights.filter(f=>f.kind==='dep'&&!f.counted&&f.std<=Math.max(T,LEN)&&['at_gate','push','start','taxi_out','hp','lineup','stuck','roll'].includes(f.state)).length;
+function endDue(){if(T<LEN)return false;if(!LV.windDown||T>=LEN+900)return true;return depLeft()<=2;}
 const onceSet=new Set();function once(k,fn){if(onceSet.has(k))return;onceSet.add(k);fn();}
 
 /* ============ input ============ */
@@ -2858,11 +2875,11 @@ function debrief(otp,cx){
   if(otp<87&&!out.length)out.push({w:10,title:`On time ${otp}%`,text:'Watch the forecast lines on the bank chart: red is the stack, amber the departure queue. When either starts to climb, flip a runway before it peaks.'});
   out.sort((a,b)=>b.w-a.w);
   // a compact chart of the shift: stack (red), departure queue (amber), arrivals due (purple) and the flips
-  const W=960,H=150,mx=Math.max(10,...tl.map(s=>Math.max(s.hold,s.q,s.aDue))),X=t=>16+t/LEN*(W-32),Y=v=>H-26-v/mx*(H-46);
+  const W=960,H=150,mx=Math.max(10,...tl.map(s=>Math.max(s.hold,s.q,s.aDue))),LE=Math.max(LEN,T),X=t=>16+t/LE*(W-32),Y=v=>H-26-v/mx*(H-46);
   const line=(k,c)=>`<polyline fill="none" stroke="${c}" stroke-width="2.2" points="${tl.map(s=>`${X(s.t).toFixed(1)},${Y(s[k]).toFixed(1)}`).join(' ')}"/>`;
   const area=`<polygon fill="rgba(138,124,255,.18)" points="${X(tl[0].t)},${Y(0)} ${tl.map(s=>`${X(s.t).toFixed(1)},${Y(s.aDue).toFixed(1)}`).join(' ')} ${X(tl[tl.length-1].t)},${Y(0)}"/>`;
   const flips=S.flipLog.filter(f=>f.t>=0).map(f=>`<g><line x1="${X(f.t)}" x2="${X(f.t)}" y1="${H-24}" y2="${H-14}" stroke="${f.to==='ARR'?'#8a7cff':f.to==='DEP'?'#2fd3c6':f.to==='MIX'?'#f4c430':'#a6afb4'}" stroke-width="2"/></g>`).join('');
-  const ticks=Array.from({length:Math.floor(LEN/900)+1},(_,k)=>k*900).map(t=>`<text x="${X(t)}" y="${H-2}" fill="#6f7a80" font-size="10" font-family="JetBrains Mono, monospace" text-anchor="middle">${clk(t)}</text>`).join('');
+  const ticks=Array.from({length:Math.floor(LE/900)+1},(_,k)=>k*900).map(t=>`<text x="${X(t)}" y="${H-2}" fill="#6f7a80" font-size="10" font-family="JetBrains Mono, monospace" text-anchor="middle">${clk(t)}</text>`).join('');
   const pkm=pk.hold>=4?`<circle cx="${X(pk.t)}" cy="${Y(pk.hold)}" r="4" fill="#ff7a6b"/><text x="${X(pk.t)+6}" y="${Y(pk.hold)-6}" fill="#ff9a8d" font-size="11" font-family="JetBrains Mono, monospace">stack ${pk.hold}</text>`:'';
   const svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Your shift: arrivals due, the holding stack, the departure queue and your runway flips over the 90 minutes"><line x1="16" x2="${W-16}" y1="${Y(0)}" y2="${Y(0)}" stroke="rgba(255,255,255,.15)"/>${area}${line('q','#ffd27a')}${line('hold','#ff7a6b')}${pkm}${flips}${ticks}</svg>`;
   return{lessons:out.slice(0,3),svg};
@@ -2899,7 +2916,7 @@ function finish(){
   const verdict=st===3?'Flawless. The hub never noticed it was under pressure.':st===2?'Good shift. The waves came through and the hub kept its promises.':st===1?'The hub survived, but passengers will remember this one.':'Safety fell below 70. A real hub would stop operations and investigate.';
   const why=[];if(S.moves<LV.target)why.push(`Movements ${S.moves} of ${LV.target}: runways sat idle or were set for the wrong wave.`);if(otp<85)why.push(`On time ${otp}% (arrivals ${otpA}%, departures ${otpD}%): ${otpA<otpD?'arrivals sat in the stack. Give arrivals more runways before the purple wave peaks, not during it.':'departures queued at the holding points. Hand runways to departures before the teal wave peaks.'}`);if(cx<90)why.push(`Connections ${cx}%: arrivals that hold in the stack miss their onward flights. Give arrivals runways before the arrival wave, not during it.`);if(S.safety<90&&S.hits.length)why.push(`Safety ${Math.round(S.safety)}: ${S.hits.slice(0,3).map(h=>h.msg).join(' ')}${S.hits.length>3?` And ${S.hits.length-3} more.`:''}`);
   const next=LEVELS[LV.n];
-  $('#sheet').innerHTML=`<div class="band"><span>Level ${LV.n} · ${LV.name}</span><span>${clk(0)} to ${clk(LEN)}</span></div><div class="in">
+  $('#sheet').innerHTML=`<div class="band"><span>Level ${LV.n} · ${LV.name}</span><span>${clk(0)} to ${clk(Math.max(LEN,T))}</span></div><div class="in">
    <div class="bigstars">${starStr(st)}</div><h1 style="margin-top:8px">${st?'Level complete':'Level failed'}</h1><p>${verdict}</p>
    <div class="score"><div><div class="k">Movements</div><div class="v">${S.moves}/${LV.target}</div></div><div><div class="k">On time</div><div class="v">${otp}%</div><div class="sub">arrivals ${otpA}% · departures ${otpD}%</div></div><div><div class="k">Connections</div><div class="v">${cx}%</div></div><div><div class="k">Safety</div><div class="v">${Math.round(S.safety)}</div></div><div><div class="k">Your calls</div><div class="v">${S.incOk}/${S.incOk+S.incDef}</div><div class="sub">${S.incDef?`${S.incDef} left to ops`:S.incOk?'all made by you':'no calls this shift'}</div></div><div><div class="k">Runway flips</div><div class="v">${S.flips}</div></div><div><div class="k">Best on-time run</div><div class="v">${S.bestCombo||0}</div></div></div>
    <p class="src">${(k=>`Stars: one for keeping safety at 70 or above. Two for reaching the movement target with ${k.otp2}% on time and ${k.cx2}% of connections. Three for ${k.otp3}% on time, ${k.cx3}% of connections and safety 90.${LV.starsAt?(LV.n===3?' This level allows for the summit shutdown.':LV.n===4?' This level allows for the Delhi summit.':' This level allows for the opening-day surprises.'):''}`)(starLines(LV))}</p>
@@ -2946,7 +2963,7 @@ function menu(tab){
 }
 window.HUB={get T(){return T;},get S(){return S;},get LV(){return LV;},flights:()=>flights,RW,incidents:()=>incidents,setMode:(id,m)=>{const r=RW.find(x=>x.id===id||x.short===id);if(r)setMode(r,m);},startLevel,capNow,forceIncursion:()=>{const c=STO.find(o=>o.k==='fog');if(c&&c.sc)c.sc.go=true;},resolveAll:()=>{for(const I of incidents.slice()){const a=I.botPick!=null?I.acts[I.botPick]:I.acts.find(a=>!(a.dis&&a.dis()));if(a)a.fn();}},speed:s=>setSpeed(s),ops:()=>ops,cfg:CFG,
   // test hooks: run the sim forward synchronously, and point the camera
-  ff:secs=>{for(let i=0;i<secs&&!ended;i++)tick(1);puffs.length=0;hud();drawWave();},look:(x,y,z)=>{camT.s=cam.fit*z;camT.anchor=null;camT.x=x-((cam.region.L+cam.region.R)/2)/camT.s;camT.y=y-((cam.region.Tp+cam.region.B)/2)/camT.s;clampCam(camT);Object.assign(cam,{x:camT.x,y:camT.y,s:camT.s});},spawn:(t,x)=>spawnInc(t,x),opsSpawn:(k,x)=>opsSpawn(k,x),pause:()=>{paused=true;},
+  ff:secs=>{for(let i=0;i<secs&&!ended;i++){tick(1);if(CINE&&CINE.o.until==null){const ms=1000/BASE/Math.max(0.25,speed);CINE.t0-=ms;if(CINE.landAt)CINE.landAt-=ms;}}puffs.length=0;hud();drawWave();},look:(x,y,z)=>{camT.s=cam.fit*z;camT.anchor=null;camT.x=x-((cam.region.L+cam.region.R)/2)/camT.s;camT.y=y-((cam.region.Tp+cam.region.B)/2)/camT.s;clampCam(camT);Object.assign(cam,{x:camT.x,y:camT.y,s:camT.s});},spawn:(t,x)=>spawnInc(t,x),opsSpawn:(k,x)=>opsSpawn(k,x),pause:()=>{paused=true;},
   view:v=>setView(v),ready3d:()=>new Promise(r=>{if(V3.ready||V3.failed)r(V3.ready);else{V3.waiters.push(r);init3D();}}),
   cam3d:o=>{if(o.mode&&o.mode!=='map'){setCam(o.mode,o.fid?flights.find(f=>f.id===o.fid):null);return;}setCam('map');Object.assign(C3.t,o);Object.assign(C3,C3.t);},
   stats3d:()=>V3.ready?{cpuMs:+(V3.cpu||0).toFixed(2),fps:V3.fps,calls:Z.renderer.info.render.calls,tris:Z.renderer.info.render.triangles,geoms:Z.renderer.info.memory.geometries,tex:Z.renderer.info.memory.textures,mods:Object.keys(Z.mods),mode:V3.mode}:null,Z:()=>Z};
@@ -6240,238 +6257,97 @@ vec3 fxCol(vec3 P,float reg,float t){
   KS.add('kites');
 
   // =====================================================================================================
-  // THE INAUGURATION RIBBON: wide red satin with gold edging on tall gold posts, three big glossy bows. On cutAt a pair of giant
-  // ceremonial scissors drops in and snips it, the halves fall like cloth, and marigold petals and confetti spray up and drift.
-  // One dynamic mesh (strip + bows + posts + scissors, per-vertex satin/gold/steel) and one instanced petal mesh: two draws.
+  // THE INAUGURATION RIBBON: red satin across the runway on two gold posts, big bows; snaps, halves flutter down, petals burst
   // =====================================================================================================
   const RB = (() => {
-    const NS = 56, ROWV = [0, 0.07, 0.075, 0.925, 0.93, 1], ROWM = [1, 1, 0, 0, 1, 1], NR = ROWV.length;
-    const tp = [], tn = [], tm = [], tw = [], ti = [];   // template: position, normal, material, flutter weight; index
-    const M4 = new THREE.Matrix4(), M3 = new THREE.Matrix3(), V = new THREE.Vector3();
-    const addGeo = (geo, m, mat, fw) => {   // a THREE geometry, transformed by m, appended to the template
-      const g = geo.index ? geo : geo, p = g.attributes.position, n = g.attributes.normal, b = tp.length / 3; M3.getNormalMatrix(m);
-      for (let i = 0; i < p.count; i++) { V.fromBufferAttribute(p, i).applyMatrix4(m); tp.push(V.x, V.y, V.z); V.fromBufferAttribute(n, i).applyMatrix3(M3).normalize(); tn.push(V.x, V.y, V.z); tm.push(mat); tw.push(fw || 0); }
-      if (g.index) for (let i = 0; i < g.index.count; i++) ti.push(b + g.index.getX(i)); else for (let i = 0; i < p.count; i++) ti.push(b + i);
+    const NS = 40, nStrip = 2 * (NS + 1) * 2;
+    // bow template (local, unit size): two flat loops, a knot and two tails; band width along x
+    const bp = [], bn = [], bi = [];
+    const band = (pts, wid) => {   // pts: [[y,z,ny,nz],...] a ribbon band, width along x
+      const b0 = bp.length / 3;
+      for (const q of pts) { bp.push(-wid, q[0], q[1], wid, q[0], q[1]); bn.push(0, q[2], q[3], 0, q[2], q[3]); }
+      for (let i = 0; i < pts.length - 1; i++) { const a = b0 + i * 2; bi.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
     };
-    // a band: centre points C[i], width directions W[i], widths w[i], bulge along B[i]; three columns (edge, crown, edge)
-    const addBand = (C, W, w, Bv, bulge, mat, fw) => {
-      const g = new THREE.BufferGeometry(), P = [], I = [], m = C.length;
-      for (let i = 0; i < m; i++) for (let j = 0; j < 3; j++) { const s = (j - 1) * 0.5 * w[i], k = j === 1 ? bulge : 0; P.push(C[i][0] + W[i][0] * s + Bv[i][0] * k, C[i][1] + W[i][1] * s + Bv[i][1] * k, C[i][2] + W[i][2] * s + Bv[i][2] * k); }
-      for (let i = 0; i < m - 1; i++) for (let j = 0; j < 2; j++) { const a = i * 3 + j; I.push(a, a + 1, a + 3, a + 1, a + 4, a + 3); }
-      g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setIndex(I); g.computeVertexNormals();
-      const b = tp.length / 3; addGeo(g, M4.identity(), mat, 0); if (fw) for (let i = 0; i < m * 3; i++) tw[b + i] = fw(Math.floor(i / 3) / (m - 1), i % 3);
-    };
-    const T0 = () => tp.length / 3, I0 = () => ti.length;
-    // ---- the bow (unit: about 1 across, facing +x; loops along +-z, tails down) ----
-    const bowV0 = T0(), bowI0 = I0();
-    for (const s of [-1, 1]) {
-      const D = [0, 0.3, s], dl = Math.hypot(0.3, 1); D[1] /= dl; D[2] /= dl;
-      const Wd = [0, D[2] * s, -D[1] * s], C = [], W = [], w = [], Bv = [], NL = 30, L = 0.5, puff = 0.17;
-      for (let i = 0; i <= NL; i++) {
-        const th = i / NL * Math.PI * 2, out = L * (1 - Math.cos(th)) / 2, xb = puff * Math.sin(th) * (0.55 + 0.45 * (1 - Math.cos(th)) / 2);
-        const sag = -0.05 * Math.sin(th / 2) * Math.sin(th / 2);
-        C.push([xb, D[1] * out + sag, D[2] * out]); W.push(Wd); w.push(0.1 + 0.3 * Math.pow(Math.sin(th / 2), 0.8));
-        const rx = Math.sin(th), ro = -Math.cos(th); const bl = Math.hypot(rx, ro) || 1; Bv.push([rx / bl, D[1] * ro / bl, D[2] * ro / bl]);
-      }
-      addBand(C, W, w, Bv, 0.035, 0, null);
-      // tail with a swallow-tail (V) cut
-      const Ct = [], Wt = [], wt = [], Bt = [], NT = 10;
-      for (let i = 0; i <= NT; i++) { const t = i / NT; Ct.push([0.02 + 0.03 * Math.sin(t * 4), -0.06 - 0.62 * t, s * (0.05 + 0.2 * t)]); const tz = 0.2, ty = -0.62, tl = Math.hypot(tz, ty); Wt.push([0, s * tz / tl, -ty / tl * 1]); wt.push(0.26 - 0.03 * t); Bt.push([1, 0, 0]); }
-      addBand(Ct, Wt, wt, Bt, 0.012, 0, (t, j) => t * t * (j === 1 ? 0.8 : 1));
-      // pull the crown of the last tail row up to make the V notch
-      const last = tp.length - 3 * 3 + 3; tp[last + 1] += 0.09;
-    }
-    { const sp = new THREE.SphereGeometry(1, 14, 10); addGeo(sp, M4.compose(V.set(0.03, 0, 0), new THREE.Quaternion(), new THREE.Vector3(0.09, 0.12, 0.11)), 0); }
-    const bowV1 = T0(), bowI1 = I0();
-    // ---- the gold post (unit height 1) ----
-    { const cyl = (r0, r1, h, y, seg) => { const g = new THREE.CylinderGeometry(r0, r1, h, seg || 20); addGeo(g, M4.makeTranslation(0, y + h / 2, 0), 1); };
-      cyl(0.026, 0.03, 0.92, 0.06); cyl(0.13, 0.15, 0.035, 0); cyl(0.085, 0.11, 0.04, 0.035); cyl(0.045, 0.06, 0.05, 0.075);
-      const tor = new THREE.TorusGeometry(0.04, 0.012, 8, 20); tor.rotateX(Math.PI / 2); addGeo(tor, M4.makeTranslation(0, 0.86, 0), 1); addGeo(tor, M4.makeTranslation(0, 0.97, 0), 1);
-      const sp = new THREE.SphereGeometry(0.065, 18, 12); addGeo(sp, M4.makeTranslation(0, 1.04, 0), 1);
-      const cn = new THREE.ConeGeometry(0.03, 0.09, 14); addGeo(cn, M4.makeTranslation(0, 1.13, 0), 1); }
-    const postV1 = T0(), postI1 = I0();
-    // ---- one half of the ceremonial scissors (unit: about 1 long, pivot at the origin, blade plane xy; the other half is mirrored) ----
-    { const bl = new THREE.BoxGeometry(1, 1, 1, 1, 8, 1), p = bl.attributes.position;
-      for (let i = 0; i < p.count; i++) { const y = p.getY(i) + 0.5, t = y, wdt = 0.085 * (1 - 0.9 * Math.pow(t, 1.3)); p.setXYZ(i, (p.getX(i) + 0.5) * wdt, -0.66 * t, p.getZ(i) * (p.getX(i) > 0 ? 0.012 : 0.032) + 0.016); }
-      bl.computeVertexNormals(); addGeo(bl.toNonIndexed(), M4.identity(), 2);
-      const sh = new THREE.CylinderGeometry(0.018, 0.024, 1, 10); const a = Math.atan2(0.1, 0.26); addGeo(sh, M4.compose(V.set(-0.05, 0.14, 0.012), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), a), new THREE.Vector3(1, 0.28, 1)), 1);
-      const tor = new THREE.TorusGeometry(0.085, 0.02, 10, 24); addGeo(tor, M4.compose(V.set(-0.12, 0.36, 0.012), new THREE.Quaternion(), new THREE.Vector3(1, 1.25, 1)), 1);
-      const pv = new THREE.CylinderGeometry(0.03, 0.03, 0.05, 16); pv.rotateX(Math.PI / 2); addGeo(pv, M4.makeTranslation(0, 0, 0.02), 1);
-      const sc = new THREE.CylinderGeometry(0.018, 0.018, 0.012, 14); sc.rotateX(Math.PI / 2); addGeo(sc, M4.makeTranslation(0, 0, 0.05), 3); }
-    const sciV1 = T0(), sciI1 = I0();
-    const nBow = bowV1 - bowV0, nPost = postV1 - bowV1, nSci = sciV1 - postV1;
-    const nStrip = 2 * (NS + 1) * NR, NV = nStrip + 3 * nBow + 2 * nPost + 2 * nSci;
-    const pos = new Float32Array(NV * 3), nor = new Float32Array(NV * 3), mat = new Float32Array(NV), idx = [];
-    for (let h = 0; h < 2; h++) { const b0 = h * (NS + 1) * NR;
-      for (let c = 0; c <= NS; c++) for (let r = 0; r < NR; r++) mat[b0 + c * NR + r] = ROWM[r];
-      for (let c = 0; c < NS; c++) for (let r = 0; r < NR - 1; r++) { const a = b0 + c * NR + r; idx.push(a, a + 1, a + NR, a + 1, a + NR + 1, a + NR); } }
-    const parts = [];   // [vertex start in the buffer, template v0, count, index start in the template, index count]
-    let v = nStrip;
-    const place = (tv0, tv1, ti0, ti1) => { const at = v; for (let i = 0; i < tv1 - tv0; i++) mat[at + i] = tm[tv0 + i]; for (let i = ti0; i < ti1; i++) idx.push(ti[i] - tv0 + at); parts.push([at, tv0, tv1 - tv0]); v += tv1 - tv0; return parts.length - 1; };
-    const bows = [place(bowV0, bowV1, bowI0, bowI1), place(bowV0, bowV1, bowI0, bowI1), place(bowV0, bowV1, bowI0, bowI1)];
-    const posts = [place(bowV1, postV1, bowI1, postI1), place(bowV1, postV1, bowI1, postI1)];
-    const scis = [place(postV1, sciV1, postI1, sciI1), place(postV1, sciV1, postI1, sciI1)];
-    const TP = new Float32Array(tp), TN = new Float32Array(tn), TW = new Float32Array(tw);
+    for (const sz of [-1, 1]) { const L = []; for (let i = 0; i <= 16; i++) { const t = i / 16 * Math.PI * 2, y = Math.sin(t) * 0.17, z = sz * (0.2 + Math.cos(t + Math.PI) * 0.2); L.push([y, z, Math.sin(t), -sz * Math.cos(t)]); } band(L, 0.09); }
+    band([[0.07, -0.05, 0, -1], [-0.07, -0.05, 0, -1]], 0.1); band([[0.07, 0.05, 0, 1], [-0.07, 0.05, 0, 1]], 0.1);
+    for (const sz of [-1, 1]) band([[0, 0, 0, sz], [-0.2, sz * 0.08, 0, sz], [-0.42, sz * 0.12, 0, sz], [-0.6, sz * 0.2, 0, sz]], 0.07);
+    const box = new THREE.BoxGeometry(1, 1, 1); const xp = box.attributes.position.array, xn = box.attributes.normal.array, xi = box.index.array;
+    const nBow = bp.length / 3, nBox = xp.length / 3, NV = nStrip + 3 * nBow + 2 * nBox + 2 * nBox;
+    const pos = new Float32Array(NV * 3), nor = new Float32Array(NV * 3), col = new Float32Array(NV * 3), idx = [];
+    const RED = new THREE.Color('#c8102e'), GOLD = new THREE.Color('#d4a017'), RED2 = new THREE.Color('#9e0b22');
+    let v = 0;
+    // strip: half h (0 west.., 1), columns 0..NS, rows top/bottom
+    for (let h = 0; h < 2; h++) { for (let c = 0; c <= NS; c++) for (let r = 0; r < 2; r++) { nor[v * 3] = 1; const k = r ? RED2 : RED; col[v * 3] = k.r; col[v * 3 + 1] = k.g; col[v * 3 + 2] = k.b; v++; }
+      const b0 = h * (NS + 1) * 2; for (let c = 0; c < NS; c++) { const a = b0 + c * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } }
+    v = nStrip;   // the strip uses 2 halves x (NS+1) columns x 2 rows
+    const bowAt = [], boxAt = [];
+    for (let b = 0; b < 3; b++) { bowAt.push(v); for (let i = 0; i < nBow; i++) { nor.set(bn.slice(i * 3, i * 3 + 3), (v + i) * 3); col[(v + i) * 3] = RED.r; col[(v + i) * 3 + 1] = RED.g; col[(v + i) * 3 + 2] = RED.b; } for (const i of bi) idx.push(v + i); v += nBow; }
+    for (let b = 0; b < 4; b++) { boxAt.push(v); const k = b < 2 ? GOLD : new THREE.Color('#f2f0ea'); for (let i = 0; i < nBox; i++) { nor.set(xn.slice(i * 3, i * 3 + 3), (v + i) * 3); col[(v + i) * 3] = k.r; col[(v + i) * 3 + 1] = k.g; col[(v + i) * 3 + 2] = k.b; } for (const i of xi) idx.push(v + i); v += nBox; }
     const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage)); g.setAttribute('normal', new THREE.BufferAttribute(nor, 3).setUsage(THREE.DynamicDrawUsage));
-    g.setAttribute('aMat', new THREE.BufferAttribute(mat, 1)); g.setIndex(idx);
-    const sciCount = idx.length, sciStart = idx.length - (sciI1 - postI1) * 2;   // the scissors are the last indices: drop them from the draw range when idle
-    // materials: 0 satin, 1 gold, 2 blade steel, 3 dark pivot screw. Exit fades are a screen-door dither (uFade), never a shrink.
-    const U = { uFade: { value: 1 } };
-    const M = new THREE.MeshPhysicalMaterial({ color: 0xffffff, side: THREE.DoubleSide, roughness: 0.3, metalness: 0, envMapIntensity: 0.6,
-      sheen: 1, sheenRoughness: 0.32, sheenColor: new THREE.Color(0.45, 0.02, 0.05), clearcoat: 0.05, clearcoatRoughness: 0.2 });
-    M.onBeforeCompile = sh => {
-      sh.uniforms.uFade = U.uFade;
-      sh.vertexShader = 'attribute float aMat;varying float vMat;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvMat=aMat;');
-      sh.fragmentShader = 'uniform float uFade;varying float vMat;\n' + sh.fragmentShader.replace('#include <common>', '#include <common>\n' + GLSL_NOISE)
-        .replace('vec4 diffuseColor = vec4( diffuse, opacity );', 'if(fx2h(floor(gl_FragCoord.xy))>uFade)discard;float fxM=floor(vMat+0.5);vec4 diffuseColor=vec4(fxM<0.5?vec3(0.62,0.012,0.03):fxM<1.5?vec3(1.0,0.7,0.26):fxM<2.5?vec3(0.5,0.52,0.56):vec3(0.035,0.035,0.04),opacity);')
-        .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor=fxM<0.5?0.28:fxM<1.5?0.2:fxM<2.5?0.2:0.35;')
-        .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor=fxM<0.5?0.0:1.0;')
-        .replace('#include <lights_physical_fragment>', '#include <lights_physical_fragment>\n#ifdef USE_SHEEN\nmaterial.sheenColor*=fxM<0.5?1.:0.;\n#endif\n#ifdef USE_CLEARCOAT\nmaterial.clearcoat*=fxM<0.5?1.:0.;\n#endif');
-    };
-    const mesh = new THREE.Mesh(g, M); mesh.frustumCulled = false; mesh.visible = false; root.add(mesh);
-    // marigold petals and confetti: a gently cupped petal; confetti are the same shape, squarer, instanced and coloured
-    const PN = 1100, pg = new THREE.BufferGeometry(), PP = [];
-    for (let i = 0; i <= 2; i++) for (let j = 0; j <= 2; j++) { const x = i / 2 - 0.5, y = (j / 2 - 0.5) * (i === 1 ? 0.62 : 0.42); PP.push(x, y, 0.16 * (y * y * 6 + x * x)); }
-    pg.setAttribute('position', new THREE.Float32BufferAttribute(PP, 3)); pg.setIndex([0, 3, 1, 1, 3, 4, 1, 4, 2, 2, 4, 5, 3, 6, 4, 4, 6, 7, 4, 7, 5, 5, 7, 8]); pg.computeVertexNormals();
-    const PU = { uFade: { value: 1 } };
-    const pm = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.05 });
-    pm.onBeforeCompile = sh => { sh.uniforms.uFade = PU.uFade;
-      sh.fragmentShader = 'uniform float uFade;\n' + sh.fragmentShader.replace('#include <common>', '#include <common>\n' + GLSL_NOISE)
-        .replace('vec4 diffuseColor = vec4( diffuse, opacity );', 'if(fx2h(floor(gl_FragCoord.xy)+0.37)>uFade)discard;vec4 diffuseColor = vec4( diffuse, opacity );')
-        .replace('vec3 totalEmissiveRadiance = emissive;', 'vec3 totalEmissiveRadiance = vColor*0.32;'); };
-    const petals = new THREE.InstancedMesh(pg, pm, PN);
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage)); g.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    g.setIndex(idx); g.setDrawRange(0, idx.length);
+    const mesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.32, metalness: 0.15, envMapIntensity: 1.2 }));
+    mesh.frustumCulled = false; mesh.visible = false; root.add(mesh);
+    // marigold petals
+    const PN = 360, pg = new THREE.BufferGeometry();
+    pg.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0.5, 0.15, 0.05, 1, 0, 0, 0.5, -0.15, 0.05], 3)); pg.setIndex([0, 1, 2, 0, 2, 3]); pg.computeVertexNormals();
+    const petals = new THREE.InstancedMesh(pg, new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide, roughness: 0.6, emissive: 0x401000 }), PN);
     petals.frustumCulled = false; petals.count = 0; petals.instanceMatrix.setUsage(THREE.DynamicDrawUsage); root.add(petals);
-    const PC = ['#ff8c00', '#ffa000', '#ffb300', '#ff7b00', '#ffc400', '#f57c00', '#ffd000', '#ff9500', '#ffe14d', '#ff6a00'];
-    const pr = new Float32Array(PN * 8); { const Rr = mulberry(7); for (let i = 0; i < PN; i++) { for (let j = 0; j < 8; j++) pr[i * 8 + j] = Rr(); petals.setColorAt(i, _c.set(PC[i % PC.length]).multiplyScalar(1.15)); } }
-    return { mesh, g, pos, nor, NS, NR, ROWV, nStrip, parts, bows, posts, scis, TP, TN, TW, sciStart, sciCount, petals, pr, PN, U, PU };
+    const PC = ['#ff8c00', '#ffa500', '#ffb000', '#ff7a00', '#ffc400', '#e85d04', '#d00000'];
+    const pr = new Float32Array(PN * 6); { const Rr = mulberry(7); for (let i = 0; i < PN; i++) { for (let j = 0; j < 6; j++) pr[i * 6 + j] = Rr(); petals.setColorAt(i, _c.set(PC[i % PC.length])); } }
+    return { mesh, pos, NS, bp, nBow, bowAt, boxAt, xp, nBox, petals, pr, PN };
   })();
-  const _n3 = new THREE.Matrix3(), _rq = new THREE.Quaternion(), _ra = new THREE.Vector3();
-  // write a template part into the dynamic buffer through the matrix _m (with an optional flutter offset along x)
-  function rbPart(pi, flut, now) {
-    const [at, t0, n] = RB.parts[pi], P = RB.pos, N = RB.nor, TP = RB.TP, TN = RB.TN, TW = RB.TW, e = _m.elements; _n3.getNormalMatrix(_m);
-    const ne = _n3.elements;
-    for (let i = 0; i < n; i++) {
-      const s = (t0 + i) * 3, d = (at + i) * 3, f = flut ? TW[t0 + i] * flut * Math.sin(now * 5.3 + TP[s + 1] * 9 + pi) : 0;
-      const x = TP[s] + f, y = TP[s + 1], z = TP[s + 2] + f * 0.4;
-      P[d] = e[0] * x + e[4] * y + e[8] * z + e[12]; P[d + 1] = e[1] * x + e[5] * y + e[9] * z + e[13]; P[d + 2] = e[2] * x + e[6] * y + e[10] * z + e[14];
-      const nx = TN[s], ny = TN[s + 1], nz = TN[s + 2];
-      let a = ne[0] * nx + ne[3] * ny + ne[6] * nz, b = ne[1] * nx + ne[4] * ny + ne[7] * nz, c = ne[2] * nx + ne[5] * ny + ne[8] * nz; const l = Math.hypot(a, b, c) || 1;
-      N[d] = a / l; N[d + 1] = b / l; N[d + 2] = c / l;
-    }
-  }
-  // The cut animates in real time: tau is "animation seconds" (10 per real second, the cinematic's 0.5x), counted from the first
-  // frame cutAt is seen, and forced ahead of sim time so it always finishes before the exit fade at t1.
-  const RB_SNIP = 11;   // animation seconds after the cut when the blades meet (1.1 s real)
   function ribbonUpdate(list, dt, now) {
     const it = list[0]; if (!it) { RB.mesh.visible = false; RB.petals.count = 0; RB.petals.visible = false; return; }
-    // snap onto its runway, ahead of the line-up point (the story spawns it on the hold, past the runway end); cached per item
-    const st = stOf(it, () => ({ x: it.x, y: it.y, ix: NaN, iy: NaN, cutT: null, cutNow: 0 }));
-    if (st.ix !== it.x || st.iy !== it.y) {
-      st.ix = it.x; st.iy = it.y; st.x = it.x; st.y = it.y; const RWs = Z.RW || [];
-      for (let i = 0; i < RWs.length; i++) { const r = RWs[i]; if (Math.abs(r.y - it.y) >= r.width) continue;
-        const a = Math.min(r.x0, r.x1), b = Math.max(r.x0, r.x1);
-        if (it.x < a + 150 || it.x > b - 150) st.x = Math.abs(it.x - a) < Math.abs(it.x - b) ? a + 220 : b - 220;
-        st.y = r.y; break; }
-    }
-    if (it.cutAt == null) st.cutT = null; else if (st.cutT !== it.cutAt) { st.cutT = it.cutAt; st.cutNow = now; }
-    // scale by the camera's distance to the ribbon itself (the follow-cam cinematic frames the aircraft, a few hundred metres off)
-    const cp = Z.camera.position, cd = Math.max(Z.camDist * 0.5, Math.hypot(cp.x - st.x, cp.y, cp.z - st.y));
-    const T = Z.T, k = clamp(cd / 110, 1, 30), w0 = it.w || 75, P = RB.pos, NS = RB.NS, NR = RB.NR;
-    const fade = smooth(it.t0, it.t0 + 4, T) * (1 - smooth(it.t1 - 25, it.t1 - 2, T));
-    const tau = st.cutT != null ? Math.max(10 * (now - st.cutNow), 2 * (T - st.cutT) - 100) : -1, cut = tau >= RB_SNIP, tf = cut ? (tau - RB_SNIP) / 10 : 0;   // tf: real seconds of fall
-    // strategic: a longer, proportionally slimmer band, turned about its span axis to face the camera
-    const kS = 1 + 1.6 * smooth(2500, 9000, cd), sW = smooth(2500, 9000, cd), sF = smooth(1500, 5000, cd), w = w0 * mix(1, 3, sW);
-    const PH = 2.9 * k * kS, RH = Math.min(0.6 * k * kS * kS, w * 0.4), yc = PH * 0.74 - RH * 0.5, sag = Math.min(w * 0.03, 0.3 * PH);
-    const ox = st.x, oz = st.y, wind = Z.atmo && Z.atmo.wind ? Z.atmo.wind.speed || 4 : 4, gy = 0.025 * k;
-    let thF = Math.atan2(-(cp.y - yc), cp.x - ox); if (thF > Math.PI / 2) thF -= Math.PI; else if (thF < -Math.PI / 2) thF += Math.PI;
-    const thB = sF * thF, cB = Math.cos(thB), sB = Math.sin(thB);
-    // ---- the satin strip: two halves from each post to the centre ----
+    const T = Z.T, kr = clamp(Z.camDist / 110, 1, 60), w = it.w || 75, P = RB.pos, NS = RB.NS;
+    const fade = smooth(it.t0, it.t0 + 4, T) * (1 - smooth(it.t1 - 25, it.t1 - 2, T)), cut = it.cutAt != null && T >= it.cutAt, tau = cut ? T - it.cutAt : 0;
+    const hp = 1.25 * Math.max(1, kr * 0.7), rw = 0.32 * kr * Math.max(0.05, fade), sag = Math.min(w * 0.04, 0.6 * hp);
+    const ox = it.x, oz = it.y, wind = Z.atmo && Z.atmo.wind ? Z.atmo.wind.speed || 4 : 4;
     let v = 0;
     for (let h = 0; h < 2; h++) {
-      const sgn = h ? 1 : -1;
+      const sgn = h ? 1 : -1;   // post at z = sgn*w, free end toward the centre
       for (let c = 0; c <= NS; c++) {
-        const u = c / NS, s = u * w;
-        // intact: a shallow catenary and two or three travelling twists a half, so a sheen highlight runs along the satin
-        const yI = yc - sag * (1 - (1 - u) * (1 - u));
-        const thI = mix(0.5 * Math.sin(now * 1.3 - u * 15.7 + h * 1.7) * Math.min(1, u * (1 - u) * 8) + 0.06 * Math.sin(now * 2.1 + u * 15), thF, sF);
-        let x = ox + Math.sin(now * (1.6 + wind * 0.15) + u * 6 + h * 2) * 0.05 * k * u * (1 - sF), y = yI, z = oz + sgn * w * (1 - u), th = thI;
-        if (cut) {   // falls free-end first, flutters, and lies on the runway in a lazy S with a loose loop near the cut, hanging from the post
-          const f = clamp((tf - (1 - u) * 0.35) / (0.9 + 0.5 * (1 - u)), 0, 1), fe = f * f * (3 - 2 * f), mid = Math.sin(f * Math.PI);
-          const Lh = yc, sl = Math.max(0, s - Lh), lie = sl * 0.82, lp = clamp((u - 0.8) / 0.12, 0, 1) * Math.PI * 2, LR = 0.9 * k * (1 - sW);
-          const yF = s < Lh ? yc - s : gy + 0.03 * k * (1 + Math.sin(sl * 0.7 / k + h)) + LR * (1 - Math.cos(lp));
-          const zF = s < Lh ? oz + sgn * w : oz + sgn * (w - lie + LR * Math.sin(lp));
-          const xF = ox + (s < Lh ? 0 : Math.sin(sl * 0.5 / k + h * 2.1) * 1.6 * k * smooth(0, 4 * k, sl));
-          x = mix(x, xF, fe) + mid * Math.sin(now * 6.5 + u * 11 + h) * 1.4 * k * u;
-          y = mix(yI, yF, fe) + mid * Math.sin(now * 8 + u * 14) * 0.5 * k;
-          z = mix(z, zF, fe); th = mix(thI, Math.PI * 0.5 + (s < Lh ? 0 : 0.5 * Math.sin(sl * 0.9 / k + h)), fe) + mid * 1.6 * Math.sin(now * 5 + u * 9 + h * 3);
-        }
-        const sx = Math.sin(th), sy = Math.cos(th);
-        for (let r = 0; r < NR; r++) {
-          const q = (RB.ROWV[r] - 0.5) * RH, cup = (RB.ROWV[r] - 0.5) * (RB.ROWV[r] - 0.5) * 0.25 * RH;
-          P[v * 3] = x + sx * q + sy * cup; P[v * 3 + 1] = y + sy * q - sx * cup; P[v * 3 + 2] = z; v++;
-        }
+        const u = c / NS;                       // 0 at the post .. 1 at the centre
+        const zz = sgn * w * (1 - u), sg = sag * (1 - Math.pow(1 - u, 2));
+        let fu = 0; if (cut) fu = smooth(0, 1, (tau - (1 - u) * 3) / 9);
+        const rec = cut ? 0.14 * u * smooth(0, 4, tau) : 0;
+        const z = oz + zz * (1 - rec);
+        const fl = Math.sin(now * (2.5 + wind * 0.25) + u * 9 + h * 2) * (0.04 + 0.03 * u) * kr * (1 - 0.7 * fu);
+        const curl = cut ? Math.sin(u * 13 + h) * 0.9 * kr * fu * u : 0;
+        const yB = mix(hp - sg - rw, 0.08 * kr, fu), phi = fu * Math.PI * 0.5;
+        const xb = ox + fl + curl;
+        P[v * 3] = xb + Math.sin(phi) * rw; P[v * 3 + 1] = yB + Math.cos(phi) * rw; P[v * 3 + 2] = z; v++;
+        P[v * 3] = xb; P[v * 3 + 1] = yB; P[v * 3 + 2] = z; v++;
       }
     }
-    // strip normals from the grid (no allocations)
-    const N = RB.nor;
-    for (let h = 0; h < 2; h++) { const b0 = h * (NS + 1) * NR;
-      for (let c = 0; c <= NS; c++) for (let r = 0; r < NR; r++) {
-        const i = b0 + c * NR + r, a = b0 + Math.max(0, c - 1) * NR + r, b = b0 + Math.min(NS, c + 1) * NR + r, d = b0 + c * NR + Math.max(0, r - 1), e2 = b0 + c * NR + Math.min(NR - 1, r + 1);
-        const tx = P[b * 3] - P[a * 3], ty = P[b * 3 + 1] - P[a * 3 + 1], tz = P[b * 3 + 2] - P[a * 3 + 2], bx = P[e2 * 3] - P[d * 3], by = P[e2 * 3 + 1] - P[d * 3 + 1], bz = P[e2 * 3 + 2] - P[d * 3 + 2];
-        let nx = by * tz - bz * ty, ny = bz * tx - bx * tz, nz = bx * ty - by * tx; const l = Math.hypot(nx, ny, nz) || 1; N[i * 3] = nx / l; N[i * 3 + 1] = ny / l; N[i * 3 + 2] = nz / l;
-      } }
-    // ---- the posts and their bows (the bows turn with the band) ----
-    const BS = 1.55 * k * kS;
-    _rq.setFromAxisAngle(_ra.set(0, 0, 1), -thB);
-    for (let b = 0; b < 2; b++) {
-      const pz = oz + (b ? w : -w);
-      _q.identity(); _v.set(ox, 0, pz); _s.set(PH, PH, PH); _m.compose(_v, _q, _s); rbPart(RB.posts[b], 0, now);
-      _e.set(0.06 * Math.sin(now * 1.1 + b), b ? 0.12 : -0.12, 0); _q.setFromEuler(_e); _q.premultiply(_rq);
-      _v.set(ox + cB * 0.04 * PH, yc + RH * 0.1 * (1 - sF) - sB * 0.04 * PH, pz); _s.setScalar(BS); _m.compose(_v, _q, _s); rbPart(RB.bows[b], 0.05 + 0.05 * (wind / 8), now);
+    // bows: two at the posts, one in the middle (falls with the cut)
+    const bs = 3.2 * kr * Math.max(0.05, fade);
+    for (let b = 0; b < 3; b++) {
+      const at = RB.bowAt[b], bz = b === 2 ? 0 : (b ? w : -w), cy = b === 2 ? mix(hp - sag, 0.25 * bs, smooth(0, 8, tau)) : hp - rw * 0.5;
+      const sq = b === 2 && cut ? Math.max(0.05, 1 - smooth(40, 120, tau)) : 1;
+      for (let i = 0; i < RB.nBow; i++) { P[(at + i) * 3] = ox + RB.bp[i * 3] * bs * sq; P[(at + i) * 3 + 1] = cy + RB.bp[i * 3 + 1] * bs * sq; P[(at + i) * 3 + 2] = oz + bz + RB.bp[i * 3 + 2] * bs * sq; }
     }
-    // the centre bow: rides the ribbon, then drops and tumbles onto the runway
-    { const f = cut ? clamp(tf / 0.8, 0, 1) : 0, fe = f * f;
-      _e.set(fe * 1.45 + 0.05 * Math.sin(now * 1.4), 0.15 * Math.sin(now * 0.7) * (1 - f), Math.sin(f * Math.PI) * 0.8, 'XYZ'); _q.setFromEuler(_e);
-      if (!cut) _q.premultiply(_rq);
-      _v.set(ox + fe * 0.4 * BS + (1 - fe) * cB * 0.03 * PH, mix(yc - sag + RH * 0.1 * (1 - sF) - sB * 0.03 * PH, gy + 0.12 * BS, fe), oz); _s.setScalar(BS * 1.15); _m.compose(_v, _q, _s); rbPart(RB.bows[2], 0.06, now); }
-    // ---- the scissors: drop in, open, snip, lift away ----
-    const sci = tau >= 0 && tau < 32;
-    if (sci) {
-      const ca = Math.atan2(cp.z - oz, cp.x - ox), SL = 4.6 * k, pop = smooth(0, 4, tau), out = smooth(18, 30, tau), sc = SL * (pop * (1 + 0.12 * Math.sin(clamp(tau / 4, 0, 1) * Math.PI)) * (1 - out) + 0.001);
-      const open = tau < 8 ? 0.62 * smooth(1, 6, tau) : tau < RB_SNIP ? 0.62 * (1 - smooth(8, RB_SNIP, tau)) : 0.3 * smooth(RB_SNIP + 2, RB_SNIP + 9, tau);
-      const lift = (1 - pop) * 6 * k + smooth(RB_SNIP + 1, RB_SNIP + 8, tau) * 1.1 * SL;
-      const ycut = yc - sag;
-      _e.set(-0.2, Math.PI * 0.5 - ca - 0.75 + 0.1 * Math.sin(now * 0.8), 0.05 * Math.sin(now * 1.3), 'YXZ'); _rq.setFromEuler(_e);
-      const fx = Math.cos(ca) * 0.8 * BS, fz = Math.sin(ca) * 0.8 * BS;
-      for (let hh = 0; hh < 2; hh++) {
-        _q.setFromAxisAngle(_ra.set(0, 0, 1), hh ? -open : open); _q.premultiply(_rq);
-        _v.set(ox + fx, ycut + RH * 0.5 + 0.1 * SL + lift, oz + fz); _s.set(hh ? -sc : sc, sc, hh ? -sc : sc); _m.compose(_v, _q, _s); rbPart(RB.scis[hh], 0, now);
-      }
+    // gold posts and their white bases
+    for (let b = 0; b < 4; b++) {
+      const at = RB.boxAt[b], bz = (b & 1) ? w : -w, base = b >= 2, sx = (base ? 0.5 : 0.12) * Math.max(1, kr * 0.7) * Math.max(0.05, fade), sy = base ? 0.12 * Math.max(1, kr * 0.7) : hp * 1.05;
+      for (let i = 0; i < RB.nBox; i++) { P[(at + i) * 3] = ox + RB.xp[i * 3] * sx; P[(at + i) * 3 + 1] = (RB.xp[i * 3 + 1] + 0.5) * sy; P[(at + i) * 3 + 2] = oz + bz + RB.xp[i * 3 + 2] * sx; }
     }
-    RB.g.setDrawRange(0, sci ? RB.sciCount : RB.sciStart);
-    RB.g.attributes.position.needsUpdate = true; RB.g.attributes.normal.needsUpdate = true; RB.mesh.visible = fade > 0.01; RB.U.uFade.value = fade;
-    // ---- the petal and confetti burst: a ballistic fountain peaking ~0.5 s after the snip, then a fluttering, drifting plume ----
+    RB.mesh.geometry.attributes.position.needsUpdate = true; RB.mesh.visible = fade > 0.01;
+    // the petal burst
     let n = 0;
-    if (cut && fade > 0.01) {
-      const pr = RB.pr, kp = k, ps = clamp(cd * 0.0034, 0.07, 36), wd = Z.atmo && Z.atmo.wind;
-      const wx = wd ? Math.cos(wd.dir) : 1, wz = wd ? Math.sin(wd.dir) : 0, ycut = yc - sag, G = 36 * kp, y0 = gy + 0.02 * kp;
+    if (cut && tau < 150) {
+      const pr = RB.pr, ks = kr, wx = Z.atmo && Z.atmo.wind ? Math.cos(Z.atmo.wind.dir) : 1, wz = Z.atmo && Z.atmo.wind ? Math.sin(Z.atmo.wind.dir) : 0;
       for (let i = 0; i < RB.PN; i++) {
-        const o = i * 8, r0 = pr[o], r1 = pr[o + 1], r2 = pr[o + 2], r3 = pr[o + 3], r4 = pr[o + 4], r5 = pr[o + 5], r6 = pr[o + 6], r7 = pr[o + 7];
-        const t = tf - r5 * 0.12; if (t <= 0) continue;
-        const conf = r6 > 0.68, tp = 0.38 + 0.24 * r3, vy = G * tp, vt = (conf ? 0.8 : 1.3) * (0.7 + 0.6 * r4) * kp, tc = 0.3;
-        const a = r0 * Math.PI * 2, vh = (25 + 15 * r1) * (0.25 + 0.75 * Math.sqrt(r7)) * kp, td = 0.26, ex = 1 - Math.exp(-t / td);
-        const ypk = ycut + 0.5 * G * tp * tp, tl = tp + tc + (ypk - y0) / vt, ta = Math.min(t, tl), sd = Math.max(0, ta - tp);
-        const y = Math.max(y0, t < tp ? ycut + vy * t - 0.5 * G * t * t : ypk - vt * (sd - tc * (1 - Math.exp(-sd / tc))));
-        const air = t < tl ? 1 : 0, dr = Math.max(0, ta - tp * 0.5) * (1.1 + 1.4 * r2) * kp, sw = Math.sin(now * (1.5 + r7 * 2) + i) * 0.7 * kp * smooth(0, 1, sd) * air;
-        _v.set(ox + Math.cos(a) * vh * td * ex * 1.15 + wx * dr + sw, y, oz + Math.sin(a) * vh * td * ex * 1.5 + wz * dr + Math.cos(now * (1.2 + r2) + i) * 0.5 * kp * smooth(0, 1, sd) * air);
-        if (!air) _e.set(Math.PI * 0.5, r0 * 6, 0); else _e.set(now * (2 + r1 * 4) + i, now * (1 + r2 * 3), now * (1.5 + r3 * 2) + i * 2);
-        _q.setFromEuler(_e);
-        const sc = ps * (0.7 + 0.6 * r4);
-        if (conf) _s.set(sc * 0.75, sc * 0.75, sc); else _s.set(sc, sc * 0.9, sc);
-        _m.compose(_v, _q, _s); RB.petals.setMatrixAt(n++, _m);
+        const r0 = pr[i * 6], r1 = pr[i * 6 + 1], r2 = pr[i * 6 + 2], r3 = pr[i * 6 + 3], r4 = pr[i * 6 + 4], r5 = pr[i * 6 + 5];
+        const t = Math.max(0, tau - r5 * 2); if (t <= 0) continue;
+        const a = r0 * Math.PI * 2, out = (1 - Math.exp(-t / 3)) * (4 + 10 * r1) * ks, drift = t * (0.15 + 0.25 * r2) * ks;
+        const up = (1 - Math.exp(-t / 2.5)) * (3 + 5 * r3) * ks - t * 0.035 * ks * (0.5 + r4);
+        const y = Math.max(0.05 * ks, hp + up + Math.sin(now * 2 + i) * 0.2 * ks);
+        _v.set(ox + Math.cos(a) * out * 0.6 + wx * drift + Math.sin(now * 1.3 + i) * 0.3 * ks, y, oz + Math.sin(a) * out + wz * drift);
+        _e.set(now * (2 + r1 * 3) + i, now * (1 + r2 * 2), now * (1.5 + r3) + i * 2); _q.setFromEuler(_e);
+        const sc = 0.16 * Math.max(ks, 2.5) * (0.7 + r4 * 0.6) * (1 - smooth(100, 148, tau)) * (y <= 0.051 * ks ? 0.8 : 1);
+        _s.set(sc, sc, sc); _m.compose(_v, _q, _s); RB.petals.setMatrixAt(n++, _m);
       }
-      RB.PU.uFade.value = fade * (1 - smooth(110, 150, tau));
     }
     RB.petals.count = n; RB.petals.visible = n > 0; if (n) RB.petals.instanceMatrix.needsUpdate = true;
   }
@@ -6552,142 +6428,54 @@ vec3 fxCol(vec3 P,float reg,float t){
   KS.add('cyclists');
 
   // =====================================================================================================
-  // FIREWORKS, built to read in daylight: one instanced draw of camera-facing quads. Big saturated shells (saffron, white, green,
-  // gold, tiranga, gold willow) as tapered velocity-stretched streaks with an HDR burst flash, rocket smoke trails, lingering
-  // coloured smoke puffs that drift with the wind, and four ground fountains. Premultiplied blending lets one draw mix
-  // occluding smoke (drawn first) with glowing sparks. All motion is in the vertex shader; the CPU sets a few uniforms.
+  // FIREWORKS: GPU-only particle shells (rocket, peony burst with drag and gravity, crackle), HDR colours for bloom
   // =====================================================================================================
   const FW = (() => {
-    const S = 16, PP = 230, NSB = 10, NST = 8, NF = 4, FP = 170, FS = 10;
-    const nSmoke = S * (NSB + NST) + NF * FS, nSpark = NF * FP + S * PP, n = nSmoke + nSpark;
-    const A = new Float32Array(n * 4), B = new Float32Array(n * 4), R = mulberry(77);
-    let i = 0;
-    const put = (type, slot, j, dx, dy, dz) => { A[i * 4] = type; A[i * 4 + 1] = slot; A[i * 4 + 2] = j; A[i * 4 + 3] = R(); B[i * 4] = dx; B[i * 4 + 1] = dy; B[i * 4 + 2] = dz; B[i * 4 + 3] = R(); i++; };
-    const dir = (k) => { const u = R() * 2 - 1, a = R() * Math.PI * 2, q = Math.sqrt(1 - u * u); return [Math.cos(a) * q * k, u * k, Math.sin(a) * q * k]; };
-    // smoke first (it occludes), then fountain sparks, then shell sparks
-    for (let s = 0; s < S; s++) for (let j = 0; j < NSB; j++) put(0, s, j / NSB, ...dir(1));
-    for (let s = 0; s < S; s++) for (let j = 0; j < NST; j++) put(1, s, (j + 0.5) / NST, ...dir(1));
-    for (let f = 0; f < NF; f++) for (let j = 0; j < FS; j++) put(2, f, j / FS, ...dir(1));
-    for (let f = 0; f < NF; f++) for (let j = 0; j < FP; j++) put(3, f, j / FP, ...dir(1));
-    for (let s = 0; s < S; s++) for (let j = 0; j < PP; j++) put(4, s, j, ...dir(0.84 + 0.16 * R()));
-    const g = new THREE.InstancedBufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute([-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0], 3)); g.setIndex([0, 1, 2, 0, 2, 3]);
-    g.setAttribute('aA', new THREE.InstancedBufferAttribute(A, 4)); g.setAttribute('aB', new THREE.InstancedBufferAttribute(B, 4)); g.instanceCount = n;
-    // uC: show centre (bursts), uG: launch site on open ground (rockets, gerbs), uR: burst scale with camera distance, uSm: smoke alpha
-    const U = { uTime: { value: 0 }, uC: { value: new THREE.Vector3() }, uG: { value: new THREE.Vector3() }, uFade: { value: 0 }, uK: { value: 1 }, uR: { value: 1 }, uSm: { value: 1 },
-      uPix: { value: 0.001 }, uWind: { value: new THREE.Vector2(3, 0) } };
-    // Colours stay at or below ~1.1 with the secondary channels near zero, so ACES and bloom keep them saffron, green and gold;
-    // only the burst flash (and a white shell's first 0.15 s) goes HDR and carries the bloom.
-    const mat = new THREE.ShaderMaterial({ uniforms: U, transparent: true, depthWrite: false, depthTest: true,
-      blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
-      blendSrcAlpha: THREE.OneFactor, blendDstAlpha: THREE.OneMinusSrcAlphaFactor,
-      vertexShader: `uniform float uTime,uFade,uK,uPix,uR,uSm;uniform vec3 uC,uG;uniform vec2 uWind;attribute vec4 aA,aB;
-        varying vec2 vUv;varying vec3 vCol;varying float vA,vT,vSeed,vHot;
-        float h1(float x){return fract(sin(x*78.233)*43758.5453);}
-        const float PER=0.62,RISE=1.25;const float CYC=${S}.*PER;
-        const vec3 SAF=vec3(1.,.32,0.),WHT=vec3(1.,.96,.9),GRN=vec3(0.,.85,.18),GLD=vec3(1.,.68,.08);
-        vec3 shellCol(float ci,vec3 d){
-          if(ci<1.)return SAF;if(ci<2.)return WHT;if(ci<3.)return GRN;if(ci<4.)return GLD;
-          return d.y>.33?SAF:d.y<-.33?GRN:WHT;}   // tiranga: saffron over white over green
-        vec3 smokeCol(float ci,vec3 d){
-          vec3 sa=vec3(.95,.42,.08),wh=vec3(.86,.85,.83),gr=vec3(.12,.55,.22),go=vec3(.9,.6,.16);
-          if(ci<1.)return sa;if(ci<2.)return wh;if(ci<3.)return gr;if(ci<4.)return go;return d.y>.33?sa:d.y<-.33?gr:wh;}
-        // shell parameters for slot s at time t: burst point, launch point, kind, colour index, age in the cycle
-        void shell(float s,out vec3 bp,out vec3 g0,out float kind,out float ci,out float age){
-          float tt=uTime-s*PER,c=floor(tt/CYC);age=tt-c*CYC;float sh=s*7.13+c*31.7;
-          bp=uC+vec3((h1(sh)-.5)*560.*uR,(190.+h1(sh+1.)*230.)*uR,(h1(sh+2.)-.5)*560.*uR);
-          g0=uG+vec3((h1(sh+5.)-.5)*90.,0.,(h1(sh+6.)-.5)*90.);kind=h1(sh+3.);ci=floor(h1(sh+4.)*5.);}
-        // kinds: <.45 peony, .45-.72 peony + crackle, .72-.88 big chrysanthemum, >.88 gold willow (slow, drooping, long trails)
-        vec3 sparkAt(vec3 bp,vec3 d,float kind,float t){
-          float big=step(.72,kind),wil=step(.88,kind),R=mix(150.,200.,big)*uR*(1.-exp(-t*mix(mix(2.6,1.7,big),2.2,wil)));
-          return bp+d*R-vec3(0.,(mix(mix(15.,9.,big),22.,wil)*t*t+mix(6.,3.,big)*t)*uR,0.);}
-        void main(){
-          float type=aA.x,s=aA.y,j=aA.z,r=aA.w;vec3 d=aB.xyz;float r2=aB.w;
-          vec3 p=uC,pp=uC;float w=1.,a=0.;vec3 col=vec3(1.);float vt=0.;vHot=0.;
-          vec3 bp,g0;float kind,ci,age;
-          if(type<1.5){                                   // shell smoke: burst puffs (0) and rocket trail (1)
-            shell(s,bp,g0,kind,ci,age);vt=1.;
-            if(type<0.5){float t=age-RISE-.05;a=t>0.?.55*smoothstep(0.,.35,t)*exp(-t/5.):0.;
-              col=mix(vec3(.78,.76,.74),smokeCol(ci,d),.85);
-              p=bp+d*(80.+55.*r)*uR*(1.-exp(-t*1.6))-vec3(0.,4.*t,0.)+vec3(uWind.x,0.,uWind.y)*t*2.2;w=((32.+26.*r)*(.55+.45*min(t,3.)/3.)+t*5.)*uR;}
-            else{float te=j*RISE*.92,t=age-te;float f=j;f=1.-(1.-f)*(1.-f);
-              a=t>0.?.42*exp(-t/3.)*smoothstep(0.,.15,t):0.;col=vec3(.84,.83,.81);
-              p=mix(g0,bp,f*.92)+vec3(uWind.x,0.,uWind.y)*t*2.+vec3(d.x,0.,d.z)*3.*t;w=(7.+t*5.5+r*3.)*sqrt(uR);}
-            a*=(1.-smoothstep(CYC-2.2,CYC-.2,age))*uSm;
-          } else if(type<2.5){                            // fountain smoke rising from each gerb
-            float fa=s*1.5708+.785,life=4.5,t=mod(uTime+j*life+r,life);vec3 base=uG+vec3(cos(fa),0.,sin(fa))*55.;vt=1.;
-            p=base+vec3(0.,8.+t*9.,0.)*sqrt(uK)+vec3(uWind.x,0.,uWind.y)*t*1.8+d*4.;w=(8.+t*5.)*sqrt(uK);a=.32*smoothstep(0.,.6,t)*(1.-t/life)*uSm;col=vec3(.9,.88,.84);
-          } else if(type<3.5){                            // fountain sparks (gerbs): golden arcs
-            float fa=s*1.5708+.785,life=1.25+.35*r2,t=mod(uTime*1.+j*7.31+r*life,life);vec3 base=uG+vec3(cos(fa),0.,sin(fa))*55.;
-            float kf=sqrt(uK);vec3 v=vec3(d.x*9.,30.+9.*r,d.z*9.)*kf;
-            p=base+(v*t-vec3(0.,.5*30.*kf*t*t,0.));float tq=max(0.,t-.1);pp=base+(v*tq-vec3(0.,.5*30.*kf*tq*tq,0.));
-            a=(1.-t/life)*(.6+.4*step(.5,h1(j*91.+floor(uTime*24.))));col=mix(vec3(1.,.5,.05),vec3(1.,.74,.25),r2)*1.1;w=.2*kf;
-          } else {                                       // shell sparks: rocket, then the burst (star 0 becomes the flash)
-            shell(s,bp,g0,kind,ci,age);
-            if(age<RISE){float f=age/RISE;f=1.-(1.-f)*(1.-f);float lag=j<1.?0.:j/${PP}.*.35;
-              float f2=max(0.,f-lag);p=mix(g0,bp,f2)+vec3(d.x,0.,d.z)*lag*40.;pp=mix(g0,bp,max(0.,f2-.035));
-              a=j<1.?1.:(j<60.?max(0.,1.-lag*3.)*.8:0.);col=j<1.?vec3(1.,.8,.5)*1.8:vec3(1.,.55,.18);w=j<1.?.9:.4;
-            } else {
-              float t=age-RISE,big=step(.72,kind),wil=step(.88,kind),life=mix(mix(2.8,4.4,big),5.8,wil),R=mix(150.,200.,big)*uR;
-              if(j<1.){p=bp;pp=bp;a=t<.45?1.4*(1.-t/.45):0.;col=mix(shellCol(ci,vec3(0.,1.,0.)),vec3(1.),.35)*2.6;w=.4*R*(.35+.65*smoothstep(0.,.06,t));vt=2.;}
-              else{p=sparkAt(bp,d,kind,t);pp=sparkAt(bp,d,kind,max(0.,t-mix(mix(.3,.45,big),.75,wil)));
-                a=pow(max(0.,1.-t/life),1.2)*(.55+.9*fract(r*13.7));
-                col=shellCol(ci,d);if(big>.5&&ci!=4.)col=mix(col,GLD,.4);
-                if(wil>.5)col=mix(vec3(1.,.62,.1),vec3(.9,.36,.04),smoothstep(1.,4.5,t));
-                if(kind>.45&&kind<.72&&t>.9){a*=step(.5,h1(j*3.1+floor(uTime*20.)))*1.5;col=mix(col,vec3(1.,.9,.6),.5);}   // crackle
-                float wsh=ci==1.||(ci==4.&&abs(d.y)<=.33)?1.:0.;vHot=wsh*max(0.,1.-t/.15);
-                w=.3*(1.+.35*big);}
-            }
-          }
-          vA=a*uFade;vT=vt;vSeed=r*17.+s;
-          vec4 m0=modelViewMatrix*vec4(p,1.);vec3 c=m0.xyz;
-          if(vt>.5){float an=r*6.283+uTime*.05*(r-.5);mat2 R2=mat2(cos(an),-sin(an),sin(an),cos(an));
-            if(vt<1.5){float nz=-m0.z;w*=max(.15,smoothstep(300.,1500.,nz));vA*=smoothstep(120.,450.,nz);}   // never sit inside a puff
-            c.xy+=R2*position.xy*w;vUv=position.xy;vCol=col*(vt<1.5?.85+.25*position.y:1.);}   // smoke lit from above
-          else{w=max(w,uPix*-m0.z);vec4 m1=modelViewMatrix*vec4(pp,1.);vec2 ax=m0.xy-m1.xy;float L=length(ax);vec2 dr=L>1e-3?ax/L:vec2(0.,1.);vec2 sd=vec2(dr.y,-dr.x);
-            c=mix(m1.xyz,m0.xyz,position.y*.5+.5);c.xy+=sd*position.x*w+dr*position.y*w;vUv=position.xy;vCol=col;}
-          gl_Position=vA>.002?projectionMatrix*vec4(c,1.):vec4(2.,2.,2.,1.);
-        }`,
-      fragmentShader: `varying vec2 vUv;varying vec3 vCol;varying float vA,vT,vSeed,vHot;
-        ${GLSL_NOISE}
-        void main(){
-          if(vT>1.5){float r=length(vUv);float a=vA*(exp(-r*r*6.)+.35*exp(-r*r*2.));if(a<.003)discard;gl_FragColor=vec4(vCol*a,a*.3);}
-          else if(vT>.5){float n=fx2n(vUv*2.2+vSeed)*.6+fx2n(vUv*5.1-vSeed)*.4;float m=smoothstep(1.,.25,length(vUv)+(n-.5)*.7);float a=m*vA;
-            if(a<.004)discard;gl_FragColor=vec4(vCol*a,a);}
-          else{float y=vUv.y*.5+.5,x=vUv.x;float core=exp(-x*x*3.5);float along=pow(y,1.6)*(1.-smoothstep(.93,1.,y)*.5);float a=min(1.,vA*core*along*1.4);
-            if(a<.003)discard;gl_FragColor=vec4((vCol+vec3(vHot*1.2*core))*a,a*.88);}
-        }` });
-    const mesh = new THREE.Mesh(g, mat); mesh.frustumCulled = false; mesh.visible = false; root.add(mesh);
-    return { mesh, U };
-  })();
-  // the launch site: open ground 380-900 m from the show centre, clear of buildings, piers and stands (gates) and runways,
-  // so the rockets and the four gerbs never rise out of a roof. Found once per item and cached.
-  const fwCtx = (() => { try { return document.createElement('canvas').getContext('2d'); } catch (e) { return null; } })();
-  const fwBlocked = (x, y) => {
-    const Bs = Z.BLD || [], Gs = Z.GATES || [], Rs = Z.RW || [];
-    if (fwCtx) for (let i = 0; i < Bs.length; i++) if (Bs[i].p && fwCtx.isPointInPath(Bs[i].p, x, y)) return true;
-    for (let i = 0; i < Gs.length; i++) if (Gs[i].x != null && Math.hypot(Gs[i].x - x, Gs[i].y - y) < 130) return true;
-    for (let i = 0; i < Rs.length; i++) { const r = Rs[i]; if (x > Math.min(r.x0, r.x1) - 120 && x < Math.max(r.x0, r.x1) + 120 && Math.abs(y - r.y) < r.width / 2 + 70) return true; }
-    return false;
-  };
-  const fwSite = it => {
-    for (const rad of [380, 450, 550, 700, 900]) for (let i = 0; i < 16; i++) {
-      const a = i / 16 * Math.PI * 2 + Math.PI / 2, x = it.x + Math.cos(a) * rad, y = it.y + Math.sin(a) * rad;
-      let ok = !fwBlocked(x, y);
-      for (let q = 0; q < 8 && ok; q++) { const b = q * Math.PI / 4; ok = !fwBlocked(x + Math.cos(b) * 75, y + Math.sin(b) * 75); }
-      if (ok) return { x, y };
+    const S = 22, PP = 150, n = S * PP, sd = new Float32Array(n * 4), R = mulberry(77);
+    for (let s = 0; s < S; s++) for (let p = 0; p < PP; p++) {
+      const i = s * PP + p, u = R() * 2 - 1, a = R() * Math.PI * 2, q = Math.sqrt(1 - u * u), k = 0.82 + 0.18 * R();
+      sd[i * 4] = s + p / PP * 0.999; sd[i * 4 + 1] = Math.cos(a) * q * k; sd[i * 4 + 2] = u * k; sd[i * 4 + 3] = Math.sin(a) * q * k;
     }
-    return { x: it.x, y: it.y };
-  };
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3)); g.setAttribute('aSd', new THREE.BufferAttribute(sd, 4));
+    const U = { uTime: { value: 0 }, uC: { value: new THREE.Vector3() }, uFade: { value: 0 }, uK: { value: 1 }, uPx: { value: 1 } };
+    const mat = new THREE.ShaderMaterial({ uniforms: U, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      vertexShader: `uniform float uTime,uFade,uK,uPx;uniform vec3 uC;attribute vec4 aSd;varying vec3 vCol;varying float vA;
+        float h1(float x){return fract(sin(x*78.233)*43758.5453);}
+        void main(){
+          float slot=floor(aSd.x),pi=fract(aSd.x)*150.,per=0.42,cyc=${S}.*per;
+          float tt=uTime-slot*per,c=floor(tt/cyc),age=tt-c*cyc,sh=slot*7.13+c*31.7;
+          vec3 bp=uC+vec3((h1(sh)-.5)*520.,170.+h1(sh+1.)*230.,(h1(sh+2.)-.5)*520.);
+          float kind=h1(sh+3.);int ci=int(h1(sh+4.)*4.);
+          vec3 col=ci==0?vec3(1.,.42,.06):ci==1?vec3(1.,.95,.85):ci==2?vec3(.12,1.,.3):vec3(1.,.72,.18);
+          vec3 col2=ci==2?vec3(1.,.42,.06):vec3(1.,.95,.85);
+          float rise=0.9;vec3 p;float a=0.,sz=1.;
+          if(age<rise){ // the rocket and its sparks
+            float f=age/rise;f=1.-(1.-f)*(1.-f);vec3 g0=vec3(bp.x,0.,bp.z);
+            float lag=pi<1.?0.:pi/150.*0.25;p=mix(g0,bp,max(0.,f-lag));a=pi<1.?3.:(pi<40.?max(0.,1.-lag*4.)*0.6:0.);col=vec3(1.,.75,.4);sz=pi<1.?1.6:0.7;
+            p+=vec3(h1(pi+c)-.5,0.,h1(pi*1.7+c)-.5)*4.*lag*30.;
+          } else {
+            float t=age-rise,r=(kind>0.7?150.:115.)*(1.-exp(-t*2.6));
+            vec3 d=aSd.yzw;
+            p=bp+d*r-vec3(0.,14.*t*t+6.*t,0.);
+            float life=kind>0.7?3.2:2.6;a=pow(max(0.,1.-t/life),1.6)*2.2;
+            if(t<0.12)a+=(1.-t/0.12)*4.;
+            if(kind>0.45&&kind<0.7){a*=step(0.45,h1(pi*3.1+floor(uTime*18.)));col=mix(col,vec3(1.,.9,.6),.5);}   // crackle
+            col=mix(col,col2,step(0.66,fract(pi*0.618))*step(0.35,kind));
+            sz=1.+0.6*step(0.7,kind);
+          }
+          vCol=col*3.2;vA=a*uFade*1.4;
+          vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;
+          gl_PointSize=vA>0.003?max(2.6*uPx,sz*uK*uPx*4200./-mv.z):0.;
+        }`,
+      fragmentShader: `varying vec3 vCol;varying float vA;void main(){vec2 q=gl_PointCoord*2.-1.;float r=dot(q,q);if(r>1.)discard;float a=vA*(1.-r)*(1.-r);gl_FragColor=vec4(vCol*a,a);}` });
+    const pts = new THREE.Points(g, mat); pts.frustumCulled = false; pts.visible = false; root.add(pts);
+    return { pts, U };
+  })();
   function fireworksUpdate(list, dt, now) {
-    const it = list[0]; if (!it) { FW.mesh.visible = false; return; }
-    const st = stOf(it, () => fwSite(it));
-    const T = Z.T, f = smooth(it.t0, it.t0 + 6, T) * (1 - smooth(it.t1 - 25, it.t1, T)), cd = Z.camDist, sS = smooth(2500, 9000, cd);
-    FW.U.uTime.value = now; FW.U.uC.value.set(it.x, 0, it.y); FW.U.uG.value.set(st.x, 0, st.y); FW.U.uFade.value = f; FW.U.uK.value = clamp(cd / 1500, 1, 7);
-    FW.U.uR.value = mix(1, 2.2, sS); FW.U.uSm.value = mix(1, 0.5, sS);
-    const wd = Z.atmo && Z.atmo.wind; if (wd) FW.U.uWind.value.set(Math.cos(wd.dir) * (wd.speed || 3), Math.sin(wd.dir) * (wd.speed || 3));
-    FW.U.uPix.value = 2 / (Z.camera.projectionMatrix.elements[5] * Z.renderer.domElement.height) * mix(1.3, 2.5, sS);   // spark half-width floor in pixels
-    FW.mesh.visible = f > 0.01;
+    const it = list[0]; if (!it) { FW.pts.visible = false; return; }
+    const T = Z.T, f = smooth(it.t0, it.t0 + 6, T) * (1 - smooth(it.t1 - 25, it.t1, T));
+    FW.U.uTime.value = now; FW.U.uC.value.set(it.x, 0, it.y); FW.U.uFade.value = f; FW.U.uK.value = clamp(Z.camDist / 1600, 1, 7);
+    FW.U.uPx.value = Z.renderer.getPixelRatio(); FW.pts.visible = f > 0.01;
   }
   KS.add('fireworks');
 
@@ -6726,6 +6514,7 @@ Z3MOD.fx3 = function (Z) {
   // real time. Draw calls while active: structure 1, people/props 1, petals+flashes 1, contact shadow 1, plus the two
   // shadow casters (structure, people) = 6. Nothing is drawn while no stage is active.
   const THREE = Z.THREE;
+  (Z.fxKinds = Z.fxKinds || new Set()).add('stage');
   const col = h => new THREE.Color(h);
   const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
   const sm = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
@@ -6733,12 +6522,11 @@ Z3MOD.fx3 = function (Z) {
   const mulberry = s => () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
   const R = mulberry(9137);
   const FLOOR = 1.1;                 // stage deck height (m)
-  const POD = [2.2, 3.35];           // podium (x, z) at the front edge of the deck, clear of the eaves; the speaker stands just behind it
+  const POD = [2.7, 2.15];           // podium (x, z) on the deck; the speaker stands just behind it
   const RIB = 6.1;                   // ribbon line (z), on the ground in front of the steps
-  const Z0 = 7.0;                    // beyond this z the approach (carpet, barricades, arch) is squeezed toward the stage when scaled up
 
   // ================= atlas: the backdrop banner (top 3/4) and plain white (bottom 1/4) =================
-  const AW = 2048, AH = 1280, BH = 768, FY0 = 790, FY1 = 970, WU = 0.5, WV = 1 - 1150 / 1280;
+  const AW = 2048, AH = 1024, BH = 768, WU = 0.5, WV = 0.1;
   const cv = document.createElement('canvas'); cv.width = AW; cv.height = AH;
   { const g = cv.getContext('2d'), W = AW, H = BH;
     g.fillStyle = '#ffffff'; g.fillRect(0, 0, AW, AH);
@@ -6765,7 +6553,7 @@ Z3MOD.fx3 = function (Z) {
         g.fillStyle = i % 2 ? '#ffb000' : '#ff7a00'; g.beginPath(); g.arc(x, y, 12, 0, 7); g.fill(); }
       g.fillStyle = '#2f7d1e'; g.beginPath(); g.ellipse(x1, 72, 9, 20, 0, 0, 7); g.fill(); }
     // emblem, left: a gold wheel with a white aircraft
-    { const cx = 250, cy = 420; const eg = g.createRadialGradient(cx - 30, cy - 40, 10, cx, cy, 165); eg.addColorStop(0, '#fff2b0'); eg.addColorStop(1, '#c58e1c');
+    { const cx = 250, cy = 370; const eg = g.createRadialGradient(cx - 30, cy - 40, 10, cx, cy, 165); eg.addColorStop(0, '#fff2b0'); eg.addColorStop(1, '#c58e1c');
       g.fillStyle = eg; g.beginPath(); g.arc(cx, cy, 158, 0, 7); g.fill(); g.fillStyle = '#7a0c1f'; g.beginPath(); g.arc(cx, cy, 128, 0, 7); g.fill();
       g.strokeStyle = '#f2c94c'; g.lineWidth = 4; for (let i = 0; i < 24; i++) { const a = i * Math.PI / 12; g.beginPath(); g.moveTo(cx + Math.cos(a) * 132, cy + Math.sin(a) * 132); g.lineTo(cx + Math.cos(a) * 150, cy + Math.sin(a) * 150); g.stroke(); }
       g.save(); g.translate(cx, cy); g.rotate(-0.5); g.fillStyle = '#ffffff';
@@ -6776,7 +6564,7 @@ Z3MOD.fx3 = function (Z) {
       g.beginPath(); g.moveTo(-70, 4); g.lineTo(-92, 38); g.lineTo(-80, 38); g.lineTo(-58, 4); g.closePath(); g.fill(); g.restore();
       g.fillStyle = '#f2c94c'; g.font = 'bold 34px Georgia, "Times New Roman", serif'; g.textAlign = 'center'; g.fillText('ZMI', cx, cy + 102); }
     // a tricolour flag, right
-    { const fx = 1760, fy = 290, fw = 210, fh = 140;
+    { const fx = 1760, fy = 225, fw = 210, fh = 140;
       g.fillStyle = '#d9d9d9'; g.fillRect(fx - 10, fy - 20, 9, 330);
       for (let b = 0; b < 3; b++) { g.fillStyle = ['#ff9933', '#ffffff', '#138808'][b]; g.beginPath();
         for (let i = 0; i <= 20; i++) { const t = i / 20; g.lineTo(fx + t * fw, fy + b * fh / 3 + Math.sin(t * 5) * 10 * t); }
@@ -6787,35 +6575,27 @@ Z3MOD.fx3 = function (Z) {
     // title
     const tx = 1040; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
     const fit = (txt, font, px, maxW) => { let s = px; g.font = font.replace('#', s); while (g.measureText(txt).width > maxW && s > 20) { s -= 2; g.font = font.replace('#', s); } return s; };
-    g.fillStyle = '#ffe9b8'; g.font = 'italic 42px Georgia, "Times New Roman", serif'; g.fillText('Welcome to the', tx, 300);
+    g.fillStyle = '#ffe9b8'; g.font = 'italic 44px Georgia, "Times New Roman", serif'; g.fillText('Welcome to the', tx, 170);
     fit('ZERO MILE INTERNATIONAL', 'bold #px Georgia, "Times New Roman", serif', 132, 1280);
-    g.lineWidth = 10; g.strokeStyle = '#3a0509'; g.strokeText('ZERO MILE INTERNATIONAL', tx, 430);
-    const tg = g.createLinearGradient(0, 330, 0, 440); tg.addColorStop(0, '#fff7cf'); tg.addColorStop(0.5, '#f3c443'); tg.addColorStop(1, '#c48a16');
-    g.fillStyle = tg; g.fillText('ZERO MILE INTERNATIONAL', tx, 430);
+    g.lineWidth = 10; g.strokeStyle = '#3a0509'; g.strokeText('ZERO MILE INTERNATIONAL', tx, 300);
+    const tg = g.createLinearGradient(0, 200, 0, 310); tg.addColorStop(0, '#fff7cf'); tg.addColorStop(0.5, '#f3c443'); tg.addColorStop(1, '#c48a16');
+    g.fillStyle = tg; g.fillText('ZERO MILE INTERNATIONAL', tx, 300);
     // the saffron scroll with INAUGURATION
-    { const y0 = 462, y1 = 572, x0 = tx - 560, x1 = tx + 560;
+    { const y0 = 345, y1 = 470, x0 = tx - 560, x1 = tx + 560;
       g.fillStyle = '#b8560a'; g.beginPath(); g.moveTo(x0 - 70, y0 + 20); g.lineTo(x0 + 10, y0 + 20); g.lineTo(x0 + 10, y1 + 20); g.lineTo(x0 - 70, y1 + 20); g.lineTo(x0 - 40, (y0 + y1) / 2 + 20); g.closePath(); g.fill();
       g.beginPath(); g.moveTo(x1 + 70, y0 + 20); g.lineTo(x1 - 10, y0 + 20); g.lineTo(x1 - 10, y1 + 20); g.lineTo(x1 + 70, y1 + 20); g.lineTo(x1 + 40, (y0 + y1) / 2 + 20); g.closePath(); g.fill();
       const sg = g.createLinearGradient(0, y0, 0, y1); sg.addColorStop(0, '#ffb347'); sg.addColorStop(0.5, '#ff8c1a'); sg.addColorStop(1, '#e8700a');
       g.fillStyle = sg; g.fillRect(x0, y0, x1 - x0, y1 - y0);
       g.strokeStyle = '#ffe08a'; g.lineWidth = 5; g.strokeRect(x0 + 10, y0 + 10, x1 - x0 - 20, y1 - y0 - 20);
-      fit('INAUGURATION', 'bold #px Georgia, "Times New Roman", serif', 94, 980);
-      g.fillStyle = '#5a0710'; g.fillText('INAUGURATION', tx + 4, y1 - 22 + 4); g.fillStyle = '#ffffff'; g.fillText('INAUGURATION', tx, y1 - 22); }
-    // the pandal fascia strip (rows FY0..FY1): gold on maroon with marigold edges, read by elevated cameras above the eaves
-    { const y0 = FY0, h = FY1 - FY0, fg = g.createLinearGradient(0, y0, 0, y0 + h); fg.addColorStop(0, '#a3142a'); fg.addColorStop(1, '#5c0715');
-      g.fillStyle = fg; g.fillRect(0, y0, AW, h); g.fillStyle = gold; g.fillRect(0, y0 + 20, AW, 5); g.fillRect(0, y0 + h - 25, AW, 5);
-      for (let x = 6, i = 0; x < AW; x += 22, i++) { g.fillStyle = i % 2 ? '#ffb000' : '#ff7a00'; g.beginPath(); g.arc(x, y0 + 9, 10, 0, 7); g.fill(); g.beginPath(); g.arc(x + 11, y0 + h - 9, 10, 0, 7); g.fill(); }
-      const fL = 'bold 88px Georgia, "Times New Roman", serif', fD = '700 92px "Kohinoor Devanagari", "Devanagari Sangam MN", "ITF Devanagari", "Noto Sans Devanagari", sans-serif';
-      const t1 = 'ZERO MILE INTERNATIONAL  \u00b7  ', t2 = 'उद्घाटन';
-      g.font = fL; const w1 = g.measureText(t1).width; g.font = fD; const w2 = g.measureText(t2).width;
-      const x0 = (AW - w1 - w2) / 2, by = y0 + h / 2 + 31; g.textAlign = 'left';
-      const fgd = g.createLinearGradient(0, y0 + 30, 0, y0 + h - 30); fgd.addColorStop(0, '#fff4c4'); fgd.addColorStop(0.5, '#f3c443'); fgd.addColorStop(1, '#c48a16');
-      g.lineWidth = 8; g.strokeStyle = '#2a0306'; g.font = fL; g.strokeText(t1, x0, by); g.font = fD; g.strokeText(t2, x0 + w1, by);
-      g.fillStyle = fgd; g.font = fL; g.fillText(t1, x0, by); g.font = fD; g.fillText(t2, x0 + w1, by); g.textAlign = 'center'; }
+      fit('INAUGURATION', 'bold #px Georgia, "Times New Roman", serif', 104, 980);
+      g.fillStyle = '#5a0710'; g.fillText('INAUGURATION', tx + 4, y1 - 26 + 4); g.fillStyle = '#ffffff'; g.fillText('INAUGURATION', tx, y1 - 26); }
+    g.fillStyle = '#ffe9b8'; g.font = '600 56px "Kohinoor Devanagari", "Devanagari Sangam MN", "ITF Devanagari", "Noto Sans Devanagari", sans-serif';
+    g.fillText('उद्घाटन समारोह', tx, 556);
+    g.font = '36px Georgia, "Times New Roman", serif'; g.fillStyle = '#f6d38a'; g.fillText('NAGPUR  ·  OPENING DAY  ·  DEDICATED TO THE NATION', tx, 606);
   }
   const atlas = new THREE.CanvasTexture(cv); atlas.colorSpace = THREE.SRGBColorSpace;
   atlas.anisotropy = Math.min(8, Z.renderer.capabilities.getMaxAnisotropy ? Z.renderer.capabilities.getMaxAnisotropy() : 4);
-  const BANNER_UV = [0, 1 - BH / AH, 1, 1], FASCIA_UV = [0, 1 - FY1 / AH, 1, 1 - FY0 / AH];
+  const BANNER_UV = [0, 1 - BH / AH, 1, 1];
 
   // ================= the structure: one merged mesh with a per-vertex build phase and pivot =================
   const P = [], NN = [], CC = [], UV = [], AB = [], MRA = [], IX = [];
@@ -6850,14 +6630,14 @@ Z3MOD.fx3 = function (Z) {
   const L3 = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
   // a marigold string: a tube along points whose radius swells into beads, orange and yellow
   const MARI = [col('#ff7a00'), col('#ffae00'), col('#ff9200'), col('#e85d00')];
-  function garland(pts, r, beads, alt, radSegs) {
+  function garland(pts, r, beads) {
     const curve = new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(p[0], p[1], p[2])));
-    const segs = beads || Math.max(6, Math.round(curve.getLength() / Math.max(0.1, r * 1.6))), rad = radSegs || (r > 0.1 ? 4 : 3);
+    const segs = beads || Math.max(6, Math.round(curve.getLength() / Math.max(0.1, r * 1.6))), rad = r > 0.1 ? 4 : 3;
     const g = new THREE.TubeGeometry(curve, segs, r, rad, false);
     const pa = g.attributes.position, na = g.attributes.normal;
     for (let i = 0; i < pa.count; i++) { const ring = Math.floor(i / (rad + 1)), f = ring % 2 ? 0.3 : -0.15;
       pa.setXYZ(i, pa.getX(i) + na.getX(i) * r * f, pa.getY(i) + na.getY(i) * r * f, pa.getZ(i) + na.getZ(i) * r * f); }
-    addGeo(g, tm.identity(), alt != null ? (x, y, z, i) => MARI[(Math.floor(i / (rad + 1)) + alt) % 2] : (x, y, z, i) => MARI[(Math.floor(i / (rad + 1)) >> 1) % 4]);
+    addGeo(g, tm.identity(), (x, y, z, i) => MARI[(Math.floor(i / (rad + 1)) >> 1) % 4]);
   }
   const swag = (a, b, dip, r) => { const pts = []; for (let i = 0; i <= 8; i++) { const t = i / 8; const p = L3(a, b, t); p[1] -= Math.sin(Math.PI * t) * dip; pts.push(p); } garland(pts, r); };
 
@@ -6886,11 +6666,11 @@ Z3MOD.fx3 = function (Z) {
   ctx(0.1, [0, 0, HD]);
   for (let k = 0; k < 3; k++) { const h = FLOOR * (3 - k) / 3, d = 0.42; box(0, h / 2, HD + d * (k + 0.5), 3.2, h, d, K.carpet); box(0, h + 0.005, HD + d * (k + 0.5) + d / 2 - 0.02, 3.2, 0.012, 0.04, K.gold); }
   for (const s of [-1, 1]) box(s * 1.7, 0.5, HD + 0.63, 0.12, 1.0, 1.26, K.white);   // step cheeks
-  ctx(10.12, [0, 0, HD + 1.3]);
+  ctx(0.12, [0, 0, HD + 1.3]);
   box(0, 0.16, 11.6, 2.6, 0.04, 20.6, K.carpet); for (const s of [-1, 1]) box(s * 1.26, 0.185, 11.6, 0.09, 0.012, 20.6, K.gold);
 
   // ---- shamiana: poles, a hipped striped roof with billowing panels, a scalloped valance with tassels ----
-  const CW = 6.75, CD = 4.75, YE = 6.6, RWd = 2.3, YR = 8.3;
+  const CW = 6.75, CD = 4.75, YE = 5.75, RWd = 2.3, YR = 7.5;
   const poles = [[-CW, -CD], [CW, -CD], [CW, CD], [-CW, CD], [CW, 0], [-CW, 0]];
   poles.forEach(([px, pz], i) => { ctx(0.18 + i * 0.01, [px, 0, pz], [0, 0.6]);
     const g = new THREE.CylinderGeometry(0.1, 0.12, YE, 6, 12, true);
@@ -6900,10 +6680,10 @@ Z3MOD.fx3 = function (Z) {
   { const E = [[-CW, YE, -CD], [CW, YE, -CD], [CW, YE, CD], [-CW, YE, CD]], R0 = [-RWd, YR, 0], R1 = [RWd, YR, 0], sag = 0.16;
     const longFace = (b0, b1, u0, u1, n, off) => { for (let i = 0; i < n; i++) { const t0 = i / n, t1 = (i + 1) / n, tmid = (t0 + t1) / 2;
       const a = L3(b0, b1, t0), b = L3(b0, b1, t1), c = L3(u0, u1, t1), d = L3(u0, u1, t0), bm = L3(b0, b1, tmid), um = L3(u0, u1, tmid);
-      bm[1] -= sag; um[1] -= sag * 0.25; const k = (i + off) % 2 ? K.white : K.saffron; MR = [0, k === K.white ? 0.905 : 0.903]; quad(a, bm, um, d, k); quad(bm, b, c, um, k); } MR = [0, 0.9]; };
+      bm[1] -= sag; um[1] -= sag * 0.25; const k = (i + off) % 2 ? K.white : K.saffron; MR = [0, k === K.white ? 0.905 : 0.9]; quad(a, bm, um, d, k); quad(bm, b, c, um, k); } MR = [0, 0.9]; };
     longFace(E[3], E[2], R0, R1, 12, 0); longFace(E[1], E[0], R1, R0, 12, 0);
     const endFace = (b0, b1, apex, n) => { for (let i = 0; i < n; i++) { const t0 = i / n, t1 = (i + 1) / n; const a = L3(b0, b1, t0), b = L3(b0, b1, t1), bm = L3(b0, b1, (t0 + t1) / 2);
-      bm[1] -= sag; const k = i % 2 ? K.white : K.saffron; MR = [0, k === K.white ? 0.905 : 0.903]; tri(a, bm, apex, k); tri(bm, b, apex, k); } MR = [0, 0.9]; };
+      bm[1] -= sag; const k = i % 2 ? K.white : K.saffron; MR = [0, k === K.white ? 0.905 : 0.9]; tri(a, bm, apex, k); tri(bm, b, apex, k); } MR = [0, 0.9]; };
     endFace(E[2], E[1], R1, 8); endFace(E[0], E[3], R0, 8);
     rod(R0, R1, 0.09, K.gold, 6);
     // valance: maroon band, scallops alternating saffron / white / green, a gold tassel at each point
@@ -6913,24 +6693,18 @@ Z3MOD.fx3 = function (Z) {
       quad(A, B, [B[0], YE - 0.2, B[2]], [A[0], YE - 0.2, A[2]], K.maroon);
       for (let s = 0; s < n; s++) { const kk = [K.saffron, K.white, K.green, K.white][s % 4];
         for (let j = 0; j < 4; j++) { const t0 = (s + j / 4) / n, t1 = (s + (j + 1) / 4) / n, p0 = L3(A, B, t0), p1 = L3(A, B, t1);
-          const d0 = 0.15 + 0.25 * Math.sin(Math.PI * j / 4), d1 = 0.15 + 0.25 * Math.sin(Math.PI * (j + 1) / 4);
+          const d0 = 0.28 + 0.4 * Math.sin(Math.PI * j / 4), d1 = 0.28 + 0.4 * Math.sin(Math.PI * (j + 1) / 4);
           p0[0] += nx * 0.005; p1[0] += nx * 0.005; p0[2] += nz * 0.005; p1[2] += nz * 0.005;
           quad([p0[0], YE - 0.2, p0[2]], [p1[0], YE - 0.2, p1[2]], [p1[0], YE - 0.2 - d1 + 0.2, p1[2]], [p0[0], YE - 0.2 - d0 + 0.2, p0[2]], kk); }
-        const pm = L3(A, B, (s + 0.5) / n); MR = [0.8, 0.35]; addGeo(OCT, M(pm[0] + nx * 0.02, YE - 0.5, pm[2] + nz * 0.02, 0, 0.06, 0.1, 0.06), K.gold); MR = [0, 0.9]; } };
+        const pm = L3(A, B, (s + 0.5) / n); MR = [0.8, 0.35]; addGeo(OCT, M(pm[0] + nx * 0.02, YE - 0.75, pm[2] + nz * 0.02, 0, 0.06, 0.1, 0.06), K.gold); MR = [0, 0.9]; } };
     edge(E[3], E[2], 0, 1); edge(E[2], E[1], 1, 0); edge(E[1], E[0], 0, -1); edge(E[0], E[3], -1, 0);
     ctx(0.4, [0, YR, 0], [0.9, 0.3]); for (const s of [-1, 1]) { addGeo(SPH, M(s * RWd, YR + 0.25, 0, 0, 0.22, 0.26, 0.22), K.gold); cyl(s * RWd, YR + 0.45, 0, 0.03, 0.01, 0.4, 5, K.gold); }
   }
   // canopy garlands: swags along the front and both sides, strings down the poles
   ctx(0.46, [0, YE, 0]);
-  for (let i = 0; i < 6; i++) { const x0 = -CW + i * CW / 3, x1 = x0 + CW / 3; swag([x0, YE - 0.1, CD + 0.22], [x1, YE - 0.1, CD + 0.22], 0.4, 0.075); }
-  for (const s of [-1, 1]) for (let i = 0; i < 4; i++) { const z0 = -CD + i * CD / 2, z1 = z0 + CD / 2; swag([s * (CW + 0.12), YE - 0.1, z0], [s * (CW + 0.12), YE - 0.1, z1], 0.45, 0.075); }
+  for (let i = 0; i < 6; i++) { const x0 = -CW + i * CW / 3, x1 = x0 + CW / 3; swag([x0, YE - 0.1, CD + 0.12], [x1, YE - 0.1, CD + 0.12], 0.75, 0.075); }
+  for (const s of [-1, 1]) for (let i = 0; i < 4; i++) { const z0 = -CD + i * CD / 2, z1 = z0 + CD / 2; swag([s * (CW + 0.12), YE - 0.1, z0], [s * (CW + 0.12), YE - 0.1, z1], 0.6, 0.075); }
   poles.forEach(([px, pz]) => garland([[px + Math.sign(px) * 0.13, YE - 0.2, pz + (pz ? Math.sign(pz) * 0.13 : 0.13)], [px + Math.sign(px) * 0.13, 1.6, pz + (pz ? Math.sign(pz) * 0.13 : 0.13)]], 0.07));
-
-  // ---- pandal fascia: a flex board across the canopy front, tilted back 15 degrees (atlas strip) ----
-  ctx(0.38, [0, YE, CD], [0, 0.7]);
-  { const tilt = -0.26, cy = YE - 0.1 + 0.6 * Math.cos(tilt), cz = CD + 0.2 + 0.6 * Math.sin(tilt);
-    addGeo(new THREE.PlaneGeometry(2 * CW + 0.3, 1.2), M(0, cy, cz, 0, 1, 1, 1, tilt), col('#ffffff'), FASCIA_UV);
-    addGeo(BOX, M(0, cy - 0.01, cz - 0.04, 0, 2 * CW + 0.4, 1.28, 0.05, tilt), K.maroon); }
 
   // ---- backdrop: truss towers, the banner, a white back, a garland across the top ----
   ctx(0.22, [0, FLOOR, -HD], [0.7, 0.35]);
@@ -6961,7 +6735,7 @@ Z3MOD.fx3 = function (Z) {
   for (let i = 0; i < 5; i++) { addGeo(SPH, M(-3.6 + i * 1.4, FLOOR + 0.86, -0.2, 0, 0.17, 0.13, 0.17), (x, y, z, j) => MARI[j % 3]); }
 
   // ---- podium with emblem, gooseneck mic and a marigold bouquet ----
-  ctx(40.45, [POD[0], FLOOR, POD[1]]);
+  ctx(0.45, [POD[0], FLOOR, POD[1]]);
   { const [px, pz] = POD; box(px, FLOOR + 0.55, pz, 0.8, 1.1, 0.55, K.teak); box(px, FLOOR + 1.14, pz - 0.02, 0.9, 0.08, 0.66, K.teak, 0);
     box(px, FLOOR + 0.6, pz + 0.285, 0.66, 0.78, 0.02, K.saffron); MR = [0.9, 0.3]; addGeo(new THREE.CylinderGeometry(0.17, 0.17, 0.03, 16), M(px, FLOOR + 0.72, pz + 0.3, 0, 1, 1, 1, Math.PI / 2), K.gold);
     rod([px + 0.12, FLOOR + 1.18, pz + 0.1], [px + 0.1, FLOOR + 1.45, pz - 0.1], 0.012, K.black, 4); MR = [0, 0.5];
@@ -6978,9 +6752,9 @@ Z3MOD.fx3 = function (Z) {
 
   // ---- flower pots: along the deck edge, flanking the steps, lining the carpet ----
   const POTS = [];
-  for (const x of [-5.5, -4.3, -3.1, -1.95, 1.95, 3.1, 4.3, 5.5]) if (Math.abs(x - POD[0]) > 0.75) POTS.push([x, FLOOR, 3.65, 0.8]);
+  for (const x of [-5.5, -4.3, -3.1, -1.95, 1.95, 3.1, 4.3, 5.5]) POTS.push([x, FLOOR, 3.65, 0.8]);
   for (const s of [-1, 1]) { POTS.push([s * 2.15, 0, HD + 0.9, 1.25]); for (let z = 8.2; z < 21; z += 3.2) POTS.push([s * 1.75, 0.17, z, 0.85]); }
-  POTS.forEach(([x, y, z, k], i) => { ctx(0.5 + i * 0.006 + (z > Z0 ? 20 : 0), [x, y, z]);
+  POTS.forEach(([x, y, z, k], i) => { ctx(0.5 + i * 0.006, [x, y, z]);
     cyl(x, y, z, 0.17 * k, 0.24 * k, 0.4 * k, 8, K.terra); cyl(x, y + 0.4 * k, z, 0.26 * k, 0.26 * k, 0.05 * k, 8, K.terra);
     addGeo(OCT, M(x, y + 0.5 * k, z, 0.4, 0.3 * k, 0.15 * k, 0.3 * k), K.leaf);
     addGeo(SPH, M(x, y + 0.66 * k, z, i, 0.27 * k, 0.24 * k, 0.27 * k), (xx, yy, zz, j) => MARI[(j * 7 + i) % 4]); });
@@ -6988,50 +6762,42 @@ Z3MOD.fx3 = function (Z) {
   ctx(0.52, [0, FLOOR, HD]); for (let i = 0; i < 8; i++) { const x0 = -HW + i * 1.5, x1 = x0 + 1.5; swag([x0, FLOOR - 0.04, HD + 0.14], [x1, FLOOR - 0.04, HD + 0.14], 0.38, 0.06); }
 
   // ---- barricades with saffron and white cloth; a marigold welcome arch over the carpet ----
-  ctx(10.3, [0, 0, RIB + 1], [0, 0.85]);
+  ctx(0.3, [0, 0, RIB + 1], [0.5, 0.45]);
   { const run = (x0, z0, x1, z1) => { const L = Math.hypot(x1 - x0, z1 - z0), n = Math.max(1, Math.round(L / 2));
       for (let i = 0; i < n; i++) { const a = [lerp(x0, x1, i / n), 0, lerp(z0, z1, i / n)], b = [lerp(x0, x1, (i + 1) / n), 0, lerp(z0, z1, (i + 1) / n)];
-        MR = [0, 0.85]; quad([a[0], 0.25, a[2]], [b[0], 0.25, b[2]], [b[0], 0.95, b[2]], [a[0], 0.95, a[2]], i % 2 ? K.white : K.saffron);
-        MR = [0.6, 0.4]; rod([a[0], 0, a[2]], [a[0], 1.05, a[2]], 0.025, K.steel, 4); }
-      MR = [0.6, 0.4]; rod([x0, 1.02, z0], [x1, 1.02, z1], 0.025, K.steel, 4); rod([x1, 0, z1], [x1, 1.05, z1], 0.025, K.steel, 4); MR = [0, 0.85]; };
+        quad([a[0], 0.25, a[2]], [b[0], 0.25, b[2]], [b[0], 0.95, b[2]], [a[0], 0.95, a[2]], i % 2 ? K.white : K.saffron);
+        rod([a[0], 0, a[2]], [a[0], 1.05, a[2]], 0.025, K.steel, 4); }
+      rod([x0, 1.02, z0], [x1, 1.02, z1], 0.025, K.steel, 4); rod([x1, 0, z1], [x1, 1.05, z1], 0.025, K.steel, 4); };
     for (const s of [-1, 1]) { run(s * 2.0, RIB + 0.9, s * 2.0, 19.5); run(s * 2.0, RIB + 0.9, s * 8.0, RIB + 0.9); } }
-  ctx(30.55, [0, 0, 21.4]);
-  { for (let gi = 0; gi < 3; gi++) { const rr = 1.62 + gi * 0.13, hh = 3.4 + gi * 0.13, zz = 21.3 + gi * 0.1, pts = [];
-      for (let i = 0; i <= 16; i++) { const a = Math.PI * i / 16; pts.push([-Math.cos(a) * rr, Math.sin(a) * hh + 0.05, zz]); }
-      garland(pts, 0.07, 0, gi, 4); }
-    addGeo(OCT, M(0, 3.62, 21.4, 0.4, 0.34, 0.22, 0.3), K.leaf); addGeo(SPH, M(0, 3.72, 21.4, 0, 0.16, 0.14, 0.16), (x, y, z, j) => MARI[j % 2]);
-    for (const s of [-1, 1]) { cyl(s * 1.75, 0, 21.4, 0.22, 0.3, 0.45, 8, K.terra); addGeo(OCT, M(s * 1.75, 0.55, 21.4, 0.5, 0.34, 0.26, 0.34), K.leaf); } }
+  ctx(0.55, [0, 0, 21.4]);
+  { const pts = []; for (let i = 0; i <= 14; i++) { const a = Math.PI * i / 14; pts.push([-Math.cos(a) * 1.75, Math.sin(a) * 3.5 + 0.05, 21.4]); }
+    garland(pts, 0.16); for (const s of [-1, 1]) garland([[s * 1.75, 0.05, 21.55], [s * 1.6, 1.6, 21.55], [s * 1.2, 2.9, 21.55]], 0.09);
+    rod([0, 3.6, 21.4], [0, 2.9, 21.4], 0.02, K.gold, 4); }
+  // ---- ribbon stanchions (only drawn when the stage has a ribbon: phase + 10) ----
+  ctx(10.62, [0, 0, RIB], [0.95, 0.25]);
+  for (const s of [-1, 1]) { cyl(s * 1.75, 0, RIB, 0.2, 0.2, 0.04, 12, K.gold); cyl(s * 1.75, 0.04, RIB, 0.035, 0.035, 1.02, 8, K.gold); addGeo(SPH, M(s * 1.75, 1.1, RIB, 0, 0.08, 0.08, 0.08), K.gold); }
 
   const sg = new THREE.BufferGeometry();
   sg.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); sg.setAttribute('normal', new THREE.Float32BufferAttribute(NN, 3));
   sg.setAttribute('color', new THREE.Float32BufferAttribute(CC, 3)); sg.setAttribute('uv', new THREE.Float32BufferAttribute(UV, 2));
   sg.setAttribute('aB', new THREE.Float32BufferAttribute(AB, 4)); sg.setAttribute('aMR', new THREE.Float32BufferAttribute(MRA, 2)); sg.setIndex(IX);
   sg.computeBoundingSphere();
-  const U = { uBuild: { value: 1 }, uK: { value: 1 }, uPodS: { value: 1 }, uFar: { value: 0 } };
-  // aB.x = build phase + 10 * flag: 1 squeeze z beyond Z0 per vertex, 2 shift with the squeeze by pivot, 3 the same and hidden
-  // when squeezed hard (the arch), 4 hero scale about the pivot (the podium)
-  const z0s = Z0.toFixed(2);
-  const BUILD = `float bph=aB.x;float bfl=floor(bph*0.1);bph-=bfl*10.;float bk=clamp((uBuild-bph)/0.16,0.,1.);bk=bk*bk*(3.-2.*bk);
-    if(bfl>3.5)bk*=uPodS;if(bfl>2.5&&bfl<3.5)bk*=step(0.3,uK);
-    transformed=aB.yzw+(transformed-aB.yzw)*bk;
-    if(bfl>0.5&&bfl<1.5&&transformed.z>${z0s})transformed.z=${z0s}+(transformed.z-${z0s})*uK;
-    if(bfl>1.5&&bfl<3.5&&aB.w>${z0s})transformed.z+=${z0s}+(aB.w-${z0s})*uK-aB.w;`;
-  const patchV = sh => { sh.uniforms.uBuild = U.uBuild; sh.uniforms.uK = U.uK; sh.uniforms.uPodS = U.uPodS;
-    sh.vertexShader = 'attribute vec4 aB;attribute vec2 aMR;uniform float uBuild,uK,uPodS;varying vec2 vMR;varying vec3 vLP;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n' + BUILD + 'vMR=aMR;vLP=transformed;'); };
+  const U = { uBuild: { value: 1 }, uRib: { value: 0 }, uFar: { value: 0 } };
+  const BUILD = `float bph=aB.x;float bcond=step(9.5,bph);bph-=bcond*10.;float bk=clamp((uBuild-bph)/0.16,0.,1.);bk=bk*bk*(3.-2.*bk);bk*=mix(1.,uRib,bcond);
+    transformed=aB.yzw+(transformed-aB.yzw)*bk;`;
+  const patchV = sh => { sh.uniforms.uBuild = U.uBuild; sh.uniforms.uRib = U.uRib;
+    sh.vertexShader = 'attribute vec4 aB;attribute vec2 aMR;uniform float uBuild,uRib;varying vec2 vMR;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n' + BUILD + 'vMR=aMR;'); };
   const smat = new THREE.MeshStandardMaterial({ vertexColors: true, map: atlas, roughness: 1, metalness: 1, side: THREE.DoubleSide, envMapIntensity: 0.9 });
   smat.onBeforeCompile = sh => { patchV(sh);
     sh.uniforms.uFar = U.uFar;
-    sh.fragmentShader = 'varying vec2 vMR;varying vec3 vLP;uniform float uFar;\n' + sh.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\nif(abs(vMR.y-0.904)<0.0015){float sct=mod(floor(atan(vLP.z,vLP.x)*0.95493+6.),2.);diffuseColor.rgb=mix(diffuseColor.rgb,mix(vec3(1.,0.33,0.01),vec3(0.95,0.93,0.88),sct),uFar);}').replace('#include <roughnessmap_fragment>', 'float roughnessFactor = roughness * vMR.y;').replace('#include <metalnessmap_fragment>', 'float metalnessFactor = metalness * vMR.x;'); };
+    sh.fragmentShader = 'varying vec2 vMR;uniform float uFar;\n' + sh.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\nif(abs(vMR.y-0.905)<0.002)diffuseColor.rgb=mix(diffuseColor.rgb,vec3(1.,0.33,0.01),uFar);').replace('#include <roughnessmap_fragment>', 'float roughnessFactor = roughness * vMR.y;').replace('#include <metalnessmap_fragment>', 'float metalnessFactor = metalness * vMR.x;'); };
   smat.customProgramCacheKey = () => 'fx3-stage';
   const sdep = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, side: THREE.DoubleSide });
-  sdep.onBeforeCompile = sh => { sh.uniforms.uBuild = U.uBuild; sh.uniforms.uK = U.uK; sh.uniforms.uPodS = U.uPodS;
-    sh.vertexShader = 'attribute vec4 aB;uniform float uBuild,uK,uPodS;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n' + BUILD); };
+  sdep.onBeforeCompile = sh => { sh.uniforms.uBuild = U.uBuild; sh.uniforms.uRib = U.uRib;
+    sh.vertexShader = 'attribute vec4 aB;uniform float uBuild,uRib;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n' + BUILD); };
   sdep.customProgramCacheKey = () => 'fx3-stage-depth';
   const root = new THREE.Group(); root.name = 'fx3-stage'; root.visible = false; Z.scene.add(root);
   const structure = new THREE.Mesh(sg, smat); structure.customDepthMaterial = sdep; structure.castShadow = true; structure.receiveShadow = true; root.add(structure);
-  // the AO pass renders its g-buffer with an override material that knows nothing of the build/squeeze patch: keep the structure
-  // out of it whenever the shader moves vertices (it hides objects that are invisible at that point; update() shows it again)
-  structure.onAfterRender = () => { if (U.uBuild.value < 1 || U.uK.value < 0.999 || U.uPodS.value > 1.001) structure.visible = false; };
   const nTriStatic = IX.length / 3;
 
   // ================= contact shadow =================
@@ -7124,8 +6890,8 @@ Z3MOD.fx3 = function (Z) {
   const OFF = SEATS.map(([x, z], i) => { const woman = i % 4 === 1 || i === 6;
     return woman ? { x, z, ph: R() * 9, skin: pick(SKIN), hair: HAIR[R() < 0.7 ? 0 : 2], saree: col(['#c2185b', '#2e7d32', '#e0a100', '#1565c0', '#8e24aa', '#d84315'][i % 6]), pallu: K.gold, top: col(['#ad1457', '#1b5e20', '#c77800', '#0d47a1'][i % 4]), th: 0.74 + R() * 0.12 }
       : { x, z, ph: R() * 9, skin: pick(SKIN), hair: pick(HAIR), cap: R() < 0.3 ? K.white : null, kurta: 1, top: pick([K.white, K.cream, col('#f2efe6')]), bottom: K.white,
-        jacket: R() < 0.75 ? col(pick(['#8a5a2b', '#1f3b5a', '#e2dccb', '#5b2333', '#2f5d46', '#4b3a5e'])) : null, th: 0.74 + R() * 0.12 }; });
-  const CMO = { skin: col('#8a5638'), hair: col('#2b2724'), kurta: 1, top: col('#f7f6f1'), bottom: col('#f7f6f1'), jacket: col('#e07a1f'), forearm: col('#f7f6f1') };   // white kurta, saffron Nehru jacket: nobody else wears it
+        jacket: R() < 0.75 ? col(pick(['#3b3f46', '#8a5a2b', '#c27a2c', '#1f3b5a', '#e2dccb', '#5b2333'])) : null, th: 0.74 + R() * 0.12 }; });
+  const CMO = { skin: col('#8a5638'), hair: col('#2b2724'), kurta: 1, top: col('#f7f6f1'), bottom: col('#f7f6f1'), jacket: col('#2e3238'), forearm: col('#f7f6f1') };
   // photographers in the press pit, police at the steps, the crowd behind the barricades
   const PHO = [[-3.0, 5.6, 0], [-4.6, 5.3, 1], [3.4, 5.5, 0], [4.9, 5.85, 0], [-6.0, 5.7, 0]].map(([x, z, crouch], i) => ({ x, z, crouch, ph: R() * 9, skin: pick(SKIN), hair: pick(HAIR),
     top: col(pick(['#2a2a2a', '#3c4a5a', '#5a4a3a', '#20303f', '#6b6f73'])), bottom: col(pick(['#23272e', '#3a3226', '#2b3a4a'])), vest: R() < 0.5 ? col('#6d6342') : null, th: 0.8 + i * 0.02, shoot: 0, fl: [0, 0, 0] }));
@@ -7148,34 +6914,31 @@ Z3MOD.fx3 = function (Z) {
   const pgeo = new THREE.BufferGeometry();
   pgeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3)); pgeo.setAttribute('aS', new THREE.BufferAttribute(pS, 4));
   const pFA = new THREE.BufferAttribute(pF, 4); pFA.setUsage(THREE.DynamicDrawUsage); pgeo.setAttribute('aF', pFA);
-  const PU = THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uPx: { value: 800 }, uScl: { value: 1 }, uFm: { value: 3.5 }, uB: { value: new THREE.Vector2(-1, -1) }, uO0: { value: new THREE.Vector3() }, uO1: { value: new THREE.Vector3() }, uBuild: { value: 1 } }]);
+  const PU = THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uPx: { value: 800 }, uScl: { value: 1 }, uB: { value: new THREE.Vector2(-1, -1) }, uO0: { value: new THREE.Vector3() }, uO1: { value: new THREE.Vector3() }, uBuild: { value: 1 } }]);
   const pmatP = new THREE.ShaderMaterial({ uniforms: PU, fog: true, transparent: true, depthWrite: false, blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
-    vertexShader: `attribute vec4 aS;attribute vec4 aF;uniform float uPx,uScl,uBuild,uFm;uniform vec2 uB;uniform vec3 uO0,uO1;
+    vertexShader: `attribute vec4 aS;attribute vec4 aF;uniform float uPx,uScl,uBuild;uniform vec2 uB;uniform vec3 uO0,uO1;
       varying vec3 vCol;varying float vA,vK,vRot,vAsp;varying float vFD;
       #include <common>
       #include <logdepthbuf_pars_vertex>
       void main(){
         vec3 p=position;float size=0.;vK=aF.x;vA=1.;vRot=0.;vAsp=1.;vCol=vec3(1.);
         if(aF.x<0.5){
-          bool s1=aS.w>0.5;float t=s1?uB.y:uB.x;vec3 o=s1?uO1:uO0+vec3((aS.x-.5)*1.8,aS.z*0.5,(fract(aS.y*3.71)-.5)*6.);
+          bool s1=aS.w>0.5;float t=s1?uB.y:uB.x;vec3 o=s1?uO1:uO0;
           if(t<0.||uBuild<0.3){gl_Position=vec4(2.,2.,2.,1.);gl_PointSize=0.;return;}
-          vec3 v0=s1?vec3((aS.x-.5)*8.,3.+aS.z*7.5,(aS.y-.5)*7.+0.8):vec3((aS.x-.5)*1.2,-0.2-aS.z*0.6,(aS.y-.5)*1.2);
+          vec3 v0=s1?vec3((aS.x-.5)*8.,3.+aS.z*7.5,(aS.y-.5)*7.+0.8):vec3((aS.x-.5)*3.,-0.2-aS.z*0.6,(aS.y-.5)*3.);
           float floorY=s1?0.18:${(FLOOR + 0.03).toFixed(2)};
-          float tau=0.45,vt=-(0.5+0.65*fract(aS.x*7.31+aS.z));vec2 wd=s1?vec2(0.55,0.3):vec2(0.15,0.08);
-          float tl=tau+max(o.y+v0.y*tau-floorY,0.)/-vt;
-          vec2 land=o.xz+v0.xz*tau+wd*(tl-tau);   // off the deck (or off the carpet) a petal falls to the ground
-          if(s1?abs(land.x)>1.3:(abs(land.x)>${HW.toFixed(1)}||abs(land.y)>${HD.toFixed(1)})){floorY=0.03;tl=tau+max(o.y+v0.y*tau-floorY,0.)/-vt;}
-          float tt=min(t,tl);float e=1.-exp(-tt/tau);
+          float tau=0.45,vt=-(0.5+0.65*fract(aS.x*7.31+aS.z));
+          float tl=tau+max(o.y+v0.y*tau-floorY,0.)/-vt;float tt=min(t,tl);float e=1.-exp(-tt/tau);vec2 wd=vec2(0.55,0.3);
           p=o+vec3(v0.x*tau*e+wd.x*(tt-tau*e),v0.y*tau*e+vt*(tt-tau*e),v0.z*tau*e+wd.y*(tt-tau*e));
           p.xz+=vec2(sin(tt*2.6+aS.x*40.),cos(tt*2.1+aS.y*40.))*0.35*min(tt,1.);p.y=max(p.y,floorY+aS.z*0.02);
           size=0.08+0.05*aS.y;
           vCol=mix(vec3(1.,0.36,0.01),vec3(1.,0.62,0.02),step(0.5,aS.z));if(fract(aS.y*13.7)>0.82)vCol=vec3(0.7,0.03,0.07);
           vRot=tt*(3.+aS.x*5.)+aS.y*6.28;vAsp=t<tl?0.3+0.7*abs(sin(tt*(4.+aS.z*4.)+aS.x*9.)):0.55;
           vA=smoothstep(0.3,0.45,uBuild);
-        }else{size=aF.z;vA=aF.y;vK=aF.w>1.5?2.:1.;vCol=aF.w>1.5?vec3(1.,0.7,0.32):aF.w>0.5?vec3(0.8,0.88,1.):vec3(1.,0.96,0.9);if(vA<0.004){gl_Position=vec4(2.,2.,2.,1.);gl_PointSize=0.;return;}}
+        }else{size=aF.z;vA=aF.y;vCol=aF.w>0.5?vec3(0.8,0.88,1.):vec3(1.,0.96,0.9);if(vA<0.004){gl_Position=vec4(2.,2.,2.,1.);gl_PointSize=0.;return;}}
         vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;vFD=-mv.z;
         float px=size*uScl*uPx/max(-mv.z,1.);
-        gl_PointSize=aF.x<0.5?max(px,1.4):max(px,uFm*min(vA*3.,1.));
+        gl_PointSize=aF.x<0.5?max(px,1.4):max(px,3.5*vA);
         #include <logdepthbuf_vertex>
       }`,
     fragmentShader: `uniform vec3 fogColor;uniform float fogDensity;varying vec3 vCol;varying float vA,vK,vRot,vAsp,vFD;
@@ -7186,7 +6949,6 @@ Z3MOD.fx3 = function (Z) {
         vec2 c=gl_PointCoord-0.5;float ff=1.-exp(-fogDensity*fogDensity*vFD*vFD);
         if(vK<0.5){float cs=cos(vRot),sn=sin(vRot);vec2 q=vec2(cs*c.x-sn*c.y,sn*c.x+cs*c.y);q.y/=vAsp;float d=length(q)*2.;if(d>1.)discard;
           vec3 cc=mix(vCol*(0.8+0.2*(1.-d)),fogColor,ff);gl_FragColor=vec4(cc*vA,vA);}
-        else if(vK>1.5){float d=length(c)*2.;if(d>1.)discard;gl_FragColor=vec4(vCol*exp(-d*d*3.5)*(1.-d)*vA*(1.-ff),0.);}
         else{float d=length(c)*2.;if(d>1.)discard;float I=(exp(-d*d*22.)*7.+exp(-d*d*5.)*0.9+(exp(-abs(c.x)*70.)+exp(-abs(c.y)*70.))*(1.-d)*1.6)*vA*(1.-ff);
           gl_FragColor=vec4(vCol*I,0.);}
       }` });
@@ -7194,227 +6956,157 @@ Z3MOD.fx3 = function (Z) {
   const points = new THREE.Points(pgeo, pmatP); points.renderOrder = 5; root.add(points);
 
   // ================= state =================
-  let cur = null, scl = -1, lastT = 0, lastNow = -1e9, rate = 20, snipAt = 1e9, cutSeen = -1e9, welAt = -1e9, ribAt = -1e9, offAt = -1e9, appl = -1e9, cheer = -1e9,
-    holdEndT = null, strikeK = 1, lastHit = -1e9, gest = 0, gestT = 0, nextGest = 0, flSlot = 0, flDirty = true;
-  const NFR = NFL - 1, HALO = NFL - 1;        // camera flashes use a ring of NFR slots; the last slot is the speaker's halo
-  const flash = new Float32Array(NFL * 6);   // x, y, z, start, size, kind (0 camera, 1 phone)
-  const A = { le: [0, 0, 0], lh: [0, 0, 0], re: [0, 0, 0], rh: [0, 0, 0], lean: 0, yaw: 0, yawT: 0, nod: 0 };
-  const ARMS = ['le', 'lh', 're', 'rh'], SG = [-1, 1];
+  let cur = null, scl = 1, lastT = 0, snipAt = -1e9, welAt = -1e9, appl = -1e9, cheer = -1e9, gest = 0, gestT = 0, nextGest = 0, flSlot = 0, flDirty = true;
+  const flash = new Float32Array(NFL * 6);   // x, y, z, start, size, phone
+  const A = { le: [0, 0, 0], lh: [0, 0, 0], re: [0, 0, 0], rh: [0, 0, 0], lean: 0, yaw: 0, nod: 0 };
+  const ARMS = ['le', 'lh', 're', 'rh'];
   const AT = { le: [0, 0, 0], lh: [0, 0, 0], re: [0, 0, 0], rh: [0, 0, 0] };
   const set3 = (o, x, y, z) => { o[0] = x; o[1] = y; o[2] = z; };
-  const fireFlash = (x, y, z, now, size, phone) => { const o = flSlot * 6; flash[o] = x; flash[o + 1] = y; flash[o + 2] = z; flash[o + 3] = now; flash[o + 4] = size; flash[o + 5] = phone ? 1 : 0; flSlot = (flSlot + 1) % NFR; };
-  // the Chief Minister's paths: backstage -> podium; podium -> down the steps -> behind the ribbon; podium -> off, backstage
+  const fireFlash = (x, y, z, now, size, phone) => { const o = flSlot * 6; flash[o] = x; flash[o + 1] = y; flash[o + 2] = z; flash[o + 3] = now; flash[o + 4] = size; flash[o + 5] = phone ? 1 : 0; flSlot = (flSlot + 1) % NFL; };
+  // the Chief Minister's path: backstage -> podium; podium -> down the steps -> behind the ribbon; podium -> off, backstage
   const PATH_IN = [[5.6, FLOOR, -3.4], [5.3, FLOOR, 1.2], [POD[0] + 0.1, FLOOR, POD[1] - 0.62]];
-  const PATH_RIB = [[POD[0] + 0.1, FLOOR, POD[1] - 0.62], [1.4, FLOOR, 2.8], [0.45, FLOOR, 3.7], [0.15, 0, HD + 1.35], [0, 0, RIB - 0.5]];
+  const PATH_RIB = [[POD[0] + 0.1, FLOOR, POD[1] - 0.62], [1.4, FLOOR, 2.9], [0.35, FLOOR, 3.85], [0.15, 0, HD + 1.35], [0, 0, RIB - 0.5]];
   const PATH_OUT = [[POD[0] + 0.1, FLOOR, POD[1] - 0.62], [5.3, FLOOR, 1.2], [5.6, FLOOR, -3.4]];
   const pathLen = p => { let L = 0; for (let i = 1; i < p.length; i++) L += Math.hypot(p[i][0] - p[i - 1][0], p[i][2] - p[i - 1][2]); return L; };
   const PLEN = [pathLen(PATH_IN), pathLen(PATH_RIB), pathLen(PATH_OUT)];
-  // walks run in real time at a walking pace, whatever the sim speed (seconds)
-  const DIN = PLEN[0] / 1.3, DRIB = PLEN[1] / 1.15, DOFF = PLEN[2] / 1.3;
   const pp = [0, 0, 0, 0];   // x, y, z, heading
-  function pathAt(p, d) { let L = 0;
+  function pathAt(p, u) { let L = 0; const tot = pathLen(p), d = clamp(u, 0, 1) * tot;
     for (let i = 1; i < p.length; i++) { const l = Math.hypot(p[i][0] - p[i - 1][0], p[i][2] - p[i - 1][2]);
       if (L + l >= d || i === p.length - 1) { const t = l > 0 ? clamp((d - L) / l, 0, 1) : 1; pp[0] = lerp(p[i - 1][0], p[i][0], t); pp[2] = lerp(p[i - 1][2], p[i][2], t);
         pp[1] = lerp(p[i - 1][1], p[i][1], t); pp[3] = Math.atan2(p[i][0] - p[i - 1][0], p[i][2] - p[i - 1][2]); return pp; } L += l; }
     return pp; }
-  const deckY = z => z <= HD ? FLOOR : z >= HD + 1.26 ? 0 : FLOOR * (1 - Math.ceil((z - HD) / 0.42 - 1e-3) / 3);
-  // aircraft that put the stage in the way: moving on or along the runway
-  const MOVING = { lineup: 1, roll: 1, rollout: 1, taxi_out: 1, taxi_in: 1, wedtaxi: 1, tow: 1, approach: 1, goaround: 1 };
+  const stairY = (z, y) => (z > HD && z < HD + 1.26) ? FLOOR * (1 - Math.ceil((z - HD) / 0.42 - 1e-3) / 3) : y;
 
-  let GX = 1;   // gesture size: bigger with distance so the speech reads from far away
-  const SHL = [0.19, 1.41, 0], SHR = [-0.19, 1.41, 0];
-  const big = (o, s) => { o[0] = s[0] + (o[0] - s[0]) * GX; o[1] = s[1] + (o[1] - s[1]) * GX; o[2] = s[2] + (o[2] - s[2]) * GX; };
   function poseCM(now, mode, u, dt) {
-    // mode 0 speaking at the podium, 1 walking along a path (u = metres walked), 2 at the ribbon, 3 idle/namaste
+    // mode 0 speaking at the podium, 1 walking along a path (u = distance walked), 2 at the ribbon, 3 idle/namaste
     const fast = 1 - Math.exp(-dt * 7);
     if (mode === 0) {
-      if (now > nextGest) { gest = Math.floor(R() * 9); gestT = now; nextGest = now + (gest >= 6 ? 2.4 : 1.3) + R() * 1.6;
-        A.yawT = gest === 7 ? -1.35 : gest === 8 ? 1.2 : (R() - 0.5) * 0.5; }
-      const tt = now - gestT, wv = Math.sin(tt * 5) * 0.3;
+      if (now > nextGest) { gest = Math.floor(R() * 6); gestT = now; nextGest = now + 1.1 + R() * 1.8; if (R() < 0.3) A.yaw = (R() - 0.5) * 0.8; }
+      const tt = now - gestT;
       switch (gest) {
         case 0: set3(AT.le, 0.25, 1.12, 0.18); set3(AT.lh, 0.18, 1.12, 0.42); set3(AT.re, -0.25, 1.12, 0.18); set3(AT.rh, -0.18, 1.12, 0.42); break;      // hands on the lectern
-        case 1: case 7: case 8: set3(AT.le, 0.25, 1.12, 0.18); set3(AT.lh, 0.18, 1.12, 0.42); set3(AT.re, -0.36, 1.5, 0.08); set3(AT.rh, -0.45 + wv, 1.86, 0.16); break;   // wave (turned to one side of the crowd for 7, 8)
-        case 2: set3(AT.le, 0.25, 1.12, 0.18); set3(AT.lh, 0.18, 1.12, 0.42); set3(AT.re, -0.26, 1.55, 0.22); set3(AT.rh, -0.3, 1.92 + Math.sin(tt * 4) * 0.05, 0.55); break; // point up and out
-        case 3: set3(AT.le, 0.42, 1.3, 0.1); set3(AT.lh, 0.7, 1.5, 0.28); set3(AT.re, -0.42, 1.3, 0.1); set3(AT.rh, -0.7, 1.5, 0.28); break;     // arms open
-        case 4: { const b = Math.abs(Math.sin(tt * 6)) * 0.25; set3(AT.le, 0.25, 1.12, 0.18); set3(AT.lh, 0.18, 1.12, 0.42); set3(AT.re, -0.3, 1.32, 0.18); set3(AT.rh, -0.24, 1.32 + b, 0.5); break; } // emphatic chop
-        case 6: { const b = Math.sin(tt * 4) * 0.05; set3(AT.le, 0.34, 1.66, 0.04); set3(AT.lh, 0.58, 2.08 + b, 0.1); set3(AT.re, -0.34, 1.66, 0.04); set3(AT.rh, -0.58, 2.08 + b, 0.1); break; } // 'Jai Hind!' arms up in a V
+        case 1: set3(AT.le, 0.25, 1.12, 0.18); set3(AT.lh, 0.18, 1.12, 0.42); set3(AT.re, -0.34, 1.42, 0.1); set3(AT.rh, -0.4 + Math.sin(tt * 13) * 0.11, 1.78, 0.2); break;   // wave
+        case 2: set3(AT.le, 0.25, 1.12, 0.18); set3(AT.lh, 0.18, 1.12, 0.42); set3(AT.re, -0.26, 1.55, 0.22); set3(AT.rh, -0.3, 1.92 + Math.sin(tt * 4) * 0.03, 0.5); break; // point up and out
+        case 3: set3(AT.le, 0.42, 1.3, 0.1); set3(AT.lh, 0.68, 1.48, 0.28); set3(AT.re, -0.42, 1.3, 0.1); set3(AT.rh, -0.68, 1.48, 0.28); break;     // arms open
+        case 4: { const b = Math.abs(Math.sin(tt * 7)) * 0.2; set3(AT.le, 0.25, 1.12, 0.18); set3(AT.lh, 0.18, 1.12, 0.42); set3(AT.re, -0.3, 1.32, 0.18); set3(AT.rh, -0.24, 1.32 + b, 0.5); break; } // emphatic chop
         default: set3(AT.le, 0.22, 1.18, 0.1); set3(AT.lh, 0.035, 1.34, 0.26); set3(AT.re, -0.22, 1.18, 0.1); set3(AT.rh, -0.035, 1.34, 0.26);   // namaste
       }
-      big(AT.le, SHL); big(AT.lh, SHL); big(AT.re, SHR); big(AT.rh, SHR);
-      A.lean += ((gest === 4 || gest === 2 ? 0.07 : 0.02) - A.lean) * fast; A.nod = Math.sin(now * (gest === 4 ? 6 : 2.3)) * (gest === 4 ? 0.03 : 0.012);
+      A.lean += ((gest === 4 || gest === 2 ? 0.07 : 0.02) - A.lean) * fast; A.nod = Math.sin(now * (gest === 4 ? 7 : 2.3)) * (gest === 4 ? 0.025 : 0.012);
     } else if (mode === 1) {
-      const ph = u / 0.72 * Math.PI, s = Math.sin(ph) * 0.9;
+      const ph = u / 0.62 * Math.PI, s = Math.sin(ph) * 0.9;
       set3(AT.le, 0.22, 1.13, -s * 0.12); set3(AT.lh, 0.2, 0.89, -s * 0.24); set3(AT.re, -0.22, 1.13, s * 0.12); set3(AT.rh, -0.2, 0.89, s * 0.24);
-      A.lean += (0.04 - A.lean) * fast; A.nod = 0; A.yawT = 0;
+      A.lean += (0.04 - A.lean) * fast; A.nod = 0; A.yaw *= 1 - fast;
     } else if (mode === 2) {
       const ts = now - snipAt;
       if (ts < 0) { set3(AT.re, -0.26, 1.2, 0.22); set3(AT.rh, -0.08, 1.12, 0.5); set3(AT.le, 0.24, 1.15, 0.12); set3(AT.lh, 0.12, 1.08, 0.38); }
       else if (ts < 2.6) { const up = sm(0.35, 0.9, ts); set3(AT.re, -0.3, lerp(1.2, 1.5, up), 0.18); set3(AT.rh, lerp(-0.08, -0.36, up), lerp(1.12, 1.95, up), lerp(0.5, 0.3, up));
         set3(AT.le, 0.26, 1.2, 0.12); set3(AT.lh, 0.3, 1.3 + up * 0.25 + Math.sin(ts * 12) * 0.04 * up, 0.3); }
       else { set3(AT.le, 0.22, 1.18, 0.1); set3(AT.lh, 0.035, 1.34, 0.26); set3(AT.re, -0.22, 1.18, 0.1); set3(AT.rh, -0.035, 1.34, 0.26); }
-      A.lean += (0.03 - A.lean) * fast; A.nod = 0; A.yawT = 0;
-    } else { set3(AT.le, 0.22, 1.18, 0.1); set3(AT.lh, 0.035, 1.34, 0.26); set3(AT.re, -0.22, 1.18, 0.1); set3(AT.rh, -0.035, 1.34, 0.26); A.lean *= 1 - fast; A.nod = Math.sin(now * 2) * 0.01; A.yawT = 0; }
-    A.yaw += (A.yawT - A.yaw) * (1 - Math.exp(-dt * (mode === 0 ? 3 : 8)));
+      A.lean += (0.03 - A.lean) * fast; A.nod = 0; A.yaw *= 1 - fast;
+    } else { set3(AT.le, 0.22, 1.18, 0.1); set3(AT.lh, 0.035, 1.34, 0.26); set3(AT.re, -0.22, 1.18, 0.1); set3(AT.rh, -0.035, 1.34, 0.26); A.lean *= 1 - fast; A.nod = Math.sin(now * 2) * 0.01; }
     const kk = mode === 1 ? 1 : 1 - Math.exp(-dt * 9);
     for (let q = 0; q < 4; q++) { const n = ARMS[q]; for (let i = 0; i < 3; i++) A[n][i] += (AT[n][i] - A[n][i]) * kk; }
-    stand(); if (mode === 1) walkLegs(u / 0.72 * Math.PI, 0.9);
+    stand(); if (mode === 1) walkLegs(u / 0.62 * Math.PI, 0.9);
     sj(LE, A.le[0], A.le[1], A.le[2]); sj(LH, A.lh[0], A.lh[1], A.lh[2]); sj(RE, A.re[0], A.re[1], A.re[2]); sj(RH, A.rh[0], A.rh[1], A.rh[2]);
     J[NECK * 3 + 2] += A.lean; J[HEAD * 3 + 2] += A.lean * 1.3 + A.nod; J[HEAD * 3 + 1] -= Math.abs(A.nod) * 0.5; J[LS * 3 + 2] += A.lean; J[RS * 3 + 2] += A.lean;
   }
-  const SCISS = [col('#d8dde2'), col('#c8102e'), col('#e0b23a')], SHAD = col('#0b0b0c');
-  // a flattened dark capsule on the ground under a standing figure (contact shadow, same instanced mesh)
-  const foot = (x, y, z, k) => { if (!LOD) seg(x - 0.25 * k, y + 0.04, z, x + 0.25 * k, y + 0.04, z, 0.005, 35 * k, SHAD, 0, 1); };
-  function drawCM(x, y, z, yaw, now, mode, scissOpen, pk) {
-    PK = pk; place(x, y, z, yaw, PK); dress(CMO, false);
-    // a big marigold garland around his neck, and hands
-    at(tA, LS, LS, 0, -0.02); at(tB, PELV, NECK, 0.45, 0); tB[0] += pfx * 0.17 * PK; tB[2] += pfz * 0.17 * PK; SP(0.08, 1, MARI[0]);
-    at(tA, RS, RS, 0, -0.02); SP(0.08, 1, MARI[1]);
+  const SCISS = [col('#d8dde2'), col('#c8102e'), col('#e0b23a')];
+  function drawCM(x, y, z, yaw, now, mode, scissOpen) {
+    PK = 1.1; place(x, y, z, yaw, PK); dress(CMO, false);
+    // marigold garland around his neck, and hands
+    at(tA, LS, LS, 0, -0.02); at(tB, PELV, NECK, 0.45, 0); tB[0] += pfx * 0.17 * PK; tB[2] += pfz * 0.17 * PK; SP(0.05, 1, MARI[0]);
+    at(tA, RS, RS, 0, -0.02); SP(0.05, 1, MARI[1]);
     at(tA, LH, LH, 0, 0); tB[0] = tA[0]; tB[1] = tA[1] - 0.02; tB[2] = tA[2]; SP(0.045, 1, CMO.skin);
     at(tA, RH, RH, 0, 0); tB[0] = tA[0]; tB[1] = tA[1] - 0.02; tB[2] = tA[2]; SP(0.045, 1, CMO.skin);
-    foot(x, y, z, PK);
     if (scissOpen >= 0) {   // giant scissors in the right hand, pointing forward, blades opening in the vertical plane
       const hx = W[RH * 3], hy = W[RH * 3 + 1], hz = W[RH * 3 + 2], ang = scissOpen * 0.42, L = 0.85 * PK;
       const px = hx + pfx * 0.18, pz = hz + pfz * 0.18;
-      for (let q = 0; q < 2; q++) { const s = SG[q], ex = px + pfx * L * Math.cos(ang), ey = hy + s * L * Math.sin(ang), ez = pz + pfz * L * Math.cos(ang);
+      for (const s of [-1, 1]) { const ex = px + pfx * L * Math.cos(ang), ey = hy + s * L * Math.sin(ang), ez = pz + pfz * L * Math.cos(ang);
         seg(px, hy, pz, ex, ey, ez, 0.045, 0.35, SCISS[0], -pfz * 1, pfx * 1);
         seg(px, hy, pz, hx - pfx * 0.08, hy - s * 0.09, hz - pfz * 0.08, 0.055, 0.6, SCISS[1], -pfz, pfx); }
       seg(px, hy - 0.02, pz, px, hy + 0.02, pz, 0.04, 1, SCISS[2], pfx, pfz);
     }
   }
-  // the ribbon on gold stanchions: before the cut a sagging satin band with a bow; after it, two halves swinging down
+  // the ribbon: before the cut a sagging satin band with a bow; after it, two halves swinging down from the stanchions
   const RIBC = [col('#c8102e'), col('#e01b3c')];
   function drawRibbon(now) {
     const ts = now - snipAt, x0 = 1.75, y0 = 1.08, n = 7;
-    for (let q = 0; q < 2; q++) { const x = SG[q] * x0; seg(x, 0, RIB, x, 0, RIB, 0.13, 1, K.gold, 0, 1); seg(x, 0.06, RIB, x, 1.04, RIB, 0.035, 1, K.gold, 0, 1); seg(x, 1.1, RIB, x, 1.1, RIB, 0.08, 1, K.gold, 0, 1); }
     if (ts < 0) {
       for (let i = 0; i < n * 2; i++) { const t0 = i / (n * 2), t1 = (i + 1) / (n * 2), xa = lerp(-x0, x0, t0), xb = lerp(-x0, x0, t1);
         seg(xa, y0 - Math.sin(Math.PI * t0) * 0.07, RIB, xb, y0 - Math.sin(Math.PI * t1) * 0.07, RIB, 0.055, 0.22, RIBC[i % 2], 0, 1); }
       const by = y0 - 0.07;
-      for (let q = 0; q < 2; q++) { const s = SG[q]; seg(0, by, RIB + 0.01, s * 0.24, by + 0.12, RIB + 0.01, 0.06, 0.3, RIBC[1], 0, 1); seg(s * 0.24, by + 0.12, RIB + 0.01, s * 0.2, by - 0.06, RIB + 0.01, 0.06, 0.3, RIBC[1], 0, 1);
+      for (const s of [-1, 1]) { seg(0, by, RIB + 0.01, s * 0.24, by + 0.12, RIB + 0.01, 0.06, 0.3, RIBC[1], 0, 1); seg(s * 0.24, by + 0.12, RIB + 0.01, s * 0.2, by - 0.06, RIB + 0.01, 0.06, 0.3, RIBC[1], 0, 1);
         seg(s * 0.02, by - 0.02, RIB + 0.01, s * 0.14, by - 0.42, RIB + 0.02, 0.05, 0.25, RIBC[0], 0, 1); }
       seg(0, by - 0.02, RIB + 0.02, 0, by + 0.02, RIB + 0.02, 0.07, 0.6, RIBC[0], 0, 1);
       return;
     }
     const sw = 1.45 * (1 - Math.exp(-ts * 3.2) * Math.cos(ts * 6.5)) + Math.sin(ts * 2.4) * 0.05 * Math.exp(-ts * 0.3);
-    for (let q = 0; q < 2; q++) { const s = SG[q]; let px = s * x0, py = y0; const l = x0 / n;
+    for (const s of [-1, 1]) { let px = s * x0, py = y0; const l = x0 / n;
       for (let i = 0; i < n; i++) { const a = Math.min(1.57, sw * (0.75 + 0.25 * (i + 1) / n)) + Math.sin(now * 5 + i) * 0.04 * (i / n), qx = px - s * Math.cos(a) * l, qy = py - Math.sin(a) * l;
         seg(px, py, RIB, qx, Math.max(0.05, qy), RIB, 0.055, 0.22, RIBC[i % 2], 0, 1); px = qx; py = Math.max(0.05, qy); } }
   }
 
-  // which stage to draw: one with a live speech or an uncut ribbon first, otherwise the one nearest the camera
-  function pickItem(T) {
-    const list = Z.fx; if (!list) return null; let best = null, bs = -Infinity; const cp = Z.camera.position;
-    for (let i = 0; i < list.length; i++) { const o = list[i]; if (!o || o.kind !== 'stage' || !(T >= o.t0 && T <= o.t1)) continue;
-      const sp = o.speaker, live = (sp && T >= sp.t0 - 30 && T <= sp.t1) || (o.cutAt != null && T <= o.cutAt + 30);
-      const dx = o.x - cp.x, dz = o.y - cp.z, s = (live ? 1e13 : 0) - (dx * dx + dz * dz) + (o === cur ? 1e6 : 0);
-      if (s > bs) { bs = s; best = o; } }
-    return best; }
-
-  const DBG = {};
-  function step(dt, now) {
-    const T = Z.T, it = pickItem(T);
-    if (!it) { root.visible = false; cur = null; lastNow = now; return; }
-    const resync = it !== cur || now - lastNow > 0.5; lastNow = now;
+  function update(dt, now) {
+    const T = Z.T, list = Z.fx; let it = null;
+    if (list) for (let i = 0; i < list.length; i++) { const o = list[i]; if (o && o.kind === 'stage' && T >= o.t0 && T <= o.t1) it = o; }
+    if (!it) { root.visible = false; cur = null; return; }
+    if (it !== cur) {   // a new stage: anchor the real-time events to where the sim already is
+      cur = it; lastT = T; snipAt = 1e9; welAt = -1e9; appl = -1e9; cheer = -1e9;
+      if (it.cutAt != null && T >= it.cutAt) snipAt = T - it.cutAt < 25 ? now : now - 60;
+      if (it.speaker && T >= it.speaker.t0) welAt = T - it.speaker.t0 < 25 ? now : now - 60;
+      for (let i = 0; i < NFL; i++) flash[i * 6 + 3] = -1e9;
+    }
+    root.visible = true;
+    // events crossing in sim time, played in real time
     const sp = it.speaker, cut = it.cutAt;
-    if (resync) {
-      if (it !== cur) { cur = it; snipAt = 1e9; cutSeen = -1e9; welAt = -1e9; ribAt = -1e9; offAt = -1e9; appl = -1e9; cheer = -1e9; holdEndT = null;
-        strikeK = 1; lastHit = -1e9; scl = -1; A.yaw = A.yawT = 0; for (let i = 0; i < NFL; i++) flash[i * 6 + 3] = -1e9; }
-      // cues already well past (a stage first seen late, or back from the 2D view): played long ago
-      if (sp && T >= sp.t0 + 25 && welAt < -1e8) welAt = now - 60;
-      if (cut != null && T >= cut + 25 && snipAt > 1e8) { snipAt = now - 60; ribAt = now - 60; cutSeen = now - 60; }
-      if (sp && cut == null && T >= sp.t1 + 25 && offAt < -1e8) offAt = now - 60;
-    } else if (dt > 0) rate += (clamp((T - lastT) / dt, 5, 100) - rate) * (1 - Math.exp(-dt * 2));
+    if (cut != null && lastT < cut && T >= cut && snipAt > now) { snipAt = now; cheer = now; appl = now; }
+    if (cut == null) snipAt = 1e9;
+    if (sp && lastT < sp.t0 && T >= sp.t0) { welAt = now; appl = now + 0.4; }
+    if (sp && lastT < sp.t1 && T >= sp.t1 && cut == null) appl = now;
     lastT = T;
-    // the programme: cues in sim time (due and not yet played), walks in real time
-    if (sp && T >= sp.t0 && welAt < -1e8) { welAt = now; appl = now + 0.4; }
-    const inDone = welAt > -1e8 && now - welAt >= DIN;
-    if (sp && cut != null && sp.t0 < cut && inDone && ribAt < -1e8 && T >= cut - Math.max(14, (DRIB + 1.5) * rate)) ribAt = now;
-    const arrived = ribAt > -1e8 && now - ribAt >= DRIB;
-    if (cut != null && T >= cut && snipAt > 1e8) { if (cutSeen < -1e8) cutSeen = now;
-      if (!(sp && sp.t0 < cut && welAt > -1e8 && !arrived) || now - cutSeen > 6) { snipAt = now; cheer = now; appl = now; } }
-    if (sp && cut == null && T >= sp.t1 && inDone && offAt < -1e8) { offAt = now; appl = now; }
-
-    // build-up and pack-away (sim time); after the cut the celebration holds for 4 s of real time if there is sim time left
+    // build-up and pack-away
     const span = Math.max(1, it.t1 - it.t0), BD = clamp(span * 0.25, 8, 40), PD = clamp(span * 0.2, 8, 30);
-    let pStart = it.t1 - PD;
-    if (cut != null) {
-      if (snipAt > 1e8) pStart = Math.max(pStart, it.t1 - 6);
-      else { if (holdEndT == null && now - snipAt >= 4) holdEndT = T;
-        pStart = Math.max(pStart, cut + 5, holdEndT == null ? it.t1 - 6 : Math.min(it.t1 - 6, holdEndT)); } }
-    pStart = Math.min(pStart, it.t1 - 1);
-    let build = Math.min(clamp((T - it.t0) / BD, 0, 1), clamp((it.t1 - T) / (it.t1 - pStart), 0, 1));
-    const post = cut != null && snipAt < 1e8 && T > pStart;
-
-    // aircraft about to use the runway through the stage: strike it fast (and re-erect only if it has time left)
-    let hit = false, near = 1e9;
-    const F = Z.flights ? Z.flights() : null;
-    if (F) { const ca = Math.cos(it.a || 0), sa = Math.sin(it.a || 0), reach = HW * Math.max(1, scl) + 250;
-      for (let i = 0; i < F.length; i++) { const f = F[i]; if (!f || !MOVING[f.state]) continue;
-        const dx = f.x - it.x, dy = f.y - it.y, al = dx * ca + dy * sa, lat = -dx * sa + dy * ca, alt = f.alt || 0;
-        if (alt < 300) { const d = Math.sqrt(dx * dx + dy * dy); if (d < near) near = d; }
-        if (Math.abs(lat) < 60 && Math.abs(al) < reach && alt < 150) hit = true;
-        else if (f.state === 'approach' && f.rwy && Math.abs(f.rwy.y - it.y) < 60 && it.x > f.rwy.x0 && it.x < f.rwy.x1 &&
-          Math.hypot(f.x - (f.rwy.x1 - 450), f.y - f.rwy.y) < 1500) hit = true; } }
-    if (hit) lastHit = now;
-    const struck = lastHit > -1e8 && (now - lastHit < 2.5 || T > it.t1 - 60);
-    strikeK = struck ? Math.max(0, strikeK - dt / 1.2) : Math.min(1, strikeK + dt / 1.5);
-    build = Math.min(build, strikeK);
-    if (build <= 0) { root.visible = false; return; }
-    root.visible = true; structure.visible = true;
-    U.uBuild.value = build; PU.uBuild.value = build;
-    const bp = post ? Math.min(1, build / 0.75) : build;   // after the cut the people leave last
-
-    // placement and scale: bigger with the real camera distance so it reads from the strategic camera, capped near aircraft
-    const cp = Z.camera.position, cdx = cp.x - it.x, cdz = cp.z - it.y, cd = Math.sqrt(cdx * cdx + cp.y * cp.y + cdz * cdz);
-    let tgt = clamp(Math.max(Math.sqrt(Math.max(1, cd) / 38), cd / 500), 1, 22);
-    if (near < 600) tgt = Math.min(tgt, 2.5 * (Z.kEx || 1));
-    if (scl < 0 || !isFinite(scl)) scl = tgt; else scl += (tgt - scl) * (1 - Math.exp(-dt * 3));
-    root.position.set(it.x, 0, it.y); root.rotation.y = -(it.a || 0); root.scale.setScalar(scl);
-    const kz = clamp((32 / scl - Z0) / (21.6 - Z0), 0.12, 1), kc = Math.max(kz, 0.45), sqz = z => z > Z0 ? Z0 + (z - Z0) * kc : z;
-    const hero = 1 + 0.25 * sm(1.5, 4, scl);
-    U.uK.value = kz; U.uPodS.value = hero; GX = 1 + 0.6 * sm(2, 5, scl);
-    PU.uScl.value = scl; U.uFar.value = sm(4.5, 10, scl); PU.uFm.value = scl > 8 ? 6 : 3.5;
-    PU.uPx.value = Z.renderer.domElement.height / (2 * Math.tan(Z.camera.fov * Math.PI / 360));
-    LOD = scl > 5.5;
-    { const zmax = Math.max(9, Z0 + (20 - Z0) * kz); shadow.position.z = (zmax - 8) / 2; shadow.scale.z = zmax + 8; }
+    const build = Math.min(clamp((T - it.t0) / BD, 0, 1), clamp((it.t1 - T) / PD, 0, 1));
+    U.uBuild.value = build; U.uRib.value = cut != null ? 1 : 0; PU.uBuild.value = build;
     shMat.opacity = 0.55 * sm(0, 0.25, build);
-
-    // ---- the Chief Minister's state ----
-    let cmMode = -1, cmX = 0, cmY = 0, cmZ = 0, cmYaw = 0, cmU = 0, sciss = -1;
-    if (sp && welAt > -1e8 && bp > 0.72) {
-      if (!inDone) { const d = (now - welAt) * 1.3; pathAt(PATH_IN, d); cmMode = 1; cmU = d; cmX = pp[0]; cmY = pp[1]; cmZ = pp[2]; cmYaw = pp[3]; }
-      else if (cut != null && ribAt > -1e8) {
-        if (!arrived) { const d = (now - ribAt) / DRIB * PLEN[1]; pathAt(PATH_RIB, d); cmMode = 1; cmU = d; cmX = pp[0]; cmZ = pp[2]; cmY = deckY(pp[2]); cmYaw = pp[3]; if (d > PLEN[1] * 0.7) sciss = 0.5; }
-        else { cmMode = 2; cmX = 0; cmY = 0; cmZ = RIB - 0.5; cmYaw = 0;
-          sciss = snipAt > 1e8 ? 0.5 + 0.5 * sm(1.5, 0, (cut - T) / rate) : now - snipAt > 2.6 ? -1 : Math.max(0, 1 - (now - snipAt) * 12); } }
-      else if (cut == null && offAt > -1e8) { if (now - offAt < DOFF) { const d = (now - offAt) * 1.3; pathAt(PATH_OUT, d); cmMode = 1; cmU = d; cmX = pp[0]; cmY = pp[1]; cmZ = pp[2]; cmYaw = pp[3]; } }
-      else { cmMode = 0; cmX = POD[0] + 0.1; cmY = FLOOR; cmZ = POD[1] - 0.62; cmYaw = A.yaw - 0.12; }
-    } else if (!sp && cut != null && bp > 0.72 && T >= cut - 3) { cmMode = 2; cmX = 0; cmY = 0; cmZ = RIB - 0.5; cmYaw = 0;
-      sciss = snipAt > 1e8 ? 1 : now - snipAt > 2.6 ? -1 : Math.max(0, 1 - (now - snipAt) * 12); }
-    DBG.mode = cmMode; DBG.wel = now - welAt; DBG.rib = now - ribAt; DBG.snip = now - snipAt; DBG.T = T; DBG.cut = cut;
-    const speaking = cmMode === 0, clapping = now - appl < 1.6 && now >= appl;
+    // placement and scale (bigger with camera distance, so it reads from the strategic camera)
+    const tgt = clamp(Math.sqrt(Math.max(1, Z.camDist) / 38), 1, 13);
+    scl += (tgt - scl) * (1 - Math.exp(-dt * 5)); if (!isFinite(scl)) scl = tgt;
+    root.position.set(it.x, 0, it.y); root.rotation.y = -(it.a || 0); root.scale.setScalar(scl);
+    PU.uScl.value = scl; U.uFar.value = sm(4.5, 10, scl); PU.uPx.value = Z.renderer.domElement.height / (2 * Math.tan(Z.camera.fov * Math.PI / 360));
+    LOD = scl > 5.5;
 
     // ---- people ----
     NI = 0;
+    const speaking = sp && T >= sp.t0 + 10 && T < sp.t1, clapping = now - appl < 1.6;
     // officials, seated
-    for (const o of OFF) { const pk = sm(o.th, o.th + 0.05, bp); if (pk < 0.02) continue;
+    for (const o of OFF) { const pk = sm(o.th, o.th + 0.05, build); if (pk < 0.02) continue;
       seated(); const look = Math.sin(now * 0.4 + o.ph) * 0.3 + (speaking ? 0.25 : 0);
       J[HEAD * 3] += Math.sin(look) * 0.03;
       if (clapping) { const c = 0.02 + 0.07 * (0.5 + 0.5 * Math.sin(now * 23 + o.ph)); sj(LE, 0.2, 0.8, 0.02); sj(RE, -0.2, 0.8, 0.02); sj(LH, c, 0.92, 0.2); sj(RH, -c, 0.92, 0.2); }
       PK = pk; place(o.x, FLOOR, o.z + 0.12, look * 0.25, pk); dress(o, true); }
-    // the Chief Minister (hero scale and a warm halo while he holds the stage)
-    let haloI = 0;
-    if (cmMode >= 0) { poseCM(now, cmMode, cmU, dt); drawCM(cmX, cmY, cmZ, cmYaw, now, cmMode, sciss, 1.1 * hero);
-      if (cmMode === 0 || cmMode === 2) { haloI = 0.45 * sm(0.72, 0.85, bp); const o = HALO * 6; flash[o] = W[HEAD * 3] - pfx * 0.35 * PK; flash[o + 1] = W[HEAD * 3 + 1] + 0.05 * PK; flash[o + 2] = W[HEAD * 3 + 2] - pfz * 0.35 * PK; flash[o + 4] = 2.5; } }
+    // the Chief Minister
+    let cmMode = -1, cmX = 0, cmY = 0, cmZ = 0, cmYaw = 0, cmU = 0, sciss = -1;
+    if (sp && build > 0.72) {
+      const tIn = sp.t0, tSpeak = sp.t0 + 10, tEnd = cut != null ? Math.min(sp.t1, cut) - 14 : sp.t1;
+      if (T >= tIn && T < tSpeak) { const u = (T - tIn) / 10; pathAt(PATH_IN, u); cmMode = 1; cmU = u * PLEN[0]; cmX = pp[0]; cmY = pp[1]; cmZ = pp[2]; cmYaw = pp[3]; }
+      else if (T >= tSpeak && T < tEnd) { cmMode = 0; cmX = POD[0] + 0.1; cmY = FLOOR; cmZ = POD[1] - 0.62; cmYaw = A.yaw * 0.6 - 0.12; }
+      else if (T >= tEnd && cut != null) { const u = clamp((T - tEnd) / 11, 0, 1); if (u < 1) { pathAt(PATH_RIB, u); cmMode = 1; cmU = u * PLEN[1]; cmX = pp[0]; cmZ = pp[2]; cmY = stairY(pp[2], pp[1]); cmYaw = pp[3]; }
+        else { cmMode = 2; cmX = 0; cmY = 0; cmZ = RIB - 0.5; cmYaw = 0; }
+        sciss = u >= 0.7 ? (now < snipAt ? 0.5 + 0.5 * Math.min(1, (T - tEnd - 9) / 3) : Math.max(0, 1 - (now - snipAt) * 12)) : -1;
+        if (now - snipAt > 2.6) sciss = -1; }
+      else if (T >= tEnd && cut == null && T < tEnd + 10) { const u = (T - tEnd) / 10; pathAt(PATH_OUT, u); cmMode = 1; cmU = u * PLEN[2]; cmX = pp[0]; cmY = pp[1]; cmZ = pp[2]; cmYaw = pp[3]; }
+    } else if (!sp && cut != null && build > 0.72 && T >= cut - 3) { cmMode = 2; cmX = 0; cmY = 0; cmZ = RIB - 0.5; cmYaw = 0; sciss = now < snipAt ? 1 : Math.max(0, 1 - (now - snipAt) * 12); if (now - snipAt > 2.6) sciss = -1; }
+    if (cmMode >= 0) { poseCM(now, cmMode, cmU, dt); drawCM(cmX, cmY, cmZ, cmYaw, now, cmMode, sciss); }
     // police at the steps
-    for (const o of POL) { const pk = sm(o.th, o.th + 0.04, bp); if (pk < 0.02) continue; stand(); sj(LH, 0.12, 0.92, -0.12); sj(RH, -0.12, 0.92, -0.12); sj(LE, 0.22, 1.12, -0.08); sj(RE, -0.22, 1.12, -0.08);
-      PK = pk; place(o.x, 0, o.z, 0, pk); dress(o, false); foot(o.x, 0, o.z, pk); }
+    for (const o of POL) { const pk = sm(o.th, o.th + 0.04, build); if (pk < 0.02) continue; stand(); sj(LH, 0.12, 0.92, -0.12); sj(RH, -0.12, 0.92, -0.12); sj(LE, 0.22, 1.12, -0.08); sj(RE, -0.22, 1.12, -0.08);
+      PK = pk; place(o.x, 0, o.z, 0, pk); dress(o, false); }
     // photographers: face whoever is the story, shoot in bursts
     const focX = cmMode >= 0 ? cmX : 0, focZ = cmMode >= 0 ? cmZ : -1;
-    const frate = (now - snipAt < 2.5 && now >= snipAt) ? 9 : speaking ? 2.4 : cmMode >= 0 ? 1.6 : 0.35;
-    for (const o of PHO) { const pk = sm(o.th, o.th + 0.05, bp); if (pk < 0.02) continue;
+    const rate = (now - snipAt < 2.5 && now >= snipAt) ? 9 : speaking ? 2.4 : cmMode >= 0 ? 1.6 : 0.35;
+    for (const o of PHO) { const pk = sm(o.th, o.th + 0.05, build); if (pk < 0.02) continue;
       const yaw = Math.atan2(focX - o.x, focZ - o.z) + Math.sin(now * 0.7 + o.ph) * 0.08;
-      if (R() < frate / PHO.length * dt * 2.2) { o.shoot = now + 0.9 + R(); }
+      if (R() < rate / PHO.length * dt * 2.2) { o.shoot = now + 0.9 + R(); }
       const shooting = now < o.shoot || speaking && Math.sin(now * 0.5 + o.ph) > -0.3;
       stand();
       if (o.crouch) { sj(PELV, 0, 0.52, -0.12); sj(NECK, 0, 0.98, -0.02); sj(HEAD, 0, 1.13, 0.02); sj(LS, 0.19, 0.95, -0.02); sj(RS, -0.19, 0.95, -0.02);
@@ -7422,58 +7114,48 @@ Z3MOD.fx3 = function (Z) {
       const hy = o.crouch ? 1.12 : 1.58;
       if (shooting) { sj(LE, 0.22, hy - 0.22, 0.1); sj(RE, -0.22, hy - 0.22, 0.1); sj(LH, 0.07, hy - 0.04, 0.2); sj(RH, -0.08, hy - 0.02, 0.18); sj(PROP, 0, hy, 0.17); sj(PROP2, 0, hy, 0.34); }
       else { sj(PROP, -0.12, hy - 0.62, 0.16); sj(PROP2, -0.12, hy - 0.62, 0.3); sj(RH, -0.15, hy - 0.66, 0.1); }
-      PK = pk; place(o.x, 0, o.z, yaw, pk); dress(o, false); foot(o.x, 0, o.z, pk);
+      PK = pk; place(o.x, 0, o.z, yaw, pk); dress(o, false);
       if (o.vest) { at(tA, PELV, NECK, 0.2, 0); at(tB, PELV, NECK, 0.85, 0); SP(0.183, 0.72, o.vest); }
       S(PROP, PROP2, 0.07, 1.25, K.black);   // camera body and lens
       at(tA, PROP, PROP, 0, 0.08); tB[0] = tA[0]; tB[1] = tA[1] + 0.06 * PK; tB[2] = tA[2]; SP(0.04, 1.4, K.dark);
       o.fl[0] = tB[0]; o.fl[1] = tB[1] + 0.04; o.fl[2] = tB[2];
-      if (shooting && R() < frate / PHO.length * dt * 1.6) fireFlash(o.fl[0], o.fl[1], o.fl[2], now, 3.4, false); }
-    // the crowd (squeezed toward the stage with the approach when the stage is scaled up)
-    const cheering = now - cheer < 2.8 && now >= cheer;
-    for (const o of CROWD) { const pk = sm(o.th, o.th + 0.04, bp); if (pk < 0.02) continue;
+      if (shooting && R() < rate / PHO.length * dt * 1.6) fireFlash(o.fl[0], o.fl[1], o.fl[2], now, 3.4, false); }
+    // the crowd
+    const cheering = now - cheer < 2.8;
+    for (const o of CROWD) { const pk = sm(o.th, o.th + 0.04, build); if (pk < 0.02) continue;
       stand(); const sway = Math.sin(now * 0.9 + o.ph) * 0.035; J[PELV * 3] += sway * 0.5; J[NECK * 3] += sway; J[HEAD * 3] += sway * 1.2; J[LS * 3] += sway; J[RS * 3] += sway;
       let phone = false, flag = false;
       if (cheering && (o.ph % 1) < 0.7) { const b = Math.abs(Math.sin(now * 8 + o.ph)) * 0.1; sj(LE, 0.3, 1.62, 0.04); sj(LH, 0.34, 1.95 + b, 0.06); sj(RE, -0.3, 1.62, 0.04); sj(RH, -0.34, 1.95 + b, 0.06); }
       else if (clapping && (o.ph % 1) < 0.6) { const c = 0.03 + 0.08 * (0.5 + 0.5 * Math.sin(now * 21 + o.ph)); sj(LE, 0.2, 1.18, 0.12); sj(RE, -0.2, 1.18, 0.12); sj(LH, c, 1.32, 0.3); sj(RH, -c, 1.32, 0.3); }
       else if (o.act === 'phone' && (speaking || cmMode >= 0)) { sj(RE, -0.24, 1.42, 0.12); sj(RH, -0.12, 1.68, 0.32); phone = true; }
       else if (o.act === 'flag') { const w = Math.sin(now * 6 + o.ph); sj(RE, -0.3, 1.55, 0.05); sj(RH, -0.33 + w * 0.08, 1.85, 0.08); flag = true; }
-      const oz = sqz(o.z);
-      PK = pk * o.k; place(o.x, 0, oz, Math.atan2(focX * 0.5 - o.x, focZ - oz), PK); dress(o, false); foot(o.x, 0, oz, PK);
+      PK = pk * o.k; place(o.x, 0, o.z, Math.atan2(focX * 0.5 - o.x, focZ - o.z), PK); dress(o, false);
       if (phone) { at(tA, RH, RH, 0, 0.02); tB[0] = tA[0]; tB[1] = tA[1] + 0.12 * PK; tB[2] = tA[2]; SP(0.035, 0.4, K.black);
         if (R() < (cmMode >= 0 ? 0.05 : 0.01) * dt * 8) fireFlash(tB[0], tB[1], tB[2] + 0.04, now, 1.2, true); }
       if (flag) { const hx = W[RH * 3], hy = W[RH * 3 + 1], hz = W[RH * 3 + 2], w = Math.sin(now * 6 + o.ph);
         seg(hx, hy - 0.1, hz, hx, hy + 0.55 * PK, hz, 0.012, 1, K.silver, pfx, pfz);
         for (let b = 0; b < 3; b++) { const fy = hy + (0.52 - b * 0.09) * PK, fx = hx - pfz * 0.02 * w, fz = hz + pfx * 0.02 * w;
           seg(hx, fy, hz, fx + (-pfz) * 0.34 * PK * (0.9 + 0.1 * w), fy - 0.02 * w, fz + pfx * 0.34 * PK * (0.9 + 0.1 * w), 0.045 * PK, 0.25, FLAGC[b], pfx, pfz); } } }
-    // ribbon and its stanchions (only for a stage with a ribbon)
-    if (cut != null && bp > 0.62) { PK = 1; drawRibbon(now); }
-    IM.count = NI; IM.visible = NI > 0;
-    if (NI > 0) { const im = IM.instanceMatrix, ic = IM.instanceColor;
-      if (im.clearUpdateRanges) { im.clearUpdateRanges(); im.addUpdateRange(0, NI * 16); ic.clearUpdateRanges(); ic.addUpdateRange(0, NI * 3); }
-      im.needsUpdate = true; ic.needsUpdate = true; }
+    // ribbon
+    if (cut != null && build > 0.62) { PK = 1; drawRibbon(now); }
+    IM.count = NI; IM.instanceMatrix.needsUpdate = true; IM.instanceColor.needsUpdate = true;
+    IM.visible = NI > 0;
 
-    // ---- petals: the welcome shower over his walk in, the burst at the ribbon ----
+    // ---- petals: the welcome shower over the podium, the burst at the ribbon ----
     PU.uB.value.set(now - welAt < 90 ? now - welAt : (welAt > -1e8 ? 90 : -1), now - snipAt < 90 ? (now >= snipAt ? now - snipAt : -1) : (snipAt < 1e8 ? 90 : -1));
-    PU.uO0.value.set(5.0, 3.4, -0.6); PU.uO1.value.set(0, 1.3, RIB);
+    PU.uO0.value.set(POD[0] - 0.3, YE - 0.6, POD[1] - 0.8); PU.uO1.value.set(0, 1.3, RIB);
     // a ring of flashes at the snip
     if (now - snipAt >= 0 && now - snipAt < 1.2 && R() < dt * 16) { const o = PHO[Math.floor(R() * PHO.length)]; fireFlash(o.fl[0], o.fl[1], o.fl[2], now, 3.6, false); }
-    // ---- flashes: write the slots (the last one is the halo) ----
+    // ---- flashes: write the slots ----
     let any = false;
-    for (let i = 0; i < NFL; i++) { const o = i * 6, v = NPET + i;
-      let I = 0, kind = flash[o + 5];
-      if (i === HALO) { I = haloI; kind = 2; }
-      else { const a = now - flash[o + 3]; I = a >= 0 && a < 0.25 ? Math.exp(-a * 16) * (a < 0.02 ? a / 0.02 : 1) * (kind ? 0.55 : 1) : 0; }
+    for (let i = 0; i < NFL; i++) { const o = i * 6, a = now - flash[o + 3], I = a >= 0 && a < 0.25 ? Math.exp(-a * 16) * (a < 0.02 ? a / 0.02 : 1) : 0, v = NPET + i;
       if (I > 0 || pF[v * 4 + 1] > 0) { any = true; pPos[v * 3] = flash[o]; pPos[v * 3 + 1] = flash[o + 1]; pPos[v * 3 + 2] = flash[o + 2];
-        pF[v * 4 + 1] = I; pF[v * 4 + 2] = flash[o + 4]; pF[v * 4 + 3] = kind; } }
+        pF[v * 4 + 1] = I * (flash[o + 5] ? 0.55 : 1); pF[v * 4 + 2] = flash[o + 4]; pF[v * 4 + 3] = flash[o + 5]; } }
     if (any || flDirty) { pFA.needsUpdate = true; pgeo.attributes.position.needsUpdate = true; flDirty = false; }
-  }
-  function update(dt, now) {
-    try { step(dt, now); }
-    catch (e) { root.visible = false; if (Z.fxKinds) Z.fxKinds.delete('stage'); throw e; }   // let the flat stand-in come back
+    // flashes are drawn in stage space but were captured in stage space too (joints are in stage space): nothing to convert
   }
 
-  (Z.fxKinds = Z.fxKinds || new Set()).add('stage');   // hides the flat emoji stand-in
-  return { update, stats: () => ({ staticTris: nTriStatic, maxInst: MAXI, inst: NI, capTris: capGeo.index ? capGeo.index.count / 3 : capGeo.attributes.position.count / 3, scl, build: U.uBuild.value, strikeK, rate, dbg: DBG }) };
+  return { update, stats: () => ({ staticTris: nTriStatic, maxInst: MAXI, inst: NI, capTris: capGeo.index ? capGeo.index.count / 3 : capGeo.attributes.position.count / 3 }) };
 };
 
 /* ---- 3d/fx4.js ---- */
@@ -7481,8 +7163,8 @@ Z3MOD.fx4 = function (Z) {
   // Round 2/3 set pieces (3d/FX.md): the water-salute arch, the wedding elephant, GPS-spoofing ghost aircraft and the ops
   // WhatsApp storm. Reads Z.fx every frame and draws the kinds it knows. States follow sim time (Z.T); motion runs in real
   // time. Everything scales up with camera distance so it reads from the strategic view, and every mesh is hidden while no
-  // item of its kind is active. Draw calls while all four are active: ground blobs 1, tenders 1, water 1, elephant 1, ghosts 1,
-  // chat 1, plus 2 in the sun-shadow pass (tenders, elephant). No per-frame allocations.
+  // item of its kind is active. Draw calls while all four are active: shadows 1, tenders 1, water 1, elephant 1, ghosts 1,
+  // chat 1. No per-frame allocations.
   const THREE = Z.THREE, scene = Z.scene;
   const root = new THREE.Group(); root.name = 'fx4'; scene.add(root);
   const KS = Z.fxKinds || (Z.fxKinds = new Set());
@@ -7506,19 +7188,16 @@ float fx4n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(fx4
   const BLOBN = 24;
   const blobGeo = new THREE.PlaneGeometry(1, 1); blobGeo.rotateX(-Math.PI / 2);
   const blobOp = new THREE.InstancedBufferAttribute(new Float32Array(BLOBN), 1); blobOp.setUsage(THREE.DynamicDrawUsage); blobGeo.setAttribute('aOp', blobOp);
-  const blobMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+  const blobMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   blobMat.onBeforeCompile = sh => {
-    sh.vertexShader = 'attribute float aOp;varying float vOp,vCy;varying vec2 vQ;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvOp=aOp;vQ=position.xz*2.;vec4 bw=modelMatrix*instanceMatrix*vec4(transformed,1.);vCy=normalize(cameraPosition-bw.xyz).y;');
-    sh.fragmentShader = 'varying float vOp,vCy;varying vec2 vQ;\n' + sh.fragmentShader.replace('#include <alphamap_fragment>', `#include <alphamap_fragment>
-      float r2=dot(vQ,vQ),bo=abs(vOp);if(bo>1.)bo-=1.;diffuseColor.a*=bo*pow(max(0.,1.-r2),1.6);diffuseColor.rgb=vec3(0.);
-      if(vOp<0.){float fr=0.22+0.7*pow(1.-clamp(vCy,0.,1.),3.);diffuseColor.rgb=mix(vec3(0.03,0.045,0.06),vec3(0.55,0.68,0.82),fr);}
-      if(vOp>1.)diffuseColor.rgb=vec3(0.55,0.47,0.36);`);
+    sh.vertexShader = 'attribute float aOp;varying float vOp;varying vec2 vQ;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvOp=aOp;vQ=position.xz*2.;');
+    sh.fragmentShader = 'varying float vOp;varying vec2 vQ;\n' + sh.fragmentShader.replace('#include <alphamap_fragment>', '#include <alphamap_fragment>\nfloat r2=dot(vQ,vQ);diffuseColor.a*=vOp*pow(max(0.,1.-r2),1.6);');
   };
   const blobs = new THREE.InstancedMesh(blobGeo, blobMat, BLOBN); blobs.frustumCulled = false; blobs.renderOrder = 20; blobs.count = 0;
   blobs.instanceMatrix.setUsage(THREE.DynamicDrawUsage); root.add(blobs);
   let nBlob = 0;
   const blob = (x, z, rot, sx, sz, op) => {
-    if (nBlob >= BLOBN || Math.abs(op) <= 0.001 || op === 1) return;
+    if (nBlob >= BLOBN || op <= 0.001) return;
     _q.setFromAxisAngle(UP, rot); _v.set(x, 0.35, z); _s.set(sx, 1, sz); _m.compose(_v, _q, _s);
     blobs.setMatrixAt(nBlob, _m); blobOp.array[nBlob] = op; nBlob++;
   };
@@ -7586,7 +7265,7 @@ float fx4n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(fx4
           if(abs(vPart-5.)<0.5)totalEmissiveRadiance+=diffuseColor.rgb*0.25;
           if(abs(vPart-6.)<0.5)totalEmissiveRadiance+=vec3(2.,0.1,0.05);`);
     };
-    const trucks = new THREE.InstancedMesh(geo, mat, 2); trucks.frustumCulled = false; trucks.visible = false; trucks.castShadow = true; trucks.instanceMatrix.setUsage(THREE.DynamicDrawUsage); root.add(trucks);
+    const trucks = new THREE.InstancedMesh(geo, mat, 2); trucks.frustumCulled = false; trucks.visible = false; trucks.instanceMatrix.setUsage(THREE.DynamicDrawUsage); root.add(trucks);
 
     // jet ballistics with linear drag, solved once: from the monitor tip (lateral -D+s0, height h0) to a crown at H just past
     // the centreline
@@ -7595,121 +7274,84 @@ float fx4n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(fx4
     for (let i = 0; i < 60; i++) { const vy = (lo + hi) / 2, tp = Math.log(1 + KD * vy / g) / KD; if (yAt(vy, tp) > H - h0) hi = vy; else lo = vy; }
     const VY = (lo + hi) / 2, TP = Math.log(1 + KD * VY / g) / KD, VX = (sPk - s0) * KD / (1 - Math.exp(-KD * TP));
     let TF = TP; while (h0 + yAt(VY, TF) > 0 && TF < 20) TF += 0.01;
-    const traj0 = t => s0 + VX / KD * (1 - Math.exp(-KD * t));
     // particles: 0/1 stream (jet A/B), 2/3 droplets, 4/5 mist
     const NS = 2600, ND = 800, NM = 520, n = 2 * (NS + ND + NM), sd = new Float32Array(n * 4), R = mulberry(515);
     let o = 0; const put = (kind) => { sd[o++] = kind; sd[o++] = R(); sd[o++] = R(); sd[o++] = R(); };
     for (let j = 0; j < 2; j++) { for (let i = 0; i < NS; i++) put(j); for (let i = 0; i < ND; i++) put(2 + j); for (let i = 0; i < NM; i++) put(4 + j); }
     const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3)); pg.setAttribute('aSd', new THREE.BufferAttribute(sd, 4));
-    const xL = traj0(TF), RX = (xL - s0) * 0.5, CX = s0 + RX;
     const PU = { uTime: { value: 0 }, uFade: { value: 0 }, uK: { value: 1 }, uSz: { value: 1 }, uProj: { value: 1000 }, uO: { value: new THREE.Vector3() }, uAx: { value: new THREE.Vector2(1, 0) },
-      uSun: { value: new THREE.Vector3(0, 1, 0) }, uWind: { value: new THREE.Vector2() }, uJ: { value: new THREE.Vector4(VX, VY, KD, h0) }, uS0: { value: s0 }, uTF: { value: TF }, uTP: { value: TP },
-      uMist: { value: 1 }, uBow: { value: 0 }, uArc: { value: new THREE.Vector3(CX, RX, H) } };
+      uSun: { value: new THREE.Vector3(0, 1, 0) }, uWind: { value: new THREE.Vector2() }, uJ: { value: new THREE.Vector4(VX, VY, KD, h0) }, uS0: { value: s0 }, uTF: { value: TF }, uTP: { value: TP } };
     const pmat = new THREE.ShaderMaterial({ uniforms: PU, transparent: true, depthWrite: false,
-      vertexShader: `uniform float uTime,uFade,uK,uSz,uProj,uS0,uTF,uTP,uMist,uBow;uniform vec3 uO,uSun,uArc;uniform vec2 uAx,uWind;uniform vec4 uJ;attribute vec4 aSd;
-        varying vec4 vCol;varying float vTyp,vSeed,vAsp;varying vec2 vDir;varying vec3 vSunS;
+      vertexShader: `uniform float uTime,uFade,uK,uSz,uProj,uS0,uTF,uTP;uniform vec3 uO,uSun;uniform vec2 uAx,uWind;uniform vec4 uJ;attribute vec4 aSd;
+        varying vec4 vCol;varying float vTyp;
         float h1(float x){return fract(sin(x*78.233)*43758.5453);}
         vec2 traj(float t,float vj){float e=1.-exp(-uJ.z*t);return vec2(uS0+uJ.x*vj/uJ.z*e,uJ.w+(uJ.y*vj+9.81/uJ.z)/uJ.z*e-9.81*t/uJ.z);}
         vec3 hue(float h){return clamp(vec3(abs(h*6.-3.)-1.,2.-abs(h*6.-2.),2.-abs(h*6.-4.)),0.,1.);}
         void main(){
           float kind=aSd.x,side=mod(kind,2.)<0.5?1.:-1.,typ=floor(kind*0.5+0.01),r1=aSd.y,r2=aSd.z,r3=aSd.w;
-          vec3 lp;float size,a,t=0.,asp=1.,glint=0.;vec2 db=vec2(0.,1.);
+          vec3 lp;float size,a,t=0.;vec3 col=vec3(0.80,0.87,0.95);
           vec3 rr=vec3(h1(r1*31.+r2),h1(r2*17.+r3),h1(r3*13.+r1))-0.5;
-          vec2 L=vec2(-uAx.y,uAx.x);
           if(typ<1.5){
             float life=uTF*(0.96+0.1*h1(r1*7.));
             t=fract(r1+uTime/life)*life;
-            float vj=1.+(r2-0.5)*(typ<0.5?0.03:0.12);
-            vec2 b=traj(t,vj);db=traj(t+0.04,vj)-b;
-            float br=smoothstep(uTP*0.75,uTF,t);   // a clean rope up to the crown, breaking up as it falls
-            float sp=(typ<0.5?1.:2.4)*(0.05+0.12*t+0.3*t*t*br+0.7*br);
-            lp=vec3(b.x+rr.x*sp*0.7,b.y+rr.y*sp,rr.z*sp*(1.4+2.*br));
-            size=typ<0.5?(1.25+0.3*t+0.5*br):(0.3+0.15*r3);
-            asp=typ<0.5?mix(3.,3.6,br):2.6;
-            a=typ<0.5?mix(0.7,0.2,br):0.75;
+            float vj=1.+(r2-0.5)*(typ<0.5?0.035:0.12);
+            vec2 b=traj(t,vj);
+            float br=smoothstep(uTP*0.55,uTF,t);   // the jet breaks up after the crown
+            float sp=(typ<0.5?1.:2.4)*(0.07+0.22*t+0.25*t*t*br+0.6*br);
+            lp=vec3(b.x+rr.x*sp*0.7,b.y+rr.y*sp,rr.z*sp*(1.6+2.*br));
+            size=typ<0.5?(0.32+0.22*t+0.5*br):(0.10+0.06*r3);
+            a=typ<0.5?mix(0.55,0.22,br):0.85;
             a*=smoothstep(-0.2,1.4,b.y)*smoothstep(0.,0.06,t);
-            if(typ>0.5){glint=step(0.9,h1(r1*91.+floor(uTime*14.+r2*10.)));size*=1.+0.6*glint;}
+            if(typ>0.5){float gl=step(0.9,h1(r1*91.+floor(uTime*14.+r2*10.)));col=col*(1.+gl*5.);size*=1.+gl;}
           } else {
-            vec2 b=traj(uTF,1.);
+            float tb=uTP*0.9+(uTF-uTP*0.9)*pow(r1,0.6);
+            vec2 b=traj(tb,1.);
             float life=5.+4.*r2,age=fract(r3+uTime/life)*life,u=age/life;
-            if(r1<0.72){   // the landing zone: a low, wide, churning cloud
-              size=4.+7.*u+4.*r2;
-              lp=vec3(b.x-3.+rr.x*(14.+12.*u),0.,rr.z*(16.+10.*u));
-              lp.y=max(0.5*size*uSz,1.+rr.y*4.+5.*u);
-              a=0.075*sin(3.1416*u)*(0.6+0.8*h1(r1*3.))*uMist;
-            } else {         // a thin veil along the lower third of the falling limb
-              float tb=mix(uTF*0.82,uTF,(r1-0.72)/0.28);vec2 c=traj(tb,1.);
-              size=2.5+4.*u+2.*r2;
-              lp=vec3(c.x+rr.x*(4.+4.*u),max(0.5*size*uSz,c.y+rr.y*4.-u*2.),rr.z*(6.+4.*u));
-              a=0.035*sin(3.1416*u)*uMist;
-            }
+            lp=vec3(b.x+rr.x*(5.+6.*u),max(0.4+2.5*u,b.y*0.9+rr.y*6.-u*2.),rr.z*(7.+5.*u));
+                        size=3.2+7.*u+3.*r2;
+            a=0.085*sin(3.1416*u)*(0.6+0.8*h1(r1*3.));
+            col=vec3(0.86,0.9,0.95);
           }
           lp.x*=side;
+          vec2 L=vec2(-uAx.y,uAx.x);
           vec3 wp=uO+vec3(L.x*lp.x+uAx.x*lp.z,lp.y,L.y*lp.x+uAx.y*lp.z)*uK;
           if(typ>1.5)wp.xz+=uWind*uK*(lp.y*0.15);
+          // light: sunlit tops are brighter; a rainbow where the scattering angle is 40-42.5 degrees
+          col*=0.8+0.3*clamp(uSun.y,0.,1.);
+          vec3 vd=normalize(wp-cameraPosition);float th=acos(clamp(dot(vd,-uSun),-1.,1.));
+          float x=(0.742-th)/0.052;
+          if(x>0.&&x<1.){float w=sin(3.1416*x);col=mix(col,hue(x*0.78)*1.25+0.08,(typ>1.5?0.65:0.45)*w);}
           vec4 mv=modelViewMatrix*vec4(wp,1.);gl_Position=projectionMatrix*mv;
-          // screen-space direction of travel (streaks) and of the sun (shading)
-          vec3 wd=vec3(L.x*db.x*side,db.y,L.y*db.x*side);
-          vec4 c2=projectionMatrix*(mv+viewMatrix*vec4(wd,0.));
-          float asr=projectionMatrix[1][1]/projectionMatrix[0][0];
-          vec2 sd=(c2.xy/c2.w-gl_Position.xy/gl_Position.w)*vec2(asr,1.);vDir=length(sd)>1e-7?normalize(sd):vec2(0.,1.);
-          vSunS=normalize((viewMatrix*vec4(uSun,0.)).xyz);
-          // the jet is lit by the sun: the side away from it is blue-grey, darker than the sky; only glints exceed 1
-          vec3 col=vec3(1.);
-          // an art-directed spectral band in the falling spray and the mist, when the sun is behind the camera
-          if(typ>0.5){
-            vec3 vd=normalize(wp-cameraPosition);vec2 vh=normalize(vd.xz+1e-5),sh=normalize(uSun.xz+1e-5);
-            float bk=clamp((-dot(vh,sh)-0.2)/0.6,0.,1.)*0.25;
-            float th=acos(clamp(dot(vd,-uSun),-1.,1.)),xp=(0.742-th)/0.052;if(xp>0.&&xp<1.)bk+=0.3*sin(3.1416*xp);
-            float rho=length(vec2((abs(lp.x)-uArc.x)/uArc.y,lp.y/uArc.z)),x=(rho-0.80)/0.10;
-            if(x>0.&&x<1.&&bk>0.){col=mix(col,hue(x*0.78)*1.1+0.1,min(0.6,bk*1.6)*sin(3.1416*x));a=max(a,0.02*bk);}
-          }
           float px=size*uK*uSz*uProj/-mv.z;
           a*=uFade*clamp(px*px/2.25,0.08,1.);
-          gl_PointSize=clamp(px,1.5,240.);
-          vCol=vec4(col*(1.+glint*4.),a);vTyp=typ+0.5*glint;vSeed=r1*6.2832+r2*41.;vAsp=asp;
+          gl_PointSize=clamp(px,1.5,220.);
+          vCol=vec4(col,a);vTyp=typ;
         }`,
-      fragmentShader: `varying vec4 vCol;varying float vTyp,vSeed,vAsp;varying vec2 vDir;varying vec3 vSunS;
-        float nh(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
-        float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(nh(i),nh(i+vec2(1,0)),f.x),mix(nh(i+vec2(0,1)),nh(i+vec2(1,1)),f.x),f.y);}
-        void main(){vec2 q=gl_PointCoord*2.-1.;q.y=-q.y;
-          if(vTyp>1.9){   // mist: rotated fbm with a gaussian falloff
-            float r2=dot(q,q);if(r2>1.)discard;
-            float cs=cos(vSeed),sn=sin(vSeed);vec2 w=mat2(cs,sn,-sn,cs)*q*1.6+vSeed;
-            float f=0.55*vn(w)+0.3*vn(w*2.1+3.7)+0.15*vn(w*4.3+9.1);
-            float a=vCol.a*exp(-r2*3.2)*smoothstep(0.25,0.75,f)*1.6;
-            vec3 c=vCol.rgb*mix(vec3(0.66,0.71,0.78),vec3(1.),0.5+0.5*clamp(dot(normalize(q+vec2(0.,0.3)),normalize(vSunS.xy+1e-4)),-1.,1.));
-            gl_FragColor=vec4(c,a);return;}
-          // stream and drops: streaks along the direction of travel, shaded across their width by the sun
-          vec2 d=vDir,pd=vec2(-d.y,d.x);float al=dot(q,d),ac=dot(q,pd)*vAsp;float e=al*al+ac*ac;if(e>1.)discard;
-          float ln=dot(vec3(pd*clamp(ac,-1.,1.),sqrt(max(0.,1.-ac*ac))),vSunS);
-          vec3 lit=mix(vec3(0.55,0.62,0.70),vec3(1.05,1.04,1.0),smoothstep(-0.35,0.65,ln));
-          vec3 c=vTyp>1.2?vCol.rgb:vCol.rgb*lit;
-          gl_FragColor=vec4(c,vCol.a*(1.-e*e));}` });
+      fragmentShader: `varying vec4 vCol;varying float vTyp;void main(){vec2 q=gl_PointCoord*2.-1.;float r=dot(q,q);if(r>1.)discard;
+        float a=vCol.a*(vTyp>1.5?(1.-r)*(1.-r):vTyp>0.5?(1.-r*r):(1.-r));gl_FragColor=vec4(vCol.rgb,a);}` });
     const pts = new THREE.Points(pg, pmat); pts.frustumCulled = false; pts.visible = false; pts.renderOrder = 30; root.add(pts);
     return { trucks, U, pts, PU, D, TF, sPk };
   })();
   function archUpdate(list, dt, now) {
     const it = list[0];
     if (!it) { WAT.trucks.visible = false; WAT.pts.visible = false; return; }
-    const T = Z.T, cd = camD(), k = clamp(cd / 1100, 1, 4.6), kt = clamp(cd / 700, 1, 10), ca = Math.cos(it.a || 0), sa = Math.sin(it.a || 0);
+    const T = Z.T, k = clamp(camD() / 2300, 1, 4.6), ca = Math.cos(it.a || 0), sa = Math.sin(it.a || 0);
     const vis = smooth(it.t0 - 1, it.t0 + 4, T) * (1 - smooth(it.t1 - 6, it.t1, T));
     const flow = smooth(it.t0 + 4, it.t0 + 16, T) * (1 - smooth(it.t1 - 40, it.t1 - 12, T));
     WAT.trucks.visible = vis > 0.01; WAT.pts.visible = flow > 0.01;
     // trucks: A on the -lateral side facing along the axis, B mirrored; monitors line up at axis offset 0
-    const Lx = -sa, Lz = ca, D = WAT.D * k, sc = kt * Math.max(0.02, vis), sd = Z.sunDir || UP, sk = 1.6 * kt / Math.max(0.3, sd.y);
+    const Lx = -sa, Lz = ca, D = WAT.D * k, sc = k * Math.max(0.02, vis);
     for (let i = 0; i < 2; i++) {
       const sg = i ? 1 : -1, th = i ? -(it.a || 0) + Math.PI : -(it.a || 0), fx = i ? -1 : 1;
-      _q.setFromAxisAngle(UP, th); _v.set(it.x + Lx * D * sg - ca * 4.6 * kt * fx, 0, it.y + Lz * D * sg - sa * 4.6 * kt * fx); _s.setScalar(sc);
+      _q.setFromAxisAngle(UP, th); _v.set(it.x + Lx * D * sg - ca * 4.6 * k * fx, 0, it.y + Lz * D * sg - sa * 4.6 * k * fx); _s.setScalar(sc);
       _m.compose(_v, _q, _s); WAT.trucks.setMatrixAt(i, _m);
-      blob(_v.x + ca * 0.3 * kt * fx - sd.x * sk, _v.z + sa * 0.3 * kt * fx - sd.z * sk, -(it.a || 0), 14 * kt, 4.6 * kt, 0.55 * vis);
-      // wet runway where the arc comes down: dark, with a sky sheen
+      blob(_v.x + ca * 0.3 * k * fx, _v.z + sa * 0.3 * k * fx, -(it.a || 0), 14 * k, 4.4 * k, 0.55 * vis);
+      // wet runway where the arc comes down
       const land = (WAT.sPk + 28) * k;
-      blob(it.x - Lx * land * sg, it.y - Lz * land * sg, -(it.a || 0), 30 * k, 60 * k, -0.4 * flow);
+      blob(it.x - Lx * land * sg, it.y - Lz * land * sg, -(it.a || 0), 26 * k, 52 * k, 0.22 * flow);
     }
     WAT.trucks.instanceMatrix.needsUpdate = true; WAT.U.uTime.value = now;
-    const P = WAT.PU; P.uTime.value = now; P.uFade.value = flow; P.uK.value = k; P.uSz.value = clamp(cd / 1600, 1, 2.6); P.uProj.value = pxScale();
-    P.uMist.value = 1 - 0.6 * smooth(3000, 5000, cd);
+    const P = WAT.PU; P.uTime.value = now; P.uFade.value = flow; P.uK.value = k; P.uSz.value = clamp(camD() / 1600, 1, 2.6); P.uProj.value = pxScale();
     P.uO.value.set(it.x, 0, it.y); P.uAx.value.set(ca, sa); if (Z.sunDir) P.uSun.value.copy(Z.sunDir);
     const w = Z.atmo && Z.atmo.wind; if (w) P.uWind.value.set(Math.cos(w.dir) * (w.speed || 0), Math.sin(w.dir) * (w.speed || 0)); else P.uWind.value.set(2, 0);
   }
@@ -7751,11 +7393,10 @@ float fx4n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(fx4
     for (let i = 0; i < m - 1; i++) for (let j = 0; j < n - 1; j++) { const a = base + i * n + j, b = a + 1, c = a + n, d = c + 1; this.ix.push(a, c, b, b, c, d); }
   };
   const PM = new THREE.Matrix4(), PQ = new THREE.Quaternion(), PE = new THREE.Euler(), PV = new THREE.Vector3(), PS = new THREE.Vector3();
-  Loft.prototype.prim = function (geo, x, y, z, rx, ry, rz, sx, sy, sz, bone, region, tp) {
-    if (tp == null) tp = 0.5;
+  Loft.prototype.prim = function (geo, x, y, z, rx, ry, rz, sx, sy, sz, bone, region) {
     PE.set(rx, ry, rz); PQ.setFromEuler(PE); PV.set(x, y, z); PS.set(sx, sy, sz); PM.compose(PV, PQ, PS);
     const pos = geo.attributes.position, base = this.p.length / 3;
-    for (let i = 0; i < pos.count; i++) { PV.fromBufferAttribute(pos, i).applyMatrix4(PM); this.p.push(PV.x, PV.y, PV.z); this.si.push(bone, bone, 0, 0); this.sw.push(1, 0, 0, 0); this.pat.push(PV.x, PV.y, PV.z, region + tp); }
+    for (let i = 0; i < pos.count; i++) { PV.fromBufferAttribute(pos, i).applyMatrix4(PM); this.p.push(PV.x, PV.y, PV.z); this.si.push(bone, bone, 0, 0); this.sw.push(1, 0, 0, 0); this.pat.push(PV.x, PV.y, PV.z, region + 0.5); }
     if (geo.index) for (let j = 0; j < geo.index.count; j++) this.ix.push(base + geo.index.getX(j)); else for (let j = 0; j < pos.count; j++) this.ix.push(base + j);
   };
   Loft.prototype.geo = function () {
@@ -7801,20 +7442,18 @@ float fx4n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(fx4
     // ears (flattened tubes down the side of the head, bound to the ear bones)
     for (const s of [1, -1]) {
       const b = s > 0 ? 11 : 12;
-      L.tube([[1.5, 2.92, 0.5 * s, 0.2, 0.03], [1.42, 2.78, 0.57 * s, 0.47, 0.045], [1.36, 2.52, 0.62 * s, 0.56, 0.05], [1.34, 2.2, 0.63 * s, 0.5, 0.045], [1.36, 1.95, 0.61 * s, 0.33, 0.04], [1.42, 1.78, 0.58 * s, 0.13, 0.03]]
+      L.tube([[1.52, 2.92, 0.5 * s, 0.16, 0.03], [1.49, 2.78, 0.57 * s, 0.36, 0.045], [1.45, 2.52, 0.61 * s, 0.43, 0.05], [1.42, 2.22, 0.62 * s, 0.38, 0.045], [1.42, 1.98, 0.6 * s, 0.25, 0.04], [1.46, 1.82, 0.58 * s, 0.1, 0.03]]
         .map((r, i) => [r[0], r[1], r[2], r[3], r[4], b, b, 0, i / 5]), 12, 4, [1, 0, 0], 3);
       // tusks
       L.tube([[2.1, 2.02, 0.22 * s, 0.07, 0.07], [2.34, 1.8, 0.26 * s, 0.058, 0.058], [2.58, 1.74, 0.28 * s, 0.042, 0.042], [2.72, 1.82, 0.28 * s, 0.014, 0.014]].map((r, i) => [r[0], r[1], r[2], r[3], r[4], 5, 5, 0, i / 3]), 8, 9, [0, 0, 1], 2);
     }
-    // the twin-domed skull of an Asian elephant
-    for (const s of [1, -1]) L.prim(SPH, 1.68, 2.84, 0.17 * s, 0, 0, 0, 0.34, 0.3, 0.27, 5, 2, 0.1);
     // tail
     L.tube([[-1.82, 2.32, 0.075, 1, 13, 0.5], [-1.84, 1.95, 0.055, 13, 13, 0], [-1.86, 1.6, 0.045, 14, 14, 0], [-1.87, 1.32, 0.04, 15, 15, 0], [-1.88, 1.16, 0.075, 15, 15, 0], [-1.88, 1.0, 0.02, 15, 15, 0]]
       .map((r, i) => [r[0], r[1], 0, r[2], r[2], r[3], r[4], r[5], i / 5]), 8, 3, [0, 0, 1], 2);
     // legs (ref z: a = side, b = front-back)
-    const leg = (x0, z, u, top, hind) => { const fw = hind ? 0 : 0.045; return [[x0, 2.25, z, hind ? 0.38 : 0.36, hind ? 0.5 : 0.42, top, u, 0.6], [x0, 1.8, z, hind ? 0.34 : 0.33, hind ? 0.42 : 0.36, u, u, 0], [x0 + 0.02, 1.4, z, 0.29, 0.3, u, u, 0],
-      [x0 + 0.03, 1.05, z, 0.275, 0.285, u, u + 1, 0.5], [x0 + 0.02 + fw * 0.5, 0.75, z, 0.25, 0.255, u + 1, u + 1, 0], [x0 + 0.01 + fw, 0.45, z, 0.235, 0.24, u + 1, u + 1, 0],
-      [x0 + 0.01 + fw * 0.6, 0.27, z, 0.26, 0.265, u + 1, u + 2, 0.5], [x0 + 0.02, 0.12, z, 0.31, 0.315, u + 2, u + 2, 0], [x0 + 0.02, 0.02, z, 0.33, 0.335, u + 2, u + 2, 0]].map((r, i) => [...r, i / 8]); };
+    const leg = (x0, z, u, top, hind) => [[x0, 2.25, z, hind ? 0.38 : 0.36, hind ? 0.5 : 0.42, top, u, 0.6], [x0, 1.8, z, hind ? 0.34 : 0.33, hind ? 0.42 : 0.36, u, u, 0], [x0 + 0.02, 1.4, z, 0.3, 0.31, u, u, 0],
+      [x0 + 0.03, 1.05, z, 0.265, 0.275, u, u + 1, 0.5], [x0 + 0.02, 0.75, z, 0.24, 0.25, u + 1, u + 1, 0], [x0 + 0.01, 0.45, z, 0.245, 0.255, u + 1, u + 1, 0],
+      [x0 + 0.01, 0.27, z, 0.26, 0.27, u + 1, u + 2, 0.5], [x0 + 0.02, 0.12, z, 0.29, 0.3, u + 2, u + 2, 0], [x0 + 0.02, 0.02, z, 0.3, 0.31, u + 2, u + 2, 0]].map((r, i) => [...r, i / 8]);
     L.tube(leg(0.88, zf, 16, 3, 0), 14, 1, [0, 0, 1], 2); L.tube(leg(0.88, -zf, 19, 3, 0), 14, 1, [0, 0, 1], 2);
     L.tube(leg(-1.15, zh, 22, 1, 1), 14, 1, [0, 0, 1], 2); L.tube(leg(-1.15, -zh, 25, 1, 1), 14, 1, [0, 0, 1], 2);
     // the jhool: embroidered velvet draped over the back, hanging straight down the flanks
@@ -7833,40 +7472,28 @@ float fx4n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(fx4
     L.prim(BOX, HX, 2.98, 0, 0, 0, 0, 1.55, 0.18, 1.3, 2, 13);
     L.prim(BOX, HX, 3.34, 0, 0, 0, 0, 1.15, 0.55, 1.0, 2, 7);
     L.prim(BOX, HX, 3.63, 0, 0, 0, 0, 1.24, 0.07, 1.08, 2, 6);
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) L.prim(CYL8, HX + sx * 0.54, 3.88, sz * 0.46, 0, 0, 0, 0.04, 0.5, 0.04, 2, 6);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) L.prim(CYL8, HX + sx * 0.54, 4.05, sz * 0.46, 0, 0, 0, 0.035, 0.84, 0.035, 2, 6);
     const dome = new THREE.SphereGeometry(1, 16, 6, 0, Math.PI * 2, 0, Math.PI / 2);
-    L.prim(dome, HX, 4.14, 0, 0, 0, 0, 0.8, 0.42, 0.72, 2, 8);
-    L.prim(new THREE.CylinderGeometry(1, 1, 1, 16), HX, 4.14, 0, 0, 0, 0, 0.84, 0.07, 0.76, 2, 6);
-    const scal = new THREE.SphereGeometry(1, 6, 4, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);   // scalloped fringe under the dome rim
-    for (let i = 0; i < 20; i++) { const a = i / 20 * Math.PI * 2; L.prim(scal, HX + Math.cos(a) * 0.84, 4.11, Math.sin(a) * 0.76, 0, -a, 0, 0.03, 0.09, 0.075, 2, 6); }
-    L.prim(SPH, HX, 4.58, 0, 0, 0, 0, 0.08, 0.08, 0.08, 2, 6); L.prim(new THREE.ConeGeometry(1, 1, 8), HX, 4.74, 0, 0, 0, 0, 0.045, 0.26, 0.045, 2, 6);
+    L.prim(dome, HX, 4.46, 0, 0, 0, 0, 0.8, 0.5, 0.72, 2, 8);
+    L.prim(new THREE.CylinderGeometry(1, 1, 1, 16), HX, 4.46, 0, 0, 0, 0, 0.84, 0.07, 0.76, 2, 6);
+    L.prim(SPH, HX, 4.98, 0, 0, 0, 0, 0.09, 0.09, 0.09, 2, 6); L.prim(new THREE.ConeGeometry(1, 1, 8), HX, 5.17, 0, 0, 0, 0, 0.05, 0.3, 0.05, 2, 6);
     // gold anklets
     const tor8 = new THREE.TorusGeometry(1, 0.13, 5, 16);
     for (const [bx0, zz, bn] of [[0.91, zf, 17], [0.91, -zf, 20], [-1.16, zh, 23], [-1.16, -zh, 26]]) { L.prim(tor8, bx0, 0.36, zz, Math.PI / 2, 0, 0, 0.27, 0.27, 0.27, bn, 6); L.prim(tor8, bx0, 0.5, zz, Math.PI / 2, 0, 0, 0.26, 0.26, 0.26, bn, 6); }
     // the mahout on the neck: white kurta, saffron safa
-    const CAP = new THREE.CapsuleGeometry(1, 1, 3, 8);
-    L.prim(CAP, 1.28, 3.24, 0, 0, 0, 0.12, 0.15, 0.24, 0.17, 4, 11);
-    for (const s of [1, -1]) {
-      L.prim(CAP, 1.33, 2.97, 0.27 * s, 1.25 * s, 0, 0.2, 0.075, 0.2, 0.075, 4, 11); L.prim(CAP, 1.39, 2.72, 0.47 * s, 0.25 * s, 0, 0.15, 0.06, 0.2, 0.06, 4, 11);
-      L.prim(CAP, 1.4, 3.27, 0.2 * s, 0.25 * s, 0, 0.75, 0.045, 0.14, 0.045, 4, 11); L.prim(CAP, 1.55, 3.12, 0.17 * s, 0, 0, 1.2, 0.04, 0.12, 0.04, 4, 11);
-    }
+    L.prim(BOX, 1.28, 3.22, 0, 0, 0, 0.12, 0.26, 0.5, 0.36, 4, 11);
+    for (const s of [1, -1]) { L.prim(BOX, 1.36, 2.78, 0.4 * s, 0.55 * s, 0, 0, 0.15, 0.62, 0.15, 4, 11); L.prim(BOX, 1.42, 3.12, 0.21 * s, 0, 0, 0.7, 0.09, 0.42, 0.09, 4, 11); }
     L.prim(SPH, 1.31, 3.6, 0, 0, 0, 0, 0.11, 0.12, 0.1, 4, 10); L.prim(SPH, 1.3, 3.69, 0, 0, 0, 0, 0.14, 0.1, 0.13, 4, 12);
     const geo = L.geo();
     const col = `
-float fxR=0.85,fxM=0.,fxH=0.;
+float fxR=0.85,fxM=0.;
 vec3 pal(float i){i=mod(i,5.);return i<1.?vec3(0.95,0.12,0.42):i<2.?vec3(1.,0.72,0.04):i<3.?vec3(0.92,0.92,0.88):i<4.?vec3(0.05,0.42,0.85):vec3(1.,0.36,0.02);}
 vec3 gold(){fxM=0.85;fxR=0.32;return vec3(1.,0.66,0.22);}
 float dots(vec3 P,float f,float r){vec3 q=fract(P*f)-0.5;return 1.-smoothstep(r-0.05,r,length(q));}
 vec3 fxCol(vec3 P,float reg,float t){
   float n=fx4n(P.xy*6.+P.z*2.)*0.6+fx4n(vec2(P.z*21.,P.y*23.))*0.4;
-  vec3 skin=mix(vec3(0.22,0.19,0.18),vec3(0.33,0.29,0.27),n);vec3 c=skin;fxR=0.9;fxM=0.;fxH=0.;
+  vec3 skin=mix(vec3(0.20,0.185,0.18),vec3(0.31,0.29,0.28),n);vec3 c=skin;fxR=0.9;fxM=0.;
   float wr=fx4n(vec2(P.x*3.,P.y*40.));c*=0.9+0.12*wr;
-  // wrinkles: horizontal rings on the legs and trunk, a crackle on the body (bump only, from the derivatives)
-  float ring=fx4n(vec2(P.y*34.+fx4n(P.xz*7.)*2.5,atan(P.z,P.x)*3.)),crk=abs(fx4n(P.xz*9.+P.y*5.)-0.5)+abs(fx4n(P.zy*17.+P.x*3.)-0.5)*0.6;
-  fxH=(reg>0.5&&reg<2.5)?ring*0.010:(reg<0.5?smoothstep(0.,0.18,crk)*0.010:0.);
-  // the belly and the inside of the legs sit in shade; warm dust on the lower legs
-  if(reg<0.5)c*=mix(0.55,1.,smoothstep(1.15,1.75,P.y));
-  if(reg>0.5&&reg<1.5){c*=mix(mix(0.6,1.,smoothstep(0.9,1.8,P.y)),1.,smoothstep(0.34,0.44,abs(P.z)));c=mix(c,vec3(0.45,0.37,0.29),0.45*(1.-smoothstep(0.1,0.6,P.y)));}
   if(reg<0.5){
   } else if(reg<1.5){ // legs: painted bands and dots above the anklets, pale toenails
     float b=max(1.-smoothstep(0.012,0.024,abs(P.y-0.66)),1.-smoothstep(0.012,0.024,abs(P.y-0.84)));
@@ -7877,9 +7504,9 @@ vec3 fxCol(vec3 P,float reg,float t){
     if(t<0.36){
       float hw=mix(0.11,0.34,smoothstep(2.0,2.85,P.y));
       float plate=step(1.9,P.x)*step(abs(P.z),hw)*step(1.92,P.y);
-      if(plate>0.5){c=vec3(1.,0.62,0.18);fxM=1.;fxR=0.22;vec2 bq=fract(vec2(P.y,P.z)*12.)-0.5;float bd=length(bq);fxH=0.012*sqrt(max(0.,1.-bd*bd/0.09));
-        float e=hw-abs(P.z);if(e<0.06){c=vec3(0.42,0.01,0.05)*(0.8+0.4*fx4n(P.yz*90.));fxM=0.;fxR=0.95;fxH=0.;}
-        if(length(vec2(P.y-2.55,P.z))<0.07){c=vec3(0.02,0.45,0.12);fxM=0.2;fxR=0.15;fxH=0.;}}
+      if(plate>0.5){c=gold();float bo=dots(vec3(0.,P.y,P.z),12.,0.3);c=mix(c,vec3(1.,0.85,0.45),bo);fxR=mix(fxR,0.18,bo);
+        float e=hw-abs(P.z);if(e<0.035){c=vec3(0.6,0.02,0.04);fxM=0.;fxR=0.5;}
+        if(length(vec2(P.y-2.55,P.z))<0.07){c=vec3(0.02,0.45,0.12);fxM=0.2;fxR=0.15;}}
       else{
         float d=length(vec2(P.x-1.88,P.y-2.12));float side=step(0.28,abs(P.z));
         float ro=step(d,0.2)*side;c=mix(c,pal(floor(d*22.)),ro*step(0.4,fract(d*22.)));
@@ -7887,21 +7514,14 @@ vec3 fxCol(vec3 P,float reg,float t){
         float eye=(1.-smoothstep(0.035,0.045,length(vec2(P.x-1.96,P.y-2.4))))*side;c=mix(c,vec3(0.03,0.02,0.01),eye);
       }
     } else { // painted trunk: rings, dots in five colours, a vine
-      c=mix(c,vec3(0.58,0.42,0.38),smoothstep(0.36,0.42,t)*(1.-smoothstep(0.46,0.54,t))*(0.5+0.4*fx4n(P.yz*12.)));
       float u=t*9.;float ring=smoothstep(0.41,0.45,abs(fract(u)-0.5));
       c=mix(c,vec3(1.,0.72,0.04),ring);
       float dd=dots(P,10.,0.3);c=mix(c,pal(floor(P.y*10.)+floor(P.z*10.)),dd*(1.-ring));
       float vine=1.-smoothstep(0.008,0.018,abs(P.z-0.05*sin(P.y*16.)));c=mix(c,vec3(0.1,0.7,0.2),vine*(1.-ring)*step(2.4,P.x+0.05));
-      // the forehead plate continues down the front of the trunk to mid-length and ends in tassels
-      float cx=P.y>2.?mix(2.27,2.14,(P.y-2.)/0.25):P.y>1.7?mix(2.36,2.27,(P.y-1.7)/0.3):P.y>1.36?mix(2.42,2.36,(P.y-1.36)/0.34):mix(2.45,2.42,(P.y-1.02)/0.34);
-      float fr=P.x-cx,pw=0.11;
-      if(fr>0.04&&abs(P.z)<pw&&P.y>1.3){c=vec3(1.,0.62,0.18);fxM=1.;fxR=0.22;vec2 bq=fract(vec2(P.y,P.z)*14.)-0.5;fxH=0.01*sqrt(max(0.,1.-dot(bq,bq)/0.09));
-        if(pw-abs(P.z)<0.03){c=vec3(0.42,0.01,0.05);fxM=0.;fxR=0.95;fxH=0.;}}
-      else if(fr>0.02&&abs(P.z)<pw+0.02&&P.y>1.08&&P.y<=1.3){float ts=step(0.45,fract(P.z*28.+0.25));if(ts>0.5){c=vec3(0.95,0.6,0.16);fxM=0.8;fxR=0.4;fxH=0.004*sin(P.y*120.);}}
     }
   } else if(reg<3.5){ c=mix(c,vec3(0.06),step(0.75,t));
-  } else if(reg<4.5){ // ears: a smooth, mottled pink patch along the rim and a painted border
-    float pk=clamp(smoothstep(1.2,0.95,P.x)+smoothstep(0.7,0.95,t),0.,1.);c=mix(c,vec3(0.6,0.43,0.39),pk*(0.4+0.4*fx4n(P.xy*6.)));fxH=fx4n(P.xy*30.)*0.004;
+  } else if(reg<4.5){ // ears: pink freckles and a painted rim
+    float fr=step(0.62,fx4n(P.xy*18.));c=mix(c,vec3(0.55,0.36,0.32),fr*0.6);
     float rim=step(0.8,t)+step(P.x,1.1);float dd=dots(P,9.,0.3);c=mix(c,pal(floor(P.y*13.)),dd*min(rim,1.));
   } else if(reg<5.5){ // jhool: maroon velvet, gold border and lattice, mirror work, gold tassels
     float hem=P.y-(1.22+0.14*pow((P.x+0.07)/0.95,2.));float ed=min(min(P.x+1.02,0.88-P.x),hem);
@@ -7922,7 +7542,7 @@ vec3 fxCol(vec3 P,float reg,float t){
     if(abs(P.y-3.34)>0.21||(pz>0.49&&px>0.5)||(px>0.56&&pz>0.42))c=gold();
     else if(stud>0.5){c=gold();}
   } else if(reg<8.5){ float a=atan(P.z,P.x+0.08);float s=step(0.5,fract(a*16./6.2832));c=mix(vec3(1.,0.32,0.01),vec3(0.75,0.02,0.05),s);fxR=0.75;
-    if(P.y<4.22){c=gold();}
+    if(P.y<4.56){c=gold();}
   } else if(reg<9.5){ c=vec3(0.86,0.8,0.66);fxR=0.35;
   } else if(reg<10.5){ c=vec3(0.36,0.2,0.12);
   } else if(reg<11.5){ c=vec3(0.88,0.87,0.83);
@@ -7937,13 +7557,10 @@ vec3 fxCol(vec3 P,float reg,float t){
       sh.vertexShader = 'attribute vec4 aPat;varying vec4 vPat;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvPat=aPat;');
       sh.fragmentShader = 'uniform float uFade;varying vec4 vPat;\n' + sh.fragmentShader.replace('#include <common>', '#include <common>\n' + GLSL_NOISE + col + '\n')
         .replace('vec4 diffuseColor = vec4( diffuse, opacity );', 'if(fx4h(floor(gl_FragCoord.xy))>uFade)discard;vec4 diffuseColor=vec4(fxCol(vPat.xyz,floor(vPat.w+0.001),fract(vPat.w+0.001)),opacity);')
-        .replace('float roughnessFactor = roughness;', 'float roughnessFactor = fxR;').replace('float metalnessFactor = metalness;', 'float metalnessFactor = fxM;')
-        .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
-          {vec3 sp=-vViewPosition,sx=dFdx(sp),sy=dFdy(sp),r1=cross(sy,normal),r2=cross(normal,sx);float det=dot(sx,r1);vec2 dh=vec2(dFdx(fxH),dFdy(fxH));
-           vec3 nb=normalize(abs(det)*normal-sign(det)*(dh.x*r1+dh.y*r2));if(det!=0.)normal=nb;}`);
+        .replace('float roughnessFactor = roughness;', 'float roughnessFactor = fxR;').replace('float metalnessFactor = metalness;', 'float metalnessFactor = fxM;');
     };
     const mesh = new THREE.SkinnedMesh(geo, mat); mesh.add(bones[0]); mesh.updateMatrixWorld(true);
-    mesh.bind(new THREE.Skeleton(bones)); mesh.frustumCulled = false; mesh.visible = false; mesh.castShadow = true;
+    mesh.bind(new THREE.Skeleton(bones)); mesh.frustumCulled = false; mesh.visible = false;
     const g = new THREE.Group(); g.name = 'fx4ele'; g.add(mesh); root.add(g);
     const n = bones.length;
     return { g, mesh, bones, U, rx: new Float32Array(n), ry: new Float32Array(n), rz: new Float32Array(n), tris: geo.index.count / 3 };
@@ -7952,7 +7569,7 @@ vec3 fxCol(vec3 P,float reg,float t){
   const EP = { y: 0 }, EFEET = [18, 21, 24, 27];
   function elePose(C, ph, wW, wI, now, seed) {
     C.rx.fill(0); C.ry.fill(0); C.rz.fill(0); EP.y = 0;
-    const k = Math.PI * 2 * ph, SW = 0.32, A = 0.32;
+    const k = Math.PI * 2 * ph, SW = 0.32, A = 0.23;
     if (wW > 0.01) {
       for (let i = 0; i < 4; i++) {
         const u = ELEGS[i][0], hind = ELEGS[i][2], q = ((ph + ELEGS[i][1]) % 1 + 1) % 1; let a, lift;
@@ -7977,26 +7594,22 @@ vec3 fxCol(vec3 P,float reg,float t){
     for (let i = 0; i < C.bones.length; i++) C.bones[i].rotation.set(C.rx[i], C.ry[i], C.rz[i]);
   }
   let elK = 1;
-  const elSt = it => ({ c: pathPrep(it.path), ph: 0, hd: null, lastD: -1, wW: 0, seed: (it.id || 'e').length * 1.3, plant: new Float32Array(4).fill(-9), up: new Uint8Array(4) });
-  // path progress with eased starts and stops (constant speed in between)
-  const ease = (u, e) => u < e ? u * u / (2 * e * (1 - e)) : u > 1 - e ? 1 - (1 - u) * (1 - u) / (2 * e * (1 - e)) : (u - e / 2) / (1 - e);
   function elephantUpdate(list, dt, now) {
     const C = EL, it = list[0];
     if (!it || !it.path || it.path.length < 2) { C.mesh.visible = false; return; }
-    const st = ST.get(it) || stOf(it, () => elSt(it));
+    const st = stOf(it, () => ({ c: pathPrep(it.path), ph: 0, hd: null, lastD: -1, wW: 0, seed: (it.id || 'e').length * 1.3 }));
     const T = Z.T, Ln = st.c[st.c.length - 1];
     const walkT = Math.max(30, (it.t1 - it.t0) - 150);
-    const d = ease(clamp((T - it.t0 - 10) / walkT, 0, 1), 0.06) * Ln;
+    const d = clamp((T - it.t0 - 10) / walkT, 0, 1) * Ln;
     pathAt(it.path, st.c, d);
     const moved = st.lastD < 0 ? 0 : Math.abs(d - st.lastD); st.lastD = d;
     if (st.hd == null) st.hd = PT.h;
     st.hd += wrapA(PT.h - st.hd) * Math.min(1, dt * 1.5);
     const walking = moved > 1e-4 && d < Ln;
     st.wW += ((walking ? 1 : 0) - st.wW) * Math.min(1, dt * 2.5);
-    // ~50 px long at any distance: real size inside 150 m, 70x across open ground, 40x while idling by the stands
-    const want = Math.min(clamp(camD() / 150, 1, 70), st.wW < 0.5 ? 40 : 70); elK += (want - elK) * Math.min(1, dt * 3);
-    const s = elK, stride = 3.0 * s;
-    if (walking) st.ph = (st.ph + dt * clamp(moved / stride / Math.max(dt, 1e-3), 0.32, elK < 8 ? 2.5 : 0.6)) % 1;
+    const want = clamp(Math.pow(camD() / 400, 1.3), 1, 72); elK += (want - elK) * Math.min(1, dt * 3);
+    const s = elK, stride = 2.4 * s;
+    if (walking) st.ph = (st.ph + dt * clamp(moved / stride / Math.max(dt, 1e-3), 0.32, 0.6)) % 1;
     elePose(C, st.ph, st.wW, 1 - st.wW, now, st.seed);
     const fade = smooth(it.t0, it.t0 + 8, T) * (1 - smooth(it.t1 - 14, it.t1 - 1, T));
     C.U.uFade.value = fade; C.mesh.visible = fade > 0.01;
@@ -8004,12 +7617,7 @@ vec3 fxCol(vec3 P,float reg,float t){
     const ch = Math.cos(st.hd), sh = Math.sin(st.hd), sd = Z.sunDir || UP, sk = 1.2 * s / Math.max(0.3, sd.y);
     blob(PT.x - sd.x * sk + ch * 0.2 * s, PT.y - sd.z * sk + sh * 0.2 * s, -st.hd, 5.6 * s, 2.6 * s, 0.5 * fade);
     blob(PT.x + ch * 0.1 * s, PT.y + sh * 0.1 * s, -st.hd, 4.6 * s, 2.1 * s, 0.45 * fade);
-    for (let i = 0; i < 4; i++) {
-      C.bones[EFEET[i]].getWorldPosition(_v2); const h = clamp(1 - _v2.y / (0.5 * s), 0, 1); blob(_v2.x, _v2.z, -st.hd, 0.85 * s, 0.85 * s, 0.6 * h * fade);
-      // a small dust puff where each foot comes down
-      const upNow = _v2.y > 0.06 * s ? 1 : 0; if (st.up[i] && !upNow && st.wW > 0.3) st.plant[i] = now; st.up[i] = upNow;
-      const pa = now - st.plant[i]; if (pa < 0.9) { const g = 1 + 1.8 * Math.sqrt(pa / 0.9); blob(_v2.x, _v2.z, -st.hd + i, 1.0 * g * s, 0.8 * g * s, 1 + 0.5 * (1 - pa / 0.9) * fade * st.wW); }
-    }
+    for (let i = 0; i < 4; i++) { C.bones[EFEET[i]].getWorldPosition(_v2); const h = clamp(1 - _v2.y / (0.5 * s), 0, 1); blob(_v2.x, _v2.z, -st.hd, 0.85 * s, 0.85 * s, 0.6 * h * fade); }
   }
   KS.add('elephant');
 
@@ -8041,10 +7649,7 @@ vec3 fxCol(vec3 P,float reg,float t){
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(Nn, 3));
     const N = 64, aG = new THREE.InstancedBufferAttribute(new Float32Array(N * 4), 4); aG.setUsage(THREE.DynamicDrawUsage); g.setAttribute('aG', aG);
     const U = { uTime: { value: 0 } };
-    // premultiplied 'over' blending: every channel stays under 1, so the cyan never washes out to white and the ghosts
-    // darken a bright sky instead of vanishing into it
-    const mat = new THREE.ShaderMaterial({ uniforms: U, transparent: true, depthWrite: false, side: THREE.DoubleSide, forceSinglePass: true,
-      blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
+    const mat = new THREE.ShaderMaterial({ uniforms: U, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, forceSinglePass: true,
       vertexShader: `uniform float uTime;attribute vec4 aG;varying vec3 vN,vV,vL;varying float vA,vC;
         float h1(float x){return fract(sin(x*78.233)*43758.5453);}
         void main(){
@@ -8059,18 +7664,17 @@ vec3 fxCol(vec3 P,float reg,float t){
       fragmentShader: `uniform float uTime;varying vec3 vN,vV,vL;varying float vA,vC;
         void main(){
           vec3 n=normalize(vN),v=normalize(vV);float f=1.-abs(dot(n,v));float rim=f*f;
-          float scan=0.62+0.38*sin(gl_FragCoord.y*1.1-uTime*24.);
+          float scan=0.55+0.45*sin(gl_FragCoord.y*1.1-uTime*24.);
           float lx=smoothstep(0.42,0.5,abs(fract(vL.x/3.)-0.5)),lz=smoothstep(0.44,0.5,abs(fract(vL.z/3.)-0.5));
-          vec3 col=vC<0.5?vec3(0.0,0.78,1.0):vec3(1.0,0.08,0.22);
-          float e=min(0.95,(0.18+1.1*rim+0.45*max(lx,lz))*scan)*vA;
-          float cov=clamp((0.22+0.55*rim)*vA,0.,0.8)*(vC<0.5?1.:0.35);
-          gl_FragColor=vec4(col*e,cov);
+          vec3 col=vC<0.5?vec3(0.1,0.9,1.0):vec3(1.0,0.1,0.18);
+          float I=(0.08+1.6*rim+0.5*max(lx,lz))*scan*vA;
+          gl_FragColor=vec4(col*I*1.9,1.);
         }` });
     const mesh = new THREE.InstancedMesh(g, mat, N); mesh.frustumCulled = false; mesh.count = 0; mesh.visible = false; mesh.renderOrder = 31; mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); root.add(mesh);
     return { mesh, aG, U, N, tris: P.length / 9 };
   })();
   function ghostsUpdate(list, dt, now) {
-    let n = 0; const T = Z.T, k = Z.kEx || 1, E = 7, J = 7, arr = GH.aG.array, cp = Z.camera.position, tw = 0.004 * camD();
+    let n = 0; const T = Z.T, k = clamp(camD() / 2400, 1, 4.4), E = 7, J = 7, arr = GH.aG.array;
     for (let li = 0; li < list.length; li++) {
       const it = list[li], pts = it.pts; if (!pts) continue;
       const fade = smooth(it.t0, it.t0 + 8, T) * (1 - smooth(it.t1 - 20, it.t1, T)); if (fade <= 0.01) continue;
@@ -8082,15 +7686,11 @@ vec3 fxCol(vec3 P,float reg,float t){
           const x = px - (j + 0.3 + 0.5 * hash(e + j, cyc)) * stp, y = py + (hash(e * 3 + j, cyc + 1) - 0.5) * 140 * (0.5 + j * 0.3);
           const alt = (115 + 70 * hash(e, cyc * 3 + j)) * (1 + 0.2 * (k - 1));
           let a = fade * Math.pow(1 - j / J, 1.1) * smooth(0, 0.06, jf);
-          // glitch in short bursts (~0.3 s every 1-2 s at 7 Hz), steady in between
-          const bp = 1.1 + 0.8 * hash(e + 11, pi), bq = (now + 7 * hash(e, pi + 5)) / bp;
-          if (bq - Math.floor(bq) < 0.3 / bp) { const fl = hash(e * 5 + pi, Math.floor(now * 7)); if (fl < 0.4) a *= 0.25; else if (fl > 0.75) a *= 1.35; }
+          const fl = hash(e * 5 + pi, Math.floor(now * 15)); if (fl < 0.22) a *= 0.12; else if (fl > 0.9) a *= 1.7;
           const smear = 1 - smooth(0, 0.14, jf), sd = hash(e * 13 + pi * 7, cyc) * 10;
           _e.set((hash(e, cyc + j) - 0.5) * 0.14, Math.PI + (hash(e + 3, cyc + j) - 0.5) * 0.16, -0.05, 'YXZ'); _q.setFromEuler(_e); _s.setScalar(k);
           _v.set(x, alt, y); _m.compose(_v, _q, _s); GH.mesh.setMatrixAt(n, _m); arr[n * 4] = 0; arr[n * 4 + 1] = a; arr[n * 4 + 2] = sd; arr[n * 4 + 3] = smear; n++;
-          // the red twin sits a little to one side across the view direction, so its fringe always shows
-          let qx = -(y - cp.z), qz = x - cp.x; const ql = Math.hypot(qx, qz) || 1, off = tw * (1 + 1.5 * smear); qx *= off / ql; qz *= off / ql;
-          _v.set(x + qx - smear * 20 * k, alt + 0.15 * tw, y + qz); _m.compose(_v, _q, _s);
+          _v.set(x + (5 + smear * 30) * k, alt + 1.5 * k, y + (hash(e, Math.floor(now * 9)) - 0.5) * 9 * k); _m.compose(_v, _q, _s);
           GH.mesh.setMatrixAt(n, _m); arr[n * 4] = 1; arr[n * 4 + 1] = a * 0.7; arr[n * 4 + 2] = sd + 3; arr[n * 4 + 3] = smear; n++;
         }
       }
@@ -8111,7 +7711,7 @@ vec3 fxCol(vec3 P,float reg,float t){
     const geo = new THREE.ExtrudeGeometry(sh, { depth: 0.05, bevelEnabled: true, bevelThickness: 0.045, bevelSize: 0.035, bevelSegments: 2, curveSegments: 3 });
     geo.translate(0, 0, -0.025);
     const aB = new THREE.InstancedBufferAttribute(new Float32Array(N * 4), 4); aB.setUsage(THREE.DynamicDrawUsage); geo.setAttribute('aB', aB);
-    const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.28, metalness: 0, envMapIntensity: 0.9, transparent: true, opacity: 1 });
+    const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.28, metalness: 0, envMapIntensity: 0.9 });
     mat.onBeforeCompile = s => {
       s.vertexShader = 'attribute vec4 aB;varying vec4 vB;varying vec3 vP;varying vec3 vNo;\n' + s.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvB=aB;vP=position;vNo=normal;');
       s.fragmentShader = `varying vec4 vB;varying vec3 vP;varying vec3 vNo;
@@ -8138,10 +7738,8 @@ vec4 chatFace(vec2 p,float seed,float grn,float mode){vec4 o=vec4(0.);
   if(grn>0.5){float t1=min(seg(p,vec2(0.31,-0.225),vec2(0.335,-0.25)),seg(p,vec2(0.335,-0.25),vec2(0.38,-0.19)));float t2=min(seg(p,vec2(0.35,-0.225),vec2(0.375,-0.25)),seg(p,vec2(0.375,-0.25),vec2(0.42,-0.19)));if(min(t1,t2)<0.013)o=vec4(0.03,0.5,0.95,1.);}
   return o;}
 ` + s.fragmentShader.replace('vec4 diffuseColor = vec4( diffuse, opacity );', `float grn=vB.x;vec3 bc=grn>0.5?vec3(0.70,0.93,0.55):vec3(1.);
-        float front=smoothstep(0.9,0.98,abs(vNo.z));vec3 c=mix(grn>0.5?vec3(0.06,0.3,0.12):vec3(0.3,0.33,0.37),bc,front);
-        if(front>0.5){vec2 p=vec2(vP.x*sign(vP.z),vP.y);vec4 fc=chatFace(p,vB.z,grn,vB.y);c=mix(c,fc.rgb,fc.a);
-          vec2 qd=abs(p)-vec2(0.4,0.2);float sd=length(max(qd,0.))+min(max(qd.x,qd.y),0.)-0.1;
-          c=mix(c,grn>0.5?vec3(0.07,0.32,0.14):vec3(0.32,0.35,0.39),smoothstep(-0.05,-0.025,sd)*step(-0.5,p.x));}
+        float front=step(0.6,abs(vNo.z));vec3 c=mix(grn>0.5?vec3(0.18,0.62,0.3):vec3(0.62,0.66,0.7),bc,front);
+        if(front>0.5){vec2 p=vec2(vP.x*sign(vP.z),vP.y);vec4 fc=chatFace(p,vB.z,grn,vB.y);c=mix(c,fc.rgb,fc.a);}
         vec4 diffuseColor=vec4(c,opacity);`).replace('vec3 totalEmissiveRadiance = emissive;', 'vec3 totalEmissiveRadiance = diffuseColor.rgb*0.3;');
     };
     const mesh = new THREE.InstancedMesh(geo, mat, N); mesh.frustumCulled = false; mesh.count = 0; mesh.visible = false; mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); root.add(mesh);
@@ -8151,17 +7749,14 @@ vec4 chatFace(vec2 p,float seed,float grn,float mode){vec4 o=vec4(0.);
   function chatUpdate(list, dt, now) {
     const it = list[0]; if (!it) { CH.mesh.visible = false; return; }
     const T = Z.T, fade = smooth(it.t0, it.t0 + 6, T) * (1 - smooth(it.t1 - 12, it.t1, T));
-    // from the strategic camera: fewer, smaller, lower bubbles on a fixed grid along the spine, so they never hide stands
-    const cd = camD(), far = cd > 4000, kb = clamp(cd / 480, 1, 9), N = far ? 12 : CH.N, LB = 5.2, cam = Z.camera; let n = 0;
-    CH.mesh.material.opacity = mix(1, 0.85, smooth(3500, 6000, cd));
+    const kb = clamp(camD() / 480, 1, 24), N = CH.N, LB = 5.2, cam = Z.camera; let n = 0;
     for (let i = 0; i < N; i++) {
       const off = i * LB / N + hash(i, 1) * 0.3, tt = now + off, cyc = Math.floor(tt / LB), age = tt - cyc * LB;
       const h0 = hash(i * 3.1, cyc), h1 = hash(i * 7.7, cyc + 0.5), h2 = hash(i + 0.3, cyc * 1.3), h3 = hash(i * 1.9, cyc * 2.1);
       if (h3 > fade * 0.95) continue;
       const pop = age < 0.32 ? backOut(age / 0.32) : 1, out = 1 - smooth(LB - 0.3, LB, age), sc = 16 * kb * pop * out * (0.85 + 0.3 * h2);
       if (sc < 0.01) continue;
-      const x = it.x + (far ? ((i + 0.5) / N - 0.5 + (h0 - 0.5) * 0.04) : (h0 - 0.5)) * 2600, z = it.y + (h1 - 0.5) * 260;
-      let y = (30 + 20 * h2) * Math.sqrt(kb) + age * (7 + 4 * h1) * kb; if (far) y = Math.min(y, 250);
+      const x = it.x + (h0 - 0.5) * 1700, z = it.y + (h1 - 0.5) * 260, y = (30 + 20 * h2) * Math.sqrt(kb) + age * (7 + 4 * h1) * kb;
       _q.copy(cam.quaternion); _q2.setFromAxisAngle(ZAX, Math.sin(now * 1.7 + i) * 0.06); _q.multiply(_q2);
       const green = h1 > 0.45; if (green) _q.multiply(QFLIP);
       _v.set(x, y, z); _s.set(sc * (0.85 + 0.35 * h0), sc, sc); _m.compose(_v, _q, _s); CH.mesh.setMatrixAt(n, _m);
@@ -10071,7 +9666,7 @@ function frame(ms){
   requestAnimationFrame(frame);
   if(cv.clientWidth&&(cv.clientWidth!==VW||cv.clientHeight!==VH))resize();
   const dtR=Math.min(0.1,(ms-last)/1000);last=ms;camEase(dtR);
-  if(running&&!paused&&!ended){let d=dtR*BASE*speed;try{while(d>0){const st=Math.min(1,d);tick(st);d-=st;}}catch(err){console.error(err);}incTick(dtR);if(toastTimer>0){toastTimer-=dtR;if(toastTimer<=0&&!$('#toast').matches(':hover'))$('#toast').hidden=true;}}
+  if(running&&!paused&&!ended){let d=dtR*BASE*(PACE!=null?PACE:speed);try{while(d>0){const st=Math.min(1,d);tick(st);d-=st;}}catch(err){console.error(err);}incTick(dtR);if(toastTimer>0){toastTimer-=dtR;if(toastTimer<=0&&!$('#toast').matches(':hover'))$('#toast').hidden=true;}}
   if(V3.on){try{draw3D(ms/1000,dtR);}catch(err){console.error(err);}}else{try{draw(ms/1000);}catch(err){console.error(err);}}
   hudT+=dtR;if(hudT>0.25&&LV){hudT=0;try{hud();}catch(err){console.error(err);}try{drawWave();}catch(err){console.error(err);}}
 }

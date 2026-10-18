@@ -248,16 +248,40 @@ const GL={
   mix:{t:'Mixed mode',d:'One runway doing both arrivals and departures, slotting a take-off between each pair of landings. Flexible, but each runway handles fewer movements in total than two specialised runways.'}
 };
 const term=(k,txt)=>`<span class="term" tabindex="0" data-k="${k}">${txt}</span>`;
-const coachItems=[];let toastTimer=0;const seen=new Set();
-function showToast(t,d){$('#tT').textContent=t;$('#tD').innerHTML=d.startsWith('<')?d:`<p>${d}</p>`;const el=$('#toast');el.hidden=false;el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');toastTimer=18;placeToast();}
+const coachItems=[];let toastTimer=0,toastFold=false;const HUDR=[];const seen=new Set();
+function showToast(t,d){$('#tT').textContent=t;$('#tD').innerHTML=d.startsWith('<')?d:`<p>${d}</p>`;const el=$('#toast');el.hidden=false;el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');toastTimer=18;placeToast();toastRoom();}
+// The 3D view's left margin is a stack, top to bottom: a set piece's chip (fog, kites, wedding, delegations; at 200 px), the
+// banner just under it (--banT, 250 px when there is no chip), the speaker's popup under that; and at the bottom, above the
+// bank chart, the Delhi summit's lower third (#delegLT) with the coach card on top of it. While the open card would run into
+// the popup, the banner or a chip (a tall card, a short screen) it folds to its title, and its timer waits. Then HUDR gets the
+// rects (map canvas px) of the card and of everything else that floats over the map, so incident badges never end up under
+// one (incMark). Runs a few times a second from the HUD loop, and whenever the card opens or a cinematic starts or ends.
+const HUD_FLOAT=['#toast','#vipBanner.on','#guard.on','#fogTag','#stopBtn','#kiteChip','#wedChip','#delegChip','#delegLT.on','#zoomBox','#camLbl'],HUD_CHIPS=['#fogTag','#delegChip','#kiteChip','#wedChip'];
+function toastRoom(){const el=$('#toast'),app=$('#app'),a=app.getBoundingClientRect(),v3=document.body.classList.contains('v3');
+  let chipB=0;if(v3)for(const s of HUD_CHIPS){const e=$(s);if(e&&!e.hidden){const r=e.getBoundingClientRect();if(r.height)chipB=Math.max(chipB,r.bottom-a.top);}}
+  const bt=Math.max(250,Math.ceil(chipB)+14)+'px';if(app.style.getPropertyValue('--banT')!==bt)app.style.setProperty('--banT',bt);
+  // (folded, it can still be in the way on a short screen during the Delhi summit: then it tucks away until there is room)
+  const crowd=()=>{const r=el.getBoundingClientRect();for(const s of ['#guard.on','#vipBanner.on'].concat(HUD_CHIPS)){const o=$(s);if(!o||o.hidden)continue;const q=o.getBoundingClientRect();
+    if(q.height&&q.bottom+8>r.top&&q.top<r.bottom&&q.left<r.right&&q.right>r.left)return true;}return false;};
+  if(el&&!el.hidden){placeToast();let fold=false,tuck=false;el.classList.remove('tuck');
+    if(!app.classList.contains('cine')){el.classList.remove('fold');fold=crowd();}
+    if(fold||app.classList.contains('cine')){el.classList.add('fold');tuck=crowd();}
+    el.classList.toggle('fold',fold);el.classList.toggle('tuck',tuck);toastFold=fold||tuck;}else{toastFold=false;if(el)el.classList.remove('fold','tuck');}
+  // (the Delhi summit's lower third gives up its quote, which the ticker carries too, while the speaker's popup needs the room)
+  const lt=$('#delegLT'),gd=$('#guard');if(lt){let tight=false;if(v3&&lt.classList.contains('on')&&gd&&gd.classList.contains('on')){lt.classList.remove('tight');tight=gd.getBoundingClientRect().bottom+6>lt.getBoundingClientRect().top;}
+    if(tight!==lt.classList.contains('tight'))lt.classList.toggle('tight',tight);}
+  HUDR.length=0;
+  for(const s of HUD_FLOAT){const e=document.querySelector(s);if(!e||e.hidden)continue;const r=e.getBoundingClientRect(),cs=getComputedStyle(e);if(r.width>0&&r.height>0&&+cs.opacity>0.05&&cs.visibility!=='hidden')HUDR.push({l:r.left-a.left,t:r.top-a.top,r:r.right-a.left,b:r.bottom-a.top});}}
 function coach(t,d,alarm){coachItems.unshift({t,d,at:clk(T)});$('#coachList').innerHTML=coachItems.map(c=>`<div class="ci"><div class="tm">${c.at}</div><h4>${c.t}</h4>${c.d.startsWith('<')?c.d:`<p>${c.d}</p>`}</div>`).join('');showToast(t,d);$('#toast').classList.toggle('alarm',!!alarm);}
 function explain(k){if(seen.has(k))return;seen.add(k);const g=GL[k];if(g)coach(g.t,g.d);}
 // some lessons only need teaching once ever, not once per level
 function explainOnce(k){const done=store.get('zm_seen')||{};if(done[k]){seen.add(k);return;}done[k]=1;store.set('zm_seen',done);explain(k);}
-$('#tX').onclick=()=>{$('#toast').hidden=true;};
+$('#tX').onclick=()=>{$('#toast').hidden=true;toastRoom();};
 document.addEventListener('click',e=>{const t=e.target.closest('.term');if(t&&t.dataset.k&&GL[t.dataset.k])showToast(GL[t.dataset.k].t,GL[t.dataset.k].d);});
 (function(){const g=$('#gloss');Object.keys(GL).forEach(k=>{const b=document.createElement('button');b.textContent=GL[k].t;b.onclick=()=>showToast(GL[k].t,GL[k].d);g.appendChild(b);});})();
-function placeToast(){const w=$('#wave').getBoundingClientRect(),app=$('#app').getBoundingClientRect();$('#toast').style.bottom=(app.bottom-w.top+8)+'px';}
+// (in the 3D view, while the Delhi summit's lower third is up, the card sits on top of it)
+function placeToast(){const w=$('#wave').getBoundingClientRect(),app=$('#app').getBoundingClientRect(),lt=$('#delegLT');let top=w.top;
+  if(document.body.classList.contains('v3')&&lt&&lt.classList.contains('on'))top=Math.min(top,lt.getBoundingClientRect().top);const b=Math.round(app.bottom-top+8)+'px',el=$('#toast');if(el.style.bottom!==b)el.style.bottom=b;}
 
 /* ============ runway logic ============ */
 const D_APP=170,SEP_AA=88,SEP_DD=72,MIX_GAP=58,DEP_OCC=55,CHANGE=120;
@@ -534,11 +558,20 @@ function incPos(I){if(I.f)return{x:I.f.x,y:I.f.y};return{x:I.x,y:I.y};}
 // (a story's tigress, queue or stage, a runway fault) floats up and to the right on a leader line from a dot on the spot, so
 // it never hides the thing it marks; 'up' is how tall the subject stands on screen (the 3D view passes it, so close up the
 // badge clears a tigress that fills the shot). Leaves I.sx/I.sy on the badge, the click target.
-function incMark(g,I,X,Y,now,up){const ic=I.icon||ICON[I.type],R=13*(1+0.18*Math.sin(now*7));
+const hudAt=(x,y)=>{for(const q of HUDR)if(x>q.l-22&&x<q.r+22&&y>q.t-22&&y<q.b+22)return q;return null;};
+function incMark(g,I,X,Y,now,up){const ic=I.icon||ICON[I.type],R=13*(1+0.18*Math.sin(now*7));let bx=X,by=Y;
   // (it hangs below the spot instead when lifting it would tuck it under the top strip)
-  if(!I.f){const lift=Math.max(46,(up||0)+26),bx=X+16,by=Y-lift<(cam.region?cam.region.Tp:0)+22?Y+lift:Y-lift;g.lineCap='round';g.strokeStyle='rgba(0,0,0,.6)';g.lineWidth=4;g.beginPath();g.moveTo(X,Y);g.lineTo(bx,by);g.stroke();
-    g.strokeStyle=ic.c;g.lineWidth=2;g.beginPath();g.moveTo(X,Y);g.lineTo(bx,by);g.stroke();g.fillStyle='rgba(0,0,0,.6)';g.beginPath();g.arc(X,Y,4.5,0,7);g.fill();
-    g.fillStyle=ic.c;g.beginPath();g.arc(X,Y,3,0,7);g.fill();g.lineCap='butt';X=bx;Y=by;}
+  // (and it leans left instead when leaning right would tuck it under the dashboard)
+  if(!I.f){const lift=Math.max(46,(up||0)+26);bx=X+16>(cam.region?cam.region.R:VW)-22?X-16:X+16;by=Y-lift<(cam.region?cam.region.Tp:0)+22?Y+lift:Y-lift;}
+  // and no badge, a flight's included, is left under the coach card, the banner, a speaker's popup or any other card over
+  // the map: it steps out to the nearest clear side of whatever covers it, on its leader line
+  {let q=hudAt(bx,by);if(q){const gr=cam.region||{L:0,R:VW,Tp:0,B:VH},cx=clamp(bx,q.l+22,q.r-22);let bd=1e9,nx=bx,ny=by;
+    for(const [x,y] of [[q.r+26,by],[q.l-26,by],[cx,q.t-28],[cx,q.b+28]]){if(x<gr.L+18||x>gr.R-18||y<gr.Tp+18||y>gr.B-18||hudAt(x,y))continue;const d=Math.hypot(x-bx,y-by);if(d<bd){bd=d;nx=x;ny=y;}}
+    bx=nx;by=ny;}}
+  // (a subject standing tall on screen, as in a close-up, is pointed at from just above it, so the line doesn't cross it out)
+  if(bx!==X||by!==Y){const y0=!I.f&&up>60&&by<Y?Y-up*0.55:Y;g.lineCap='round';g.strokeStyle='rgba(0,0,0,.6)';g.lineWidth=4;g.beginPath();g.moveTo(X,y0);g.lineTo(bx,by);g.stroke();
+    g.strokeStyle=ic.c;g.lineWidth=2;g.beginPath();g.moveTo(X,y0);g.lineTo(bx,by);g.stroke();
+    if(y0===Y){g.fillStyle='rgba(0,0,0,.6)';g.beginPath();g.arc(X,Y,4.5,0,7);g.fill();g.fillStyle=ic.c;g.beginPath();g.arc(X,Y,3,0,7);g.fill();}g.lineCap='butt';X=bx;Y=by;}
   g.fillStyle='rgba(0,0,0,.55)';g.beginPath();g.arc(X,Y,R+5,0,7);g.fill();g.strokeStyle=ic.c;g.lineWidth=3;g.beginPath();g.arc(X,Y,R+3,-Math.PI/2,-Math.PI/2+2*Math.PI*clamp(I.left/I.total,0,1));g.stroke();
   g.fillStyle=ic.c;g.beginPath();g.arc(X,Y,R-2,0,7);g.fill();g.fillStyle='#0b0b0b';g.font='700 15px Barlow Condensed, sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(ic.g,X,Y+1);g.textAlign='left';g.textBaseline='alphabetic';I.sx=X;I.sy=Y;}
 function incTick(dt){for(const I of incidents.slice()){if(I.f&&['gone','diverted','towed'].includes(I.f.state)){drop(I);continue;}if(I.type==='medical'&&I.f.landT!=null){drop(I);continue;}if(I.simFuse)continue;I.left-=dt;if(I.left<=0)expire(I);}}
@@ -549,30 +582,44 @@ function incSpawner(dt){for(const s of LV.script)if(!s.done&&T>=s[0]){if(spawnIn
 let SUM=null;
 const FLAG_IN='<svg viewBox="0 0 90 60" class="flag"><rect width="90" height="20" fill="#FF9933"/><rect y="20" width="90" height="20" fill="#fff"/><rect y="40" width="90" height="20" fill="#138808"/><circle cx="45" cy="30" r="8.4" fill="none" stroke="#000080" stroke-width="1.4"/>'+Array.from({length:24},(_,k)=>{const a=k*Math.PI/12;return `<line x1="45" y1="30" x2="${(45+8.2*Math.cos(a)).toFixed(2)}" y2="${(30+8.2*Math.sin(a)).toFixed(2)}" stroke="#000080" stroke-width=".6"/>`;}).join('')+'<circle cx="45" cy="30" r="1.6" fill="#000080"/></svg>';
 const FLAG_RU='<svg viewBox="0 0 90 60" class="flag"><rect width="90" height="20" fill="#fff"/><rect y="20" width="90" height="20" fill="#0039A6"/><rect y="40" width="90" height="20" fill="#D52B1E"/></svg>';
-// the banner is one compact line in the left margin, west of the runway thresholds as the strategic view frames them (runway
-// ends sit at about 50vw - 22vh), so it never hides a runway; the kicker rides on its top edge, the meme gives way first
-(function(){const st=document.createElement('style');st.textContent=`#vipBanner{position:absolute;box-sizing:border-box;left:max(14px,env(safe-area-inset-left,0px));top:250px;max-width:max(260px,min(500px,calc(50vw - 22.5vh - 30px)));transform:translateX(-24px);z-index:12;opacity:0;pointer-events:none;transition:opacity .45s,transform .45s;
-  display:flex;align-items:center;gap:9px;white-space:nowrap;background:linear-gradient(180deg,rgba(10,13,16,.95),rgba(10,13,16,.9));border:1px solid #f4c430;border-left-width:3px;border-radius:6px;padding:8px 12px 6px 9px;box-shadow:0 10px 26px rgba(0,0,0,.5)}
-#vipBanner.on{opacity:1;transform:none}#vipBanner .flags{flex:none;display:flex;gap:4px;align-items:center}#vipBanner .flags:empty{display:none}
+// the banner is a compact card in the left margin, west of the runway thresholds as the strategic view frames them (runway
+// ends sit at about 50vw - 22vh), so it never hides a runway however tall it gets; the kicker rides on its top edge. The title
+// and the line under it wrap to two lines each and step their font down until they fit (banFit), so nothing is ever cut off
+(function(){const st=document.createElement('style');st.textContent=`#vipBanner{--banMax:max(260px,min(500px,calc(50vw - 22.5vh - 30px)));position:absolute;box-sizing:border-box;left:max(14px,env(safe-area-inset-left,0px));top:var(--banT,250px);width:max-content;max-width:var(--banMax);min-width:min(var(--kw,0px),var(--banMax));transform:translateX(-24px);z-index:12;opacity:0;pointer-events:none;transition:opacity .45s,transform .45s;
+  display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:9px;align-items:center;background:linear-gradient(180deg,rgba(10,13,16,.95),rgba(10,13,16,.9));border:1px solid #f4c430;border-left-width:3px;border-radius:6px;padding:9px 12px 7px 9px;box-shadow:0 10px 26px rgba(0,0,0,.5)}
+#vipBanner.on{opacity:1;transform:none}#vipBanner .flags{grid-row:1/span 2;display:flex;flex-wrap:wrap;justify-content:center;gap:4px;max-width:64px;align-items:center}#vipBanner.nof{grid-template-columns:minmax(0,1fr)}#vipBanner.nof .flags{display:none}
 #vipBanner .flag{width:30px;height:20px;border-radius:2px;box-shadow:0 2px 6px rgba(0,0,0,.5);animation:wave 1.6s ease-in-out infinite;transform-origin:left center}
-#vipBanner .flag:nth-child(2){animation-delay:.4s}@keyframes wave{0%,100%{transform:perspective(200px) rotateY(0) skewY(0)}50%{transform:perspective(200px) rotateY(-14deg) skewY(2deg)}}
-#vipBanner .k{position:absolute;left:10px;top:-8px;padding:0 5px;background:#0a0d10;border-radius:3px;font-family:var(--f-sign);font-weight:700;letter-spacing:.1em;font-size:10px;line-height:14px;color:#f4c430}
-#vipBanner h3{margin:0;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-family:var(--f-sign);font-weight:700;font-size:17px;line-height:1.2;letter-spacing:0;color:#fff}
-#vipBanner .meme{flex:0 100 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-family:var(--f-sign);font-weight:600;font-size:14px;line-height:1.2;color:#ffd27a;transform-origin:left center;animation:pulse 1.2s ease-in-out infinite}#vipBanner .meme:empty{display:none}@keyframes pulse{50%{transform:scale(1.04)}}
+#vipBanner .flag:nth-child(2){animation-delay:.4s}#vipBanner .flag:nth-child(3){animation-delay:.8s}@keyframes wave{0%,100%{transform:perspective(200px) rotateY(0) skewY(0)}50%{transform:perspective(200px) rotateY(-14deg) skewY(2deg)}}
+#vipBanner .k{position:absolute;left:10px;top:-8px;max-width:calc(100% - 20px);box-sizing:border-box;padding:0 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#0a0d10;border-radius:3px;font-family:var(--f-sign);font-weight:700;letter-spacing:.1em;font-size:var(--ks,10px);line-height:14px;color:#f4c430}
+#vipBanner h3{grid-column:-2;margin:0;font-family:var(--f-sign);font-weight:700;font-size:var(--hs,17px);line-height:1.15;letter-spacing:0;color:#fff;text-wrap:balance}
+#vipBanner .meme{grid-column:-2;margin-top:2px;font-family:var(--f-sign);font-weight:600;font-size:var(--ms,14px);line-height:1.2;color:#ffd27a;text-wrap:balance;transform-origin:left center;animation:pulse 1.2s ease-in-out infinite}#vipBanner .meme:empty{display:none}@keyframes pulse{50%{transform:scale(1.03)}}
 #vipBanner .ico{font-size:20px;line-height:22px;display:inline-block;animation:wave 1.6s ease-in-out infinite}#vipBanner .ico:nth-child(2){animation-delay:.4s}#vipBanner .ico:nth-child(3){animation-delay:.8s}
 @media (prefers-reduced-motion:reduce){#vipBanner .flag,#vipBanner .meme,#vipBanner .ico{animation:none}}`;document.head.appendChild(st);
-  const b=document.createElement('div');b.id='vipBanner';b.setAttribute('aria-live','polite');$('#app').appendChild(b);})();
+  const b=document.createElement('div');b.id='vipBanner';b.setAttribute('aria-live','polite');$('#app').appendChild(b);
+  let rt=0;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(banFit,150);});})();
+// fits the banner's text to its box: the kicker widens the box (up to its limit) and then shrinks to one line; the title and
+// the line under it step down from 17 and 14 px until each takes two lines at most (three only if a title is still too long
+// at the smallest size: readable beats tidy). The banner's height goes to --banH, for the speaker's popup that stacks under it.
+function banFit(){const b=$('#vipBanner');if(!b||!b.classList.contains('on'))return;
+  const set=(v,px)=>b.style.setProperty(v,px+'px'),k=b.querySelector('.k'),h=b.querySelector('h3'),m=b.querySelector('.meme'),rows=(e,px,lh)=>Math.round(e.offsetHeight/(px*lh));
+  for(const v of ['--kw','--ks','--hs','--ms'])b.style.removeProperty(v);
+  if(k&&k.textContent){set('--kw',k.scrollWidth+24);for(let px=10;px>8&&k.scrollWidth>k.clientWidth+1;)set('--ks',px-=0.5);}
+  if(h&&h.textContent)for(let px=17;px>14&&rows(h,px,1.15)>2;)set('--hs',px-=0.5);
+  if(m&&m.textContent)for(let px=14;px>12&&rows(m,px,1.2)>2;)set('--ms',px-=0.5);
+  $('#app').style.setProperty('--banH',b.offsetHeight+'px');}
 // the bodyguard: dark suit, sunglasses, earpiece; slides in from the left margin and says his piece. He stands in the banner's
 // corner (just under it, when it is up), clear of the runways and of whatever a cinematic is showing mid-screen
-(function(){const st=document.createElement('style');st.textContent=`#guard{position:absolute;left:max(14px,env(safe-area-inset-left,0px));top:250px;z-index:13;display:flex;align-items:flex-start;gap:4px;pointer-events:none;transform:translateX(-130%);opacity:0;transition:transform .55s cubic-bezier(.2,.9,.25,1.15),opacity .3s,top .4s .35s}
-#guard.on{transform:translateX(0);opacity:1}#vipBanner.on~#guard{top:350px;transition:transform .55s cubic-bezier(.2,.9,.25,1.15),opacity .3s,top .4s}#guard svg{order:-1;flex:none;width:92px;height:119px;filter:drop-shadow(0 8px 14px rgba(0,0,0,.6));animation:gbob 2.4s ease-in-out infinite}
+(function(){const st=document.createElement('style');st.textContent=`#guard{position:absolute;left:max(14px,env(safe-area-inset-left,0px));top:var(--banT,250px);z-index:13;display:flex;align-items:flex-start;gap:4px;pointer-events:none;transform:translateX(-130%);opacity:0;transition:transform .55s cubic-bezier(.2,.9,.25,1.15),opacity .3s,top .4s .35s}
+#guard.on{transform:translateX(0);opacity:1}#vipBanner.on~#guard{top:calc(var(--banT,250px) + max(100px,var(--banH,0px) + 14px));transition:transform .55s cubic-bezier(.2,.9,.25,1.15),opacity .3s,top .4s}#guard svg{order:-1;flex:none;width:92px;height:119px;filter:drop-shadow(0 8px 14px rgba(0,0,0,.6));animation:gbob 2.4s ease-in-out infinite}
 @keyframes gbob{50%{transform:translateY(-3px) rotate(-1deg)}}#guard,#guard svg,#vipBanner,#vipBanner .flag,#vipBanner .ico,#vipBanner .meme{will-change:transform}#guard .glint{animation:glint 2.2s ease-in-out infinite}@keyframes glint{0%,70%,100%{opacity:0}80%{opacity:1}}
 #guard .bub{margin-top:14px;max-width:min(240px,calc(50vw - 22.5vh - 140px));min-width:150px;background:#f4f1e8;color:#121212;font-family:var(--f-sign);font-weight:700;font-size:17px;line-height:1.15;padding:8px 11px;border-radius:10px;position:relative;box-shadow:0 8px 24px rgba(0,0,0,.5)}
 #guard .bub::after{content:'';position:absolute;left:-9px;top:16px;border:6px solid transparent;border-right:10px solid #f4f1e8}#guard .bub small{display:block;font-family:var(--f-mono);font-weight:500;font-size:10px;color:#6a6a6a;letter-spacing:.06em;margin-bottom:2px}
 /* the 2D map draws the airport on the left and open approach airspace on the right: there the stack mirrors to the right */
-body:not(.v3) #vipBanner,body:not(.v3) #guard{left:auto;right:calc(var(--rail) + 36px)}body:not(.v3) #vipBanner{max-width:min(440px,30vw);transform:translateX(24px)}
+body:not(.v3) #vipBanner,body:not(.v3) #guard{left:auto;right:calc(var(--rail) + 36px)}body:not(.v3) #vipBanner{--banMax:min(440px,30vw);transform:translateX(24px)}
 body:not(.v3) #guard{transform:translateX(130%)}body:not(.v3) #vipBanner.on,body:not(.v3) #guard.on{transform:none}body:not(.v3) #guard svg{order:0}
 body:not(.v3) #guard .bub::after{left:auto;right:-9px;border-right-color:transparent;border-left:10px solid #f4f1e8}
+/* short screens: a smaller figure, tucked closer under the banner, so the stack fits the margin */
+@media (max-height:760px){#guard svg{width:72px;height:93px}#vipBanner.on~#guard{top:calc(var(--banT,250px) + var(--banH,0px) + 10px)}}
 @media (prefers-reduced-motion:reduce){#guard svg,#guard .glint{animation:none}}`;document.head.appendChild(st);
   const g=document.createElement('div');g.id='guard';g.setAttribute('aria-live','assertive');g.innerHTML=`<div class="bub"><small>SECURITY · SPG</small><span id="guardTxt"></span></div>
 <svg viewBox="0 0 116 150" aria-hidden="true"><path d="M14 150 C16 112 30 98 58 96 C86 98 100 112 102 150 Z" fill="#14171c"/><path d="M50 97 L58 122 L66 97 Z" fill="#f2f2f2"/><path d="M56 101 L58 128 L60 101 Z" fill="#7a0d12"/>
@@ -647,7 +694,7 @@ function spgStaged(rws,o){o=o||{};const t0=o.at!=null?o.at:T,n=rws.length,tm=spg
   s.ev.sort((a,b)=>a[0]-b[0]);STAGED.push(s);return tm;}
 spgStaged.times=(t0,n,o)=>{o=o||{};const first=o.first||100,lead=o.lead||60,step=o.step||110,say=[],open=[];for(let i=0;i<n;i++){say.push(t0+first+step*i);open.push(t0+first+step*i+lead);}return{say,open};};
 function stagedTick(){for(const s of STAGED.slice()){if(s.lv!==LV||T<s.t0-5){STAGED.splice(STAGED.indexOf(s),1);continue;}while(s.ev.length&&T>=s.ev[0][0])s.ev.shift()[1]();if(!s.ev.length)STAGED.splice(STAGED.indexOf(s),1);}}
-function vipBanner(on,k,title,meme,icons){const b=$('#vipBanner');if(!on){b.classList.remove('on');return;}const g=$('#guard');if(g&&icons==null)g.classList.remove('on');b.innerHTML=`<div class="flags">${icons==null?FLAG_IN+FLAG_RU:icons}</div><div class="k">${k}</div><h3>${title}</h3><div class="meme">${meme}</div>`;b.classList.add('on');}
+function vipBanner(on,k,title,meme,icons){const b=$('#vipBanner');if(!on){b.classList.remove('on');return;}const g=$('#guard');if(g&&icons==null)g.classList.remove('on');const fl=icons==null?FLAG_IN+FLAG_RU:icons;b.innerHTML=`<div class="flags">${fl}</div><div class="k">${k}</div><h3>${title}</h3><div class="meme">${meme}</div>`;b.classList.toggle('nof',!fl);b.classList.add('on');banFit();}
 // Level 3's summit, beat by beat; every line is tied to something the player can see at that moment:
 //  E       the SPG takes every runway, finals go around, flow control holds later arrivals at their origins
 //  PM      as Air India One turns final the SPG's ceremonial announcer names it and its runway (music 'india'); the camera
@@ -873,7 +920,7 @@ const walk=(r,a,b,n,side)=>Array.from({length:n},(_,i)=>[lerp(r.x0,r.x1,lerp(a,b
 // her cinematic waits until she has faded in, then frames her close up from ahead and slightly to the side, at near real time
 // (so she walks like a tigress, not a cheetah), the camera following her as the 3D view draws her
 const tigerAt=()=>{const S3=V3.on&&V3.ready&&Z.scene;if(!S3)return null;const g=tigerAt.g&&tigerAt.g.parent?tigerAt.g:(tigerAt.g=S3.getObjectByName('tiger'));return g?[g.position.x,g.position.z]:null;};
-const tigerCam=(ban,x,y)=>cinema(null,ban,{view:{tx:x,ty:y,dist:22,pitch:0.2,yaw:-1.0},at:[x,y],ms:8000,speed:0.04,track:tigerAt});
+const tigerCam=(ban,x,y)=>cinema(null,ban,{view:{tx:x,ty:y,dist:14,pitch:0.2,yaw:-1.0},at:[x,y],ms:8000,speed:0.04,track:tigerAt});
 STORY.tiger={len:2000,start(c){const r=rwBy('dep')[0];if(!r)return false;c.r=r;c.ra=rwBy('arr',r)[0]||null;
   const p0=walk(r,0.66,0.38,6,6);
   c.mark={x:p0[0][0],y:r.y,e:'🐅',until:T+1e6,px:34,k:'tiger',path:p0,t0:T,t1:T+420};MARKS.push(c.mark);
@@ -1313,6 +1360,7 @@ function trioView(R3){const ys=R3.map(r=>r.y),cy=(Math.min(...ys)+Math.max(...ys
 #delegLT .st{font-family:var(--f-mono);font-weight:600;font-size:10.5px;padding:1px 6px;border-radius:3px;background:#8a7cff;color:#0b0b0b;vertical-align:2px}#delegLT .st.ok{background:#3ad07f}
 #delegLT .sub{font-family:var(--f-mono);font-size:11px;color:#9fb3c8;margin-top:2px}#delegLT .q{font-family:var(--f-body);font-size:14.5px;color:#ffd27a;margin-top:3px;font-style:italic;line-height:1.25}
 #delegLT .q.ann{color:#fff;font-style:normal}#delegLT .q b{font-style:normal;font-family:var(--f-mono);font-size:10.5px;color:#9fb3c8;margin-right:6px}
+#delegLT.tight .q,#delegLT.tight .prev{display:none}
 #delegLT .prev{margin-top:5px;display:inline-block;background:rgba(10,13,16,.86);border-radius:4px;padding:3px 9px;font-family:var(--f-mono);font-size:11.5px;color:#cfd8dd}#delegLT .prev:empty{display:none}
 #delegChip{position:absolute;left:16px;top:204px;z-index:12;padding:7px 13px;border-radius:8px;background:rgba(10,13,16,.92);border:1px solid #ff9933;font-family:var(--f-sign);font-weight:700;font-size:18px;letter-spacing:.03em;color:#fff;box-shadow:0 8px 20px rgba(0,0,0,.45)}
 #delegChip[hidden]{display:none}#delegChip b{color:#ffb35c;font-size:22px}#delegChip small{display:block;font-family:var(--f-mono);font-weight:500;font-size:10.5px;color:#9fb3c8;letter-spacing:.06em}#delegChip small i{font-style:normal;color:#ff5a4f}
@@ -2033,6 +2081,10 @@ window.HUB={get T(){return T;},get S(){return S;},get LV(){return LV;},flights:(
     ['Sir. Delhi has brought its summit. We have taken over your runways.','Thank you for giving us your runways. Thank you for your support.','Your runways shall now be cleared, in a staged manner.',
      `Runway ${R3[2].short} shall be cleared first.`,`Then runway ${R3[1].short}.`,`And finally, runway ${R3[0].short}.`,'Thank you, sir, for this.','And thank you for serving the nation.','Jai Hind.',
      'The three motorcades have met on the apron.','Nobody will reverse. Talks are under way.'].forEach(t=>add(t,'spg'));return out;},
+  // any banner, for layout checks: HUB.banner(kicker,title,line,icons) (icons: HTML, where @IN @RU @US @CN are flags, or just
+  // 'IN+RU'); HUB.banner() hides it
+  banner:(k,t,m,ic)=>{const F={IN:FLAG_IN,RU:FLAG_RU,US:FLAG_US,CN:FLAG_CN};ic=ic==null?'':/^[A-Z+]+$/.test(ic)?ic.split('+').map(x=>F[x]).join(''):ic.replace(/@(IN|RU|US|CN)/g,(_,x)=>F[x]);
+    vipBanner(k!=null,k,t,m||'',ic);return k!=null?$('#vipBanner').getBoundingClientRect().toJSON():null;},
   dbg:()=>({cine:CINE?{f:CINE.f?CINE.f.callsign:null,ban:CINE.ban[0],until:CINE.o.until}:null,mus:MUS.name,pace:PACE,speed}),
   stats3d:()=>V3.ready?{cpuMs:+(V3.cpu||0).toFixed(2),fps:V3.fps,calls:Z.renderer.info.render.calls,tris:Z.renderer.info.render.triangles,geoms:Z.renderer.info.memory.geometries,tex:Z.renderer.info.memory.textures,mods:Object.keys(Z.mods),mode:V3.mode}:null,Z:()=>Z};
 
@@ -2045,11 +2097,11 @@ function frame(ms){
   requestAnimationFrame(frame);
   if(cv.clientWidth&&(cv.clientWidth!==VW||cv.clientHeight!==VH))resize();
   const dtR=Math.min(0.1,(ms-last)/1000);last=ms;camEase(dtR);
-  if(running&&!paused&&!ended){let d=dtR*BASE*(PACE!=null?PACE:speed);try{while(d>0){const st=Math.min(1,d);tick(st);d-=st;}}catch(err){console.error(err);}incTick(dtR);if(toastTimer>0&&!frame.cine){toastTimer-=dtR;if(toastTimer<=0&&!$('#toast').matches(':hover'))$('#toast').hidden=true;}}
+  if(running&&!paused&&!ended){let d=dtR*BASE*(PACE!=null?PACE:speed);try{while(d>0){const st=Math.min(1,d);tick(st);d-=st;}}catch(err){console.error(err);}incTick(dtR);if(toastTimer>0&&!frame.cine&&!toastFold){toastTimer-=dtR;if(toastTimer<=0&&!$('#toast').matches(':hover'))$('#toast').hidden=true;}}
   // while a cinematic runs the coach card folds down to its title (#app.cine), and its timer waits until the shot is over
-  {const on=!!(CINE||(SUM&&SUM.cine));if(on!==!!frame.cine){frame.cine=on;$('#app').classList.toggle('cine',on);}}
+  {const on=!!(CINE||(SUM&&SUM.cine));if(on!==!!frame.cine){frame.cine=on;$('#app').classList.toggle('cine',on);toastRoom();}}
   if(V3.on){try{draw3D(ms/1000,dtR);}catch(err){console.error(err);}}else{try{draw(ms/1000);}catch(err){console.error(err);}}
-  hudT+=dtR;if(hudT>0.25&&LV){hudT=0;try{hud();}catch(err){console.error(err);}try{drawWave();}catch(err){console.error(err);}}
+  hudT+=dtR;if(hudT>0.25&&LV){hudT=0;try{hud();toastRoom();}catch(err){console.error(err);}try{drawWave();}catch(err){console.error(err);}}
 }
 // idle preview: show level 4's layout behind the menu
 LV=LEVELS[3];RW.forEach(r=>{r.locked=false;r.mode=r.role==='arr'?'ARR':r.role==='dep'?'DEP':'MIX';});resetState();

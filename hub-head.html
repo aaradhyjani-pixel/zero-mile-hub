@@ -171,11 +171,16 @@ table.board{width:100%;border-collapse:collapse;font-size:12px}
 #toast p{margin:0 0 6px;color:var(--ink-2);font-size:13px}
 #toast svg{display:block;margin:6px 0 4px}
 #toast.flash{animation:flash 1.2s ease-out}
-/* while a cinematic runs (#app.cine) the card folds to one line in its corner, off the aircraft being shown; it opens again after */
-#app.cine #toast:not([hidden]){display:flex;align-items:center;gap:8px;width:auto;max-width:320px;padding:5px 4px 5px 10px;opacity:.92}
-#app.cine #toast header{display:contents}#app.cine #toast .x{order:2;flex:none}#app.cine #toast .dirsign{flex:none}
-#app.cine #toast .cbody{padding:0;min-width:0}#app.cine #toast #tD{display:none}
-#app.cine #toast h4{margin:0;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* in the 3D view the card sits in the left margin, over the farmland west of the runway thresholds (they are at about
+   50vw - 22vh in the strategic view), so it never covers a runway, or the tigress or the stage on one */
+body.v3 #toast{right:auto;left:max(14px,env(safe-area-inset-left,0px));width:max(260px,min(380px,calc(50vw - 22.5vh - 30px)));max-width:none}
+/* while a cinematic runs (#app.cine) the card folds to one line in its corner, off the aircraft being shown; it opens again after.
+   It folds the same way (.fold) while it would run into the banner or a speaker's popup above it (toastRoom in hub.js) */
+#app.cine #toast:not([hidden]),#toast.fold:not([hidden]){display:flex;align-items:center;gap:8px;width:auto;max-width:320px;padding:5px 4px 5px 10px;opacity:.92}
+#app.cine #toast header,#toast.fold header{display:contents}#app.cine #toast .x,#toast.fold .x{order:2;flex:none}#app.cine #toast .dirsign,#toast.fold .dirsign{flex:none}
+#app.cine #toast .cbody,#toast.fold .cbody{padding:0;min-width:0}#app.cine #toast #tD,#toast.fold #tD{display:none}
+#app.cine #toast h4,#toast.fold h4{margin:0;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#toast.tuck{visibility:hidden}
 @keyframes flash{0%{box-shadow:0 0 0 2px var(--sign),0 10px 30px rgba(0,0,0,.5)}100%{box-shadow:0 0 0 0 transparent,0 10px 30px rgba(0,0,0,.5)}}
 #pop{position:absolute;z-index:9;width:272px;padding:9px 11px 10px}
 #pop[hidden]{display:none}

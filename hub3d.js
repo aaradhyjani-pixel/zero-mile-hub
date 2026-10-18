@@ -231,7 +231,7 @@ function setView(v,quiet){
   if(v==='3d'&&!V3.ready){V3.want=true;init3D();return;}
   V3.on=v==='3d'&&V3.ready;V3.want=v==='3d';store.set('zm_view',V3.want?'3d':'2d');
   const gl=$('#gl');if(gl)gl.style.display=V3.on?'block':'none';
-  document.body.classList.toggle('v3',V3.on);
+  document.body.classList.toggle('v3',V3.on);banFit();
   if($('#zView'))$('#zView').textContent=V3.on?'2D':'3D';if($('#zCam'))$('#zCam').disabled=!V3.on;
   if(V3.on){resize3D();if(!quiet)radio('AOCC','3D view. Drag to pan, right-drag to orbit, C for cameras, G for quality, M for the map.');}
   camLabel();
@@ -461,8 +461,8 @@ function cam3Fit(){setCam('map');Object.assign(C3.t,{tx:-700,ty:0,dist:10500,yaw
 // screen rectangles the signs keep clear of: the cards floating over the map (re-read 4 times a second, not per frame)
 function hudRects(now){
   if(V3.blk&&Math.abs(now-V3.blkT)<0.25)return V3.blk;V3.blkT=now;const a=cv.getBoundingClientRect(),L=[];
-  for(const s of ['#zoomBox','#camLbl','#vipBanner.on','#guard.on','#toast','#pop','#kiteChip','#wedChip','#fogTag','#stopBtn']){const e=document.querySelector(s);if(!e||e.hidden)continue;
-    const r=e.getBoundingClientRect();if(r.width>0&&r.height>0)L.push({x:r.left-a.left-4,y:r.top-a.top-4,w:r.width+8,h:r.height+8});}
+  for(const s of ['#zoomBox','#camLbl','#vipBanner.on','#guard.on','#toast','#pop','#kiteChip','#wedChip','#fogTag','#stopBtn','#delegChip','#delegLT.on']){const e=document.querySelector(s);if(!e||e.hidden)continue;
+    const r=e.getBoundingClientRect();if(r.width>0&&r.height>0&&!e.classList.contains('tuck'))L.push({x:r.left-a.left-4,y:r.top-a.top-4,w:r.width+8,h:r.height+8});}
   return V3.blk=L;}
 const ovl=(a,b,m)=>a.x<b.x+b.w+m&&a.x+a.w+m>b.x&&a.y<b.y+b.h+m&&a.y+a.h+m>b.y;
 // is a sign rectangle off the free map area, under a card, or on top of a sign already placed?
@@ -494,6 +494,9 @@ function rwSigns3D(blk,taken){
 // the overlay: incident markers, runway signs, stack signs, tags and MAYDAY beacons, drawn on the 2D canvas
 function drawOverlay3D(now){
   screenT();ctx.clearRect(0,0,VW,VH);const blk=hudRects(now),taken=[];
+  // a runway accident's wreck, fire and smoke column (~350 m tall) stay clear of every sign, from any camera
+  for(const o of FXV){if(o.kind!=='crash'||T<o.t0)continue;const p0=proj(o.x,o.y,0),p1=proj(o.x,o.y,350);if(!p0||!p1)continue;
+    const hw=Math.max(40,0.45*Math.abs(p0.Y-p1.Y)),x0=Math.min(p0.X,p1.X)-hw,y0=Math.min(p0.Y,p1.Y)-10;taken.push({x:x0,y:y0,w:Math.abs(p0.X-p1.X)+2*hw,h:Math.abs(p0.Y-p1.Y)+24});}
   for(const st of STACKS){let n=0,mf=false;for(const f of flights)if(f.state==='holding'&&f.stack===st){n++;if(f.minFuel)mf=true;}if(!n)continue;const p=proj(st.x,st.y,2600*AIR_K);if(!p)continue;
     const t=`STACK ${st.id} · ${n}`;ctx.font='700 12px Barlow Condensed, Arial Narrow, sans-serif';const w=ctx.measureText(t).width+12;if(signHit({x:p.X-w/2,y:p.Y-49,w,h:18},blk))continue;
     taken.push(signText(p.X,p.Y-40,t,0.95,mf?'#ff4d3f':'#f4c430'));}

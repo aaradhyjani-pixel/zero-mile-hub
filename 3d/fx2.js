@@ -865,7 +865,8 @@ vec3 fxCol(vec3 P,float reg,float t){
       for (const k in L) L[k].length = 0;
       for (let i = 0; i < fx.length; i++) { const o = fx[i]; if (L[o.kind] && T >= o.t0 - 1 && T <= o.t1 + 2) L[o.kind].push(o); }
       if (ST.size > 64) ST.clear();
-      const want = charScale(); charK += (want - charK) * Math.min(1, dt * 3);
+      // (they shrink back to life size quickly as the camera closes in, so a cinematic's close-up never opens on a giant)
+      const want = charScale(); charK += (want - charK) * Math.min(1, dt * (want < charK ? 10 : 3));
       nBlob = 0;
       tigerUpdate(L.tiger, dt, now, dTs);
       kitesUpdate(L.kites, dt, now);

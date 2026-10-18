@@ -120,6 +120,11 @@ def main():
             if k in seen:
                 print(f'WARNING {src}: duplicate key {k!r} (already in {seen[k]}), keeping the first'); continue
             seen[k] = src; lines.append(ln)
+    # voice/custom.json {key: name}: a line the user recorded elsewhere (voice/custom/<name>.mp3) replaces the synthesised clip
+    try:
+        custom = json.load(open(os.path.join(HERE, 'custom.json'), encoding='utf-8'))
+    except (OSError, ValueError):
+        custom = {}
     os.makedirs(CLIPS, exist_ok=True); os.makedirs(CACHE, exist_ok=True)
     jobs, out, stat = {}, {}, {'rendered': 0, 'cached': 0}
     for ln in lines:
@@ -143,6 +148,12 @@ def main():
         for h, r in zip(jobs, ex.map(job, jobs)):
             stat[r] += 1
     keep = {h[:12] + '.mp3' for h in jobs}
+    cdur = {}
+    for key, nm in custom.items():
+        srcf = os.path.join(HERE, 'custom', nm + '.mp3')
+        if key in out and os.path.exists(srcf):
+            shutil.copy(srcf, os.path.join(CLIPS, nm + '.mp3')); keep.add(nm + '.mp3'); out[key] = f'voice/clips/{nm}.mp3'
+            cdur[nm] = round(float(subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', srcf], capture_output=True, text=True).stdout.strip() or 0), 2)
     # each clip's length (cached by clip hash in voice/cache/dur.json, so only new clips are probed)
     dp = os.path.join(CACHE, 'dur.json')
     try:
@@ -162,7 +173,7 @@ def main():
           '// its exact on-screen text, and each accent\'s language for the browser\'s fallback voice\n'
           'const SPG_AUDIO=' + json.dumps(out, ensure_ascii=False, indent=0) + ';\n'
           'const VOICE_LANG=' + json.dumps({k: v.get('lang') for k, v in voices.items()}) + ';\n'
-          'const SPG_DUR=' + json.dumps({h[:12]: dur[h] for h in sorted(jobs)}, separators=(',', ':')) + ';\n')
+          'const SPG_DUR=' + json.dumps({**{h[:12]: dur[h] for h in sorted(jobs)}, **cdur}, separators=(',', ':')) + ';\n')
     open(os.path.join(HERE, 'spg_audio.js'), 'w', encoding='utf-8').write(js)
     size = sum(os.path.getsize(os.path.join(CLIPS, f)) for f in keep)
     print(f'{len(out)} lines, {len(keep)} clips: {stat["rendered"]} rendered, {stat["cached"]} cached, '

@@ -93,9 +93,8 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
       vec3 v=normalize(vDir);float up=max(v.y,0.);float hl=max(length(v.xz),1e-3);
       vec2 pc=v.xz/max(v.y,0.035)*1800.;
       vec4 n=texture2D(uNoise,(pc-uWD*uFlow*0.5)*0.00011+0.31);
-      vec4 n2=texture2D(uNoise,(pc-uWD*uFlow*0.9)*0.00042+n.ra*0.25);
       vec3 dust=mix(uHor,uZen,pow(up,0.55));
-      float tex=n.r*0.6+n2.g*0.4;dust*=0.8+0.38*tex*smoothstep(0.,0.25,up+0.05);
+      float tex=n.r*0.6+n.g*0.4;dust*=0.8+0.38*tex*smoothstep(0.,0.25,up+0.05);
       float s=max(dot(v,normalize(uSunD)),0.);
       dust+=uSunDisc*(smoothstep(0.99962,0.9998,s)*1.6+pow(s,90.)*0.45+pow(s,10.)*0.16);
       float fl=pow(max(dot(v,uFlashD),0.),5.);dust+=uFlash*vec3(0.75,0.7,0.85)*(0.18+1.6*fl)*(0.6+0.8*tex);
@@ -155,29 +154,36 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
     for (const c of CLU) { const n = Math.round(10 + c[2] / 60);
       for (let i = 0; i < n; i++) { const a = Rc() * 6.283, d = Math.sqrt(Rc()) * c[2] * 0.85, ox = Math.cos(a) * d, oz = Math.sin(a) * d * 0.8, dome = 1 - (d / c[2]) ** 2;
         const pr = (170 + Rc() * 200) * (0.7 + 0.5 * dome); push(ox, c[3] + pr * 0.55 + dome * c[4] * Rc(), oz, pr, Rc(), 0.004 + Rc() * 0.006, 4, c[0], c[1], c[3], c[4]); } } }
+  // more fair-weather clusters for the low cameras (tower, follow, approach): no ground shadow, never within ~9 km of
+  // the field, so they read as a band of cumulus on the horizon (they fade out for high cameras like the rest)
+  { const Rc = mulberry(57);
+    for (let k = 0; k < 60; k++) { const ang = Rc() * 6.283, dist = 13000 + Rc() * 17000, x = Math.cos(ang) * dist, z = Math.sin(ang) * dist;
+      const rad = 700 + Rc() * 900, base = 1500 + Rc() * 600, hgt = 250 + Rc() * 450, n = Math.round(8 + rad / 90);
+      for (let i = 0; i < n; i++) { const a = Rc() * 6.283, d = Math.sqrt(Rc()) * rad * 0.9, ox = Math.cos(a) * d, oz = Math.sin(a) * d * 0.7, dome = 1 - (d / rad) ** 2;
+        const pr = (200 + Rc() * 230) * (0.7 + 0.5 * dome); push(ox, base + pr * 0.5 + dome * hgt * Rc(), oz, pr, Rc(), 0.004 + Rc() * 0.006, 4.25, x, z, base, hgt); } } }
   const nCum = BL.length;
   // storm cells: the dark parent thunderstorm behind the wall
   for (let i = 0; i < 46; i++) { const z = (R() - 0.5) * 44000; push(-3500 - R() * 10000, 2800 + R() * 5000, z, 2400 + R() * 1800, R(), 0.004 + R() * 0.004, 3, 260 + R() * 300, 0, 0, 0.45 + R() * 0.25); }
   // the wall: columns along the front (denser near the airport); body behind, then the rolling face, then the base
   const cols = []; for (let z = -38000; z <= 38000;) { cols.push(z); z += 230 + 0.011 * Math.abs(z); }
-  const colTop = z => 820 + 420 * Math.sin(z * 0.00041 + 1.3) + 260 * Math.sin(z * 0.0013 + 0.4) + 140 * Math.sin(z * 0.0037);
-  cols.forEach((z, i) => { if (i % 2) return; const top = colTop(z); push(-900 - R() * 5200, 200 + R() * top * 0.85, z + (R() - 0.5) * 300, 800 + R() * 700, R(), 0.01 + R() * 0.01, 1, 90 + R() * 120, top, 0, 0.85); });
+  const colTop = z => 1900 + 360 * Math.sin(z * 0.00041 + 1.3) + 170 * Math.sin(z * 0.0013 + 0.4) + 80 * Math.sin(z * 0.0037);
+  cols.forEach((z, i) => { if (i % 2) return; const top = colTop(z); push(-1100 - R() * 5200, 300 + R() * top * 0.85, z + (R() - 0.5) * 300, 1200 + R() * 1050, R(), 0.01 + R() * 0.01, 1, 90 + R() * 120, top, 0, 0.85); });
   cols.forEach(z => { const top = colTop(z);
-    const nt = 1 + (R() < 0.5 ? 1 : 0); for (let k = 0; k < nt; k++) push(-420 - R() * 380, top - R() * 140, z + (R() - 0.5) * 200, 280 + R() * 230, R(), 0.016 + R() * 0.014, 0, 70 + R() * 90, top, 0, 1);
-    for (let y = top - 330; y > 250; y -= 250 + R() * 90) { const f = y / top; push(-60 - 330 * f * f - R() * 160, y, z + (R() - 0.5) * 220, 260 + R() * 200, R(), 0.018 + R() * 0.014, 0, 50 + R() * 80, top, 0, 1); } });
-  cols.forEach(z => { const top = colTop(z); push(-40 + R() * 90, 70 + R() * 70, z + (R() - 0.5) * 160, 300 + R() * 160, R(), 0.02 + R() * 0.02, 0, 40 + R() * 40, top, 0, 1); });
+    const nt = 1 + (R() < 0.5 ? 1 : 0); for (let k = 0; k < nt; k++) push(-520 - R() * 420, top - R() * 180, z + (R() - 0.5) * 200, 420 + R() * 345, R(), 0.016 + R() * 0.014, 0, 70 + R() * 90, top, 0, 1);
+    for (let y = top - 450; y > 300; y -= 380 + R() * 130) { const f = y / top; push(-80 - 420 * f * f - R() * 180, y, z + (R() - 0.5) * 220, 390 + R() * 300, R(), 0.018 + R() * 0.014, 0, 50 + R() * 80, top, 0, 1); } });
+  cols.forEach(z => { const top = colTop(z); push(-40 + R() * 90, 90 + R() * 260, z + (R() - 0.5) * 160, 380 + R() * 220, R(), 0.02 + R() * 0.02, 0, 40 + R() * 40, top, 0, 1); });
   // the gust front: low dust racing ahead of the wall near the airport
   for (let z = -16000; z <= 16000; z += 170) for (let k = 0; k < 2; k++) push(R() * 150, 6 + R() * 30, z + (R() - 0.5) * 160, 70 + R() * 90, R(), 0.03 + R() * 0.04, 2, 900 + R() * 1400, 25 + R() * 70, 2.8 + R() * 2.2, 0.55 + R() * 0.45);
   // drifting dust masses: big soft volumes that wrap around the view and stream with the wind (inside the storm)
   const nMass0 = BL.length;
-  for (let i = 0; i < 170; i++) push(R(), Math.pow(R(), 1.6), R(), 0.05 + R() * 0.07, R(), 0.006 + R() * 0.01, 5, 0.6 + R() * 0.8, R(), 0, 0.5 + R() * 0.5);
+  for (let i = 0; i < 110; i++) push(R(), Math.pow(R(), 1.6), R(), 0.05 + R() * 0.07, R(), 0.006 + R() * 0.01, 5, 0.6 + R() * 0.8, R(), 0, 0.6 + R() * 0.5);
   const NB = BL.length, bP = new Float32Array(NB * 4), bS = new Float32Array(NB * 4), bC = new Float32Array(NB * 4);
   BL.forEach((b, i) => { bP.set(b.slice(0, 4), i * 4); bS.set(b.slice(4, 8), i * 4); bC.set(b.slice(8, 12), i * 4); });
   const billU = Object.assign({}, U, { uWallA: { value: 0 }, uSkirtA: { value: 0 }, uCellA: { value: 0 }, uCumA: { value: 1 }, uDom: { value: 60000 }, uCumOff: { value: new THREE.Vector2() },
     uMassA: { value: 0 }, uMB: { value: new THREE.Vector4(0, 0, 0, 4000) }, uMV: { value: new THREE.Vector3() },
-    uDustLo: { value: lin('#38251a') }, uDustHi: { value: lin('#a97a47') }, uCellC: { value: lin('#584a3e') }, uCumC: { value: lin('#ffffff') }, uCumBase: { value: lin('#8d97a8') } });
+    uDustLo: { value: lin('#2e2017') }, uDustHi: { value: lin('#c89660') }, uField: { value: new THREE.Vector4(0, 0, 4000, 3000) }, uCellC: { value: lin('#584a3e') }, uCumC: { value: lin('#ffffff') }, uCumBase: { value: lin('#6f7a8c') } });
   const bill = mk(quadGeo(NB, { iP: bP, iS: bS, iC: bC }), mat({ uniforms: billU,
-    vertexShader: VHEAD + `attribute vec4 iP,iS,iC;uniform float uTime,uFrontX,uCurv,uWallA,uSkirtA,uCellA,uCumA,uDom,uMassA;uniform vec2 uCumOff;uniform vec4 uMB;uniform vec3 uMV;
+    vertexShader: VHEAD + `attribute vec4 iP,iS,iC;uniform float uTime,uFrontX,uCurv,uWallA,uSkirtA,uCellA,uCumA,uDom,uMassA;uniform vec2 uCumOff;uniform vec4 uMB,uField;uniform vec3 uMV;
     varying vec2 vUv;varying float vA,vD;varying vec3 vWP;varying vec4 vS;varying vec3 vInfo;
     void main(){
       float kind=iS.z;vec3 c=iP.xyz;float R=iP.w,a=1.;vec2 sc=vec2(1.);float hb=0.,ht=1500.;
@@ -194,7 +200,10 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
         a=uMassA*iC.w*smoothstep(fx+300.,fx-900.,c.x)*(1.-smoothstep(0.3,0.5,max(rel.x,rel.y)));hb=0.;ht=box.y+R;}
       else{vec2 cc=mod(iC.xy+uCumOff+uDom*0.5,uDom)-uDom*0.5;float e=max(abs(cc.x),abs(cc.y));c.xz+=cc;c.y+=sin(th)*15.;R*=0.96+0.06*sin(th*0.7);
         a=uCumA*smoothstep(uDom*0.5,uDom*0.5-6000.,e);hb=iC.z;ht=iC.z+iC.w+250.;
+        if(kind>4.1)a*=smoothstep(9000.,14000.,length(c.xz));
         a*=1.-smoothstep(hb-900.,hb-250.,cameraPosition.y);}  // never between a high (strategic) camera and the field
+      if(kind<3.5&&cameraPosition.y>c.y+50.){vec3 cp=cameraPosition;vec2 g=cp.xz+(c.xz-cp.xz)*(cp.y/(cp.y-c.y));   // where the puff sits on the ground, seen from the camera
+        vec2 ob=max(abs(g-uField.xy)-uField.zw,0.);a*=mix(1.,smoothstep(R*0.4,R*1.6+600.,length(ob)),smoothstep(1500.,4000.,cp.y));}
       vec4 mv=modelViewMatrix*vec4(c,1.);float d=length(mv.xyz);
       a*=smoothstep(R*0.3,R*1.5,d);
       if(a<0.003){gl_Position=vec4(0.,0.,-2.,1.);return;}
@@ -225,16 +234,18 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
       float crev=mix(0.5,1.08,smoothstep(0.15,0.85,cau));
       vec3 alb;vec3 col;
       if(kind<2.5||kind>4.5){alb=mix(uDustLo,uDustHi,smoothstep(0.02,0.9,h01));if(kind>4.5)alb=mix(uDustLo,uDustHi,0.35+0.4*h01)*mix(0.75,1.2,vS.x);
-        col=alb*(uSkyC*(0.35+0.65*h01)+uGndC*0.5+uSunC*lam*crev*mix(0.35,1.,h01));}
+        col=alb*(uSkyC*(0.35+0.65*h01)+uGndC*0.5+uSunC*lam*crev*mix(0.3,1.15,h01));
+        if(kind<1.5){float rim=pow(clamp(1.-N.z,0.,1.),2.5)*max(dot(normalize(N.xy+1e-4),normalize(uSunV.xy+1e-4)),0.);col+=uSunC*alb*rim*0.9*h01;}}
       else if(kind<3.5){alb=uCellC*mix(0.55,1.15,h01);col=alb*(uSkyC*0.8+uSunC*lam*crev*(0.25+0.75*h01))+uFlash*vec3(1.,0.95,1.1)*0.9*cau;}
-      else{float base=smoothstep(vInfo.x-40.,vInfo.x+220.,vWP.y);alb=mix(uCumBase,uCumC,base);
-        dens*=smoothstep(vInfo.x-70.,vInfo.x+25.,vWP.y);col=alb*(uSkyC*0.9+uGndC*0.4*(1.-base)+uSunC*lam*crev);}
+      else{float base=smoothstep(vInfo.x-20.,vInfo.x+300.,vWP.y);alb=mix(uCumBase,uCumC,base*base*(3.-2.*base));
+        dens*=smoothstep(vInfo.x-25.,vInfo.x+12.,vWP.y);col=alb*(uSkyC*0.9+uGndC*0.4*(1.-base)+uSunC*lam*crev);}
       float a=clamp(vA*dens,0.,1.);
       ${OUT('col', 'a', 'vWP-uCamPos', '(kind<1.5?0.38:(kind<3.5?0.5:(kind>4.5?0.8:1.)))')}
     }` }), -20);
 
   // ---------- 4. drifting dust sheets at several heights (the flowing veils seen from above and from inside) ----------
-  const LAY = [[3, 0.42, 700, 2.2], [40, 0.34, 1100, 1.8], [160, 0.3, 1700, 1.5], [450, 0.28, 2400, 1.3], [900, 0.26, 3400, 1.2]];
+  // three layers (each one is a full-screen transparent pass from inside the storm, so they are kept few and denser)
+  const LAY = [[3, 0.5, 800, 2.1], [110, 0.42, 1500, 1.6], [650, 0.36, 2900, 1.25]];
   const shtGeo = new THREE.BufferGeometry(); { const p = [], l = [], ix = []; LAY.forEach((L, i) => { p.push(-0.5, 0, -0.5, 0.5, 0, -0.5, 0.5, 0, 0.5, -0.5, 0, 0.5); for (let k = 0; k < 4; k++) l.push(...L); ix.push(i * 4, i * 4 + 2, i * 4 + 1, i * 4, i * 4 + 3, i * 4 + 2); });
     shtGeo.setAttribute('position', new THREE.Float32BufferAttribute(p, 3)); shtGeo.setAttribute('aL', new THREE.Float32BufferAttribute(l, 4)); shtGeo.setIndex(ix); }
   const shtU = Object.assign({}, U, { uCen: { value: new THREE.Vector3() }, uSize: { value: 30000 }, uSheetA: { value: 0 }, uLead: { value: 900 }, uDustA: { value: new THREE.Color() }, uDustB: { value: new THREE.Color() }, uFade: { value: 12000 } });
@@ -250,7 +261,8 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
       vec4 n1=texture2D(uNoise,uv);
       vec4 n2=texture2D(uNoise,uv*vec2(2.1,2.7)+(n1.ra-0.5)*0.3-vec2(fl*0.5/(S*an),0.));
       float n=n1.r*0.82+n2.g*0.18;
-      float dens=smoothstep(0.3-0.1*uGust,0.92,n);
+      float band=texture2D(uNoise,vec2(q.x-fl*1.15,q.y*0.6)*0.000055+vec2(0.13,0.71)).r;
+      float dens=smoothstep(0.3-0.1*uGust,0.92,n)*(0.35+1.15*smoothstep(0.28,0.78,band));
       float fx=uFrontX-uCurv*vWP.z*vWP.z;
       float m=smoothstep(fx+uLead,fx-250.,vWP.x+(n1.a-0.5)*500.);
       float a=dens*vL.y*m*uSheetA;
@@ -258,15 +270,18 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
       a*=smoothstep(vL.x*0.4+2.,vL.x*1.5+30.,d);
       a*=1.-smoothstep(uFade*0.55,uFade,d);
       if(a<0.004)discard;
-      vec3 col=mix(uDustA,uDustB,clamp(n2.b*0.8+0.4*(n1.a-0.5)+0.25*smoothstep(0.,700.,vWP.y),0.,1.))*(0.8+0.4*n1.g);
+      vec3 col=mix(uDustA,uDustB,clamp(n2.b*0.6+0.3*(n1.a-0.5)+0.55*smoothstep(0.,700.,vWP.y)-0.2*(1.-band),0.,1.))*(0.8+0.4*n1.g);
       ${OUT('col', 'a', 'V')}
-    }` }), -10);
+    }` }), 10);
 
   // ---------- 5. particles: near dust streaks, debris, field streaks, near rain, far rain (one draw call) ----------
   const NP = { dust: 10000, debris: 800, field: 1400, rain: 7000, farRain: 4500 };
   const NPT = NP.dust + NP.debris + NP.field + NP.rain + NP.farRain;
   const pR = new Float32Array(NPT * 4), pK = new Float32Array(NPT * 4);
-  { const Rp = mulberry(99); let i = 0; [[0, NP.dust], [1, NP.debris], [2, NP.field], [3, NP.rain], [4, NP.farRain]].forEach(([k, n]) => { for (let j = 0; j < n; j++, i++) { pR.set([Rp(), Rp(), Rp(), Rp()], i * 4); pK.set([k, Rp(), Rp(), Rp()], i * 4); } }); }
+  // interleaved by kind, so drawing only the first N instances (the quality tiers) thins every kind evenly
+  { const Rp = mulberry(99), KN = [NP.dust, NP.debris, NP.field, NP.rain, NP.farRain], acc = [0, 0, 0, 0, 0];
+    for (let i = 0; i < NPT; i++) { let k = 0, best = -1; for (let j = 0; j < 5; j++) { const lag = (i + 1) * KN[j] / NPT - acc[j]; if (lag > best) { best = lag; k = j; } } acc[k]++;
+      pR.set([Rp(), Rp(), Rp(), Rp()], i * 4); pK.set([k, Rp(), Rp(), Rp()], i * 4); } }
   const parU = Object.assign({}, U, { uBoxN: { value: 140 }, uBoxF: { value: 6000 }, uFieldH: { value: 60 }, uPxK: { value: 0.001 }, uWindV: { value: new THREE.Vector3(20, 0, 0) }, uFieldV: { value: new THREE.Vector3(60, 0, 0) },
     uFocus: { value: new THREE.Vector3() }, uAmt: { value: new THREE.Vector4() }, uFarRain: { value: 0 }, uLead: { value: 900 }, uDustP: { value: new THREE.Color() }, uDebC: { value: lin('#3a2c20') }, uRainC: { value: lin('#e4e8ee') } });
   const parts = mk(quadGeo(NPT, { iR: pR, iK: pK }), mat({ uniforms: parU,
@@ -291,7 +306,7 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
       }else if(k<3.5){float B=uBoxN*0.42;vec3 box=vec3(B,B*1.2,B);
         vec3 v=vec3(uWindV.x*0.35,-8.-3.*iK.z,uWindV.z*0.35);
         P=iR.xyz*box+v*uTime;P=uCamPos+mod(P-uCamPos+box*0.5,box)-box*0.5;vel=v;
-        rel=(P-uCamPos)/box;wid=(0.014+0.014*iK.y)*ks;blur=0.09*ks;a=uAmt.w*(0.5+0.5*iK.w);
+        rel=(P-uCamPos)/box;wid=(0.007+0.006*iK.y)*ks;blur=0.054*ks;a=uAmt.w*(0.25+0.25*iK.w);
       }else{float H=uBoxF*0.12+200.;vec3 v=vec3(uFieldV.x*0.12,-(9.+3.*iK.z)*max(1.,uBoxF/1200.),uFieldV.z*0.12);
         vec2 pp=iR.xz*uBoxF+v.xz*uTime;pp=uFocus.xz+mod(pp-uFocus.xz+uBoxF*0.5,uBoxF)-uBoxF*0.5;
         P=vec3(pp.x,mod(iR.y*H+v.y*uTime,H),pp.y);vel=v;rel=vec3((P.xz-uFocus.xz)/uBoxF,0.).xzy;
@@ -355,13 +370,14 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
   const tv = new THREE.Vector3(), tv2 = new THREE.Vector3(), camPos = new THREE.Vector3(), focus = new THREE.Vector3();
   const cA = new THREE.Color(), cB = new THREE.Color();
   const P = {
-    preFog: lin('#c9b28f'), inFog: lin('#8c5a30'), inFogDark: lin('#5f3b1f'), tailFog: lin('#7a6a5a'),
-    skyIn: lin('#9a6436'), zenIn: lin('#4e321d'), sunIn: lin('#ffb46e'), sunDisc: lin('#ffd9a6'), white: lin('#ffffff'),
+    preFog: lin('#c9b28f'), inFog: lin('#86593a'), inFogDark: lin('#5a3d26'), tailFog: lin('#7a6a5a'),
+    skyIn: lin('#9a6436'), zenIn: lin('#b48a5c'), sunIn: lin('#ffb46e'), sunDisc: lin('#ffd9a6'), white: lin('#ffffff'),
     dustP: lin('#c49566'), dustA: lin('#7d5636'), dustB: lin('#c7976a'), sunWarm: lin('#fff1dc'),
     skyClear: new THREE.Color(0.30, 0.36, 0.46), skyDust: new THREE.Color(0.26, 0.18, 0.11), gndClear: new THREE.Color(0.09, 0.11, 0.06), gndDust: new THREE.Color(0.12, 0.08, 0.05),
   };
   const t0 = performance.now() / 1000; let flow = 0, flowF = 0, massFlow = 0, cumX = 0, cumZ = 0, lastNow = 0;
   const L = { next: 0, t: -9, k: 0, x: 0, z: 0, idx: 0, dist: 0, force: false };
+  let fieldBox = null;
   const S = { front: -1e6, inside: 0, appr: 0, I: 0, tail: 0, rain: 0, wall: 0 };   // exposed for debugging
   const base = { fog: def.fogColor.clone(), den: def.fogDensity, haze: def.hazeHeight }, wrote = { den: -1 };
 
@@ -431,15 +447,15 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
     cB.copy(P.inFog).lerp(P.inFogDark, 0.45 * gust + 0.2 * (1 - tail)).lerp(P.tailFog, tail * 0.65);
     A.fogColor.copy(cA).lerp(cB, I).multiplyScalar(1 + fl * 1.6);
     // in the storm, visibility of ~1.5-2 km near the ground; from far out, enough to keep the field readable
-    const inDen = Math.min(0.0014, Math.max(0.00007, 0.95 / Math.max(cd, 500))) * (1 + 0.22 * gust) * mix(1, 0.5, tail);
+    const inDen = Math.min(0.0009, Math.max(0.00007, 0.95 / Math.max(cd, 500))) * (1 + 0.22 * gust) * mix(1, 0.5, tail);
     A.fogDensity = mix(base.den * (1 + 0.5 * appr), inDen, I); wrote.den = A.fogDensity;
     A.hazeHeight = mix(base.haze, 300, I);
     A.skyTint.copy(P.preFog).lerp(P.skyIn, I); A.skyTintK = Math.max(I * 0.92, appr * wall * 0.25);
-    A.sunDim = mix(1 - 0.15 * appr * wall, 0.28 + 0.14 * tail, I);
+    A.sunDim = mix(mix(1, 0.45, appr * wall), 0.28 + 0.14 * tail, I);
     A.sunTint.copy(P.white).lerp(P.sunIn, Math.max(I, appr * 0.25));
-    A.ambientK = mix(1 - 0.1 * appr * wall, 0.66 + 0.1 * tail, I);
+    A.ambientK = mix(1 - 0.4 * appr * wall, 0.6 + 0.1 * tail, I);
     const G = A.grade;
-    G.exposure = DG.exposure * mix(1, 1.05, I); G.contrast = DG.contrast * mix(1, 0.88, I); G.saturation = DG.saturation * mix(1 - 0.05 * appr, 0.9, I);
+    G.exposure = DG.exposure * mix(1, 1.05, I); G.contrast = DG.contrast * mix(1, 0.88, I); G.saturation = DG.saturation * mix(1 - 0.25 * appr * wall, 0.75 + 0.1 * tail, I);
     G.warmth = DG.warmth + mix(0.06 * appr, 0.3, I); G.vignette = DG.vignette + mix(0.05 * appr, 0.2, I); G.grain = DG.grain + mix(0, 0.045, I);
     A.bloom = mix(1, 1.35, I);
     A.visibility = 1.73 / Math.max(1e-6, A.fogDensity);
@@ -480,7 +496,7 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
     // ---- cloud shadows ----
     cumX += dt * Math.cos(0.32) * 6 * kv; cumZ += dt * Math.sin(0.32) * 6 * kv;
     const dom = 60000; billU.uCumOff.value.set(cumX % dom, cumZ % dom); shU.uCumOff.value.copy(billU.uCumOff.value);
-    const cumA = (heat ? 0.65 : 1) * (1 - Math.max(appr * wall, I)) * (1 - smooth(0.25, 0.9, I));
+    const cumA = (heat ? 0.65 : 1) * (1 - Math.max(appr, I)) * (1 - smooth(0.25, 0.9, I));
     billU.uCumA.value = cumA;
     const sy = Math.max(0.15, U.uSunD.value.y), offK = -1 / sy; shU.uSunOff.value.set(U.uSunD.value.x * offK * 1950, U.uSunD.value.z * offK * 1950);
     for (let i = 0; i < NCL; i++) { const c = CLU[i], v = clU[i]; if (!c) { v.w = 0; continue; }
@@ -491,8 +507,12 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
     shadow.visible = cumA > 0.01 || shU.uStormSh.value > 0.01;
 
     // ---- billows ----
-    billU.uWallA.value = wall * (1 - 0.6 * I); billU.uSkirtA.value = wall * 0.9;
-    billU.uCellA.value = wall * (1 - 0.7 * I);
+    // inside the storm the wall and the cells are lost in the dust anyway: stop drawing them (the 2 km wall is a lot of fill)
+    billU.uWallA.value = wall * (1 - 0.6 * I) * (1 - smooth(0.6, 0.95, I)); billU.uSkirtA.value = wall * 0.9 * (1 - smooth(0.6, 0.95, I));
+    billU.uCellA.value = wall * (1 - 0.7 * I) * (1 - smooth(0.6, 0.95, I));
+    if (!fieldBox) { let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; const add = (x, y) => { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); };
+      for (const r of Z.RW || []) { add(r.x0, r.y); add(r.x1, r.y); } for (const g of Z.GATES || []) add(g.x, g.y);
+      fieldBox = x0 < x1 ? [(x0 + x1) / 2, (y0 + y1) / 2, (x1 - x0) / 2 + 500, (y1 - y0) / 2 + 500] : [0, 0, 4000, 3000]; billU.uField.value.set(...fieldBox); }
 
 
     // ---- sheets ----
@@ -515,6 +535,8 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
     parU.uAmt.value.set(dustAmt * lowCam * (0.6 + 0.4 * gust) * 0.85, dustAmt * lowCam * gust, Math.max(I, frontNear) * env * (1 - 0.6 * tail) * 0.6 * smooth(250, 1500, camY), rain * lowCam);
     parU.uFarRain.value = rain * (1 - lowCam * 0.4) * 0.8;
     parU.uDustP.value.copy(P.dustP).multiplyScalar(0.95 + 0.7 * A.sunDim + fl);
+    const pq = Z.quality >= 2 ? 0.6 : Z.quality === 1 ? 0.42 : 0.28, pAk = 1 / Math.sqrt(pq);   // fewer streaks, each a little denser
+    parts.geometry.instanceCount = Math.round(NPT * pq); parU.uAmt.value.multiplyScalar(pAk); parU.uFarRain.value *= pAk;
     parts.visible = parU.uAmt.value.x + parU.uAmt.value.y + parU.uAmt.value.z + parU.uAmt.value.w + parU.uFarRain.value > 0.003;
     massFlow += dt * wSpd * kv * 1.1;
     billU.uMB.value.set(mix(camPos.x, focus.x, hi), 0, mix(camPos.z, focus.z, hi), Math.min(24000, Math.max(2600, cd * 2.2)));

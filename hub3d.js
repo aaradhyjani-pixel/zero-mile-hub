@@ -11,7 +11,7 @@
 // Post chain: scene into a 4x MSAA half-float target -> GTAO (half res) -> bloom mips -> grade + tone map + sRGB.
 const Z3MOD={};
 const THREE_URL='https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
-const V3={ready:false,failed:false,loading:false,on:false,want:store.get('zm_view')!=='2d',mode:'map',waiters:[],fps:60,frames:0,fpsT:0,tier:0,tierMsg:0};
+const V3={ready:false,failed:false,loading:false,on:false,qn:0,warm:0,want:store.get('zm_view')!=='2d',mode:'map',waiters:[],fps:60,frames:0,fpsT:0,tier:0,tierMsg:0};
 const AIR_K=0.55;   // sim altitude units to metres: a 700-unit final over 7.45 km is a 3 degree glide path
 function altM(f){return f.alt>2?f.alt*AIR_K:0;}
 const Z={THREE:null,scene:null,camera:null,renderer:null,SPEC,mods:{},kEx:1,camDist:9000,quality:2,tier:'High',sunDir:null,addons:{},atmo:null,
@@ -212,9 +212,7 @@ void main(){
 
 function setTier(i,quiet,manual){
   V3.tier=clamp(i,0,TIERS.length-1);const t=TIERS[V3.tier];Z.tier=t.name;Z.quality=TIERS.length-1-V3.tier;
-  if(V3.ao)V3.ao.enabled=t.ao;if(V3.bloom)V3.bloom.enabled=t.bloom;if(V3.gradeU)V3.gradeU.bloomK.value=t.bloom&&V3.bloom?1:0;
-  const pr=Math.min(window.devicePixelRatio||1,V3.comp?t.pr:Math.min(1.75,t.pr+0.25));
-  if(Z.renderer.getPixelRatio()!==pr){Z.renderer.setPixelRatio(pr);resize3D();}
+  V3.ql=QTOP[V3.tier];V3.qSlow=0;V3.qFast=0;V3.qWait=20;qApply();
   if(manual)store.set('zm_q',t.name);
   if(!quiet){V3.tierMsg=performance.now()+2400;camLabel();}
 }
@@ -308,6 +306,14 @@ function atmoApply(now){
     if(V3.bloom){V3.bloom.strength=0.32*(a.bloom??1)*(1+lt);V3.bloom.threshold=1.0;}}
   const DB=Z.dbg;if(DB){   // dev hook for A/B shots: Z.dbg={fog:0,bloom:0,ao:0,env:0,exp:1.2,hemi:0.5}
     if(DB.fog!=null)fog.density*=DB.fog;if(DB.bloom!=null&&V3.bloom)V3.bloom.strength*=DB.bloom;if(DB.ao!=null&&V3.ao)V3.ao.enabled=!!DB.ao;if(DB.env===0)Z.scene.environment=null,V3.pmrem=null;if(DB.exp&&V3.gradeU)V3.gradeU.toneMappingExposure.value*=DB.exp;if(DB.hemi!=null)V3.hemi.intensity*=DB.hemi;}
+}
+// overlays that ignore fog (guide ribbons) fade with the dust for low cameras; the strategic view keeps them readable.
+// The red holding-stack vignette (#vign) is toned down and browned while the storm's own vignette is on.
+function overlayAtmo(){
+  const a=Z.atmo,hiK=clamp((Z.camera.position.y-1200)/3300,0,1),vk=clamp((a.visibility||50000)/5000,0.12,1);
+  V3.guides.material.opacity=0.9*(vk+(1-vk)*hiK);
+  const w=Z.mods.weather,ws=w&&w.state?w.state():null,dk=ws?clamp(Math.max(ws.I,ws.appr*ws.wall*0.6),0,1):(dustNow?1:0),q=Math.round(dk*20)/20;
+  if(q!==V3.vignK){V3.vignK=q;const v=$('#vign');if(v)v.style.setProperty('--dust',q);}
 }
 // re-render the environment map when the sun or the sky colour has moved enough to see (never every frame)
 function envUpdate(now){
@@ -457,27 +463,56 @@ function guides3D(now){
     for(let u=0;u<=P0+1;u+=P0/48){const p=stackPos(st,u,0);const a=2100*AIR_K;if(prev&&((u/(P0/48))|0)%2===0)seg(prev.x,prev.y,a,p.x,p.y,a,0.95,0.78,0.2);prev=p;}}
   g.setDrawRange(0,n);g.attributes.position.needsUpdate=true;g.attributes.color.needsUpdate=true;
 }
-// quality: if the frame rate sags, step down a tier (AO, then bloom and pixel ratio), then drop shadows
-function quality3D(){if(!V3.qT)V3.qT=0;if(V3.fps<42&&++V3.qT>3){V3.qT=0;
-  if(V3.tier<TIERS.length-1)setTier(V3.tier+1,false);
-  else{const pr=Z.renderer.getPixelRatio();if(pr>1){Z.renderer.setPixelRatio(Math.max(1,pr-0.5));resize3D();}else if(Z.renderer.shadowMap.enabled){Z.renderer.shadowMap.enabled=false;Z.scene.traverse(o=>{if(o.material)o.material.needsUpdate=true;});}}}
-  else if(V3.fps>=42)V3.qT=0;}
+// adaptive quality: a ladder of small steps (pixel ratio first, then AO, then bloom) walked down EARLY, as soon as the
+// median frame time sags for a second, and back up only after a long steady stretch (with a growing back-off, so it
+// never oscillates). G picks the top rung (High 0, Medium 2, Low 4); hitches (>100 ms) never count as "slow".
+const QL=[{ao:true,bloom:true,pr:1.5},{ao:true,bloom:true,pr:1.25},{ao:false,bloom:true,pr:1.25},{ao:false,bloom:true,pr:1},{ao:false,bloom:false,pr:1},{ao:false,bloom:false,pr:0.85}];
+const QTOP=[0,2,4],QFT=new Float32Array(64);
+function qApply(){const q=QL[V3.ql],R=Z.renderer;if(V3.ao)V3.ao.enabled=q.ao;if(V3.bloom)V3.bloom.enabled=q.bloom;if(V3.gradeU)V3.gradeU.bloomK.value=q.bloom&&V3.bloom?1:0;
+  const pr=Math.min(window.devicePixelRatio||1,V3.comp?q.pr:Math.min(1.75,q.pr+0.25));if(R.getPixelRatio()!==pr){R.setPixelRatio(pr);resize3D();}}
+function quality3D(dtR){
+  if(navigator.webdriver&&!Z.adaptive)return;
+  const ms=dtR*1000;if(ms>100||ms<=0)return;QFT[V3.qn++&63]=ms;V3.qAcc=(V3.qAcc||0)+dtR;if(V3.qAcc<0.5)return;V3.qAcc=0;
+  const n=Math.min(V3.qn,64),a=Array.from(QFT.subarray(0,n)).sort((x,y)=>x-y),med=a[n>>1];V3.qn=0;
+  const top=QTOP[V3.tier];if(V3.ql==null||V3.ql<top)V3.ql=top;
+  if(med>18.5){V3.qSlow=(V3.qSlow||0)+1;V3.qFast=0;
+    if(V3.qSlow>=2&&V3.ql<QL.length-1){V3.qSlow=0;if(performance.now()-(V3.qUpT||0)<6000)V3.qWait=Math.min(240,(V3.qWait||20)*2);V3.ql++;qApply();}}
+  else if(med<17.2){V3.qSlow=0;V3.qFast=(V3.qFast||0)+1;
+    if(V3.ql>top&&V3.qFast*0.5>=(V3.qWait||20)){V3.qFast=0;V3.ql--;V3.qUpT=performance.now();qApply();}}
+  else{V3.qSlow=0;V3.qFast=0;}}
+// first-use hitches: compile every program once (in parallel where the browser can), then draw one hidden frame with
+// every object forced visible and unculled, so pipelines, buffers and textures are all created before the player
+// looks at them (the andhi, the night lights, aircraft types, AO). Runs once, behind the level menu.
+function prewarm3D(){
+  const R=Z.renderer;V3.warm=1;const rt=R.getRenderTarget();
+  try{R.setRenderTarget(V3.comp?V3.rtMS:null);const p=R.compileAsync?R.compileAsync(Z.scene,Z.camera):null;R.setRenderTarget(rt);
+    if(p&&p.then)p.then(()=>{V3.warm=2;},()=>{V3.warm=2;});else V3.warm=2;}
+  catch(err){R.setRenderTarget(rt);console.warn('3D: prewarm compile',err);V3.warm=2;}
+}
+function warmFrame(on){
+  if(on){const L=V3.warmL=[];Z.scene.traverse(o=>{L.push(o,o.visible,o.frustumCulled,o.isInstancedMesh?o.count:-1);o.visible=true;o.frustumCulled=false;if(o.isInstancedMesh&&!o.count)o.count=1;});
+    V3.warmAO=V3.ao?V3.ao.enabled:false;if(V3.ao)V3.ao.enabled=true;return;}
+  const L=V3.warmL;for(let i=0;i<L.length;i+=4){const o=L[i];o.visible=L[i+1];o.frustumCulled=L[i+2];if(L[i+3]>=0)o.count=L[i+3];}V3.warmL=null;if(V3.ao)V3.ao.enabled=V3.warmAO;
+}
 function draw3D(now,dtR){
   if(!Z.renderer)return;const t0=performance.now(),R=Z.renderer;
   if(R.domElement.width!==Math.round(VW*R.getPixelRatio()))resize3D();
   lightRig();camUpdate(dtR);
   for(const k in Z.mods){const m=Z.mods[k];if(m&&m.update){try{m.update(dtR,now);}catch(err){console.error('3D '+k,err);m.update=null;}}}
-  atmoApply(now);guides3D(now);
+  atmoApply(now);guides3D(now);overlayAtmo();
   try{envUpdate(now);}catch(err){console.warn('3D: environment map failed',err);V3.pmrem=null;}
   V3.sky.position.copy(Z.camera.position);
+  if(!V3.warm&&Z.scene.environment&&LV)prewarm3D();
+  if(V3.warm===2){V3.warm=3;try{warmFrame(true);R.shadowMap.needsUpdate=true;if(V3.comp){const c=V3.comp;c.readBuffer=V3.rtMS;c.writeBuffer=c.renderTarget1;c.render(dtR);}else R.render(Z.scene,Z.camera);}
+    catch(err){console.warn('3D: warm-up frame',err);}finally{warmFrame(false);}}
   R.info.reset();R.shadowMap.needsUpdate=true;V3.sceneCalls=-1;
   if(V3.comp){const c=V3.comp;c.readBuffer=V3.rtMS;c.writeBuffer=c.renderTarget1;
     if(V3.ao&&V3.ao.enabled){const r=clamp(Z.camDist*0.012,3.5,40);V3.ao.gtaoMaterial.uniforms.radius.value=r;V3.ao.gtaoMaterial.uniforms.thickness.value=r*2.5;}
     c.render(dtR);
     const i=R.info.render;if(V3.sceneCalls>=0){V3.postCalls=i.calls-V3.sceneCalls;V3.postTris=i.triangles-V3.sceneTris;i.calls=V3.sceneCalls;i.triangles=V3.sceneTris;}}
   else R.render(Z.scene,Z.camera);
-  Z.renderStats={tier:Z.tier,postCalls:V3.postCalls|0,postTris:V3.postTris|0,envRegens:V3.envN|0,pr:R.getPixelRatio()};
+  Z.renderStats={tier:Z.tier,ql:V3.ql,warm:V3.warm,postCalls:V3.postCalls|0,postTris:V3.postTris|0,envRegens:V3.envN|0,pr:R.getPixelRatio()};
   project3D();drawOverlay3D(now);V3.cpu=(V3.cpu||0)*0.9+(performance.now()-t0)*0.1;
   if(V3.tierMsg&&performance.now()>V3.tierMsg){V3.tierMsg=0;camLabel();}
-  V3.frames++;V3.fpsT+=dtR;if(V3.fpsT>1){V3.fps=V3.frames/V3.fpsT;V3.frames=0;V3.fpsT=0;if(!navigator.webdriver)quality3D();}
+  V3.frames++;V3.fpsT+=dtR;if(V3.fpsT>1){V3.fps=V3.frames/V3.fpsT;V3.frames=0;V3.fpsT=0;}quality3D(dtR);
 }

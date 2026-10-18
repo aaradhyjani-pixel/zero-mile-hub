@@ -197,6 +197,17 @@ Z3MOD.terminal = function (Z) {
     };
     m.customProgramCacheKey = () => key; return m;
   }
+  // skylight glass: every pane gets its own roughness (0.03-0.21, by instance and facet), so the roof reads as a field of
+  // slightly different reflections of the sky rather than identical dark holes
+  function cofferGlass(m) {
+    const ob = m.onBeforeCompile;
+    m.onBeforeCompile = sh => { ob(sh);
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying float vPan;')
+        .replace('#include <beginnormal_vertex>', '#include <beginnormal_vertex>\n#ifdef USE_INSTANCING\nvPan = float(gl_InstanceID) * 1.618 + dot(objectNormal, vec3(1.7, 3.1, 5.3));\n#else\nvPan = dot(objectNormal, vec3(1.7, 3.1, 5.3));\n#endif');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vPan;')
+        .replace('#include <metalnessmap_fragment>', 'if (vSel > 0.5 && vSel < 1.5) { float panR = fract(sin(vPan * 12.9898) * 43758.5453); roughnessFactor = 0.03 + 0.18 * panR * panR; }\n#include <metalnessmap_fragment>'); };
+    return m;
+  }
   // curtain-wall glass: a mullion grid, low-iron glass reflecting the sky, and behind it a lit interior faked by
   // ray-casting a box room in the shader (mezzanine slab, polished floor with people and coloured coffer light,
   // bamboo soffit with peacock lenses, white tree columns, lit shopfronts and the art wall at the back)
@@ -267,7 +278,7 @@ vec3 gInterior() {
     jaali: new THREE.MeshStandardMaterial({ map: jaaliT, normalMap: jaaliT.userData.n, normalScale: new THREE.Vector2(1.2, 1.2), alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.82, metalness: 0, color: col('#fff4e2') }),
     tree: selInst(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, side: THREE.DoubleSide }), 'zmhPlant', [0.9, 0.9, 0.85], [0, 0, 0], 0),
     pool: new THREE.MeshStandardMaterial({ color: col('#0f3a3a'), roughness: 0.03, metalness: 0, normalMap: rippleN, normalScale: new THREE.Vector2(0.35, 0.35), envMapIntensity: 1.8, emissive: col('#39b3a6'), emissiveIntensity: 0 }),
-    coffer: selInst(new THREE.MeshStandardMaterial({ vertexColors: true, envMapIntensity: 1.4 }), 'zmhCoffer', [0.4, 0.03, 0.12], [0.1, 0, 0.3], 0.55),
+    coffer: cofferGlass(selInst(new THREE.MeshStandardMaterial({ vertexColors: true, envMapIntensity: 1.4 }), 'zmhCoffer2', [0.4, 0.03, 0.12], [0.1, 0.3, 0.3], 0.55)),
     inst: selInst(new THREE.MeshStandardMaterial({ vertexColors: true, envMapIntensity: 1.1 }), 'zmhInst', [0.6, 0.06, 0.32], [0.1, 0, 0.45], 0),
     bridge: selInst(new THREE.MeshStandardMaterial({ vertexColors: true, envMapIntensity: 1.1 }), 'zmhBridge', [0.38, 0.05, 0.4], [0.55, 0, 0.3], 0),
   };
@@ -804,7 +815,7 @@ vec3 gInterior() {
     const SK = (RF.skylights || []).filter(s => !isHole(s.x, s.y) && H(s.x, s.y) !== NEG); if (!SK.length) return;
     // a glazed coffer opening: a white upstand curb, a recessed well, a faceted low glass pyramid (catching the sun at
     // different angles) and a coloured lens at its crown. Unit footprint, scaled to l x w; heights in metres.
-    const A = Acc(), w = CL.white, gc = col('#1c2a33'), wl = col('#6b7378');
+    const A = Acc(), w = CL.white, gc = col('#4a6272'), wl = col('#6b7378');
     const NO = 8, oc = (k, r) => [Math.cos(TAU * (k + 0.5) / NO) * r, Math.sin(TAU * (k + 0.5) / NO) * r];
     for (let k = 0; k < NO; k++) {
       const a0 = oc(k, 0.5), a1 = oc(k + 1, 0.5), b0 = oc(k, 0.43), b1 = oc(k + 1, 0.43), c0 = oc(k, 0.12), c1 = oc(k + 1, 0.12), n = [a0[0] + a1[0], 0, a0[1] + a1[1]];

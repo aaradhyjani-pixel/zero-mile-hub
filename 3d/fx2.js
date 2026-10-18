@@ -448,11 +448,12 @@ vec3 fxCol(vec3 P,float reg,float t){
     const postV1 = T0(), postI1 = I0();
     // ---- one half of the ceremonial scissors (unit: about 1 long, pivot at the origin, blade plane xy; the other half is mirrored) ----
     { const bl = new THREE.BoxGeometry(1, 1, 1, 1, 8, 1), p = bl.attributes.position;
-      for (let i = 0; i < p.count; i++) { const y = p.getY(i) + 0.5, t = y, wdt = 0.085 * (1 - 0.9 * Math.pow(t, 1.3)); p.setXYZ(i, (p.getX(i) + 0.5) * wdt, -0.66 * t, p.getZ(i) * (p.getX(i) > 0 ? 0.004 : 0.02) + 0.012); }
+      for (let i = 0; i < p.count; i++) { const y = p.getY(i) + 0.5, t = y, wdt = 0.085 * (1 - 0.9 * Math.pow(t, 1.3)); p.setXYZ(i, (p.getX(i) + 0.5) * wdt, -0.66 * t, p.getZ(i) * (p.getX(i) > 0 ? 0.012 : 0.032) + 0.016); }
       bl.computeVertexNormals(); addGeo(bl.toNonIndexed(), M4.identity(), 2);
       const sh = new THREE.CylinderGeometry(0.018, 0.024, 1, 10); const a = Math.atan2(0.1, 0.26); addGeo(sh, M4.compose(V.set(-0.05, 0.14, 0.012), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), a), new THREE.Vector3(1, 0.28, 1)), 1);
       const tor = new THREE.TorusGeometry(0.085, 0.02, 10, 24); addGeo(tor, M4.compose(V.set(-0.12, 0.36, 0.012), new THREE.Quaternion(), new THREE.Vector3(1, 1.25, 1)), 1);
-      const pv = new THREE.CylinderGeometry(0.03, 0.03, 0.05, 16); pv.rotateX(Math.PI / 2); addGeo(pv, M4.makeTranslation(0, 0, 0.02), 1); }
+      const pv = new THREE.CylinderGeometry(0.03, 0.03, 0.05, 16); pv.rotateX(Math.PI / 2); addGeo(pv, M4.makeTranslation(0, 0, 0.02), 1);
+      const sc = new THREE.CylinderGeometry(0.018, 0.018, 0.012, 14); sc.rotateX(Math.PI / 2); addGeo(sc, M4.makeTranslation(0, 0, 0.05), 3); }
     const sciV1 = T0(), sciI1 = I0();
     const nBow = bowV1 - bowV0, nPost = postV1 - bowV1, nSci = sciV1 - postV1;
     const nStrip = 2 * (NS + 1) * NR, NV = nStrip + 3 * nBow + 2 * nPost + 2 * nSci;
@@ -471,13 +472,16 @@ vec3 fxCol(vec3 P,float reg,float t){
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage)); g.setAttribute('normal', new THREE.BufferAttribute(nor, 3).setUsage(THREE.DynamicDrawUsage));
     g.setAttribute('aMat', new THREE.BufferAttribute(mat, 1)); g.setIndex(idx);
     const sciCount = idx.length, sciStart = idx.length - (sciI1 - postI1) * 2;   // the scissors are the last indices: drop them from the draw range when idle
-    const M = new THREE.MeshPhysicalMaterial({ color: 0xffffff, side: THREE.DoubleSide, roughness: 0.4, metalness: 0, envMapIntensity: 1.1,
-      sheen: 1, sheenRoughness: 0.38, sheenColor: new THREE.Color(0.85, 0.12, 0.16), clearcoat: 0.3, clearcoatRoughness: 0.18 });
+    // materials: 0 satin, 1 gold, 2 blade steel, 3 dark pivot screw. Exit fades are a screen-door dither (uFade), never a shrink.
+    const U = { uFade: { value: 1 } };
+    const M = new THREE.MeshPhysicalMaterial({ color: 0xffffff, side: THREE.DoubleSide, roughness: 0.3, metalness: 0, envMapIntensity: 0.6,
+      sheen: 1, sheenRoughness: 0.32, sheenColor: new THREE.Color(0.45, 0.02, 0.05), clearcoat: 0.05, clearcoatRoughness: 0.2 });
     M.onBeforeCompile = sh => {
+      sh.uniforms.uFade = U.uFade;
       sh.vertexShader = 'attribute float aMat;varying float vMat;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvMat=aMat;');
-      sh.fragmentShader = 'varying float vMat;\n' + sh.fragmentShader
-        .replace('vec4 diffuseColor = vec4( diffuse, opacity );', 'float fxM=floor(vMat+0.5);vec4 diffuseColor=vec4(fxM<0.5?vec3(0.62,0.012,0.03):fxM<1.5?vec3(1.0,0.66,0.22):vec3(0.82,0.84,0.88),opacity);')
-        .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor=fxM<0.5?0.36:fxM<1.5?0.2:0.12;')
+      sh.fragmentShader = 'uniform float uFade;varying float vMat;\n' + sh.fragmentShader.replace('#include <common>', '#include <common>\n' + GLSL_NOISE)
+        .replace('vec4 diffuseColor = vec4( diffuse, opacity );', 'if(fx2h(floor(gl_FragCoord.xy))>uFade)discard;float fxM=floor(vMat+0.5);vec4 diffuseColor=vec4(fxM<0.5?vec3(0.62,0.012,0.03):fxM<1.5?vec3(1.0,0.7,0.26):fxM<2.5?vec3(0.5,0.52,0.56):vec3(0.035,0.035,0.04),opacity);')
+        .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor=fxM<0.5?0.28:fxM<1.5?0.2:fxM<2.5?0.2:0.35;')
         .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor=fxM<0.5?0.0:1.0;')
         .replace('#include <lights_physical_fragment>', '#include <lights_physical_fragment>\n#ifdef USE_SHEEN\nmaterial.sheenColor*=fxM<0.5?1.:0.;\n#endif\n#ifdef USE_CLEARCOAT\nmaterial.clearcoat*=fxM<0.5?1.:0.;\n#endif');
     };
@@ -486,13 +490,17 @@ vec3 fxCol(vec3 P,float reg,float t){
     const PN = 1100, pg = new THREE.BufferGeometry(), PP = [];
     for (let i = 0; i <= 2; i++) for (let j = 0; j <= 2; j++) { const x = i / 2 - 0.5, y = (j / 2 - 0.5) * (i === 1 ? 0.62 : 0.42); PP.push(x, y, 0.16 * (y * y * 6 + x * x)); }
     pg.setAttribute('position', new THREE.Float32BufferAttribute(PP, 3)); pg.setIndex([0, 3, 1, 1, 3, 4, 1, 4, 2, 2, 4, 5, 3, 6, 4, 4, 6, 7, 4, 7, 5, 5, 7, 8]); pg.computeVertexNormals();
+    const PU = { uFade: { value: 1 } };
     const pm = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.05 });
-    pm.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('vec3 totalEmissiveRadiance = emissive;', 'vec3 totalEmissiveRadiance = vColor*0.32;'); };
+    pm.onBeforeCompile = sh => { sh.uniforms.uFade = PU.uFade;
+      sh.fragmentShader = 'uniform float uFade;\n' + sh.fragmentShader.replace('#include <common>', '#include <common>\n' + GLSL_NOISE)
+        .replace('vec4 diffuseColor = vec4( diffuse, opacity );', 'if(fx2h(floor(gl_FragCoord.xy)+0.37)>uFade)discard;vec4 diffuseColor = vec4( diffuse, opacity );')
+        .replace('vec3 totalEmissiveRadiance = emissive;', 'vec3 totalEmissiveRadiance = vColor*0.32;'); };
     const petals = new THREE.InstancedMesh(pg, pm, PN);
     petals.frustumCulled = false; petals.count = 0; petals.instanceMatrix.setUsage(THREE.DynamicDrawUsage); root.add(petals);
     const PC = ['#ff8c00', '#ffa000', '#ffb300', '#ff7b00', '#ffc400', '#f57c00', '#ffd000', '#ff9500', '#ffe14d', '#ff6a00'];
     const pr = new Float32Array(PN * 8); { const Rr = mulberry(7); for (let i = 0; i < PN; i++) { for (let j = 0; j < 8; j++) pr[i * 8 + j] = Rr(); petals.setColorAt(i, _c.set(PC[i % PC.length]).multiplyScalar(1.15)); } }
-    return { mesh, g, pos, nor, NS, NR, ROWV, nStrip, parts, bows, posts, scis, TP, TN, TW, sciStart, sciCount, petals, pr, PN };
+    return { mesh, g, pos, nor, NS, NR, ROWV, nStrip, parts, bows, posts, scis, TP, TN, TW, sciStart, sciCount, petals, pr, PN, U, PU };
   })();
   const _n3 = new THREE.Matrix3(), _rq = new THREE.Quaternion(), _ra = new THREE.Vector3();
   // write a template part into the dynamic buffer through the matrix _m (with an optional flutter offset along x)
@@ -508,32 +516,51 @@ vec3 fxCol(vec3 P,float reg,float t){
       N[d] = a / l; N[d + 1] = b / l; N[d + 2] = c / l;
     }
   }
-  const RB_SNIP = 11;   // sim seconds after cutAt when the blades meet
+  // The cut animates in real time: tau is "animation seconds" (10 per real second, the cinematic's 0.5x), counted from the first
+  // frame cutAt is seen, and forced ahead of sim time so it always finishes before the exit fade at t1.
+  const RB_SNIP = 11;   // animation seconds after the cut when the blades meet (1.1 s real)
   function ribbonUpdate(list, dt, now) {
     const it = list[0]; if (!it) { RB.mesh.visible = false; RB.petals.count = 0; RB.petals.visible = false; return; }
-    const T = Z.T, k = clamp(Z.camDist / 60, 1, 30), w = it.w || 75, P = RB.pos, NS = RB.NS, NR = RB.NR;
-    const fade = smooth(it.t0, it.t0 + 4, T) * (1 - smooth(it.t1 - 25, it.t1 - 2, T)), fk = Math.max(0.02, fade);
-    const tau = it.cutAt != null ? T - it.cutAt : -1, cut = tau >= RB_SNIP, tf = cut ? (tau - RB_SNIP) / 10 : 0;   // tf: seconds of fall at cinematic speed
-    const kS = 1 + 1.6 * smooth(2500, 9000, Z.camDist), PH = 2.9 * k * fk * kS, RH = 0.6 * k * fk * kS * kS, yc = PH * 0.74 - RH * 0.5, sag = Math.min(w * 0.03, 0.3 * PH);
-    const ox = it.x, oz = it.y, wind = Z.atmo && Z.atmo.wind ? Z.atmo.wind.speed || 4 : 4, gy = 0.06 * k;
+    // snap onto its runway, ahead of the line-up point (the story spawns it on the hold, past the runway end); cached per item
+    const st = stOf(it, () => ({ x: it.x, y: it.y, ix: NaN, iy: NaN, cutT: null, cutNow: 0 }));
+    if (st.ix !== it.x || st.iy !== it.y) {
+      st.ix = it.x; st.iy = it.y; st.x = it.x; st.y = it.y; const RWs = Z.RW || [];
+      for (let i = 0; i < RWs.length; i++) { const r = RWs[i]; if (Math.abs(r.y - it.y) >= r.width) continue;
+        const a = Math.min(r.x0, r.x1), b = Math.max(r.x0, r.x1);
+        if (it.x < a + 150 || it.x > b - 150) st.x = Math.abs(it.x - a) < Math.abs(it.x - b) ? a + 220 : b - 220;
+        st.y = r.y; break; }
+    }
+    if (it.cutAt == null) st.cutT = null; else if (st.cutT !== it.cutAt) { st.cutT = it.cutAt; st.cutNow = now; }
+    // scale by the camera's distance to the ribbon itself (the follow-cam cinematic frames the aircraft, a few hundred metres off)
+    const cp = Z.camera.position, cd = Math.max(Z.camDist * 0.5, Math.hypot(cp.x - st.x, cp.y, cp.z - st.y));
+    const T = Z.T, k = clamp(cd / 110, 1, 30), w0 = it.w || 75, P = RB.pos, NS = RB.NS, NR = RB.NR;
+    const fade = smooth(it.t0, it.t0 + 4, T) * (1 - smooth(it.t1 - 25, it.t1 - 2, T));
+    const tau = st.cutT != null ? Math.max(10 * (now - st.cutNow), 2 * (T - st.cutT) - 100) : -1, cut = tau >= RB_SNIP, tf = cut ? (tau - RB_SNIP) / 10 : 0;   // tf: real seconds of fall
+    // strategic: a longer, proportionally slimmer band, turned about its span axis to face the camera
+    const kS = 1 + 1.6 * smooth(2500, 9000, cd), sW = smooth(2500, 9000, cd), sF = smooth(1500, 5000, cd), w = w0 * mix(1, 3, sW);
+    const PH = 2.9 * k * kS, RH = Math.min(0.6 * k * kS * kS, w * 0.4), yc = PH * 0.74 - RH * 0.5, sag = Math.min(w * 0.03, 0.3 * PH);
+    const ox = st.x, oz = st.y, wind = Z.atmo && Z.atmo.wind ? Z.atmo.wind.speed || 4 : 4, gy = 0.025 * k;
+    let thF = Math.atan2(-(cp.y - yc), cp.x - ox); if (thF > Math.PI / 2) thF -= Math.PI; else if (thF < -Math.PI / 2) thF += Math.PI;
+    const thB = sF * thF, cB = Math.cos(thB), sB = Math.sin(thB);
     // ---- the satin strip: two halves from each post to the centre ----
     let v = 0;
     for (let h = 0; h < 2; h++) {
       const sgn = h ? 1 : -1;
       for (let c = 0; c <= NS; c++) {
         const u = c / NS, s = u * w;
-        // intact: a shallow catenary, a slow travelling twist so the satin catches the light
-        const yI = yc - sag * (1 - (1 - u) * (1 - u)), thI = 0.22 * Math.sin(now * 1.3 + u * 7 + h * 1.7) * u * (1 - u) * 4 + 0.08 * Math.sin(now * 2.1 + u * 15);
-        let x = ox + Math.sin(now * (1.6 + wind * 0.15) + u * 6 + h * 2) * 0.05 * k * u, y = yI, z = oz + sgn * w * (1 - u), th = thI;
-        if (cut) {   // falls free-end first, flutters, and lies on the runway hanging from the post
+        // intact: a shallow catenary and two or three travelling twists a half, so a sheen highlight runs along the satin
+        const yI = yc - sag * (1 - (1 - u) * (1 - u));
+        const thI = mix(0.5 * Math.sin(now * 1.3 - u * 15.7 + h * 1.7) * Math.min(1, u * (1 - u) * 8) + 0.06 * Math.sin(now * 2.1 + u * 15), thF, sF);
+        let x = ox + Math.sin(now * (1.6 + wind * 0.15) + u * 6 + h * 2) * 0.05 * k * u * (1 - sF), y = yI, z = oz + sgn * w * (1 - u), th = thI;
+        if (cut) {   // falls free-end first, flutters, and lies on the runway in a lazy S with a loose loop near the cut, hanging from the post
           const f = clamp((tf - (1 - u) * 0.35) / (0.9 + 0.5 * (1 - u)), 0, 1), fe = f * f * (3 - 2 * f), mid = Math.sin(f * Math.PI);
-          const Lh = yc, lie = Math.max(0, s - Lh) * 0.82;
-          const yF = s < Lh ? yc - s : gy + 0.25 * k * Math.max(0, Math.sin(s * 0.35 / k + h)) * (1 - smooth(0, 6, tf) * 0.7);
-          const zF = s < Lh ? oz + sgn * w : oz + sgn * (w - lie);
-          const xF = ox + (s < Lh ? 0 : Math.sin(s * 0.18 / k + h * 2) * 1.2 * k);
+          const Lh = yc, sl = Math.max(0, s - Lh), lie = sl * 0.82, lp = clamp((u - 0.8) / 0.12, 0, 1) * Math.PI * 2, LR = 0.9 * k * (1 - sW);
+          const yF = s < Lh ? yc - s : gy + 0.03 * k * (1 + Math.sin(sl * 0.7 / k + h)) + LR * (1 - Math.cos(lp));
+          const zF = s < Lh ? oz + sgn * w : oz + sgn * (w - lie + LR * Math.sin(lp));
+          const xF = ox + (s < Lh ? 0 : Math.sin(sl * 0.5 / k + h * 2.1) * 1.6 * k * smooth(0, 4 * k, sl));
           x = mix(x, xF, fe) + mid * Math.sin(now * 6.5 + u * 11 + h) * 1.4 * k * u;
           y = mix(yI, yF, fe) + mid * Math.sin(now * 8 + u * 14) * 0.5 * k;
-          z = mix(z, zF, fe); th = mix(thI, Math.PI * 0.5, fe) + mid * 1.6 * Math.sin(now * 5 + u * 9 + h * 3);
+          z = mix(z, zF, fe); th = mix(thI, Math.PI * 0.5 + (s < Lh ? 0 : 0.5 * Math.sin(sl * 0.9 / k + h)), fe) + mid * 1.6 * Math.sin(now * 5 + u * 9 + h * 3);
         }
         const sx = Math.sin(th), sy = Math.cos(th);
         for (let r = 0; r < NR; r++) {
@@ -550,55 +577,57 @@ vec3 fxCol(vec3 P,float reg,float t){
         const tx = P[b * 3] - P[a * 3], ty = P[b * 3 + 1] - P[a * 3 + 1], tz = P[b * 3 + 2] - P[a * 3 + 2], bx = P[e2 * 3] - P[d * 3], by = P[e2 * 3 + 1] - P[d * 3 + 1], bz = P[e2 * 3 + 2] - P[d * 3 + 2];
         let nx = by * tz - bz * ty, ny = bz * tx - bx * tz, nz = bx * ty - by * tx; const l = Math.hypot(nx, ny, nz) || 1; N[i * 3] = nx / l; N[i * 3 + 1] = ny / l; N[i * 3 + 2] = nz / l;
       } }
-    // ---- the posts and their bows ----
-    const BS = 1.55 * k * fk * kS;
+    // ---- the posts and their bows (the bows turn with the band) ----
+    const BS = 1.55 * k * kS;
+    _rq.setFromAxisAngle(_ra.set(0, 0, 1), -thB);
     for (let b = 0; b < 2; b++) {
       const pz = oz + (b ? w : -w);
-      _q.identity(); _v.set(ox, 0, pz); _s.set(PH / 1.0, PH, PH); _m.compose(_v, _q, _s); rbPart(RB.posts[b], 0, now);
-      _e.set(0.06 * Math.sin(now * 1.1 + b), b ? 0.12 : -0.12, 0); _q.setFromEuler(_e); _v.set(ox + 0.04 * PH, yc + RH * 0.1, pz); _s.setScalar(BS); _m.compose(_v, _q, _s); rbPart(RB.bows[b], 0.05 + 0.05 * (wind / 8), now);
+      _q.identity(); _v.set(ox, 0, pz); _s.set(PH, PH, PH); _m.compose(_v, _q, _s); rbPart(RB.posts[b], 0, now);
+      _e.set(0.06 * Math.sin(now * 1.1 + b), b ? 0.12 : -0.12, 0); _q.setFromEuler(_e); _q.premultiply(_rq);
+      _v.set(ox + cB * 0.04 * PH, yc + RH * 0.1 * (1 - sF) - sB * 0.04 * PH, pz); _s.setScalar(BS); _m.compose(_v, _q, _s); rbPart(RB.bows[b], 0.05 + 0.05 * (wind / 8), now);
     }
     // the centre bow: rides the ribbon, then drops and tumbles onto the runway
     { const f = cut ? clamp(tf / 0.8, 0, 1) : 0, fe = f * f;
       _e.set(fe * 1.45 + 0.05 * Math.sin(now * 1.4), 0.15 * Math.sin(now * 0.7) * (1 - f), Math.sin(f * Math.PI) * 0.8, 'XYZ'); _q.setFromEuler(_e);
-      _v.set(ox + fe * 0.4 * BS, mix(yc - sag + RH * 0.1, gy + 0.12 * BS, fe), oz); _s.setScalar(BS * 1.15 * (cut ? 1 - smooth(60, 120, tau) * 0.6 : 1)); _m.compose(_v, _q, _s); rbPart(RB.bows[2], 0.06, now); }
+      if (!cut) _q.premultiply(_rq);
+      _v.set(ox + fe * 0.4 * BS + (1 - fe) * cB * 0.03 * PH, mix(yc - sag + RH * 0.1 * (1 - sF) - sB * 0.03 * PH, gy + 0.12 * BS, fe), oz); _s.setScalar(BS * 1.15); _m.compose(_v, _q, _s); rbPart(RB.bows[2], 0.06, now); }
     // ---- the scissors: drop in, open, snip, lift away ----
-    const sci = tau >= 0 && tau < 42;
+    const sci = tau >= 0 && tau < 32;
     if (sci) {
-      const cp = Z.camera.position, ca = Math.atan2(cp.z - oz, cp.x - ox), SL = 4.6 * k, pop = smooth(0, 4, tau), out = smooth(26, 40, tau), sc = SL * (pop * (1 + 0.12 * Math.sin(clamp(tau / 4, 0, 1) * Math.PI)) * (1 - out) + 0.001);
+      const ca = Math.atan2(cp.z - oz, cp.x - ox), SL = 4.6 * k, pop = smooth(0, 4, tau), out = smooth(18, 30, tau), sc = SL * (pop * (1 + 0.12 * Math.sin(clamp(tau / 4, 0, 1) * Math.PI)) * (1 - out) + 0.001);
       const open = tau < 8 ? 0.62 * smooth(1, 6, tau) : tau < RB_SNIP ? 0.62 * (1 - smooth(8, RB_SNIP, tau)) : 0.3 * smooth(RB_SNIP + 2, RB_SNIP + 9, tau);
-      const lift = (1 - pop) * 6 * k + smooth(RB_SNIP + 6, 40, tau) * 4 * k;
+      const lift = (1 - pop) * 6 * k + smooth(RB_SNIP + 1, RB_SNIP + 8, tau) * 1.1 * SL;
       const ycut = yc - sag;
       _e.set(-0.2, Math.PI * 0.5 - ca - 0.75 + 0.1 * Math.sin(now * 0.8), 0.05 * Math.sin(now * 1.3), 'YXZ'); _rq.setFromEuler(_e);
-      const fx = Math.cos(ca) * 0.55 * BS, fz = Math.sin(ca) * 0.55 * BS;
+      const fx = Math.cos(ca) * 0.8 * BS, fz = Math.sin(ca) * 0.8 * BS;
       for (let hh = 0; hh < 2; hh++) {
         _q.setFromAxisAngle(_ra.set(0, 0, 1), hh ? -open : open); _q.premultiply(_rq);
         _v.set(ox + fx, ycut + RH * 0.5 + 0.1 * SL + lift, oz + fz); _s.set(hh ? -sc : sc, sc, hh ? -sc : sc); _m.compose(_v, _q, _s); rbPart(RB.scis[hh], 0, now);
       }
     }
     RB.g.setDrawRange(0, sci ? RB.sciCount : RB.sciStart);
-    RB.g.attributes.position.needsUpdate = true; RB.g.attributes.normal.needsUpdate = true; RB.mesh.visible = fade > 0.01;
-    // ---- the petal and confetti burst ----
+    RB.g.attributes.position.needsUpdate = true; RB.g.attributes.normal.needsUpdate = true; RB.mesh.visible = fade > 0.01; RB.U.uFade.value = fade;
+    // ---- the petal and confetti burst: a ballistic fountain peaking ~0.5 s after the snip, then a fluttering, drifting plume ----
     let n = 0;
-    if (cut && tau < 150) {
-      const pr = RB.pr, kp = clamp(Z.camDist / 60, 1, 30), ps = clamp(Z.camDist * 0.0034, 0.07, 36);
-      const wx = Z.atmo && Z.atmo.wind ? Math.cos(Z.atmo.wind.dir) : 1, wz = Z.atmo && Z.atmo.wind ? Math.sin(Z.atmo.wind.dir) : 0, ycut = yc - sag;
-      const life = 1 - smooth(95, 145, tau);
+    if (cut && fade > 0.01) {
+      const pr = RB.pr, kp = k, ps = clamp(cd * 0.0034, 0.07, 36), wd = Z.atmo && Z.atmo.wind;
+      const wx = wd ? Math.cos(wd.dir) : 1, wz = wd ? Math.sin(wd.dir) : 0, ycut = yc - sag, G = 36 * kp, y0 = gy + 0.02 * kp;
       for (let i = 0; i < RB.PN; i++) {
         const o = i * 8, r0 = pr[o], r1 = pr[o + 1], r2 = pr[o + 2], r3 = pr[o + 3], r4 = pr[o + 4], r5 = pr[o + 5], r6 = pr[o + 6], r7 = pr[o + 7];
-        const t = tf - r5 * 0.25; if (t <= 0) continue;
-        const conf = r6 > 0.68, td = conf ? 0.45 : 0.32, vt = (conf ? 1.6 : 1.0) * (0.7 + 0.6 * r4);
-        const a = r0 * Math.PI * 2, vh = (2.5 + 8 * r1 * r1) * kp, vy = (7 + 11 * r3) * kp, ex = 1 - Math.exp(-t / td);
-        const hx = Math.cos(a) * vh * td * ex, hz = Math.sin(a) * vh * td * ex * 1.3;
-        const y = Math.max(gy * 0.5, ycut + (vy + vt * kp) * td * ex - vt * kp * t);
-        const dr = t * (0.5 + 0.6 * r2) * kp * (y > gy ? 1 : 0.3), sw = Math.sin(now * (1.5 + r7 * 2) + i) * 0.35 * kp;
-        _v.set(ox + hx + wx * dr + sw, y, oz + hz + wz * dr + Math.cos(now * (1.2 + r2) + i) * 0.3 * kp);
-        const landed = y <= gy * 0.5 + 0.001;
-        if (landed) _e.set(Math.PI * 0.5, r0 * 6, 0); else _e.set(now * (2 + r1 * 4) + i, now * (1 + r2 * 3), now * (1.5 + r3 * 2) + i * 2);
+        const t = tf - r5 * 0.12; if (t <= 0) continue;
+        const conf = r6 > 0.68, tp = 0.38 + 0.24 * r3, vy = G * tp, vt = (conf ? 0.8 : 1.3) * (0.7 + 0.6 * r4) * kp, tc = 0.3;
+        const a = r0 * Math.PI * 2, vh = (25 + 15 * r1) * (0.25 + 0.75 * Math.sqrt(r7)) * kp, td = 0.26, ex = 1 - Math.exp(-t / td);
+        const ypk = ycut + 0.5 * G * tp * tp, tl = tp + tc + (ypk - y0) / vt, ta = Math.min(t, tl), sd = Math.max(0, ta - tp);
+        const y = Math.max(y0, t < tp ? ycut + vy * t - 0.5 * G * t * t : ypk - vt * (sd - tc * (1 - Math.exp(-sd / tc))));
+        const air = t < tl ? 1 : 0, dr = Math.max(0, ta - tp * 0.5) * (1.1 + 1.4 * r2) * kp, sw = Math.sin(now * (1.5 + r7 * 2) + i) * 0.7 * kp * smooth(0, 1, sd) * air;
+        _v.set(ox + Math.cos(a) * vh * td * ex * 1.15 + wx * dr + sw, y, oz + Math.sin(a) * vh * td * ex * 1.5 + wz * dr + Math.cos(now * (1.2 + r2) + i) * 0.5 * kp * smooth(0, 1, sd) * air);
+        if (!air) _e.set(Math.PI * 0.5, r0 * 6, 0); else _e.set(now * (2 + r1 * 4) + i, now * (1 + r2 * 3), now * (1.5 + r3 * 2) + i * 2);
         _q.setFromEuler(_e);
-        const sc = ps * (0.7 + 0.6 * r4) * life * smooth(0, 0.08, t);
+        const sc = ps * (0.7 + 0.6 * r4);
         if (conf) _s.set(sc * 0.75, sc * 0.75, sc); else _s.set(sc, sc * 0.9, sc);
         _m.compose(_v, _q, _s); RB.petals.setMatrixAt(n++, _m);
       }
+      RB.PU.uFade.value = fade * (1 - smooth(110, 150, tau));
     }
     RB.petals.count = n; RB.petals.visible = n > 0; if (n) RB.petals.instanceMatrix.needsUpdate = true;
   }
@@ -680,7 +709,7 @@ vec3 fxCol(vec3 P,float reg,float t){
 
   // =====================================================================================================
   // FIREWORKS, built to read in daylight: one instanced draw of camera-facing quads. Big saturated shells (saffron, white, green,
-  // gold, tiranga) as velocity-stretched HDR streaks with white-hot cores and a burst flash, rocket smoke trails, lingering
+  // gold, tiranga, gold willow) as tapered velocity-stretched streaks with an HDR burst flash, rocket smoke trails, lingering
   // coloured smoke puffs that drift with the wind, and four ground fountains. Premultiplied blending lets one draw mix
   // occluding smoke (drawn first) with glowing sparks. All motion is in the vertex shader; the CPU sets a few uniforms.
   // =====================================================================================================
@@ -700,86 +729,120 @@ vec3 fxCol(vec3 P,float reg,float t){
     const g = new THREE.InstancedBufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute([-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0], 3)); g.setIndex([0, 1, 2, 0, 2, 3]);
     g.setAttribute('aA', new THREE.InstancedBufferAttribute(A, 4)); g.setAttribute('aB', new THREE.InstancedBufferAttribute(B, 4)); g.instanceCount = n;
-    const U = { uTime: { value: 0 }, uC: { value: new THREE.Vector3() }, uFade: { value: 0 }, uK: { value: 1 }, uPix: { value: 0.001 }, uWind: { value: new THREE.Vector2(3, 0) } };
+    // uC: show centre (bursts), uG: launch site on open ground (rockets, gerbs), uR: burst scale with camera distance, uSm: smoke alpha
+    const U = { uTime: { value: 0 }, uC: { value: new THREE.Vector3() }, uG: { value: new THREE.Vector3() }, uFade: { value: 0 }, uK: { value: 1 }, uR: { value: 1 }, uSm: { value: 1 },
+      uPix: { value: 0.001 }, uWind: { value: new THREE.Vector2(3, 0) } };
+    // Colours stay at or below ~1.1 with the secondary channels near zero, so ACES and bloom keep them saffron, green and gold;
+    // only the burst flash (and a white shell's first 0.15 s) goes HDR and carries the bloom.
     const mat = new THREE.ShaderMaterial({ uniforms: U, transparent: true, depthWrite: false, depthTest: true,
       blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
       blendSrcAlpha: THREE.OneFactor, blendDstAlpha: THREE.OneMinusSrcAlphaFactor,
-      vertexShader: `uniform float uTime,uFade,uK,uPix;uniform vec3 uC;uniform vec2 uWind;attribute vec4 aA,aB;
-        varying vec2 vUv;varying vec3 vCol;varying float vA,vT,vSeed;
+      vertexShader: `uniform float uTime,uFade,uK,uPix,uR,uSm;uniform vec3 uC,uG;uniform vec2 uWind;attribute vec4 aA,aB;
+        varying vec2 vUv;varying vec3 vCol;varying float vA,vT,vSeed,vHot;
         float h1(float x){return fract(sin(x*78.233)*43758.5453);}
         const float PER=0.62,RISE=1.25;const float CYC=${S}.*PER;
-        vec3 shellCol(float ci,vec3 d,float pi){
-          if(ci<1.)return vec3(1.,.30,.02);if(ci<2.)return vec3(1.,.93,.82);if(ci<3.)return vec3(.04,1.,.16);if(ci<4.)return vec3(1.,.58,.06);
-          return d.y>.33?vec3(1.,.30,.02):d.y<-.33?vec3(.04,1.,.16):vec3(1.,.95,.88);}   // tiranga: saffron over white over green
-        // shell parameters for slot s at time t: burst point, kind, colour index, age in the cycle
-        void shell(float s,out vec3 bp,out float kind,out float ci,out float age){
+        const vec3 SAF=vec3(1.,.32,0.),WHT=vec3(1.,.96,.9),GRN=vec3(0.,.85,.18),GLD=vec3(1.,.68,.08);
+        vec3 shellCol(float ci,vec3 d){
+          if(ci<1.)return SAF;if(ci<2.)return WHT;if(ci<3.)return GRN;if(ci<4.)return GLD;
+          return d.y>.33?SAF:d.y<-.33?GRN:WHT;}   // tiranga: saffron over white over green
+        vec3 smokeCol(float ci,vec3 d){
+          vec3 sa=vec3(.95,.42,.08),wh=vec3(.86,.85,.83),gr=vec3(.12,.55,.22),go=vec3(.9,.6,.16);
+          if(ci<1.)return sa;if(ci<2.)return wh;if(ci<3.)return gr;if(ci<4.)return go;return d.y>.33?sa:d.y<-.33?gr:wh;}
+        // shell parameters for slot s at time t: burst point, launch point, kind, colour index, age in the cycle
+        void shell(float s,out vec3 bp,out vec3 g0,out float kind,out float ci,out float age){
           float tt=uTime-s*PER,c=floor(tt/CYC);age=tt-c*CYC;float sh=s*7.13+c*31.7;
-          bp=uC+vec3((h1(sh)-.5)*560.,190.+h1(sh+1.)*230.,(h1(sh+2.)-.5)*560.);kind=h1(sh+3.);ci=floor(h1(sh+4.)*5.);}
+          bp=uC+vec3((h1(sh)-.5)*560.*uR,(190.+h1(sh+1.)*230.)*uR,(h1(sh+2.)-.5)*560.*uR);
+          g0=uG+vec3((h1(sh+5.)-.5)*90.,0.,(h1(sh+6.)-.5)*90.);kind=h1(sh+3.);ci=floor(h1(sh+4.)*5.);}
+        // kinds: <.45 peony, .45-.72 peony + crackle, .72-.88 big chrysanthemum, >.88 gold willow (slow, drooping, long trails)
         vec3 sparkAt(vec3 bp,vec3 d,float kind,float t){
-          float big=step(.72,kind),R=mix(150.,200.,big)*(1.-exp(-t*mix(2.6,1.7,big)));
-          return bp+d*R-vec3(0.,mix(15.,9.,big)*t*t+mix(6.,3.,big)*t,0.);}
+          float big=step(.72,kind),wil=step(.88,kind),R=mix(150.,200.,big)*uR*(1.-exp(-t*mix(mix(2.6,1.7,big),2.2,wil)));
+          return bp+d*R-vec3(0.,(mix(mix(15.,9.,big),22.,wil)*t*t+mix(6.,3.,big)*t)*uR,0.);}
         void main(){
           float type=aA.x,s=aA.y,j=aA.z,r=aA.w;vec3 d=aB.xyz;float r2=aB.w;
-          vec3 p=uC,pp=uC;float w=1.,a=0.;vec3 col=vec3(1.);float smoke=0.;
-          vec3 bp;float kind,ci,age;
+          vec3 p=uC,pp=uC;float w=1.,a=0.;vec3 col=vec3(1.);float vt=0.;vHot=0.;
+          vec3 bp,g0;float kind,ci,age;
           if(type<1.5){                                   // shell smoke: burst puffs (0) and rocket trail (1)
-            shell(s,bp,kind,ci,age);smoke=1.;vec3 g0=vec3(bp.x,0.,bp.z);
-            if(type<0.5){float t=age-RISE-.05;a=t>0.?.62*smoothstep(0.,.35,t)*exp(-t/5.5):0.;
-              vec3 sc=shellCol(ci,d,0.);col=mix(vec3(.78,.76,.74),sc,ci==1.?0.:.62);
-              p=bp+d*(80.+55.*r)*(1.-exp(-t*1.6))-vec3(0.,4.*t,0.)+vec3(uWind.x,0.,uWind.y)*t*2.2;w=(32.+26.*r)*(.55+.45*min(t,3.)/3.)+t*5.;}
+            shell(s,bp,g0,kind,ci,age);vt=1.;
+            if(type<0.5){float t=age-RISE-.05;a=t>0.?.55*smoothstep(0.,.35,t)*exp(-t/5.):0.;
+              col=mix(vec3(.78,.76,.74),smokeCol(ci,d),.85);
+              p=bp+d*(80.+55.*r)*uR*(1.-exp(-t*1.6))-vec3(0.,4.*t,0.)+vec3(uWind.x,0.,uWind.y)*t*2.2;w=((32.+26.*r)*(.55+.45*min(t,3.)/3.)+t*5.)*uR;}
             else{float te=j*RISE*.92,t=age-te;float f=j;f=1.-(1.-f)*(1.-f);
-              a=t>0.?.5*exp(-t/3.2)*smoothstep(0.,.15,t):0.;col=vec3(.86,.85,.83);
-              p=mix(g0,bp,f*.92)+vec3(uWind.x,0.,uWind.y)*t*2.+vec3(d.x,0.,d.z)*3.*t;w=7.+t*5.5+r*3.;}
-            a*=1.-smoothstep(CYC-2.2,CYC-.2,age);w*=pow(uK,.8);
+              a=t>0.?.42*exp(-t/3.)*smoothstep(0.,.15,t):0.;col=vec3(.84,.83,.81);
+              p=mix(g0,bp,f*.92)+vec3(uWind.x,0.,uWind.y)*t*2.+vec3(d.x,0.,d.z)*3.*t;w=(7.+t*5.5+r*3.)*sqrt(uR);}
+            a*=(1.-smoothstep(CYC-2.2,CYC-.2,age))*uSm;
           } else if(type<2.5){                            // fountain smoke rising from each gerb
-            float fa=s*1.5708+.785,life=4.5,t=mod(uTime+j*life+r,life);vec3 base=uC+vec3(cos(fa),0.,sin(fa))*110.;smoke=1.;
-            p=base+vec3(0.,8.+t*9.,0.)*sqrt(uK)+vec3(uWind.x,0.,uWind.y)*t*1.8+d*4.;w=(8.+t*5.)*sqrt(uK);a=.4*smoothstep(0.,.6,t)*(1.-t/life);col=vec3(.9,.88,.84);
+            float fa=s*1.5708+.785,life=4.5,t=mod(uTime+j*life+r,life);vec3 base=uG+vec3(cos(fa),0.,sin(fa))*55.;vt=1.;
+            p=base+vec3(0.,8.+t*9.,0.)*sqrt(uK)+vec3(uWind.x,0.,uWind.y)*t*1.8+d*4.;w=(8.+t*5.)*sqrt(uK);a=.32*smoothstep(0.,.6,t)*(1.-t/life)*uSm;col=vec3(.9,.88,.84);
           } else if(type<3.5){                            // fountain sparks (gerbs): golden arcs
-            float fa=s*1.5708+.785,life=1.25+.35*r2,t=mod(uTime*1.+j*7.31+r*life,life);vec3 base=uC+vec3(cos(fa),0.,sin(fa))*110.;
+            float fa=s*1.5708+.785,life=1.25+.35*r2,t=mod(uTime*1.+j*7.31+r*life,life);vec3 base=uG+vec3(cos(fa),0.,sin(fa))*55.;
             float kf=sqrt(uK);vec3 v=vec3(d.x*9.,30.+9.*r,d.z*9.)*kf;
-            p=base+(v*t-vec3(0.,.5*30.*kf*t*t,0.));float tq=max(0.,t-.06);pp=base+(v*tq-vec3(0.,.5*30.*kf*tq*tq,0.));
-            a=(1.-t/life)*1.3*(.6+.4*step(.5,h1(j*91.+floor(uTime*24.))));col=mix(vec3(1.,.5,.08),vec3(1.,.8,.45),r2)*2.4;w=1.4*kf;
-          } else {                                       // shell sparks: rocket, then the burst
-            shell(s,bp,kind,ci,age);vec3 g0=vec3(bp.x,0.,bp.z);
+            p=base+(v*t-vec3(0.,.5*30.*kf*t*t,0.));float tq=max(0.,t-.1);pp=base+(v*tq-vec3(0.,.5*30.*kf*tq*tq,0.));
+            a=(1.-t/life)*(.6+.4*step(.5,h1(j*91.+floor(uTime*24.))));col=mix(vec3(1.,.5,.05),vec3(1.,.74,.25),r2)*1.1;w=.2*kf;
+          } else {                                       // shell sparks: rocket, then the burst (star 0 becomes the flash)
+            shell(s,bp,g0,kind,ci,age);
             if(age<RISE){float f=age/RISE;f=1.-(1.-f)*(1.-f);float lag=j<1.?0.:j/${PP}.*.35;
               float f2=max(0.,f-lag);p=mix(g0,bp,f2)+vec3(d.x,0.,d.z)*lag*40.;pp=mix(g0,bp,max(0.,f2-.035));
-              a=j<1.?3.:(j<60.?max(0.,1.-lag*3.)*.9:0.);col=vec3(1.,.62,.25)*2.6;w=j<1.?2.6:1.3;
+              a=j<1.?1.:(j<60.?max(0.,1.-lag*3.)*.8:0.);col=j<1.?vec3(1.,.8,.5)*1.8:vec3(1.,.55,.18);w=j<1.?.9:.4;
             } else {
-              float t=age-RISE,big=step(.72,kind),life=mix(2.8,4.4,big);
-              p=sparkAt(bp,d,kind,t);pp=sparkAt(bp,d,kind,max(0.,t-mix(.13,.24,big)));
-              a=pow(max(0.,1.-t/life),1.2)*1.25;if(t<.12)a+=(1.-t/.12)*1.5;
-              col=shellCol(ci,d,j);if(big>.5&&ci!=4.)col=mix(col,vec3(1.,.62,.12),.55);
-              if(kind>.45&&kind<.72&&t>.9){a*=step(.5,h1(j*3.1+floor(uTime*20.)))*1.6;col=mix(col,vec3(1.,.95,.75),.6);}   // crackle
-              col*=1.45;w=2.0*(1.+.35*big);
-              if(t<.15){w*=1.+3.*(1.-t/.15);}
+              float t=age-RISE,big=step(.72,kind),wil=step(.88,kind),life=mix(mix(2.8,4.4,big),5.8,wil),R=mix(150.,200.,big)*uR;
+              if(j<1.){p=bp;pp=bp;a=t<.45?1.4*(1.-t/.45):0.;col=mix(shellCol(ci,vec3(0.,1.,0.)),vec3(1.),.35)*2.6;w=.4*R*(.35+.65*smoothstep(0.,.06,t));vt=2.;}
+              else{p=sparkAt(bp,d,kind,t);pp=sparkAt(bp,d,kind,max(0.,t-mix(mix(.3,.45,big),.75,wil)));
+                a=pow(max(0.,1.-t/life),1.2)*(.55+.9*fract(r*13.7));
+                col=shellCol(ci,d);if(big>.5&&ci!=4.)col=mix(col,GLD,.4);
+                if(wil>.5)col=mix(vec3(1.,.62,.1),vec3(.9,.36,.04),smoothstep(1.,4.5,t));
+                if(kind>.45&&kind<.72&&t>.9){a*=step(.5,h1(j*3.1+floor(uTime*20.)))*1.5;col=mix(col,vec3(1.,.9,.6),.5);}   // crackle
+                float wsh=ci==1.||(ci==4.&&abs(d.y)<=.33)?1.:0.;vHot=wsh*max(0.,1.-t/.15);
+                w=.3*(1.+.35*big);}
             }
-            w*=pow(uK,.75);
           }
-          vA=a*uFade;vT=smoke;vSeed=r*17.+s;
+          vA=a*uFade;vT=vt;vSeed=r*17.+s;
           vec4 m0=modelViewMatrix*vec4(p,1.);vec3 c=m0.xyz;
-          if(smoke>.5){float an=r*6.283+uTime*.05*(r-.5);mat2 R2=mat2(cos(an),-sin(an),sin(an),cos(an));c.xy+=R2*position.xy*w;vUv=position.xy;
-            vCol=col*(.85+.25*position.y);}   // lit from above
-          else{w=max(w,uPix*-m0.z*(type<3.5?1.0:1.1));vec4 m1=modelViewMatrix*vec4(pp,1.);vec2 ax=m0.xy-m1.xy;float L=length(ax);vec2 dr=L>1e-3?ax/L:vec2(0.,1.);vec2 sd=vec2(dr.y,-dr.x);
-            c=mix(m1.xyz,m0.xyz,position.y*.5+.5);c.xy+=sd*position.x*w+dr*position.y*w;vUv=vec2(position.x,position.y*(L+2.*w)/(2.*w));vUv.y=position.y;vCol=col;}
+          if(vt>.5){float an=r*6.283+uTime*.05*(r-.5);mat2 R2=mat2(cos(an),-sin(an),sin(an),cos(an));
+            if(vt<1.5){float nz=-m0.z;w*=max(.15,smoothstep(300.,1500.,nz));vA*=smoothstep(120.,450.,nz);}   // never sit inside a puff
+            c.xy+=R2*position.xy*w;vUv=position.xy;vCol=col*(vt<1.5?.85+.25*position.y:1.);}   // smoke lit from above
+          else{w=max(w,uPix*-m0.z);vec4 m1=modelViewMatrix*vec4(pp,1.);vec2 ax=m0.xy-m1.xy;float L=length(ax);vec2 dr=L>1e-3?ax/L:vec2(0.,1.);vec2 sd=vec2(dr.y,-dr.x);
+            c=mix(m1.xyz,m0.xyz,position.y*.5+.5);c.xy+=sd*position.x*w+dr*position.y*w;vUv=position.xy;vCol=col;}
           gl_Position=vA>.002?projectionMatrix*vec4(c,1.):vec4(2.,2.,2.,1.);
         }`,
-      fragmentShader: `varying vec2 vUv;varying vec3 vCol;varying float vA,vT,vSeed;
+      fragmentShader: `varying vec2 vUv;varying vec3 vCol;varying float vA,vT,vSeed,vHot;
         ${GLSL_NOISE}
         void main(){
-          if(vT>.5){float n=fx2n(vUv*2.2+vSeed)*.6+fx2n(vUv*5.1-vSeed)*.4;float m=smoothstep(1.,.25,length(vUv)+(n-.5)*.7);float a=m*vA;
+          if(vT>1.5){float r=length(vUv);float a=vA*(exp(-r*r*6.)+.35*exp(-r*r*2.));if(a<.003)discard;gl_FragColor=vec4(vCol*a,a*.3);}
+          else if(vT>.5){float n=fx2n(vUv*2.2+vSeed)*.6+fx2n(vUv*5.1-vSeed)*.4;float m=smoothstep(1.,.25,length(vUv)+(n-.5)*.7);float a=m*vA;
             if(a<.004)discard;gl_FragColor=vec4(vCol*a,a);}
-          else{float r=length(vec2(vUv.x,vUv.y*.6));float core=exp(-r*r*5.);float hot=smoothstep(.28,0.,r)*.35;float a=min(1.,vA*core);
-            if(a<.003)discard;gl_FragColor=vec4((vCol+vec3(hot))*a,a*.88);}
+          else{float y=vUv.y*.5+.5,x=vUv.x;float core=exp(-x*x*3.5);float along=pow(y,1.6)*(1.-smoothstep(.93,1.,y)*.5);float a=min(1.,vA*core*along*1.4);
+            if(a<.003)discard;gl_FragColor=vec4((vCol+vec3(vHot*1.2*core))*a,a*.88);}
         }` });
     const mesh = new THREE.Mesh(g, mat); mesh.frustumCulled = false; mesh.visible = false; root.add(mesh);
     return { mesh, U };
   })();
+  // the launch site: open ground 380-900 m from the show centre, clear of buildings, piers and stands (gates) and runways,
+  // so the rockets and the four gerbs never rise out of a roof. Found once per item and cached.
+  const fwCtx = (() => { try { return document.createElement('canvas').getContext('2d'); } catch (e) { return null; } })();
+  const fwBlocked = (x, y) => {
+    const Bs = Z.BLD || [], Gs = Z.GATES || [], Rs = Z.RW || [];
+    if (fwCtx) for (let i = 0; i < Bs.length; i++) if (Bs[i].p && fwCtx.isPointInPath(Bs[i].p, x, y)) return true;
+    for (let i = 0; i < Gs.length; i++) if (Gs[i].x != null && Math.hypot(Gs[i].x - x, Gs[i].y - y) < 130) return true;
+    for (let i = 0; i < Rs.length; i++) { const r = Rs[i]; if (x > Math.min(r.x0, r.x1) - 120 && x < Math.max(r.x0, r.x1) + 120 && Math.abs(y - r.y) < r.width / 2 + 70) return true; }
+    return false;
+  };
+  const fwSite = it => {
+    for (const rad of [380, 450, 550, 700, 900]) for (let i = 0; i < 16; i++) {
+      const a = i / 16 * Math.PI * 2 + Math.PI / 2, x = it.x + Math.cos(a) * rad, y = it.y + Math.sin(a) * rad;
+      let ok = !fwBlocked(x, y);
+      for (let q = 0; q < 8 && ok; q++) { const b = q * Math.PI / 4; ok = !fwBlocked(x + Math.cos(b) * 75, y + Math.sin(b) * 75); }
+      if (ok) return { x, y };
+    }
+    return { x: it.x, y: it.y };
+  };
   function fireworksUpdate(list, dt, now) {
     const it = list[0]; if (!it) { FW.mesh.visible = false; return; }
-    const T = Z.T, f = smooth(it.t0, it.t0 + 6, T) * (1 - smooth(it.t1 - 25, it.t1, T));
-    FW.U.uTime.value = now; FW.U.uC.value.set(it.x, 0, it.y); FW.U.uFade.value = f; FW.U.uK.value = clamp(Z.camDist / 1500, 1, 7);
+    const st = stOf(it, () => fwSite(it));
+    const T = Z.T, f = smooth(it.t0, it.t0 + 6, T) * (1 - smooth(it.t1 - 25, it.t1, T)), cd = Z.camDist, sS = smooth(2500, 9000, cd);
+    FW.U.uTime.value = now; FW.U.uC.value.set(it.x, 0, it.y); FW.U.uG.value.set(st.x, 0, st.y); FW.U.uFade.value = f; FW.U.uK.value = clamp(cd / 1500, 1, 7);
+    FW.U.uR.value = mix(1, 2.2, sS); FW.U.uSm.value = mix(1, 0.5, sS);
     const wd = Z.atmo && Z.atmo.wind; if (wd) FW.U.uWind.value.set(Math.cos(wd.dir) * (wd.speed || 3), Math.sin(wd.dir) * (wd.speed || 3));
-    FW.U.uPix.value = 2 / (Z.camera.projectionMatrix.elements[5] * Z.renderer.domElement.height);
+    FW.U.uPix.value = 2 / (Z.camera.projectionMatrix.elements[5] * Z.renderer.domElement.height) * mix(1.3, 2.5, sS);   // spark half-width floor in pixels
     FW.mesh.visible = f > 0.01;
   }
   KS.add('fireworks');

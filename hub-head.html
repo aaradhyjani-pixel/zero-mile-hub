@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
 <title>Zero Mile Hub</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -96,7 +101,7 @@ button:focus-visible,.term:focus-visible{outline:2px solid var(--sign);outline-o
 .rw.sel{background:#141b20}
 #incs{flex:0 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden;max-height:44%}
 #incList{overflow:auto;min-height:0}
-#incList:empty::after{content:"Nothing needs you right now. Watch the bank chart and get the runways ready for the next wave.";display:block;padding:9px 10px;color:var(--ink-3);font-size:12.5px}
+#incList:empty::after{content:"Nothing needs you. The ops teams have the routine. Watch the bank chart and get the runways ready for the next wave.";display:block;padding:9px 10px;color:var(--ink-3);font-size:12.5px}
 .inc{display:grid;grid-template-columns:30px 1fr;gap:2px 9px;padding:7px 10px;border-bottom:1px solid #151c21;animation:incin .3s ease-out}
 @keyframes incin{from{background:#2a2312}to{background:transparent}}
 .inc .ic{grid-row:span 3;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-sign);font-weight:700;font-size:13px;color:#0b0b0b}
@@ -108,6 +113,16 @@ button:focus-visible,.term:focus-visible{outline:2px solid var(--sign);outline-o
 .acts button.pri{background:var(--sign);color:var(--sign-ink);border-color:var(--sign)}
 .acts button:disabled{opacity:.35;cursor:not-allowed}
 .inc .tm{font-family:var(--f-mono);font-size:10.5px;color:var(--ink-3)}
+.inc>*:not(.ic){grid-column:2}
+.inc .dflt{font-size:11.5px;color:var(--ink-3);margin-top:2px}
+#toast.alarm{border-color:var(--stop);box-shadow:0 0 0 2px var(--stop),0 10px 30px rgba(0,0,0,.5)}
+#toast.alarm .dirsign{background:var(--stop);color:#fff}
+.cfgrow{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;margin:12px 0 2px;font-size:13px}
+.cfgrow b{font-family:var(--f-sign);font-weight:600;letter-spacing:.05em;text-transform:uppercase;font-size:13px}
+.cfgrow small{color:var(--ink-3);font-size:12.5px}
+.seg2{display:inline-flex;gap:3px}
+.seg2 button{border:1px solid var(--panel-edge);border-radius:3px;padding:4px 11px;font-family:var(--f-sign);font-weight:600;letter-spacing:.04em;font-size:13.5px;color:var(--ink-3)}
+.seg2 button.on{background:var(--ink);color:#0a0d0f;border-color:var(--ink)}
 .inc .tm i{display:inline-block;height:3px;background:var(--stop);vertical-align:middle;margin-left:6px;border-radius:2px}
 #tabs{flex:1 1 0;min-height:110px;display:flex;flex-direction:column;overflow:hidden}
 .tabbar{display:flex;border-bottom:1px solid var(--panel-edge);flex:none}
@@ -188,6 +203,7 @@ table.board{width:100%;border-collapse:collapse;font-size:12px}
 .score>div{border:1px solid var(--panel-edge);border-radius:5px;padding:8px 10px}
 .score .k{font-family:var(--f-sign);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:11px;color:var(--ink-3)}
 .score .v{font-family:var(--f-mono);font-size:21px}
+.score .sub{font-family:var(--f-mono);font-size:11px;color:var(--ink-3);margin-top:2px}
 .bigstars{font-size:54px;letter-spacing:6px;color:#2a3238;line-height:1}.bigstars b{color:var(--sign);font-weight:400}
 .kbd{font-family:var(--f-mono);font-size:12px;border:1px solid var(--panel-edge);border-bottom-width:2px;border-radius:3px;padding:0 5px;color:var(--ink)}
 .two{display:grid;grid-template-columns:1.2fr 1fr;gap:18px}

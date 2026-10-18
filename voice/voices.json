@@ -36,5 +36,6 @@
   "au":           {"voice": "Karen",     "rate": 165, "fx": "cockpit",  "pause": 300, "lang": "en-AU"},
   "ie":           {"voice": "Moira",     "rate": 160, "fx": "cockpit",  "pause": 300, "lang": "en-IE"},
   "za":           {"voice": "Tessa",     "rate": 160, "fx": "cockpit",  "pause": 300, "lang": "en-ZA"},
-  "ng":           {"voice": "Tessa",     "rate": 150, "fx": "cockpit",  "pause": 300, "lang": "en-NG", "note": "no West African voice; South African English is the closest"}
+  "ng":           {"voice": "Tessa",     "rate": 150, "fx": "cockpit",  "pause": 300, "lang": "en-NG", "note": "no West African voice; South African English is the closest"},
+  "pk":           {"voice": "Lekha",     "rate": 175, "fx": "cockpit",  "pause": 300, "lang": "hi-IN", "note": "no Pakistani voice; Lekha (hi_IN) gives South Asian English that is clearly not the tower's Rishi, and no other pilot uses her (Tara is the Indian-region pilots, Aman the announcer and the SPG). She reads One as own: respelt in make_voice.PRON"}
 }

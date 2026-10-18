@@ -352,5 +352,103 @@
   "key": "Zero Mile Tower, SAM 29000, the spare, runway 27R. Nobody on board.",
   "voice": "us",
   "say": "Zero Mile Tower, Sam two nine thousand, the spare, runway two seven right. [[slnc 300]] Nobody on board."
+ },
+ {
+  "key": "Ladies and gentlemen, the motorcade of the President of the United States.",
+  "voice": "announcer"
+ },
+ {
+  "key": "Ladies and gentlemen: the United Arab Emirates.",
+  "voice": "announcer"
+ },
+ {
+  "key": "Ladies and gentlemen: Japan.",
+  "voice": "announcer",
+  "say": "Ladies and gentlemen: [[slnc 600]] Japan."
+ },
+ {
+  "key": "Ladies and gentlemen: the Federal Republic of Germany.",
+  "voice": "announcer"
+ },
+ {
+  "key": "Attention, please. The delegation of the Russian Federation. First, the cars. Then two aircraft. They are identical.",
+  "voice": "ru_announcer",
+  "say": "Attention, please. [[slnc 600]] The delegation of the Russian Federation. [[slnc 600]] First, the cars. [[slnc 600]] Then two aircraft. [[slnc 600]] They are identical."
+ },
+ {
+  "key": "Ladies and gentlemen: the United Kingdom.",
+  "voice": "announcer"
+ },
+ {
+  "key": "Zero Mile Tower, Pakistan One, established on the localiser, runway 27R.",
+  "voice": "pk",
+  "say": "Zero Mile Tower, Pakistan One, established on the localiser, runway two seven right."
+ },
+ {
+  "key": "Pakistan One, Zero Mile Tower, continue approach. Landing clearance is withheld, on security advice.",
+  "voice": "tower",
+  "say": "Pakistan One, Zero Mile Tower, continue approach. [[slnc 250]] Landing clearance is withheld, on security advice."
+ },
+ {
+  "key": "Tower, Pakistan One. We hold diplomatic clearance and an invitation to this summit. Request landing clearance.",
+  "voice": "pk",
+  "say": "Tower, Pakistan One. [[slnc 300]] We hold diplomatic clearance and an invitation to this summit. [[slnc 300]] Request landing clearance."
+ },
+ {
+  "key": "Pakistan One, unable. I am instructed not to clear you. Dr. Babasaheb Ambedkar International, Sonegaon, can accept you.",
+  "voice": "tower",
+  "say": "Pakistan One, unable. [[slnc 250]] I am instructed not to clear you. [[slnc 250]] Doctor Babasaheb Ambedkar International, Sonegaon, can accept you."
+ },
+ {
+  "key": "Tower, the Prime Minister is an invited guest of your government. Please confirm with protocol.",
+  "voice": "pk",
+  "say": "Tower, the Prime Minister is an invited guest of your government. [[slnc 300]] Please confirm with protocol."
+ },
+ {
+  "key": "Pakistan One, protocol is aware. Go around. I say again, go around.",
+  "voice": "tower",
+  "say": "Pakistan One, protocol is aware. [[slnc 250]] Go around. [[slnc 250]] I say again, go around."
+ },
+ {
+  "key": "Going around, Pakistan One. Under protest.",
+  "voice": "pk",
+  "say": "Going around, Pakistan One. [[slnc 300]] Under protest."
+ },
+ {
+  "key": "Pakistan One, turn right heading zero nine zero, climb four thousand feet. Sonegaon is expecting you.",
+  "voice": "tower",
+  "say": "Pakistan One, turn right heading zero nine zero, climb four thousand feet. [[slnc 250]] Sonegaon is expecting you."
+ },
+ {
+  "key": "Right zero nine zero, four thousand, diverting to Sonegaon, Pakistan One. This will be raised through diplomatic channels.",
+  "voice": "pk",
+  "say": "Right zero nine zero, four thousand, diverting to Sonegaon, Pakistan One. [[slnc 300]] This will be raised through diplomatic channels."
+ },
+ {
+  "key": "Noted, Pakistan One. Our respects to the Prime Minister. Safe flight.",
+  "voice": "tower",
+  "say": "Noted, Pakistan One. [[slnc 250]] Our respects to the Prime Minister. [[slnc 250]] Safe flight."
+ },
+ {
+  "key": "Ladies and gentlemen: the Islamic Republic of Pakistan.",
+  "voice": "announcer_hi",
+  "say": "देवियो और सज्जनो, [[slnc 600]] कृपया इस्लामी गणराज्य पाकिस्तान का स्वागत कीजिए। [[slnc 500]]"
+ },
+ {
+  "key": "Ladies and gentlemen: the Kingdom of Saudi Arabia.",
+  "voice": "announcer"
+ },
+ {
+  "key": "Ladies and gentlemen: the French Republic.",
+  "voice": "announcer"
+ },
+ {
+  "key": "Ladies and gentlemen: the Republic of Korea.",
+  "voice": "announcer"
+ },
+ {
+  "key": "Ladies and gentlemen. The aircraft carrying the President of the United States shall now be landing on runway 27R.",
+  "voice": "announcer",
+  "say": "Ladies and gentlemen. [[slnc 600]] The aircraft carrying the President of the United States shall now be landing on runway two seven right."
  }
 ]

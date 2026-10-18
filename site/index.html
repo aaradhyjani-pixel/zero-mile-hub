@@ -1491,6 +1491,7 @@ function resetState(){
   SUM=null;STO=[];CINE=null;PACE=null;endDue.cut=false;HOLDDEP=null;MARKS=[];FXV=[];voiceReset();if(typeof ltReset==="function")ltReset();{const kc=$('#kiteChip');if(kc)kc.hidden=true;const wc=$('#wedChip');if(wc)wc.hidden=true;const sb=$('#stopBtn');if(sb)sb.hidden=true;const ft=$('#fogTag');if(ft)ft.hidden=true;fogF=0;}cinema.q=[];specialArr.list=[];flights=[];FID=0;incidents=[];INC=0;selected=null;hover=null;selRw=null;puffs.length=0;moveLog.length=0;ops.length=0;opsClock=0;lastCnx=-1e9;
   S={tl:[],flipLog:[],tlNext:0,combo:0,bestCombo:0,moves:0,arr:0,dep:0,depOnTime:0,arrOnTime:0,cnxMade:0,cnxMiss:0,safety:100,incOk:0,incDef:0,incTypes:{},hits:[],holdMin:0,div:0,goArounds:0,log:[],delaySum:0,flips:0};
   GATES.forEach(g=>{g.occ=null;g.res=null;});
+  rrNext=-1e9;rrSaid=-1e9;
   RW.forEach(r=>{r.tdList=[];r.lastSchedTd=-1e9;r.lastDep=-1e9;r.arrExit=-1e9;r.occ=null;r.changeUntil=-1;r.closedUntil=-1;r.why='';r.ops=0;r.flash=0;r.blocks=[];r.gapReq=false;r.degraded=false;r.strike=null;r.shear=false;r.sepK=1;r.sepUntil=-1;r.kiteUntil=-1;r.kiteFrom=-1;r.kiteP=0.25;r.noArrUntil=-1;r.gpsUntil=-1;r.noDepUntil=-1;r.btUntil=-1;});
   Object.assign(FX,{chgK:1,chgUntil:-1,pushFreeze:-1,pushSlow:-1,pushSlowS:0});
   CONC.forEach(c=>{c.laneShut=-1;c.slowUntil=-1;});
@@ -1661,8 +1662,9 @@ function setMode(r,m,silent){
   if(r.degraded){r.degraded=false;r.changeUntil+=120;radio('OPS',`Electricians fixing ${r.short}'s edge lights during the changeover.`);logE(`Edge lights on ${r.short} repaired during a changeover.`);}
   if(r.strike){r.strike=null;logE(`${r.short} inspected for bird remains during the changeover.`);}
   if(m!=='ARR'&&m!=='MIX')for(const f of flights)if(f.state==='approach'&&f.rwy===r&&f.td-T>40)breakOff(f,r);
-  for(const f of flights){if((f.state==='taxi_out'||f.state==='hp')&&f.rwy===r&&!depModeOk(r))assignDep(f,true);}
+  const moved=new Map();for(const f of flights){if((f.state==='taxi_out'||f.state==='hp')&&f.rwy===r&&!depModeOk(r)&&assignDep(f,true))moved.set(f.rwy,(moved.get(f.rwy)||0)+1);}
   if(!silent){radio('AOCC',`Runway ${r.short} ${was} → ${m}. Changeover 2 minutes.`);logE(`Runway ${r.short} set to ${m}.`);}
+  rebalanceDeps(moved);rrSay(moved,true);rrNext=T+RR_EVERY;   // the queues re-plan now, not at the next periodic pass
   renderRw();
 }
 function rk(f){return(f.mayday?0:f.prio?1:f.minFuel?2:3)*1e7+(f.state==='holding'?f.holdSince:f.eta);}
@@ -1693,14 +1695,73 @@ function runways(){
   }
 }
 function assignDep(f,reroute){
-  let opts=RW.filter(r=>depModeOk(r)&&T>=r.closedUntil-300&&!(T<r.noDepUntil-120));if(needsLong(f)&&opts.includes(LONGEST))opts=[LONGEST];
-  if(!opts.length){f.rwy=null;f.noRwy=true;return false;}
-  f.noRwy=false;const from=reroute?nearestNode(f.x,f.y).k:f.gate.lane;
-  let best=null,bs=1e18,bp=null,bh=null;
-  for(const r of opts){const q=flights.filter(o=>(o.state==='hp'||o.state==='taxi_out')&&o.rwy===r).length;for(const h of r.holds){const p=route(from,h);if(!p)continue;const c=pathLen(p)/14+q*75+(r.mode==='MIX'?60:0);if(c<bs){bs=c;best=r;bp=p;bh=h;}}}
-  if(!best){f.rwy=null;f.noRwy=true;return false;}
-  f.rwy=best;f.hold=bh;setPath(f,(reroute?[{x:f.x,y:f.y}]:[]).concat(bp),TAXI_R);f.state='taxi_out';return true;
+  if(!depOpts(f).length){f.rwy=null;f.noRwy=true;return false;}
+  f.noRwy=false;const b=depChoices(f,reroute?taxiFrom(f):[{k:f.gate.lane,d:0}],depCounts(),null,reroute)[0];
+  if(!b){f.rwy=null;f.noRwy=true;return false;}
+  setTaxi(f,b,reroute);return true;
 }
+/* departures pick their runway late, the way arrivals do: Ground keeps re-planning everyone taxiing out or holding short.
+   A runway's cost to a departure is its taxi time over the graph (or the changeover/closure/protocol wait, if longer), plus
+   75 s for each departure already queued for it, plus 60 s on a mixed runway. Lined-up and rolling aircraft never move;
+   heavies in the heat keep their runway (the heat card decides those). */
+const DEP_SEP=75,RR_EVERY=20,RR_MARGIN=90,RR_HOLD=120,RR_UTURN=45,RR_LOSS=120;
+let rrNext=-1e9,rrSaid=-1e9;
+const depOpen=r=>depModeOk(r)&&T>=r.closedUntil-300&&!(T<r.noDepUntil-120);
+function depOpts(f){let o=RW.filter(depOpen);if(needsLong(f)&&o.includes(LONGEST))o=[LONGEST];return o;}
+// seconds before r can launch a departure: changeover, closure, departures stopped, protocol blocks (60 s lead, as runways())
+function depWait(r){let t=Math.max(T,r.changeUntil,r.closedUntil,r.noDepUntil);for(let i=0;i<8;i++){const b=r.blocks.find(b=>t>=b.from-60&&t<b.to);if(!b)break;t=b.to;}return t-T;}
+function depCounts(){const q=new Map();for(const o of flights)if((o.state==='hp'||o.state==='taxi_out')&&o.rwy)q.set(o.rwy,(q.get(o.rwy)||0)+1);return q;}
+const RLEN=new WeakMap();function rlen(p){let L=RLEN.get(p);if(L==null){L=pathLen(p);RLEN.set(p,L);}return L;}
+const taxiLeft=o=>o.state==='hp'?0:Math.max(0,(o.plen||0)-(o.pd||0));
+// where a taxiing aircraft can be re-routed from: the next node ahead on its path, or the one behind it if that taxiway is
+// two-way (it turns round). Never backwards down a one-way taxiway.
+function taxiFrom(f){const out=[],p=f.path;
+  if(p&&p.length>1){let d=f.pd||0,i=1;for(;i<p.length-1;i++){const L=dist(p[i-1].x,p[i-1].y,p[i].x,p[i].y);if(d<L)break;d-=L;}
+    const nx=G.get(kk(p[i].x,p[i].y)),pv=G.get(kk(p[i-1].x,p[i-1].y));
+    if(nx)out.push({k:nx.k,d:dist(f.x,f.y,nx.x,nx.y)});
+    if(pv&&pv!==nx&&(!nx||nx.out.some(e=>e[0]===pv.k)))out.push({k:pv.k,d:dist(f.x,f.y,pv.x,pv.y)});}
+  if(!out.length){const n=nearestNode(f.x,f.y);out.push({k:n.k,d:dist(f.x,f.y,n.x,n.y)});}
+  return out;}
+// the first direction a re-route sends f in
+function rrDir(f,s,p){if(s.d>2){const n=G.get(s.k);return Math.atan2(n.y-f.y,n.x-f.x);}for(let i=1;i<p.length;i++)if(dist(p[0].x,p[0].y,p[i].x,p[i].y)>1)return Math.atan2(p[i].y-p[0].y,p[i].x-p[0].x);return f.heading;}
+// every (runway, hold, start) option for f, cheapest first; q = departures queued per runway (f itself not counted for skip)
+function depChoices(f,starts,q,skip,reroute){const out=[];
+  for(const r of depOpts(f)){if(r===skip)continue;const w=depWait(r),n=q.get(r)||0,mix=r.mode==='MIX'?60:0;
+    for(const s of starts)for(const h of r.holds){const p=route(s.k,h);if(!p)continue;
+      const turn=reroute&&Math.abs(angDiff(f.heading,rrDir(f,s,p)))>2?RR_UTURN:0;
+      out.push({r,h,p,s,turn,c:Math.max((s.d+rlen(p))/14,w)+n*DEP_SEP+mix+turn});}}
+  return out.sort((a,b)=>a.c-b.c);}
+function setTaxi(f,b,reroute){f.rwy=b.r;f.hold=b.h;const p=reroute&&b.s.d>1?[{x:f.x,y:f.y}].concat(b.p):b.p;setPath(f,p,TAXI_R);f.state='taxi_out';
+  if(reroute)f.uturn=!!b.turn;}
+// taxiways are single file: a re-route only helps if nobody staying in the old queue sits on the new path ahead of it
+function rrPlugged(f,b,Q,i){if(!i)return false;const P=b.s.d>1?[{x:f.x,y:f.y}].concat(b.p):b.p,fl=taxiLeft(f);
+  for(let j=0;j<i;j++){const s=Q[j],lim=Math.max(0,fl-taxiLeft(s))+80;let acc=0;
+    for(let k=1;k<P.length&&acc<lim;k++){const a=P[k-1],c=P[k],L=dist(a.x,a.y,c.x,c.y);acc+=L;if(L<1)continue;
+      const t=clamp(((s.x-a.x)*(c.x-a.x)+(s.y-a.y)*(c.y-a.y))/(L*L),0,1);
+      if(dist(a.x+(c.x-a.x)*t,a.y+(c.y-a.y)*t,s.x,s.y)<14&&(s.state==='hp'||Math.abs(angDiff(s.heading,Math.atan2(c.y-a.y,c.x-a.x)))<1.3))return true;}}
+  return false;}
+// move departures, one at a time, while a move saves time overall: the mover's own change plus a slot for everyone queued
+// behind it on its old runway, by more than RR_MARGIN (so nobody flip-flops). A mover may give up at most RR_LOSS itself
+// (no 20 km detours round the one-way loops). Returns runway -> number moved there.
+function rebalanceDeps(moved){moved=moved||new Map();const qs=new Map(),qn=new Map();for(const r of RW)qs.set(r,[]);
+  for(const o of flights)if((o.state==='hp'||o.state==='taxi_out')&&o.rwy&&qs.has(o.rwy))qs.get(o.rwy).push(o);
+  for(const [r,l] of qs){l.sort((a,b)=>taxiLeft(a)-taxiLeft(b));qn.set(r,l.length);}
+  for(let it=0;it<60;it++){let best=null;
+    for(const [X,Q] of qs){if(!Q.length)continue;const ok=depOpen(X),w=depWait(X),mix=X.mode==='MIX'?60:0;
+      for(let i=0;i<Q.length;i++){const f=Q[i];if(f.rto||f.vip||needsLong(f)||T<(f.rrT||-1e9)+RR_HOLD)continue;
+        const stay=ok?Math.max(taxiLeft(f)/14,w)+i*DEP_SEP+mix:1e7,gain=stay+(Q.length-1-i)*DEP_SEP-RR_MARGIN;
+        if(best&&gain-best.net<=0)continue;
+        for(const b of depChoices(f,taxiFrom(f),qn,X,true)){const net=gain-b.c;if(net<=0||(best&&net<=best.net)||b.c>stay+RR_LOSS)break;
+          if(!rrPlugged(f,b,Q,i)){best={f,X,i,b,net};break;}}}}
+    if(!best)break;
+    const {f,X,b}=best,Y=b.r;qs.get(X).splice(best.i,1);qn.set(X,qn.get(X)-1);setTaxi(f,b,true);f.rrT=T;
+    const QY=qs.get(Y);QY.push(f);QY.sort((a,c)=>taxiLeft(a)-taxiLeft(c));qn.set(Y,QY.length);moved.set(Y,(moved.get(Y)||0)+1);}
+  return moved;}
+// one radio line per batch: always after a runway change, otherwise only for a real reshuffle (3+) and not too often
+function rrSay(moved,flip){let n=0;for(const v of moved.values())n+=v;if(!n||(!flip&&(n<3||T<rrSaid+180)))return;rrSaid=T;
+  const ps=[...moved].sort((a,b)=>b[1]-a[1]);
+  const txt=ps.length===1?`${n} departure${n>1?'s':''} re-routed to ${ps[0][0].short}.`:`${n} departures re-routed: ${ps.map(([r,c])=>`${c} to ${r.short}`).join(', ')}.`;
+  radio('GND',txt);logE(`Ground: ${txt}`);}
 
 /* ============ flight logic ============ */
 // round each corner with an arc (a quadratic curve through the corner): taxi turns follow the centreline, approaches
@@ -1788,7 +1849,9 @@ function updateFlight(f,dt){
     break;}
   case 'push':if(advance(f,dt,3.5,true)){f.state='start';f.startT=T;}break;
   case 'start':if(T>=f.startT+45+(f.pushExtra||0)){f.gate={lane:f.gateRef.lane};const ok=assignDep(f,false);f.gate=null;if(!ok){f.state='start';f.startT=T-35;f.noRwy=true;}}break;
-  case 'taxi_out':if(f.noRwy||!f.rwy){if(T<(f.retryAt||0))break;f.retryAt=T+10;if(!assignDep(f,true))break;}if(blocked(f))break;if(advance(f,dt,14)){f.state='hp';f.hpSince=T;if(needsLong(f)&&f.rwy!==LONGEST&&!f.heatAsked){f.heatAsked=true;}}break;
+  case 'taxi_out':if(f.noRwy||!f.rwy){if(T<(f.retryAt||0))break;f.retryAt=T+10;if(!assignDep(f,true))break;}
+    if(f.uturn){const d=angDiff(f.heading,pointAt(f.path,Math.min(f.plen,f.pd+2)).a);f.heading+=d*Math.min(1,dt*1.5);if(Math.abs(d)>0.35)break;f.uturn=false;}   // a re-routed jet turns round where it stands
+    if(blocked(f))break;if(advance(f,dt,14)){f.state='hp';f.hpSince=T;if(needsLong(f)&&f.rwy!==LONGEST&&!f.heatAsked){f.heatAsked=true;}}break;
   case 'hp':if(!f.rwy||!depModeOk(f.rwy)){if(T>=(f.retryAt||0)){f.retryAt=T+10;assignDep(f,true);}break;}if(needsLong(f)&&f.rwy!==LONGEST&&!f.heavyInc)spawnInc('heavy',f);break;
   case 'lineup':if(advance(f,dt,8)){f.state='roll';f.v=8;f.s=60;}break;
   case 'roll':{const r=f.rwy;f.v=Math.min(95,f.v+(heatNow&&f.T.hot?1.7:2.3)*dt);f.s+=f.v*dt;f.x=r.x1-f.s;f.y=r.y;f.heading+=angDiff(f.heading,Math.PI)*Math.min(1,dt*3);const lift=f.T.code==='C'?1500:heatNow?3000:2300;
@@ -1864,7 +1927,7 @@ function priorityLand(f){
   beginApproach(f,r,td);r.lastSchedTd=Math.max(prev,td);f.prio=true;
   return bumped.length?`${bumped.join(' and ')} went around to make room.`:'No one had to go around.';
 }
-function sendLong(f){f.rwy=LONGEST;let best=null,bl=1e18,bp=null;for(const h of LONGEST.holds){const p=route(nearestNode(f.x,f.y).k,h);if(p&&pathLen(p)<bl){bl=pathLen(p);best=h;bp=p;}}if(bp){setPath(f,[{x:f.x,y:f.y}].concat(bp),TAXI_R);f.state='taxi_out';f.hold=best;}}
+function sendLong(f){f.rwy=LONGEST;let best=null;for(const s of taxiFrom(f))for(const h of LONGEST.holds){const p=route(s.k,h);if(p&&(!best||s.d+rlen(p)<best.c))best={r:LONGEST,h,p,s,c:s.d+rlen(p),turn:Math.abs(angDiff(f.heading,rrDir(f,s,p)))>2};}if(best){setTaxi(f,best,true);f.rrT=T;}}
 function spawnInc(type,target,extra){
   if(CFG.inc==='off'&&(SCRIPTED.has(type)||type.startsWith('st_')))return true; // runways-only mode: the scripted calls never happen
   if(type.startsWith('st_'))return startStory(type.slice(3));
@@ -3612,6 +3675,7 @@ function tick(dt){
   if(LV.dust&&T>=LV.dust[1])once('dustend',()=>{radio('ATC','Dust storm passing. Normal spacing resumes.');logE('Dust storm passed.');});
   movingList=flights.filter(f=>MOVING.has(f.state));
   runways();
+  if(T>=rrNext){rrNext=T+RR_EVERY;rrSay(rebalanceDeps(),false);}
   for(const f of flights){if(f.held&&f.holdUntil&&T>=f.holdUntil){f.held=false;f.holdUntil=null;}updateFlight(f,dt);}
   for(const I of incidents.slice())if(I.simFuse){I.fs=I.fs.filter(g=>!g.mayday&&!g.prio&&['inbound','holding','goaround'].includes(g.state));if(!I.fs.length){drop(I);continue;}I.f=I.fs.reduce((a,b)=>a.endurance<b.endurance?a:b);I.left=Math.max(0,(I.f.endurance-6)*60/BASE);}
   for(const r of RW){if(r.strike&&T>=r.strike.until){r.strike=null;opsSpawn('fod',r);}if(r.shear&&!dustNow)r.shear=false;if(r.blocks.length&&r.blocks[0].to<T)r.blocks.shift();}

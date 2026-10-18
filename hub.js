@@ -786,12 +786,6 @@ function vipBanner(on,k,title,meme,icons){const b=$('#vipBanner');if(!on){b.clas
 // Everything here is event-driven and allocation-free per tick (no DOM work outside the events).
 const SUMT={pm:200,an:390,il1:550,il2:680,ret:800,cue:110,fin:40,first:100,step:110,lead:60};
 const SUMV={gap:0.3,shot:0.25};   // live pace (1 = 1x) between VIPs, and while the camera rides one down
-// a staged announcement: each line goes on the ticker as it is spoken (its recorded clip in that speaker's accent, if there
-// is one; otherwise it stays up for a reading time), then onDone
-function announce(src,lines,o){o=o||{};const s0=S;let i=0;
-  const next=()=>{if(S!==s0)return;if(i>=lines.length){if(o.onDone)o.onDone();return;}const t=lines[i++];logE(t);if(o.onLine)o.onLine(i-1,t);
-    let ok=false;ok=say(src,t,{gap:o.gap!=null?o.gap:600,onEnd:()=>{if(ok)next();}});if(!ok)setTimeout(next,Math.max(1800,t.length*60));};
-  next();}
 // a character's popup that follows their recorded voice line by line, like the SPG's; without clips it reads at 2.6 s a line
 function voiced(lines,who,o){o=o||{};const g=$('#guard');if(!g||ended)return;
   if(!(SND.on&&typeof SPG_AUDIO!=='undefined'&&lines.every(t=>SPG_AUDIO[t])))return guard(lines,who,o);
@@ -839,7 +833,9 @@ function startSummit(){
   SUM={E,ret,tm,order,blk,vips:[pm,an,il1,il2],ci:0,cine:null,ann:null,ev:[],fill:[],pm,an,il1,il2,held};
   // timed lines (relative to E); the rest are events below (spawned, landed, docked) and gap lines (SUM.fill)
   SUM.ev=[[15,()=>{if(held||nc){radio('ATC',`Airlines have cancelled ${nc} flights for the summit. Flow control is holding ${held} more on the ground at their origins until the runways come back.`);logE(`The summit: ${nc} flights cancelled, ${held} arrivals held at their origins.`);}}],
-    [40,()=>say('SPG','Can you have one runway back? No. We have chosen the runways. We choose the order. We are very fast at saying no.')]];
+    ];
+  // the SPG's joke: only if it can be finished before the Prime Minister's announcement is due (it is on the log either way)
+  SUM.fill.push({src:'SPG',text:'Can you have one runway back? No. We have chosen the runways. We choose the order. We are very fast at saying no.',from:E+40,slack:-1,ok:()=>SUM.ci<1});
   say('TWR',`All stations, summit protocol: every runway at Zero Mile is closed.${waved?` ${waved} on final, go around.`:''} Everyone else, hold.`,{pri:2});
   guard(['Sir. We have taken over your runways.','All of them. Yes, the long one too.']);
   logE('The summit: the SPG took every runway.');renderRw();return true;
@@ -870,7 +866,7 @@ function vipPace(s){if(s.ann){const a=s.ann,need=a.f.td-SUMT.fin-T,eta=vipEta(a)
 // a gap line may start when nobody is being announced or shown, the radio is free, and it can finish (at the live pace)
 // before the next VIP's announcement is due (or a few seconds into its turn: the pacing absorbs that)
 function sumFits(s,x){if(s.ann||s.cine||CINE||vqOn||VQ.length)return false;const nx=s.vips[s.ci];if(!nx||!SND.on)return true;
-  if(x.est==null)x.est=vqEst(x);return (nx.vipTd-SUMT.cue-T)/(SUMV.gap*BASE)>x.est-4;}
+  if(x.est==null)x.est=vqEst(x);return (nx.vipTd-SUMT.cue-T)/(SUMV.gap*BASE)>x.est-(x.slack!=null?x.slack:4);}
 // while anyone speaks during the summit the game runs at no more than 1x, so each line is heard with what it describes
 function sumHold(s,off){if(!off&&SND.on&&!s.cine&&!CINE&&(vqOn||VQ.length)){if(speed>1){if(s.hold==null)s.hold=speed;speed=1;if(running)setSpeed(1);}}
   else if(s.hold!=null&&(off||(!vqOn&&!VQ.length&&!STAGED.length&&!s.cine&&!CINE))){speed=s.hold;s.hold=null;if(running)setSpeed(speed);}}

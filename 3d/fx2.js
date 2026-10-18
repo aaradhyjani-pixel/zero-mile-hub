@@ -503,7 +503,7 @@ vec3 fxCol(vec3 P,float reg,float t){
       const gp = g.attributes.position, gn = g.attributes.normal, col = new THREE.Color(hex), t = new THREE.Vector3();
       for (let i = 0; i < gp.count; i++) { t.fromBufferAttribute(gp, i).applyMatrix4(M); P.push(t.x, t.y, t.z); t.fromBufferAttribute(gn, i).applyMatrix3(NM).normalize(); Nn.push(t.x, t.y, t.z); C.push(col.r, col.g, col.b); A.push(part); }
     };
-    const BOX = new THREE.BoxGeometry(1, 1, 1), CYL = new THREE.CylinderGeometry(1, 1, 1, 8), SPH = new THREE.SphereGeometry(1, 10, 8), TOR = new THREE.TorusGeometry(0.33, 0.028, 5, 18);
+    const BOX = new THREE.BoxGeometry(1, 1, 1), CYL = new THREE.CylinderGeometry(1, 1, 1, 8), SPH = new THREE.SphereGeometry(1, 7, 5), TOR = new THREE.TorusGeometry(0.33, 0.028, 4, 14);
     const bar = (x0, y0, x1, y1, z, th, hex, part) => { const dx = x1 - x0, dy = y1 - y0, l = Math.hypot(dx, dy); add(BOX, (x0 + x1) / 2, (y0 + y1) / 2, z, 0, 0, Math.atan2(dy, dx), l, th, th, hex, part); };
     const BLK = '#1d1f1c', WHT = '#f3f1ea', SKIN = '#7a4a2c', WOOD = '#8a5a2b', STEEL = '#b9bdc2';
     add(TOR, 0.52, 0.35, 0, 0, 0, 0, 1, 1, 1, BLK, 1); add(TOR, -0.52, 0.35, 0, 0, 0, 0, 1, 1, 1, BLK, 2);

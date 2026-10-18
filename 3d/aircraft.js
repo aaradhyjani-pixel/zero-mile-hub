@@ -19,13 +19,18 @@ Z3MOD.aircraft = function (Z) {
   // 18 bands of 112 px, 18 fin tiles of 336 px (3 x 6). band layout (v within a band): fuselage unwrap x 0..2800 (u = t nose->tail, v = angle crown->keel) at v .02-.66,
   // window row .68-.74, titles + registration row .76-.985; flat colour patches at x 3994..4094.
   // fin tiles: 3 columns x 6 rows of 336 px at x 2832 (selected per instance in the vertex shader).
-  const AW = 4096, AH = 2048, BH = 112, FW = 2800, UF = FW / AW, VK = BH / AH, FT = 336, FX0 = 2832;
+  // the atlas grows to 4096 x 4096 (about 89 MB with mipmaps) when there are more than 18 liveries: the band height and fin tile shrink
+  // just enough to fit every airline (plus the C-17's grey USAF scheme as an extra band)
+  const ALK = Object.keys(Z.AL).concat(['USAF_C17']), AIDX = {}; ALK.forEach((k, i) => { AIDX[k] = i; });
+  const NBD = Math.max(18, ALK.length), AW = 4096, AH = NBD > 18 ? 4096 : 2048, BH = Math.min(112, Math.floor(AH / NBD)), FW = 2800, UF = FW / AW, VK = BH / AH,
+    FT = Math.min(336, Math.floor(AH / Math.ceil(NBD / 3))), FX0 = 2832;
   const FA0 = 0.02, FAK = 0.64, WV0 = 0.68, WV1 = 0.74, TV0 = 0.76, TV1 = 0.985, TA = 0.12, TB = 0.31, RA = 0.79, RB = 0.875;
   const PU = { white: [4004 / AW, 0.5], eng: [4024 / AW, 0.5], wlt: [4044 / AW, 0.5], dark: [4064 / AW, 0.5], grey: [4084 / AW, 0.5] };
-  const ALK = Object.keys(Z.AL), AIDX = {}; ALK.forEach((k, i) => { AIDX[k] = i; });
   const SANS = '"Avenir Next", "Helvetica Neue", Helvetica, Arial, sans-serif', SERIF = 'Georgia, "Times New Roman", serif';
   const REG = { '6E': 'VT-IFJ', AI: 'VT-AIX', IX: 'VT-EXB', QP: 'VT-YAE', SG: 'VT-SGQ', EK: 'A6-EVK', QR: 'A7-BHD', EY: 'A6-BLM', SQ: '9V-SMF',
-    LH: 'D-AIXP', BA: 'G-ZBKA', SV: 'HZ-ARF', TG: 'HS-TQD', FZ: 'A6-FMH', AF: 'F-HTYB', IN1: 'VT-AIO', CHW: 'VT-CHW', RSD: 'RA-96100' };
+    LH: 'D-AIXP', BA: 'G-ZBKA', SV: 'HZ-ARF', TG: 'HS-TQD', FZ: 'A6-FMH', AF: 'F-HTYB', IN1: 'VT-AIO', CHW: 'VT-CHW', RSD: 'RA-96100',
+    USAF: '28000', USAF_C17: '07-7182', CCA: 'B-2479', JAF: '80-1111', GAF: '10+03', RRR: 'ZZ336', CTM: 'F-RARF', TCG: 'TC-TRK', ROK: '10001', RCF: '330001',
+    RAA: 'A39-001', MH: '9M-MTA', GA: 'PK-GIA', IAM: 'MM62243', BRS: 'FAB2101', EUR: 'EU-001', GOV: 'STATE 1', AM: 'XA-ADL', OCA: 'VT-OCC', SPC: 'VT-SPC' };
   const atlas = document.createElement('canvas'); atlas.width = AW; atlas.height = AH;
   {
     const c = atlas.getContext('2d'); c.fillStyle = '#eef0f2'; c.fillRect(0, 0, AW, AH);
@@ -41,7 +46,17 @@ Z3MOD.aircraft = function (Z) {
       const ND = (x, y, r, col) => clipT(() => { c.fillStyle = col; c.beginPath(); c.ellipse(fx(x), fy(y), r * FT, r * FT * 0.78, 0, 0, 7); c.fill(); });
       let WM = null; const titles = (t0, a, col, n) => { WM = WM || [Z.AL[k] ? Z.AL[k].name.toUpperCase() : k, col, 'bold {s}px ' + SANS, 0]; };
       const word = (txt, col, font, sp) => { WM = [txt, col, font, sp || 0]; };
-      let eng = '#d4d8dd', wlt = '#e6e8eb';
+      let eng = '#d4d8dd', wlt = '#e6e8eb', wpat = '#ffffff', wins = 1;
+      // fin helpers (tile units: x LE 0 .. TE 1, y tip 0 .. root 1) and fuselage roundels (metres on a typical airframe of length LL, half-width WW)
+      const star = (x, y, r, col, n, k) => { n = n || 5; k = k || 0.42; const p = []; for (let j = 0; j < 2 * n; j++) { const a = -Math.PI / 2 + j * Math.PI / n, rr = j % 2 ? r * k : r; p.push([x + rr * Math.cos(a), y + rr * Math.sin(a) * 0.78]); } NP(p, col); };
+      const flagUS = (x0, y0, w, h) => { for (let j = 0; j < 13; j++) N(x0, x0 + w, y0 + j * h / 13, y0 + (j + 1) * h / 13 + 0.002, j % 2 ? '#ffffff' : '#b22234');
+        N(x0, x0 + w * 0.42, y0, y0 + h * 7 / 13, '#3c3b6e'); for (let j = 0; j < 20; j++) ND(x0 + w * (0.05 + (j % 5) * 0.08 + (Math.floor(j / 5) % 2) * 0.04), y0 + h * (0.06 + Math.floor(j / 5) * 0.12), 0.007, '#ffffff'); };
+      const ftxt = (txt, x, y, sz, col, font) => clipT(() => { c.font = (font || 'bold {s}px ' + SANS).replace('{s}', Math.round(sz * FT)); c.fillStyle = col; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, fx(x), fy(y)); c.textAlign = 'left'; });
+      const rnd = (t, a, R, col, LL, WW) => { c.fillStyle = col; c.beginPath(); c.ellipse(t * FW, y0 + fa(a) * BH, R * FW / LL, R / (Math.PI * WW) * FAK * BH, 0, 0, 7); c.fill(); };
+      const leaf = (x, y, s, col) => NP([[0, -1], [0.18, -0.66], [0.38, -0.75], [0.3, -0.25], [0.62, -0.5], [0.68, -0.36], [0.95, -0.42], [0.85, -0.12], [0.98, -0.06], [0.55, 0.32], [0.62, 0.5], [0.06, 0.42], [0.06, 0.9], [-0.06, 0.9], [-0.06, 0.42],
+        [-0.62, 0.5], [-0.55, 0.32], [-0.98, -0.06], [-0.85, -0.12], [-0.95, -0.42], [-0.68, -0.36], [-0.62, -0.5], [-0.3, -0.25], [-0.38, -0.75], [-0.18, -0.66]].map(p => [x + p[0] * s, y + p[1] * s * 0.8]), col);
+      const roo = [[-0.95, 0.6], [-0.4, 0.35], [-0.15, 0.0], [0.1, -0.3], [0.3, -0.45], [0.42, -0.75], [0.5, -0.78], [0.55, -0.6], [0.7, -0.55], [0.62, -0.45], [0.45, -0.35], [0.42, -0.1], [0.55, 0.0], [0.4, 0.05], [0.35, 0.3], [0.5, 0.6], [0.7, 0.7], [0.2, 0.7], [0.0, 0.55], [-0.3, 0.55]];
+      const vband = (cols, x0, x1, sk) => cols.forEach((col, j) => { const a = x0 + (x1 - x0) * j / cols.length, b = x0 + (x1 - x0) * (j + 1) / cols.length; NP([[a + sk, -0.05], [b + sk, -0.05], [b, 1.05], [a, 1.05]], col); });
       // base: off-white crown, grey-blue belly
       F(0, 1, 0, 1, '#eef0f2'); F(0, 1, 0.78, 1, '#b7bec8'); F(0, 1, 0.765, 0.78, '#d3d8de');
       N(-0.03, 1.03, -0.03, 1.03, '#eef0f2');
@@ -95,6 +110,72 @@ Z3MOD.aircraft = function (Z) {
         case 'RSD': { const bl = '#1c3f94', rd = '#d52b1e'; F(0, 1, 0.37, 0.47, bl); F(0, 1, 0.475, 0.495, rd); F(0, 1, 0.78, 1, '#d9dce0');
           N(0.12, 0.92, 0.2, 0.36, '#ffffff'); N(0.12, 0.92, 0.36, 0.52, bl); N(0.12, 0.92, 0.52, 0.68, rd); N(0.1, 0.94, 0.19, 0.2, '#c9cdd2'); N(0.1, 0.94, 0.68, 0.69, '#c9cdd2'); N(-0.03, 1.03, 0.9, 1.03, bl);
           word('RUSSIA', bl, 'bold {s}px ' + SANS, 10); eng = '#eef0f2'; wlt = bl; break; }
+        case 'USAF': { // VC-25 Air Force One: white crown, a dark blue cheatline under the windows sweeping up over the nose, sky-blue lower fuselage
+          const sky = '#8fbfe0', nv = '#1b2f63'; F(0, 1, 0.43, 1, sky); F(0.02, 0.985, 0.375, 0.43, nv); F(0.02, 0.985, 0.43, 0.442, '#c9a14a');
+          FP([[0, 0.2], [0.02, 0.12], [0.075, 0.06], [0.1, 0.2], [0.07, 0.375], [0.02, 0.375]], nv); F(0, 0.02, 0.2, 1, nv); rnd(0.115, 0.3, 0.75, '#c9a14a', 76, 3.3); rnd(0.115, 0.3, 0.62, '#1b2f63', 76, 3.3);
+          flagUS(0.22, 0.12, 0.74, 0.3); N(-0.03, 1.03, 0.86, 1.03, nv); word('UNITED STATES OF AMERICA', nv, 'bold {s}px "Big Caslon", "Hoefler Text", Georgia, serif', 2); eng = sky; wlt = nv; break; }
+        case 'USAF_C17': { const g = '#737b83'; F(0, 1, 0, 1, g); F(0, 1, 0.8, 1, '#6a7279'); N(-0.03, 1.03, -0.03, 1.03, g); flagUS(0.3, 0.16, 0.5, 0.17);
+          ftxt('AMC', 0.55, 0.5, 0.11, '#3d4349'); ftxt('AF 07 182', 0.52, 0.64, 0.07, '#3d4349'); word('U.S. AIR FORCE', '#3a4046', 'bold {s}px ' + SANS, 3); eng = g; wlt = g; wpat = '#9aa1a8'; wins = 3; break; }
+        case 'CCA': { const red = '#c8102e'; F(0, 1, 0.8, 1, '#dfe2e6'); N(-0.03, 1.03, -0.03, 1.03, '#f6f6f4');
+          clipT(() => { c.strokeStyle = red; c.lineCap = 'round'; c.lineWidth = 0.07 * FT; c.beginPath(); c.arc(fx(0.55), fy(0.5), 0.22 * FT, -2.6, 1.9); c.stroke();
+            c.lineWidth = 0.05 * FT; c.beginPath(); c.arc(fx(0.5), fy(0.47), 0.11 * FT, 0.3, 4.4); c.stroke(); c.beginPath(); c.moveTo(fx(0.34), fy(0.28)); c.quadraticCurveTo(fx(0.2), fy(0.12), fx(0.42), fy(0.1)); c.stroke();
+            c.lineWidth = 0.035 * FT; c.beginPath(); c.moveTo(fx(0.66), fy(0.72)); c.quadraticCurveTo(fx(0.85), fy(0.86), fx(0.95), fy(0.7)); c.stroke(); });
+          word('中国国际航空公司  AIR CHINA', '#222222', 'bold {s}px "Kaiti SC", STKaiti, "PingFang SC", "Hiragino Sans GB", serif', 1); eng = '#f6f6f4'; wlt = red; break; }
+        case 'JAF': { const red = '#c8102e'; F(0.02, 0.97, 0.39, 0.425, red); F(0.02, 0.97, 0.425, 0.435, '#c9a14a'); FP([[0.82, 0.39], [1, 0.12], [1, 0.2], [0.86, 0.425]], red);
+          N(-0.03, 1.03, -0.03, 1.03, '#ffffff'); NP([[-0.05, 1.05], [-0.05, 0.75], [1.05, 0.55], [1.05, 1.05]], red); N(0.3, 0.92, 0.12, 0.44, '#e3e5e8'); N(0.31, 0.91, 0.13, 0.43, '#ffffff'); ND(0.61, 0.28, 0.1, '#bc002d');
+          word('日本国  JAPAN', '#1a1a1a', 'bold {s}px "Hiragino Mincho ProN", "Yu Mincho", Georgia, serif', 4); eng = '#ffffff'; wlt = red; break; }
+        case 'GAF': { F(0, 1, 0.5, 1, '#a2aab2'); F(0.03, 0.97, 0.44, 0.46, '#111111'); F(0.03, 0.97, 0.46, 0.48, '#dd0000'); F(0.03, 0.97, 0.48, 0.5, '#ffce00');
+          N(-0.03, 1.03, -0.03, 1.03, '#ffffff'); N(-0.03, 1.03, 0.1, 0.22, '#111111'); N(-0.03, 1.03, 0.22, 0.34, '#dd0000'); N(-0.03, 1.03, 0.34, 0.46, '#ffce00');
+          NP([[0.5, 0.58], [0.58, 0.66], [0.66, 0.58], [0.6, 0.66], [0.66, 0.74], [0.58, 0.68], [0.5, 0.74], [0.56, 0.66]], '#111111');
+          word('BUNDESREPUBLIK DEUTSCHLAND', '#111111', 'bold {s}px ' + SANS, 2); eng = '#ffffff'; wlt = '#a2aab2'; break; }
+        case 'RRR': { F(0, 1, 0, 1, '#d6d9dc'); F(0, 1, 0.55, 1, '#b7bcc1'); N(-0.03, 1.03, -0.03, 1.03, '#d0d4d8');
+          for (const [R, col] of [[1.3, '#1f3a8a'], [0.85, '#ffffff'], [0.45, '#c8102e']]) rnd(0.66, 0.3, R, col, 63.7, 2.82);
+          vband(['#c8102e', '#ffffff', '#1f3a8a'], 0.42, 0.72, 0.25); word('ROYAL AIR FORCE', '#3a4a6a', 'bold {s}px ' + SANS, 3); eng = '#c6cacf'; wlt = '#c6cacf'; wpat = '#e3e6e9'; break; }
+        case 'CTM': { const bl = '#002395', rd = '#ed2939'; F(0.05, 0.97, 0.43, 0.445, bl); F(0.05, 0.97, 0.445, 0.455, '#ffffff'); F(0.05, 0.97, 0.455, 0.47, rd);
+          N(-0.03, 1.03, -0.03, 1.03, '#ffffff'); vband([bl, '#ffffff', rd], 0.08, 0.98, 0.3); word('RÉPUBLIQUE FRANÇAISE', bl, 'bold {s}px ' + SERIF, 3); eng = '#ffffff'; wlt = bl; break; }
+        case 'TCG': { const red = '#d0102a'; F(0.04, 0.97, 0.42, 0.45, red); N(-0.03, 1.03, -0.03, 1.03, red); ND(0.5, 0.45, 0.2, '#ffffff'); ND(0.56, 0.45, 0.16, red); star(0.74, 0.45, 0.085, '#ffffff');
+          word('TÜRKİYE CUMHURİYETİ', red, 'bold {s}px ' + SERIF, 2); eng = '#ffffff'; wlt = red; break; }
+        case 'ROK': { const lb = '#62aee0', nv = '#14306b'; F(0.02, 0.98, 0.38, 0.455, lb); F(0.02, 0.98, 0.455, 0.47, nv); F(0, 1, 0.8, 1, '#c9ced4');
+          N(-0.03, 1.03, -0.03, 1.03, '#ffffff'); NP([[-0.05, 1.05], [-0.05, 0.8], [1.05, 0.62], [1.05, 1.05]], lb); N(0.22, 0.98, 0.12, 0.5, '#e6e8eb'); N(0.23, 0.97, 0.13, 0.49, '#ffffff');
+          clipT(() => { const x = fx(0.6), y = fy(0.31), r = 0.1 * FT; c.fillStyle = '#cd2e3a'; c.beginPath(); c.arc(x, y, r, Math.PI, 0); c.fill(); c.fillStyle = '#0047a0'; c.beginPath(); c.arc(x, y, r, 0, Math.PI); c.fill();
+            c.fillStyle = '#cd2e3a'; c.beginPath(); c.arc(x - r / 2, y, r / 2, 0, Math.PI * 2); c.fill(); c.fillStyle = '#0047a0'; c.beginPath(); c.arc(x + r / 2, y, r / 2, 0, Math.PI * 2); c.fill();
+            c.fillStyle = '#111'; for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) for (let b = 0; b < 3; b++) c.fillRect(x + dx * 0.27 * FT - 0.04 * FT, y + dy * 0.12 * FT + (b - 1) * 0.022 * FT, 0.08 * FT, 0.014 * FT); });
+          word('대한민국  REPUBLIC OF KOREA', nv, 'bold {s}px "Apple SD Gothic Neo", "Malgun Gothic", ' + SANS, 2); eng = '#ffffff'; wlt = lb; break; }
+        case 'RCF': { const red = '#d52b1e'; F(0, 1, 0.8, 1, '#c9ced4'); N(-0.03, 1.03, -0.03, 1.03, '#ffffff'); leaf(0.56, 0.48, 0.3, red);
+          for (const [R, col] of [[1.1, '#1f3a8a'], [0.75, '#ffffff']]) rnd(0.66, 0.3, R, col, 58.8, 2.82); c.save(); c.translate(0.66 * FW, y0 + fa(0.3) * BH); c.scale(0.5 * FW / 58.8, 0.5 / (Math.PI * 2.82) * FAK * BH);
+          c.fillStyle = red; c.beginPath(); c.arc(0, 0, 0.6, 0, 7); c.fill(); c.restore(); word('ROYAL CANADIAN AIR FORCE', '#333a44', 'bold {s}px ' + SANS, 2); eng = '#ffffff'; wlt = red; break; }
+        case 'RAA': { const g = '#a7adb3'; F(0, 1, 0, 1, g); F(0, 1, 0.6, 1, '#979ea5'); N(-0.03, 1.03, -0.03, 1.03, g);
+          for (const [R, col] of [[1.2, '#1f3a8a'], [0.85, '#ffffff']]) rnd(0.66, 0.3, R, col, 58.8, 2.82);
+          c.save(); c.translate(0.66 * FW, y0 + fa(0.3) * BH); c.scale(0.75 * FW / 58.8, 0.75 / (Math.PI * 2.82) * FAK * BH); c.fillStyle = '#c8102e'; c.beginPath(); roo.forEach((p, j) => (j ? c.lineTo : c.moveTo).call(c, p[0], p[1])); c.closePath(); c.fill(); c.restore();
+          NP(roo.map(p => [0.56 + p[0] * 0.22, 0.42 + p[1] * 0.22]), '#c8102e'); word('ROYAL AUSTRALIAN AIR FORCE', '#2b3a55', 'bold {s}px ' + SANS, 2); eng = g; wlt = g; wpat = '#c9ced2'; break; }
+        case 'MH': { const red = '#d71920', bl = '#1e4ea1'; F(0.5, 0.97, 0.66, 0.7, red); F(0.5, 0.97, 0.7, 0.74, bl); FP([[0.55, 0.74], [0.97, 0.5], [1, 0.5], [1, 0.74]], bl);
+          N(-0.03, 1.03, -0.03, 1.03, '#ffffff'); NP([[0.25, 0.42], [0.55, 0.12], [0.9, 0.2], [0.62, 0.3], [0.5, 0.48]], red); NP([[0.25, 0.5], [0.52, 0.56], [0.68, 0.84], [0.45, 0.72], [0.3, 0.62]], bl);
+          NP([[0.5, 0.48], [0.62, 0.3], [0.78, 0.5], [0.62, 0.56]], red); NP([[0.52, 0.56], [0.62, 0.56], [0.78, 0.5], [0.68, 0.84]], bl);
+          word('malaysia', bl, 'bold {s}px ' + SANS, 2); eng = '#ffffff'; wlt = bl; break; }
+        case 'GA': { const nv = '#00577a'; F(0, 1, 0.8, 1, '#d6dade'); FP([[0.84, 0.0], [1, 0], [1, 0.45], [0.9, 0.22]], '#1d3c6e');
+          clipT(() => { const g = c.createLinearGradient(fx(0), fy(1), fx(1), fy(0)); g.addColorStop(0, '#0b2c5a'); g.addColorStop(1, '#19a5b5'); c.fillStyle = g; c.fillRect(tx0, ty0, FT, FT);
+            c.strokeStyle = '#ffffff'; c.lineCap = 'round'; for (let j = 0; j < 5; j++) { c.lineWidth = (0.035 - j * 0.004) * FT; c.beginPath(); c.moveTo(fx(0.3 + j * 0.05), fy(0.78 - j * 0.04)); c.quadraticCurveTo(fx(0.42 + j * 0.06), fy(0.35 - j * 0.03), fx(0.82 + j * 0.03), fy(0.18 + j * 0.06)); c.stroke(); } });
+          word('Garuda Indonesia', '#1d3c6e', 'bold {s}px ' + SANS, 1); eng = '#ffffff'; wlt = nv; break; }
+        case 'IAM': { const gn = '#009246', rd = '#ce2b37'; F(0.03, 0.97, 0.42, 0.44, gn); F(0.03, 0.97, 0.44, 0.455, '#ffffff'); F(0.03, 0.97, 0.455, 0.475, rd);
+          N(-0.03, 1.03, -0.03, 1.03, '#ffffff'); vband([gn, '#ffffff', rd], 0.12, 0.96, 0.3); word('REPUBBLICA ITALIANA', '#1c2f5e', 'bold {s}px ' + SERIF, 3); eng = '#ffffff'; wlt = gn; break; }
+        case 'BRS': { const gn = '#009c3b', ye = '#ffdf00'; F(0.03, 0.97, 0.4, 0.44, gn); F(0.03, 0.97, 0.44, 0.465, ye); F(0, 1, 0.8, 1, '#d6dade');
+          N(-0.03, 1.03, -0.03, 1.03, '#ffffff'); N(0.2, 0.98, 0.14, 0.5, gn); NP([[0.25, 0.32], [0.59, 0.17], [0.93, 0.32], [0.59, 0.47]], ye); ND(0.59, 0.32, 0.075, '#002776');
+          word('FORÇA AÉREA BRASILEIRA', gn, 'bold {s}px ' + SANS, 2); eng = '#ffffff'; wlt = gn; break; }
+        case 'EUR': { const bl = '#003399'; F(0.03, 0.97, 0.43, 0.46, bl); N(-0.03, 1.03, -0.03, 1.03, bl); for (let j = 0; j < 12; j++) { const a = j / 12 * Math.PI * 2; star(0.58 + 0.24 * Math.cos(a), 0.45 + 0.24 * Math.sin(a), 0.04, '#ffcc00'); }
+          word('EUROPEAN UNION', bl, 'bold {s}px ' + SANS, 4); eng = '#ffffff'; wlt = bl; break; }
+        case 'GOV': { const gb = '#5a6e86'; F(0, 1, 0.55, 1, '#aab1b8'); F(0.03, 0.97, 0.43, 0.48, gb); N(-0.03, 1.03, -0.03, 1.03, gb); NP([[-0.05, 0.62], [1.05, 0.38], [1.05, 0.44], [-0.05, 0.68]], '#ffffff');
+          word('', gb, 'bold {s}px ' + SANS); eng = '#ffffff'; wlt = gb; break; }
+        case 'AM': { const nv = '#0b2343', sl = '#b9c2cc'; F(0, 1, 0.47, 1, nv); FP([[0.62, 0.47], [0.8, 0.2], [1, 0], [1, 0.47]], nv); F(0.02, 0.97, 0.46, 0.47, sl); N(-0.03, 1.03, -0.03, 1.03, nv);
+          NP([[0.3, 0.75], [0.36, 0.45], [0.5, 0.3], [0.66, 0.28], [0.8, 0.38], [0.92, 0.5], [0.78, 0.5], [0.7, 0.56], [0.62, 0.66], [0.55, 0.8]], sl);
+          for (let j = 0; j < 6; j++) NP([[0.36 + j * 0.035, 0.45 - j * 0.02], [0.3 + j * 0.03, 0.12 + j * 0.01], [0.4 + j * 0.035, 0.42 - j * 0.02]], sl); ND(0.62, 0.4, 0.025, nv);
+          word('AEROMEXICO', nv, 'bold {s}px ' + SANS, 4); eng = nv; wlt = nv; break; }
+        case 'OCA': { const or = '#ff8c1a'; F(0, 1, 0.44, 1, or); FP([[0.6, 0.44], [0.85, 0.15], [1, 0.05], [1, 0.44]], or); F(0.02, 0.97, 0.43, 0.44, '#e06a00');
+          N(-0.03, 1.03, -0.03, 1.03, or); ND(0.58, 0.46, 0.25, '#ffffff'); ND(0.58, 0.48, 0.18, '#f77f00'); ND(0.54, 0.44, 0.06, '#ffb04d');
+          NP([[0.58, 0.31], [0.66, 0.22], [0.76, 0.24], [0.68, 0.3]], '#2e7d32'); N(0.575, 0.59, 0.27, 0.32, '#5d4037'); word('ORANGE CITY CARGO', '#e06a00', 'bold {s}px ' + SANS, 3); eng = or; wlt = or; wins = 0; break; }
+        case 'SPC': { const ol = '#5b6b2e'; F(0, 1, 0.44, 1, ol); FP([[0.62, 0.44], [0.84, 0.18], [1, 0.06], [1, 0.44]], ol); F(0.02, 0.97, 0.43, 0.44, '#c9b458');
+          N(-0.03, 1.03, -0.03, 1.03, ol); NP([[-0.05, 0.9], [0.2, 0.55], [0.32, 0.66], [0.52, 0.32], [0.66, 0.5], [0.78, 0.4], [1.05, 0.78], [1.05, 1.05], [-0.05, 1.05]], '#8a9a52');
+          NP([[0.44, 0.44], [0.52, 0.32], [0.6, 0.42], [0.55, 0.4], [0.5, 0.45]], '#ffffff'); NP([[0.1, 1.05], [0.38, 0.72], [0.56, 0.86], [0.75, 0.64], [1.05, 0.95], [1.05, 1.05]], '#3d4a1c');
+          word('SATPURA CARGO', ol, 'bold {s}px ' + SANS, 3); eng = ol; wlt = ol; wins = 0; break; }
         default: { const col = (Z.AL[k] && Z.AL[k].tail) || '#777'; N(-0.03, 1.03, -0.03, 1.03, col); titles(0.16, 0.18, col, 7); eng = col; wlt = col; }
       }
       // fin: rudder hinge, a faint shadow under the tip cap and a lit leading edge
@@ -106,7 +187,7 @@ Z3MOD.aircraft = function (Z) {
       for (const a of [0.12, 0.3, 0.56]) c.fillRect(0.06 * FW, y0 + fa(a) * BH, 0.88 * FW, 1);
       // patches
       const P = (x, col) => { c.fillStyle = col; c.fillRect(x, y0, 20, BH); };
-      P(3994, '#ffffff'); P(4014, eng); P(4034, wlt); P(4054, '#0e1318'); P(4074, '#8d949c');
+      P(3994, wpat); P(4014, eng); P(4034, wlt); P(4054, '#0e1318'); P(4074, '#8d949c');
       // titles row: the crown colour at title height with the airline's wordmark (a strip on each side of the fuselage samples it)
       // and the registration near the tail
       { const ty = Math.round(y0 + TV0 * BH), th = Math.round((TV1 - TV0) * BH); c.drawImage(atlas, 0, Math.round(y0 + fa(0.22) * BH), FW, 1, 0, ty, FW, th);
@@ -123,11 +204,13 @@ Z3MOD.aircraft = function (Z) {
       c.drawImage(atlas, 0, Math.round(y0 + fa(0.33) * BH), FW, 1, 0, wy, FW, wh);
       c.fillStyle = '#121a24';
       if (k === 'CHW') for (let j = 0; j < 10; j++) { c.beginPath(); c.ellipse((0.225 + j * 0.037) * FW, wy + wh / 2, 0.0115 * FW, wh / 2 - 0.6, 0, 0, 7); c.fill(); }   // the G650's big ovals
-      else for (let x = 4; x < FW; x += 30) { c.beginPath(); if (c.roundRect) c.roundRect(x, wy + 1, 12, wh - 2, 4); else c.rect(x, wy + 1, 12, wh - 2); c.fill(); }
+      else if (wins === 3) for (const t of [0.13, 0.155, 0.185]) { c.beginPath(); c.ellipse(t * FW, wy + wh / 2, 7, wh / 2 - 1.5, 0, 0, 7); c.fill(); }
+      else if (wins) for (let x = 4; x < FW; x += 30) { c.beginPath(); if (c.roundRect) c.roundRect(x, wy + 1, 12, wh - 2, 4); else c.rect(x, wy + 1, 12, wh - 2); c.fill(); }
     }
   }
   const mkTex = cv => { const t = new THREE.CanvasTexture(cv); t.flipY = false; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = Math.min(8, Z.renderer.capabilities.getMaxAnisotropy()); t.generateMipmaps = true; t.minFilter = THREE.LinearMipmapLinearFilter; return t; };
   const texA = mkTex(atlas);
+  const C17L = {}; for (const kk of ALK) if (AIDX[kk + '_C17'] != null) C17L[kk] = AIDX[kk + '_C17'];   // C-17s wear their air force's grey band
 
   /* ---------------- geometry builder ---------------- */
   const Geo = () => ({ p: [], n: [], c: [], uv: [], m: [], o: [0, 0, 0], M: MAT.paint, G: 0 });
@@ -848,7 +931,7 @@ Z3MOD.aircraft = function (Z) {
         _v1.set(P.pv * sx * k, 0, 0); _v2.copy(_v1).applyQuaternion(_q); _v1.applyQuaternion(_qy);
         _p.set(f.x + _v1.x - _v2.x, alt + _v1.y - _v2.y, f.y + _v1.z - _v2.z); _s.set(sx * k, sy * k, sz * k);
         _m.compose(_p, _q, _s);
-        const ddx = f.x - cp.x, ddy = alt - cp.y, ddz = f.y - cp.z, near = ddx * ddx + ddy * ddy + ddz * ddz < nearR2, li = AIDX[f.al] || 0;
+        const ddx = f.x - cp.x, ddy = alt - cp.y, ddz = f.y - cp.z, near = ddx * ddx + ddy * ddy + ddz * ddz < nearR2, li = fam === 'C17' && C17L[f.al] != null ? C17L[f.al] : (AIDX[f.al] || 0);
         if (near) { const idx = hiN[fam]++; M.hi.setMatrixAt(idx, _m); M.livH.array[idx] = li; M.gearA.array[idx] = st.gear > 0.01 ? sstep(clamp(st.gear, 0, 1)) : 0; }
         else { const idx = loN[fam]++; M.lo.setMatrixAt(idx, _m); M.livL.array[idx] = li; }
         const run = !OFF[s];

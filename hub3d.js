@@ -447,7 +447,9 @@ function viewOff(c){const g=cam.region;
 const FRM={seen:new WeakSet(),userT:-1e9,cam:null,v:null};
 function frameSpots(o,P){
   const A=o.kind==='fireworks'?280:o.kind==='flypast'?200:o.kind==='ghosts'?150:(+o.alt||0);
-  if(o.pts)for(const p of o.pts)P.push([p[0],p[1],A]);
+  // the ghosts jump in from their point back towards the field (fx4), the kites fill a cloud o.sp across (fx2)
+  if(o.pts)for(const p of o.pts){P.push([p[0],p[1],A]);if(o.kind==='ghosts')P.push([p[0]-1400,p[1],A]);}
+  else if(o.sp&&o.x!=null)P.push([o.x-o.sp*0.5,o.y,A],[o.x+o.sp*0.5,o.y,A]);
   else if(o.path&&o.path.length){const a=o.path[0],b=o.path[o.path.length-1];P.push([a[0],a[1],A],[b[0],b[1],A]);}
   else if(o.x0!=null&&o.x1!=null)P.push([o.x0,o.y0,0],[o.x1,o.y1,0]);
   else if(o.cx!=null)P.push([o.cx,o.cy,A]);
@@ -465,6 +467,8 @@ function frameTick(){
   const THREE=Z.THREE,c=FRM.cam||(FRM.cam=new THREE.PerspectiveCamera()),v=FRM.v||(FRM.v=new THREE.Vector3()),g=cam.region,t=C3.t,d0=t.dist;
   // where a set piece should land: clear of the edges, and below the character pop-ups and banners along the top
   const w=g.R-g.L,h=g.B-g.Tp,IN=[g.L+w*0.12,g.R-w*0.12,g.Tp+h*0.2,g.B-h*0.12],OUT=[g.L+8,g.R-8,g.Tp+8,g.B-8];
+  // and above the coach card while it is up (it sits in the bottom right of the view)
+  {const el=$('#toast');if(el&&!el.hidden){const r=el.getBoundingClientRect(),a=cv.getBoundingClientRect();if(r.height)IN[3]=Math.max(IN[2]+40,Math.min(IN[3],r.top-a.top-16));}}
   const box=(Q,b)=>{b[0]=b[2]=1e9;b[1]=b[3]=-1e9;for(const p of Q){v.set(p[0],p[2],p[1]).project(c);if(v.z>1)continue;const X=(v.x+1)/2*VW,Y=(1-v.y)/2*VH;
     b[0]=Math.min(b[0],X);b[1]=Math.max(b[1],X);b[2]=Math.min(b[2],Y);b[3]=Math.max(b[3],Y);}return b[0]<=b[1];};
   // the shift (px) on one axis that puts span [a0,a1] inside [lo,hi], or the range of shifts that do

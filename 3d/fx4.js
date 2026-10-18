@@ -582,12 +582,12 @@ vec3 fxCol(vec3 P,float reg,float t){
       fragmentShader: `uniform float uTime,uPR;varying vec3 vN,vV,vL;varying float vA,vC;
         void main(){
           vec3 n=normalize(vN),v=normalize(vV);float f=1.-abs(dot(n,v));float rim=f*f;
-          float scan=fract(gl_FragCoord.y/(4.*uPR)-uTime*1.6)<0.5?1.:0.22;
+          float scan=fract(gl_FragCoord.y/(4.*uPR)-uTime*1.6)<0.5?1.:0.12;
           float bar=exp(-pow((fract(-vL.x*0.022+uTime*0.6)-0.5)*9.,2.));
           float lx=smoothstep(0.42,0.5,abs(fract(vL.x/3.)-0.5)),lz=smoothstep(0.44,0.5,abs(fract(vL.z/3.)-0.5));
-          vec3 col=vC<0.5?vec3(0.04,0.86,1.0):vec3(1.0,0.1,0.62);
-          float e=min(0.95,(0.4+0.9*rim+0.3*max(lx,lz)+0.6*bar)*scan)*vA;
-          float cov=clamp((0.48+0.4*rim+0.25*bar)*scan*vA,0.,0.9)*(vC<0.5?1.:0.5);
+          vec3 col=vC<0.5?vec3(0.0,0.7,1.0):vec3(1.0,0.08,0.6);
+          float e=min(0.92,(0.5+0.8*rim+0.3*max(lx,lz)+0.6*bar)*scan)*vA;
+          float cov=clamp((0.72+0.3*rim+0.2*bar)*scan*vA,0.,0.94)*(vC<0.5?1.:0.5);
           gl_FragColor=vec4(col*e,cov);
         }` });
     const mesh = new THREE.InstancedMesh(g, mat, N); mesh.frustumCulled = false; mesh.count = 0; mesh.visible = false; mesh.renderOrder = 31; mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); root.add(mesh);
@@ -610,7 +610,7 @@ vec3 fxCol(vec3 P,float reg,float t){
           const bp = 1.1 + 0.8 * hash(e + 11, pi), bq = (now + 7 * hash(e, pi + 5)) / bp;
           if (bq - Math.floor(bq) < 0.3 / bp) { const fl = hash(e * 5 + pi, Math.floor(now * 7)); if (fl < 0.4) a *= 0.25; else if (fl > 0.75) a *= 1.35; }
           const smear = 1 - smooth(0, 0.14, jf), sd = hash(e * 13 + pi * 7, cyc) * 10;
-          _e.set((hash(e, cyc + j) - 0.5) * 0.14, Math.PI + (hash(e + 3, cyc + j) - 0.5) * 0.16, -0.05, 'YXZ'); _q.setFromEuler(_e); _s.setScalar(k * 1.2);
+          _e.set((hash(e, cyc + j) - 0.5) * 0.14, Math.PI + (hash(e + 3, cyc + j) - 0.5) * 0.16, -0.05, 'YXZ'); _q.setFromEuler(_e); _s.setScalar(k * 1.4);
           _v.set(x, alt, y); _m.compose(_v, _q, _s); GH.mesh.setMatrixAt(n, _m); arr[n * 4] = 0; arr[n * 4 + 1] = a; arr[n * 4 + 2] = sd; arr[n * 4 + 3] = smear; n++;
           // an afterimage left behind at the previous jump, fading out as the ghost settles
           if (j > 0 && jf < 0.5) {

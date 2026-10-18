@@ -822,7 +822,7 @@ STORY.ribbon={len:2000,start(c){const r=rwBy('dep')[0];if(!r)return false;c.r=r;
   c.blk={from:T,to:T+1e6,open:true,why:'Inauguration ribbon',desk:'Ribbon across it, until it is cut'};r.blocks.push(c.blk);r.blocks.sort((a,b)=>a.from-b.from);
   const hx=r.holds.length?G.get(r.holds[0]).x:r.x1-300;c.mark={x:hx,y:r.y,e:'🎀',until:T+1e6,px:30,k:'ribbon'};MARKS.push(c.mark);
   c.fx={kind:'ribbon',id:'ribbon',x:hx,y:r.y,w:75,t0:T,t1:T+1e6,cutAt:null};FXV.push(c.fx);
-  c.stage={kind:'stage',id:'stage1',x:hx-480,y:r.y,a:0,t0:T,t1:T+1e6,speaker:null};FXV.push(c.stage);MARKS.push(c.smark={x:hx-480,y:r.y,e:'🎤',until:T+1e6,px:26,k:'stage'});
+  c.stage={kind:'stage',id:'stage1',x:hx-720,y:r.y,a:0,t0:T,t1:T+1e6,speaker:null};FXV.push(c.stage);MARKS.push(c.smark={x:hx-720,y:r.y,e:'🎤',until:T+1e6,px:26,k:'stage'});
   c.wait=T+240+Math.floor(SIMR()*240);
   guard(['Sir, no departures yet. The Chief Minister will cut the ribbon.','He is five minutes away. 🙏'],WHO.protocol);
   c.lines.push([0,'PROTOCOL',`A stage and a ceremonial ribbon are on ${r.short}. No departures until the Chief Minister cuts it. He is five minutes away.`]);

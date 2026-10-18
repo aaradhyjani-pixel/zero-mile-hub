@@ -559,8 +559,8 @@ function guardShow(text,who){const g=$('#guard'),t=$('#guardTxt');if(!g)return;i
 // speaks, and his popup follows his voice line by line.
 function guard(lines,who,o){const g=$('#guard');if(!g)return;clearTimeout(guard.t1);clearTimeout(guard.t2);o=o||{};
   if(!who&&speak(lines,{onLine:i=>{clearTimeout(guard.t2);guardShow(lines[i]);if(o.onLine)o.onLine(i);},onDone:()=>{guard.t2=setTimeout(()=>g.classList.remove('on'),1400);if(o.onDone)o.onDone();}}))return;
-  guardShow(lines[0],who);if(o.onLine)o.onLine(0);
-  if(lines[1])guard.t1=setTimeout(()=>{$('#guardTxt').textContent=lines[1];},2600);guard.t2=setTimeout(()=>{g.classList.remove('on');if(o.onDone)o.onDone();},(lines[1]?6200:4200)+(o.extra||0));}
+  guardShow(lines[0],who);if(o.onLine)o.onLine(0);let i=0;const step=()=>{i++;if(i<lines.length){$('#guardTxt').textContent=lines[i];if(o.onLine)o.onLine(i);guard.t1=setTimeout(step,2600);}};
+  if(lines.length>1)guard.t1=setTimeout(step,2600);guard.t2=setTimeout(()=>{g.classList.remove('on');if(o.onDone)o.onDone();},2600*(lines.length-1)+3600+(o.extra||0));}
 // the voice: pre-recorded earpiece clips (voice/spg_audio.js) one after another with pauses; a line without a clip falls back
 // to the browser's speech at a natural pitch, with the best Indian English voice the device has
 /*@@VOICE@@*/
@@ -575,10 +575,10 @@ function vqNext(){if(vqOn)return;const it=VQ.shift();if(!it)return;vqOn=true;let
 function speak(lines,o){o=o||{};if(!SND.on)return false;lines.forEach((t,i)=>{const last=i===lines.length-1;VQ.push({text:t,gap:last?750:450,onStart:o.onLine?()=>o.onLine(i):null,onEnd:last?o.onDone:null});});vqNext();return true;}
 function voiceReset(){VQ.length=0;if(vqCur){try{vqCur.pause();}catch(e){}}vqCur=null;vqOn=false;if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}}
 // after a summit the SPG hands the runways back one by one, then signs off
-function spgReturn(){guard(['Your runways shall now be returned.','One at a time. In the order we choose.']);}
-function spgOpen(r){guard([`Runway ${r.short}.`,'You shall now be allowed to open.']);}
-function spgFinale(){guard(['Thank you for serving the nation.','We are happy that we were able to serve the nation of India, with your support. Jai Hind.'],null,
-  {extra:3000,onLine:i=>{if(i===0)vipBanner(true,'SECURITY · SPG','Thank you for serving the nation','Jai Hind 🇮🇳',FLAG_IN);},onDone:()=>setTimeout(()=>{if(!CINE)vipBanner(false);},1800)});}
+function spgReturn(order){const n=order.length;guard(['Your runways shall now be cleared, in a staged manner.'].concat(order.map((r,i)=>i===0?`Runway ${r.short} shall be cleared first.`:i===n-1?`And finally, runway ${r.short}.`:`Then runway ${r.short}.`)));}
+function spgOpen(r){}
+function spgFinale(){setTimeout(()=>guard(['Thank you, sir, for this.','And thank you for serving the nation.','Jai Hind.'],null,
+  {extra:2500,onLine:i=>{if(i===0)vipBanner(true,'SECURITY · SPG','Thank you for serving the nation','Jai Hind 🇮🇳',FLAG_IN);},onDone:()=>setTimeout(()=>{if(!CINE)vipBanner(false);},1800)}),2500);}
 function vipBanner(on,k,title,meme,icons){const b=$('#vipBanner');if(!on){b.classList.remove('on');return;}const g=$('#guard');if(g&&icons==null)g.classList.remove('on');b.innerHTML=`<div class="flags">${icons==null?FLAG_IN+FLAG_RU:icons}</div><div class="k">${k}</div><h3>${title}</h3><div class="meme">${meme}</div>`;b.classList.add('on');}
 function startSummit(){
   S.summitAt=T;const open=RW.filter(r=>!r.locked&&r.mode!=='OFF');if(open.length<2)return false;
@@ -617,7 +617,7 @@ function summitTick(){
   for(const f of SUM.vips){if(f.state==='sched'&&T>=f.vipTd-D_APP-10){const r=f.vipRw;f.x=r.x1+14000;f.y=r.y+(r.y<0?-2600:2600);f.alt=2000;f.heading=Math.PI;f.state='inbound';beginApproach(f,r,f.vipTd);}
     if(f.state==='approach'&&!f.cineAsked&&T>=f.vipTd-95){f.cineAsked=true;vipCinema(f);}}
   const c=SUM.cine;if(c){if(!V3.on)centerOn(c.f.x,c.f.y);if(c.f.landT!=null&&!c.landed){c.landed=now;}if(c.landed&&now-c.landed>(SUM.queue&&SUM.queue.length?2200:4500))vipCinemaEnd();}
-  if(t>=600&&!SUM.guardBack){SUM.guardBack=true;spgReturn();}
+  if(t>=600&&!SUM.guardBack){SUM.guardBack=true;spgReturn(SUM.order);}
   SUM.order.forEach((r,i)=>{const at=SUM.reopen0+60*i;SUM.open=SUM.open||new Set();if(!SUM.open.has(i)&&T>=at){SUM.open.add(i);const left=SUM.order.length-SUM.open.size;
     radio('TWR',`Runway ${r.short} back in service${left?`, ${left} to go`:'. The leaders have seen a tiger and two orange trees; your holding stack is the third most talked-about thing in Nagpur today'}.`);spgOpen(r);if(!left)spgFinale();}});
   if(T>SUM.reopen0+60*SUM.order.length+5&&!SUM.cine)SUM=null;
@@ -999,7 +999,7 @@ STORY.delhisummit={len:2600,start(c){const open=RW.filter(r=>!r.locked);if(open.
     [900,'SPG','Japan has brought two aircraft. In case.'],
     [1050,'FSO','The VIP apron has run out of red carpet. Ops is borrowing the carpet from the lounge.'],
     [1260,cc=>{guard(['Your holding stack is now the second-largest gathering in Nagpur today.','Very impressive, sir.']);}],
-    [D0+DUR-20,cc=>{spgReturn();radio('SPG','Runways returning one at a time. We pick the order.');}]];
+    [D0+DUR-20,cc=>{spgReturn(cc.spg);radio('SPG','Runways returning one at a time. We pick the order.');}]];
   guard(['Sir. Delhi has brought its summit. We have taken over your runways.','Thank you for giving us your runways. Thank you for your support.']);
   flashBanner(['THE DELHI SUMMIT','Delhi moved in, and brought its summit: 20 delegations, 40 aircraft','No Bharat 1 today: the Prime Minister is already on the red carpet 🙏',FLAG_IN+icos('🌍')],6500);
   const I=storyCard(c,{icon:{g:'V',c:'#ff9933'},x:spg[0].x1+1500,y:spg[0].y,title:'Who lands first? The big three disagree',

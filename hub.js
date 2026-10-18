@@ -549,25 +549,23 @@ function incSpawner(dt){for(const s of LV.script)if(!s.done&&T>=s[0]){if(spawnIn
 let SUM=null;
 const FLAG_IN='<svg viewBox="0 0 90 60" class="flag"><rect width="90" height="20" fill="#FF9933"/><rect y="20" width="90" height="20" fill="#fff"/><rect y="40" width="90" height="20" fill="#138808"/><circle cx="45" cy="30" r="8.4" fill="none" stroke="#000080" stroke-width="1.4"/>'+Array.from({length:24},(_,k)=>{const a=k*Math.PI/12;return `<line x1="45" y1="30" x2="${(45+8.2*Math.cos(a)).toFixed(2)}" y2="${(30+8.2*Math.sin(a)).toFixed(2)}" stroke="#000080" stroke-width=".6"/>`;}).join('')+'<circle cx="45" cy="30" r="1.6" fill="#000080"/></svg>';
 const FLAG_RU='<svg viewBox="0 0 90 60" class="flag"><rect width="90" height="20" fill="#fff"/><rect y="20" width="90" height="20" fill="#0039A6"/><rect y="40" width="90" height="20" fill="#D52B1E"/></svg>';
-// the banner is a compact card in the left margin, in the gap between the north (27) and south (28) runways and west of
-// their thresholds as the strategic view frames them (runway ends sit at about 50vw - 22vh), so it never hides a runway
-(function(){const st=document.createElement('style');st.textContent=`#vipBanner{position:absolute;box-sizing:border-box;left:max(14px,env(safe-area-inset-left,0px));top:calc(34vh + 24px);width:max-content;min-width:220px;max-width:max(260px,min(520px,calc(50vw - 22.5vh - 30px)));transform:translateX(-24px);z-index:12;opacity:0;pointer-events:none;transition:opacity .45s,transform .45s;
-  display:grid;grid-template-columns:auto 1fr;column-gap:10px;align-items:center;background:linear-gradient(180deg,rgba(10,13,16,.95),rgba(10,13,16,.9));border:1px solid #f4c430;border-left-width:3px;border-radius:6px;padding:7px 12px 8px 10px;text-align:left;box-shadow:0 12px 32px rgba(0,0,0,.55)}
-#vipBanner.on{opacity:1;transform:none}#vipBanner .flags{grid-row:1/span 3;display:flex;gap:5px;align-items:center}#vipBanner .flags:empty{display:none}#vipBanner:has(.flags:empty){grid-template-columns:1fr}
-#vipBanner .k,#vipBanner h3,#vipBanner .meme{grid-column:-2}
-#vipBanner .flag{width:34px;height:23px;border-radius:2px;box-shadow:0 2px 6px rgba(0,0,0,.5);animation:wave 1.6s ease-in-out infinite;transform-origin:left center}
+// the banner is one compact line in the left margin, west of the runway thresholds as the strategic view frames them (runway
+// ends sit at about 50vw - 22vh), so it never hides a runway; the kicker rides on its top edge, the meme gives way first
+(function(){const st=document.createElement('style');st.textContent=`#vipBanner{position:absolute;box-sizing:border-box;left:max(14px,env(safe-area-inset-left,0px));top:250px;max-width:max(260px,min(500px,calc(50vw - 22.5vh - 30px)));transform:translateX(-24px);z-index:12;opacity:0;pointer-events:none;transition:opacity .45s,transform .45s;
+  display:flex;align-items:center;gap:9px;white-space:nowrap;background:linear-gradient(180deg,rgba(10,13,16,.95),rgba(10,13,16,.9));border:1px solid #f4c430;border-left-width:3px;border-radius:6px;padding:8px 12px 6px 9px;box-shadow:0 10px 26px rgba(0,0,0,.5)}
+#vipBanner.on{opacity:1;transform:none}#vipBanner .flags{flex:none;display:flex;gap:4px;align-items:center}#vipBanner .flags:empty{display:none}
+#vipBanner .flag{width:30px;height:20px;border-radius:2px;box-shadow:0 2px 6px rgba(0,0,0,.5);animation:wave 1.6s ease-in-out infinite;transform-origin:left center}
 #vipBanner .flag:nth-child(2){animation-delay:.4s}@keyframes wave{0%,100%{transform:perspective(200px) rotateY(0) skewY(0)}50%{transform:perspective(200px) rotateY(-14deg) skewY(2deg)}}
-#vipBanner .k{font-family:var(--f-sign);font-weight:700;letter-spacing:.1em;font-size:11px;line-height:1.25;color:#f4c430}#vipBanner h3{margin:1px 0 2px;font-family:var(--f-sign);font-weight:700;font-size:21px;line-height:1.1;letter-spacing:.01em;color:#fff;text-wrap:balance}
-#vipBanner .meme{font-family:var(--f-sign);font-weight:600;font-size:15px;line-height:1.2;color:#ffd27a;transform-origin:left center;animation:pulse 1.2s ease-in-out infinite}#vipBanner .meme:empty{display:none}@keyframes pulse{50%{transform:scale(1.04)}}
-#vipBanner .ico{font-size:24px;line-height:28px;display:inline-block;animation:wave 1.6s ease-in-out infinite}#vipBanner .ico:nth-child(2){animation-delay:.4s}#vipBanner .ico:nth-child(3){animation-delay:.8s}
+#vipBanner .k{position:absolute;left:10px;top:-8px;padding:0 5px;background:#0a0d10;border-radius:3px;font-family:var(--f-sign);font-weight:700;letter-spacing:.1em;font-size:10px;line-height:14px;color:#f4c430}
+#vipBanner h3{margin:0;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-family:var(--f-sign);font-weight:700;font-size:17px;line-height:1.2;letter-spacing:0;color:#fff}
+#vipBanner .meme{flex:0 100 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-family:var(--f-sign);font-weight:600;font-size:14px;line-height:1.2;color:#ffd27a;transform-origin:left center;animation:pulse 1.2s ease-in-out infinite}#vipBanner .meme:empty{display:none}@keyframes pulse{50%{transform:scale(1.04)}}
+#vipBanner .ico{font-size:20px;line-height:22px;display:inline-block;animation:wave 1.6s ease-in-out infinite}#vipBanner .ico:nth-child(2){animation-delay:.4s}#vipBanner .ico:nth-child(3){animation-delay:.8s}
 @media (prefers-reduced-motion:reduce){#vipBanner .flag,#vipBanner .meme,#vipBanner .ico{animation:none}}`;document.head.appendChild(st);
-  const b=document.createElement('div');b.id='vipBanner';b.setAttribute('aria-live','polite');$('#app').appendChild(b);
-  // the speaker's popup stacks under the banner: its height (it wraps on narrow screens) is kept in --banH for #guard
-  if(window.ResizeObserver)new ResizeObserver(()=>{if(b.offsetHeight)$('#app').style.setProperty('--banH',b.offsetHeight+'px');}).observe(b);})();
-// the bodyguard: dark suit, sunglasses, earpiece; slides in from the left margin and says his piece. He stands where the
-// banner does (or just under it, when it is up), clear of the runways and of whatever a cinematic is showing mid-screen
-(function(){const st=document.createElement('style');st.textContent=`#guard{position:absolute;left:max(14px,env(safe-area-inset-left,0px));top:calc(34vh + 24px);z-index:13;display:flex;align-items:flex-start;gap:4px;pointer-events:none;transform:translateX(-130%);opacity:0;transition:transform .55s cubic-bezier(.2,.9,.25,1.15),opacity .3s,top .4s .35s}
-#guard.on{transform:translateX(0);opacity:1}#vipBanner.on~#guard{top:calc(34vh + 34px + var(--banH,116px));transition:transform .55s cubic-bezier(.2,.9,.25,1.15),opacity .3s,top .4s}#guard svg{order:-1;flex:none;width:92px;height:119px;filter:drop-shadow(0 8px 14px rgba(0,0,0,.6));animation:gbob 2.4s ease-in-out infinite}
+  const b=document.createElement('div');b.id='vipBanner';b.setAttribute('aria-live','polite');$('#app').appendChild(b);})();
+// the bodyguard: dark suit, sunglasses, earpiece; slides in from the left margin and says his piece. He stands in the banner's
+// corner (just under it, when it is up), clear of the runways and of whatever a cinematic is showing mid-screen
+(function(){const st=document.createElement('style');st.textContent=`#guard{position:absolute;left:max(14px,env(safe-area-inset-left,0px));top:250px;z-index:13;display:flex;align-items:flex-start;gap:4px;pointer-events:none;transform:translateX(-130%);opacity:0;transition:transform .55s cubic-bezier(.2,.9,.25,1.15),opacity .3s,top .4s .35s}
+#guard.on{transform:translateX(0);opacity:1}#vipBanner.on~#guard{top:350px;transition:transform .55s cubic-bezier(.2,.9,.25,1.15),opacity .3s,top .4s}#guard svg{order:-1;flex:none;width:92px;height:119px;filter:drop-shadow(0 8px 14px rgba(0,0,0,.6));animation:gbob 2.4s ease-in-out infinite}
 @keyframes gbob{50%{transform:translateY(-3px) rotate(-1deg)}}#guard,#guard svg,#vipBanner,#vipBanner .flag,#vipBanner .ico,#vipBanner .meme{will-change:transform}#guard .glint{animation:glint 2.2s ease-in-out infinite}@keyframes glint{0%,70%,100%{opacity:0}80%{opacity:1}}
 #guard .bub{margin-top:14px;max-width:min(240px,calc(50vw - 22.5vh - 140px));min-width:150px;background:#f4f1e8;color:#121212;font-family:var(--f-sign);font-weight:700;font-size:17px;line-height:1.15;padding:8px 11px;border-radius:10px;position:relative;box-shadow:0 8px 24px rgba(0,0,0,.5)}
 #guard .bub::after{content:'';position:absolute;left:-9px;top:16px;border:6px solid transparent;border-right:10px solid #f4f1e8}#guard .bub small{display:block;font-family:var(--f-mono);font-weight:500;font-size:10px;color:#6a6a6a;letter-spacing:.06em;margin-bottom:2px}
@@ -828,7 +826,7 @@ function drawMarks(g,toScr,now,skip){for(const m of MARKS){if(T>m.until||(m.from
   for(let i=0;i<n;i++){const x=m.x+(n>1?(((i*37)%7)-3)*m.sp/6+Math.sin(now*0.7+i)*m.sp*0.06:0),y=m.y+(n>1?(((i*53)%5)-2)*m.sp/10+Math.cos(now*0.9+i*2)*m.sp*0.04:0);
     const p=toScr(x,y,m.alt||0);if(!p)continue;g.font=`${m.px||26}px serif`;g.textAlign='center';g.textBaseline='middle';g.fillText(m.e,p.X,p.Y+(n>1?Math.sin(now*2+i)*3:0));}}
   g.textAlign='left';g.textBaseline='alphabetic';MARKS=MARKS.filter(m=>T<=m.until);}
-const WHO={protocol:{badge:'PROTOCOL · MINISTRY',svg:face('🙏','#3a2614')},ranger:{badge:'RANGE OFFICER · FOREST DEPT · SHERNI WATCH',svg:face('🐅','#1f3a14')},
+const WHO={protocol:{badge:'PROTOCOL · MINISTRY',svg:face('🙏','#3a2614')},ranger:{badge:'FOREST DEPT · SHERNI PUTTAR WATCH',svg:face('🐅','#1f3a14')},
   kid:{badge:'ROOFTOP · AHMEDABAD',svg:face('🪁','#14304a')},ramp:{badge:'GROUND OPS SUPERVISOR',svg:face('🏏','#123a22')},tower:{badge:'TOWER',svg:face('📣','#123a22')},
   dabba:{badge:'MUKADAM · DABBAWALAS',svg:face('🍱','#3a2a10')},admin:{badge:'GROUP ADMIN · OPS',svg:face('📱','#103a2a')},team:{badge:'TEAM MANAGER',svg:face('🏆','#123a5a')},
   surya:{badge:'SURYA KIRAN LEADER · IAF',svg:face('✈️','#3a1414')},langur:{badge:'LANGUR-CALL MAN · WILDLIFE',svg:face('🐒','#3a2a14')},radar:{badge:'RADAR CONTROLLER',svg:face('📡','#1c1440')},
@@ -880,11 +878,11 @@ STORY.tiger={len:2000,start(c){const r=rwBy('dep')[0];if(!r)return false;c.r=r;c
   const p0=walk(r,0.66,0.38,6,6);
   c.mark={x:p0[0][0],y:r.y,e:'🐅',until:T+1e6,px:34,k:'tiger',path:p0,t0:T,t1:T+420};MARKS.push(c.mark);
   c.fx={kind:'tiger',id:'tiger1',path:p0,t0:T,t1:T+420,darted:null,exit:null};FXV.push(c.fx);
-  c.lines.push([8,()=>tigerCam(['SHERNI ON THE LOOSE',`A tigress is walking down ${r.short}`,'Shere Khan, you are not cleared to line up 🐅',icos('🐅','🛫','🌳')],p0[0][0],r.y)]);
+  c.lines.push([8,()=>tigerCam(['SHERNI PUTTAR ON THE LOOSE',`A tigress is walking down ${r.short}`,'Shere Khan, you are not cleared to line up 🐅',icos('🐅','🛫','🌳')],p0[0][0],r.y)]);
   guard(['Sir, she is not a bird. You cannot sweep her.','She is the senior-most resident here. 🐅'],WHO.ranger);
   c.lines.push([0,'TWR',`All stations: a tigress is on ${r.short}. Nobody is to taxi towards her. That includes the follow-me car.`]);
-  const I=c.I=storyCard(c,{icon:{g:'🐅',c:'#ff8c1a'},x:p0[0][0],y:r.y,title:`Sherni on the loose: a tigress on ${r.short}`,
-    text:`A tigress from the Umred-Karhandla corridor is strolling down ${r.short}. Wait for the forest department's dart team and ${r.short} shuts for 4 to 6 minutes; nobody knows exactly. Or shoo her off with sirens: ${r.short} stays open, but she is still out there, and tigresses come back.`,
+  const I=c.I=storyCard(c,{icon:{g:'🐅',c:'#ff8c1a'},x:p0[0][0],y:r.y,title:`Sherni Puttar on the loose: a tigress on ${r.short}`,
+    text:`Sherni Puttar, a tigress from the Umred-Karhandla corridor, is strolling down ${r.short}. Wait for the forest department's dart team and ${r.short} shuts for 4 to 6 minutes; nobody knows exactly. Or shoo her off with sirens: ${r.short} stays open, but she is still out there, and tigresses come back.`,
     def:0,defText:`${r.short} shuts until the dart team arrives.`,
     acts:[{l:'Wait for the dart team',pri:1,fn(){const d=240+Math.floor(SIMR()*120);closeRw(r,d,'Tigress on the runway');c.mark.until=T+d;c.mark.t1=T+d-90;c.fx.t1=T+d;c.fx.darted=T+d-90;
         c.lines.push([T-c.E+d-90,'FOREST','Dart away. She is lying down. Very dignified about it.']);c.lines.push([T-c.E+d,'FOREST','She has been weighed and named. She is called Runway. She is going home to Tadoba.']);resolve(I,true,`${r.short} shut for the tigress.`);}},
@@ -892,13 +890,13 @@ STORY.tiger={len:2000,start(c){const r=rwBy('dep')[0];if(!r)return false;c.r=r;c
         if(c.ra){const ra=c.ra,at=T-c.E+900;c.lines.push([at-60,'FOREST',`Update: the tigress has been seen heading towards ${ra.short}. She did not like the sirens.`]);
           c.lines.push([at,()=>{const D=330,p=walk(ra,0.72,0.34,8,10);p.unshift([lerp(ra.x0,ra.x1,0.75),ra.y+(ra.y<0?-650:650)]);closeRw(ra,D,'Tigress, again');
             MARKS.push({x:p[0][0],y:p[0][1],e:'🐅',until:T+D,px:34,k:'tiger',path:p,t0:T,t1:T+D});FXV.push({kind:'tiger',id:'tiger2',path:p,t0:T,t1:T+D,darted:null,exit:null});
-            guard(['Sherni is back. On your arrivals runway.','Sirens only made her curious, sir. She will take her time. 🐅'],WHO.ranger);
-            c.lines.push([at+8,()=>tigerCam(['SHERNI AFOOT',`She is back, on ${ra.short}, and in no hurry`,'Madam has right of way 🐅',icos('🐅','🐾','🐅')],p[0][0],p[0][1])]);}]);
+            guard(['Sherni Puttar is back. On your arrivals runway.','Sirens only made her curious, sir. She will take her time. 🐅'],WHO.ranger);
+            c.lines.push([at+8,()=>tigerCam(['SHERNI PUTTAR AFOOT',`She is back, on ${ra.short}, and in no hurry`,'Madam has right of way 🐅',icos('🐅','🐾','🐅')],p[0][0],p[0][1])]);}]);
           c.lines.push([at+150,'TWR',`${ra.short} remains closed. The tigress is inspecting the touchdown zone. Thoroughly.`]);
           c.lines.push([at+330,'FOREST','She has left for the jungle. On her own schedule.']);}}}]});
 },
 // her card's marker goes where she goes (as drawn: the 3D tigress, or the map's emoji)
-tick(c){if(c.I&&incidents.includes(c.I)){const p=tigerAt()||[c.mark.x,c.mark.y];c.I.x=p[0];c.I.y=p[1];}},lesson(c){return c.herd?{w:25,title:'Sherni came back',text:'Shooing her off kept the departure runway open, but she walked onto the arrivals runway 15 minutes later and took her time, mid-wave. A cost you put off still has to be paid: when you choose the risky option, flip a second runway to MIX early so the bill lands softly.'}:null;}};
+tick(c){if(c.I&&incidents.includes(c.I)){const p=tigerAt()||[c.mark.x,c.mark.y];c.I.x=p[0];c.I.y=p[1];}},lesson(c){return c.herd?{w:25,title:'Sherni Puttar came back',text:'Shooing her off kept the departure runway open, but she walked onto the arrivals runway 15 minutes later and took her time, mid-wave. A cost you put off still has to be paid: when you choose the risky option, flip a second runway to MIX early so the bill lands softly.'}:null;}};
 
 // L2 · Uttarayan: Ahmedabad moved in, and so did its kite fight. "Kai po che!" is what a kite fighter shouts on cutting a
 // rival's kite; today the rooftops' rival is your arrivals. The fight drifts south across every runway, about 4 minutes

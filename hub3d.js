@@ -353,7 +353,7 @@ function camUpdate(dt){
     for(const key of ['tx','ty','dist','yaw','pitch']){if(tr)C3[key]=C3.t[key]=tr[key];else C3[key]+=(C3.t[key]-C3[key])*ke;}
     C3.th=tr?tr.th||0:(C3.th||0)*(1-ke);
     const cp=Math.cos(C3.pitch);cam.position.set(C3.tx+Math.sin(C3.yaw)*cp*C3.dist,C3.th+Math.sin(C3.pitch)*C3.dist,C3.ty+Math.cos(C3.yaw)*cp*C3.dist);
-    if(tr)cam.fov=42;else cam.fov+=(42-cam.fov)*k;cam.lookAt(C3.tx,C3.th,C3.ty);Z.kEx=clamp(C3.dist/2600,1,3.4);Z.camDist=C3.dist;focus=[C3.tx,C3.ty];
+    if(tr)cam.fov=tr.fov||42;else cam.fov+=(42-cam.fov)*k;cam.lookAt(C3.tx,C3.th,C3.ty);Z.kEx=tr&&tr.fov?1:clamp(C3.dist/2600,1,3.4);   // a long lens shows the aircraft at its true sizeZ.camDist=C3.dist;focus=[C3.tx,C3.ty];
     // a near plane that follows the camera height keeps depth precision (and AO) clean in the strategic view
     cam.near=clamp((cam.position.y-1500)*0.35,4,1500);
   }else if(V3.mode==='tower'){
@@ -385,6 +385,19 @@ function chaseFlypast(){let hx=null,hz=0;return()=>{const m=Z.mods.fx,q=m&&m.foc
   return{tx:q.x+hx*d*0.2,ty:q.z+hz*d*0.2,th:q.y,dist:d,yaw:Math.atan2(ox,oz),pitch:0.15};};}
 // o: {x,y} the point, h its height, dist, pitch, yaw, rate (rad/s), right: metres to aim right of it, so it sits left
 // of the centre, clear of the banner and the speech bubble
+// aim the orbit from a camera point P (x, y on the field, h metres up) at aircraft f: what o.track returns, with a lens (fov,
+// degrees) that keeps about w metres of sky across the frame, between f0 and f1, so the aircraft keeps its size as it closes;
+// rt: where it sits across the frame (0 the centre, 0.2 a fifth of the half-width right of it, clear of the banner)
+function aimAt(P,f,w,f0,f1,rt){const a=altM(f),d0=Math.hypot(P.x-f.x,P.y-f.y,P.h-a)||1,fov=clamp(2*Math.atan(w/2/d0)*180/Math.PI,f0,f1);
+  let gx=f.x,gz=f.y;if(rt){const hz=Math.hypot(f.x-P.x,f.y-P.y)||1,s=rt*hz*Math.tan(fov*Math.PI/360)*(Z.camera?Z.camera.aspect:1.6);gx+=(f.y-P.y)/hz*s;gz-=(f.x-P.x)/hz*s;}
+  const dx=P.x-gx,dz=P.y-gz,dy=P.h-a,hz=Math.hypot(dx,dz)||1;return{tx:gx,ty:gz,th:a,dist:Math.hypot(hz,dy),yaw:Math.atan2(dx,dz),pitch:Math.atan2(dy,hz),fov};}
+// a camera standing still on the field that pans with an aircraft on a long lens (the planespotter's shot)
+function spotCam(f,o){return()=>!f||OFF3[f.state]?null:aimAt(o,f,o.w||90,o.f0||3,o.f1||40,o.right);}
+// an air-to-air chase: back metres behind and side metres right of the aircraft, up above it, on a heading that lags its
+// real one by about lag seconds, so in a turn the camera swings wide and sees the bank; pull (metres a second) eases it back
+function chaseCam(f,o){let hs=null,t0=performance.now(),tl=t0;return()=>{if(!f||OFF3[f.state])return null;const now=performance.now(),dt=Math.min(0.1,(now-tl)/1000);tl=now;
+  if(hs==null)hs=f.heading;else hs+=angDiff(hs,f.heading)*(1-Math.exp(-dt/(o.lag||2)));const b=(o.back||300)+(now-t0)/1000*(o.pull||0),sd=o.side||0,c=Math.cos(hs),s=Math.sin(hs);
+  return aimAt({x:f.x-c*b-s*sd,y:f.y-s*b+c*sd,h:altM(f)+(o.up||40)},f,o.w||120,o.f0||8,o.f1||40,o.right);};}
 function orbitShot(o){const t0=performance.now();return()=>{const yaw=o.yaw+(performance.now()-t0)/1000*(o.rate||0),k=o.right||0;
   return{tx:o.x+Math.cos(yaw)*k,ty:o.y-Math.sin(yaw)*k,th:o.h||0,dist:o.dist,pitch:o.pitch,yaw};};}
 // one shadow map fitted to the visible ground (light-space bounds of the view footprint), sizes quantised and the

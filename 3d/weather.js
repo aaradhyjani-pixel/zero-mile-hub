@@ -250,7 +250,8 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
       vec4 n1=texture2D(uNoise,uv);
       vec4 n2=texture2D(uNoise,uv*vec2(2.1,2.7)+(n1.ra-0.5)*0.3-vec2(fl*0.5/(S*an),0.));
       float n=n1.r*0.82+n2.g*0.18;
-      float dens=smoothstep(0.3-0.1*uGust,0.92,n);
+      float band=texture2D(uNoise,vec2(q.x-fl*1.15,q.y*0.6)*0.000055+vec2(0.13,0.71)).r;
+      float dens=smoothstep(0.3-0.1*uGust,0.92,n)*(0.35+1.15*smoothstep(0.28,0.78,band));
       float fx=uFrontX-uCurv*vWP.z*vWP.z;
       float m=smoothstep(fx+uLead,fx-250.,vWP.x+(n1.a-0.5)*500.);
       float a=dens*vL.y*m*uSheetA;
@@ -258,9 +259,9 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
       a*=smoothstep(vL.x*0.4+2.,vL.x*1.5+30.,d);
       a*=1.-smoothstep(uFade*0.55,uFade,d);
       if(a<0.004)discard;
-      vec3 col=mix(uDustA,uDustB,clamp(n2.b*0.8+0.4*(n1.a-0.5)+0.25*smoothstep(0.,700.,vWP.y),0.,1.))*(0.8+0.4*n1.g);
+      vec3 col=mix(uDustA,uDustB,clamp(n2.b*0.6+0.3*(n1.a-0.5)+0.55*smoothstep(0.,700.,vWP.y)-0.2*(1.-band),0.,1.))*(0.8+0.4*n1.g);
       ${OUT('col', 'a', 'V')}
-    }` }), -10);
+    }` }), 10);
 
   // ---------- 5. particles: near dust streaks, debris, field streaks, near rain, far rain (one draw call) ----------
   const NP = { dust: 10000, debris: 800, field: 1400, rain: 7000, farRain: 4500 };
@@ -358,8 +359,8 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
   const tv = new THREE.Vector3(), tv2 = new THREE.Vector3(), camPos = new THREE.Vector3(), focus = new THREE.Vector3();
   const cA = new THREE.Color(), cB = new THREE.Color();
   const P = {
-    preFog: lin('#c9b28f'), inFog: lin('#8c5a30'), inFogDark: lin('#5f3b1f'), tailFog: lin('#7a6a5a'),
-    skyIn: lin('#9a6436'), zenIn: lin('#4e321d'), sunIn: lin('#ffb46e'), sunDisc: lin('#ffd9a6'), white: lin('#ffffff'),
+    preFog: lin('#c9b28f'), inFog: lin('#86593a'), inFogDark: lin('#5a3d26'), tailFog: lin('#7a6a5a'),
+    skyIn: lin('#9a6436'), zenIn: lin('#b48a5c'), sunIn: lin('#ffb46e'), sunDisc: lin('#ffd9a6'), white: lin('#ffffff'),
     dustP: lin('#c49566'), dustA: lin('#7d5636'), dustB: lin('#c7976a'), sunWarm: lin('#fff1dc'),
     skyClear: new THREE.Color(0.30, 0.36, 0.46), skyDust: new THREE.Color(0.26, 0.18, 0.11), gndClear: new THREE.Color(0.09, 0.11, 0.06), gndDust: new THREE.Color(0.12, 0.08, 0.05),
   };
@@ -434,7 +435,7 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
     cB.copy(P.inFog).lerp(P.inFogDark, 0.45 * gust + 0.2 * (1 - tail)).lerp(P.tailFog, tail * 0.65);
     A.fogColor.copy(cA).lerp(cB, I).multiplyScalar(1 + fl * 1.6);
     // in the storm, visibility of ~1.5-2 km near the ground; from far out, enough to keep the field readable
-    const inDen = Math.min(0.0014, Math.max(0.00007, 0.95 / Math.max(cd, 500))) * (1 + 0.22 * gust) * mix(1, 0.5, tail);
+    const inDen = Math.min(0.0009, Math.max(0.00007, 0.95 / Math.max(cd, 500))) * (1 + 0.22 * gust) * mix(1, 0.5, tail);
     A.fogDensity = mix(base.den * (1 + 0.5 * appr), inDen, I); wrote.den = A.fogDensity;
     A.hazeHeight = mix(base.haze, 300, I);
     A.skyTint.copy(P.preFog).lerp(P.skyIn, I); A.skyTintK = Math.max(I * 0.92, appr * wall * 0.25);

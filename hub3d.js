@@ -307,6 +307,14 @@ function atmoApply(now){
   const DB=Z.dbg;if(DB){   // dev hook for A/B shots: Z.dbg={fog:0,bloom:0,ao:0,env:0,exp:1.2,hemi:0.5}
     if(DB.fog!=null)fog.density*=DB.fog;if(DB.bloom!=null&&V3.bloom)V3.bloom.strength*=DB.bloom;if(DB.ao!=null&&V3.ao)V3.ao.enabled=!!DB.ao;if(DB.env===0)Z.scene.environment=null,V3.pmrem=null;if(DB.exp&&V3.gradeU)V3.gradeU.toneMappingExposure.value*=DB.exp;if(DB.hemi!=null)V3.hemi.intensity*=DB.hemi;}
 }
+// overlays that ignore fog (guide ribbons) fade with the dust for low cameras; the strategic view keeps them readable.
+// The red holding-stack vignette (#vign) is toned down and browned while the storm's own vignette is on.
+function overlayAtmo(){
+  const a=Z.atmo,hiK=clamp((Z.camera.position.y-1200)/3300,0,1),vk=clamp((a.visibility||50000)/5000,0.12,1);
+  V3.guides.material.opacity=0.9*(vk+(1-vk)*hiK);
+  const w=Z.mods.weather,ws=w&&w.state?w.state():null,dk=ws?clamp(Math.max(ws.I,ws.appr*ws.wall*0.6),0,1):(dustNow?1:0),q=Math.round(dk*20)/20;
+  if(q!==V3.vignK){V3.vignK=q;const v=$('#vign');if(v)v.style.setProperty('--dust',q);}
+}
 // re-render the environment map when the sun or the sky colour has moved enough to see (never every frame)
 function envUpdate(now){
   if(!V3.pmrem)return;const a=Z.atmo,s=Z.sunDir,u=V3.skyU;
@@ -490,7 +498,7 @@ function draw3D(now,dtR){
   if(R.domElement.width!==Math.round(VW*R.getPixelRatio()))resize3D();
   lightRig();camUpdate(dtR);
   for(const k in Z.mods){const m=Z.mods[k];if(m&&m.update){try{m.update(dtR,now);}catch(err){console.error('3D '+k,err);m.update=null;}}}
-  atmoApply(now);guides3D(now);
+  atmoApply(now);guides3D(now);overlayAtmo();
   try{envUpdate(now);}catch(err){console.warn('3D: environment map failed',err);V3.pmrem=null;}
   V3.sky.position.copy(Z.camera.position);
   if(!V3.warm&&Z.scene.environment&&LV)prewarm3D();

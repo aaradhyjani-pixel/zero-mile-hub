@@ -68,6 +68,14 @@ button:focus-visible,.term:focus-visible{outline:2px solid var(--sign);outline-o
 .kpi .v{font-family:var(--f-mono);font-size:17px;font-weight:500;line-height:1.15;white-space:nowrap}
 .kpi .v small{font-size:11px;color:var(--ink-3);font-weight:400}
 .kpi.good .v{color:var(--go)}.kpi.mid .v{color:var(--warn)}.kpi.bad .v{color:var(--stop)}
+.kpi.gold .v{color:#ffd24a;text-shadow:0 0 12px rgba(255,200,60,.55)}
+#combo{position:absolute;right:0;top:calc(100% + 6px);font-family:var(--f-sign);font-weight:600;letter-spacing:.04em;font-size:14px;color:var(--go);background:var(--panel);border:1px solid rgba(58,208,127,.45);border-radius:4px;padding:2px 9px;white-space:nowrap}
+#combo[hidden]{display:none}
+#combo b{font-size:17px}#combo.pop{animation:cpop .45s ease-out}
+@keyframes cpop{0%{transform:scale(1.35);background:rgba(58,208,127,.25)}100%{transform:scale(1);background:transparent}}
+#snd{font-family:var(--f-mono);font-size:12px;padding:5px 9px;border:1px solid var(--panel-edge);border-radius:4px;color:var(--ink-3)}#snd.on{color:var(--ink)}
+#vign{position:absolute;inset:0;pointer-events:none;z-index:4;opacity:0;transition:opacity .8s;background:radial-gradient(ellipse at center,rgba(255,40,30,0) 55%,rgba(255,40,30,.32) 100%)}
+@media (prefers-reduced-motion:reduce){#combo.pop{animation:none}}
 #ticker{width:100%;font-family:var(--f-mono);font-size:11.5px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-top:1px solid var(--panel-edge);padding-top:5px}
 #ticker .src{color:var(--sign)}
 

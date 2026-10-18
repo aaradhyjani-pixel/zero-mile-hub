@@ -129,7 +129,7 @@ let flights=[],FID=0,S=null,incidents=[],INC=0,selected=null,hover=null,selRw=nu
 const puffs=[],moveLog=[];
 function resetState(){
   flights=[];FID=0;incidents=[];INC=0;selected=null;hover=null;selRw=null;puffs.length=0;moveLog.length=0;ops.length=0;opsClock=0;lastCnx=-1e9;
-  S={moves:0,arr:0,dep:0,depOnTime:0,arrOnTime:0,cnxMade:0,cnxMiss:0,safety:100,incOk:0,incDef:0,incTypes:{},hits:[],holdMin:0,div:0,goArounds:0,log:[],delaySum:0,flips:0};
+  S={combo:0,bestCombo:0,moves:0,arr:0,dep:0,depOnTime:0,arrOnTime:0,cnxMade:0,cnxMiss:0,safety:100,incOk:0,incDef:0,incTypes:{},hits:[],holdMin:0,div:0,goArounds:0,log:[],delaySum:0,flips:0};
   GATES.forEach(g=>{g.occ=null;g.res=null;});
   RW.forEach(r=>{r.tdList=[];r.lastSchedTd=-1e9;r.lastDep=-1e9;r.arrExit=-1e9;r.occ=null;r.changeUntil=-1;r.closedUntil=-1;r.why='';r.ops=0;r.flash=0;r.blocks=[];r.gapReq=false;r.degraded=false;r.strike=null;r.shear=false;});
   CONC.forEach(c=>{c.laneShut=-1;c.slowUntil=-1;});
@@ -328,7 +328,14 @@ function startTaxiIn(f){
   if(f.res){const p=route(f.exitNode,f.res.lane);if(p){setPath(f,[{x:f.x,y:f.y}].concat(p),TAXI_R);f.state='taxi_in';return;}}
   f.state='nogate';f.nogateSince=T;if(!incidents.some(i=>i.f===f))spawnInc('nogate',f);
 }
-function depart(f){const late=(f.rollT-f.std)/60;S.moves++;S.dep++;moveLog.push(f.rollT);if(late<=25)S.depOnTime++;S.delaySum+=Math.max(0,late-10);}
+function depart(f){const late=(f.rollT-f.std)/60;S.moves++;S.dep++;moveLog.push(f.rollT);if(late<=25){S.depOnTime++;S.combo=(S.combo||0)+1;S.bestCombo=Math.max(S.bestCombo||0,S.combo);if(S.combo>=3)comboPop();}else{if((S.combo||0)>=5)logE(`On-time run of ${S.combo} departures ended by ${fl(f)}.`);S.combo=0;comboPop();}S.delaySum+=Math.max(0,late-10);floater(f.x,f.y,f.alt,'+1','#2fd3c6');}
+// juice: floating +1s, the on-time combo, a soft sound tick (WebAudio, mutable; off by default on touch screens)
+const FLOATS=[];function floater(x,y,alt,txt,col){if(FLOATS.length<40)FLOATS.push({x,y,alt:alt||0,txt,col,t0:performance.now()/1000});}
+function drawFloats(projector){const now=performance.now()/1000;ctx.font='700 15px Barlow Condensed, sans-serif';ctx.textAlign='center';
+  for(let i=FLOATS.length-1;i>=0;i--){const q=FLOATS[i],a=now-q.t0;if(a>1.4){FLOATS.splice(i,1);continue;}const p=projector(q);if(!p)continue;ctx.globalAlpha=clamp(1.4-a,0,1);ctx.fillStyle='rgba(8,11,13,.7)';ctx.fillText(q.txt,p.X+1,p.Y-a*34+1);ctx.fillStyle=q.col;ctx.fillText(q.txt,p.X,p.Y-a*34);}ctx.globalAlpha=1;ctx.textAlign='left';}
+const SND={on:store.get('zm_snd')!=null?store.get('zm_snd'):!matchMedia('(pointer:coarse)').matches,ctx:null};
+function tickSound(up){if(!SND.on)return;try{if(!SND.ctx)SND.ctx=new (window.AudioContext||window.webkitAudioContext)();const c=SND.ctx;if(c.state==='suspended')c.resume();const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=up?660+Math.min(12,S.combo||0)*28:220;g.gain.setValueAtTime(0.0001,c.currentTime);g.gain.exponentialRampToValueAtTime(0.06,c.currentTime+0.01);g.gain.exponentialRampToValueAtTime(0.0001,c.currentTime+0.18);o.connect(g).connect(c.destination);o.start();o.stop(c.currentTime+0.2);}catch(e){}}
+function comboPop(){const el=$('#combo');if(!el)return;const n=S.combo||0;el.hidden=n<3;if(n>=3){el.innerHTML=`<b>${n}×</b> on time`;el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');tickSound(true);}else tickSound(false);}
 function climbOut(f){
   f.state='climb';const side=f.y<0?-1:1,H={N:-Math.PI/2,S:Math.PI/2,E:0,W:Math.PI}[f.dir];const h=H==null?Math.PI:H;
   const p0={x:f.x,y:f.y},p1={x:f.x-2600,y:f.y};let p2,p3;
@@ -348,7 +355,7 @@ function updateFlight(f,dt){
     if(dustNow&&f.td-T<20&&f.td-T>10&&f.gaRoll<(f.rwy.shear?0.3:0.07)&&!f.gaDone){f.gaDone=true;goAround(f,'windshear in the dust');break;}
     if(f.birdHit&&f.td-T<20&&!f.gaDone){f.gaDone=true;goAround(f,'bird strike on short final');break;}
     if(T>=f.td)touchdown(f);break;}
-  case 'rollout':{f.v=Math.max(14,f.v-1.15*dt);const done=advance(f,dt,f.v);if(f.rwy.occ===f&&f.pd>=f.exitAt){f.rwy.occ=null;f.rwy.arrExit=T;}if(done){if(f.rwy.occ===f){f.rwy.occ=null;f.rwy.arrExit=T;}startTaxiIn(f);}break;}
+  case 'rollout':{f.v=Math.max(14,f.v-1.15*dt);const done=advance(f,dt,f.v);if(f.rwy.occ===f&&f.pd>=f.exitAt){f.rwy.occ=null;f.rwy.arrExit=T;floater(f.x,f.y,0,'+1','#a99cff');}if(done){if(f.rwy.occ===f){f.rwy.occ=null;f.rwy.arrExit=T;}startTaxiIn(f);}break;}
   case 'nogate':{if(!f.res){const g=freeGate(f);if(g){g.res=f;f.res=g;}}if(f.res){const p=route(f.exitNode,f.res.lane);if(p){setPath(f,[{x:f.x,y:f.y}].concat(p),TAXI_R);f.state='taxi_in';closeIncFor(f,true);}}break;}
   case 'taxi_in':if(blocked(f))break;if(advance(f,dt,14)){const g=f.res;setPath(f,[{x:G.get(g.lane).x,y:G.get(g.lane).y},{x:g.x,y:g.y}]);f.state='dock';}break;
   case 'dock':if(laneShut(f.res))break;if(advance(f,dt,4)){const g=f.res;g.occ=f;g.res=null;f.gate=g;f.res=null;f.heading=g.a;f.inBlock=T;if(f.turn)toDep(f);else{f.state='parked';f.towAt=T+(20+SIMR()*15)*60;}}break;
@@ -704,6 +711,7 @@ function draw(now){
   if(z>3.2){let n=0;for(const f of vis){if(n>30)break;if(['approach','rollout','taxi_in','taxi_out','hp','lineup','roll','nogate'].includes(f.state)&&f.sx>0&&f.sx<VW&&f.sy>0&&f.sy<VH){tagged.add(f);n++;}}}
   for(const f of tagged)if(vis.includes(f))drawTag(f);
   if(popInc){const p=incPos(popInc);placePop(sx(p.x),sy(p.y));}
+  drawFloats(q=>({X:sx(q.x),Y:sy(q.y)}));
 }
 
 /* ============ bank chart ============ */
@@ -780,12 +788,14 @@ function rwStatus(){
 
 /* ============ HUD ============ */
 function kpi(id,txt,cls){const el=$(id);el.querySelector('.v').innerHTML=txt;el.className='kpi '+(cls||'');}
+const RATE={v:0};
 function hud(){
   $('#clock').textContent=clk(T);$('#left').textContent=ended?'Level over':`${Math.max(0,Math.ceil((LEN-T)/60))} min left`;
   while(moveLog.length&&moveLog[0]<T-1800)moveLog.shift();
   const rate=Math.round(moveLog.length*2);
   kpi('#kMov',`${S.moves}<small>/${LV.target}</small>`,S.moves>=LV.target?'good':'');
-  kpi('#kRate',`${rate}`,'');
+  RATE.v+=(rate-RATE.v)*0.35;if(Math.abs(rate-RATE.v)<0.6)RATE.v=rate;kpi('#kRate',`${Math.round(RATE.v)}`,RATE.v>=250?'gold':'');
+  const hold=flights.filter(f=>f.state==='holding').length;$('#vign').style.opacity=clamp((hold-6)/28,0,0.85).toFixed(2);
   const otp=S.dep+S.arr?Math.round((S.depOnTime+S.arrOnTime)/(S.dep+S.arr)*100):null;kpi('#kOtp',otp==null?'—':otp+'%',otp==null?'':otp>=85?'good':otp>=65?'mid':'bad');
   const ct=S.cnxMade+S.cnxMiss;const cx=ct?Math.round(S.cnxMade/ct*100):null;kpi('#kCnx',cx==null?'—':cx+'%',cx==null?'':cx>=90?'good':cx>=78?'mid':'bad');
   kpi('#kSafe',Math.round(S.safety),S.safety>=90?'good':S.safety>=70?'mid':'bad');
@@ -831,6 +841,7 @@ function pick(mx,my){let best=null,bd=1e9;for(const f of flights){if(f.sx==null|
 function pickInc(mx,my){for(const I of incidents)if(I.sx!=null&&Math.hypot(I.sx-mx,I.sy-my)<20)return I;return null;}
 function pickRw(mx,my){for(const s of rwSigns)if(mx>=s.x&&mx<=s.x+s.w&&my>=s.y-3&&my<=s.y+s.h+3)return s.r;let wx=mx/cam.s+cam.x,wy=my/cam.s+cam.y,tol=10/cam.s;if(V3.on){const g=groundAt(mx,my);if(!g)return null;wx=g.x;wy=g.y;tol=45;}for(const r of RW){if(wx>=r.x0&&wx<=r.x1&&Math.abs(wy-r.y)<Math.max(r.width/2+10,tol))return r;}return null;}
 document.querySelectorAll('.speeds button').forEach(b=>b.onclick=()=>setSpeed(+b.dataset.s));
+(function(){const b=$('#snd');const paint=()=>{b.textContent=SND.on?'Sound on':'Sound off';b.classList.toggle('on',SND.on);};paint();b.onclick=()=>{SND.on=!SND.on;store.set('zm_snd',SND.on);paint();if(SND.on)tickSound(true);};})();
 function setSpeed(s){if(!running)return;if(s===0)paused=!paused;else{speed=s;paused=false;}document.querySelectorAll('.speeds button').forEach(b=>{const v=+b.dataset.s;b.classList.toggle('on',v===0?paused:(!paused&&v===speed));});$('#spP').textContent=paused?'Resume':'Pause';}
 window.addEventListener('keydown',e=>{if(e.key===' '&&!(e.target.closest&&e.target.closest('button'))){e.preventDefault();setSpeed(0);}if(e.key==='1')setSpeed(1);if(e.key==='2')setSpeed(2);if(e.key==='3')setSpeed(4);if(e.key==='Escape'){closePop();if(V3.on&&V3.mode!=='map')setCam('map');}if(e.key==='+'||e.key==='=')zoomCenter(1.6);if(e.key==='-')zoomCenter(1/1.6);if(e.key==='f')V3.on?cam3Fit():fitCam();if(e.key==='m'||e.key==='M')setView(V3.on?'2d':'3d');if(e.key==='c'||e.key==='C')cycleCam();if(V3.on&&(e.key==='q'||e.key==='Q'))C3.t.yaw+=0.25;if(V3.on&&(e.key==='e'||e.key==='E'))C3.t.yaw-=0.25;});
 
@@ -846,7 +857,7 @@ function startLevel(n){
   T=-30;buildLevel(LV);
   // warm start: put the first inbound arrivals in the air
   $('#lvCode').textContent=`LEVEL ${LV.n} · ${LV.from}`;$('#lvName').textContent=LV.name;
-  renderRw();renderInc();$('#coachList').innerHTML='';coachItems.length=0;seen.clear();
+  renderRw();renderInc();$('#coachList').innerHTML='';coachItems.length=0;seen.clear();comboPop();RATE.v=0;
   $('#overlay').hidden=true;running=true;paused=false;ended=false;speed=1;setSpeed(1);resize();
   if(V3.on)cam3Intro();
   for(let i=0;i<30;i++)tick(1);
@@ -865,7 +876,7 @@ function finish(){
   const next=LEVELS[LV.n];
   $('#sheet').innerHTML=`<div class="band"><span>Level ${LV.n} · ${LV.name}</span><span>${clk(0)} to ${clk(LEN)}</span></div><div class="in">
    <div class="bigstars">${starStr(st)}</div><h1 style="margin-top:8px">${st?'Level complete':'Level failed'}</h1><p>${verdict}</p>
-   <div class="score"><div><div class="k">Movements</div><div class="v">${S.moves}/${LV.target}</div></div><div><div class="k">On time</div><div class="v">${otp}%</div><div class="sub">arrivals ${otpA}% · departures ${otpD}%</div></div><div><div class="k">Connections</div><div class="v">${cx}%</div></div><div><div class="k">Safety</div><div class="v">${Math.round(S.safety)}</div></div><div><div class="k">Your calls</div><div class="v">${S.incOk}/${S.incOk+S.incDef}</div><div class="sub">${S.incDef?`${S.incDef} left to ops`:'all made by you'}</div></div><div><div class="k">Runway flips</div><div class="v">${S.flips}</div></div></div>
+   <div class="score"><div><div class="k">Movements</div><div class="v">${S.moves}/${LV.target}</div></div><div><div class="k">On time</div><div class="v">${otp}%</div><div class="sub">arrivals ${otpA}% · departures ${otpD}%</div></div><div><div class="k">Connections</div><div class="v">${cx}%</div></div><div><div class="k">Safety</div><div class="v">${Math.round(S.safety)}</div></div><div><div class="k">Your calls</div><div class="v">${S.incOk}/${S.incOk+S.incDef}</div><div class="sub">${S.incDef?`${S.incDef} left to ops`:'all made by you'}</div></div><div><div class="k">Runway flips</div><div class="v">${S.flips}</div></div><div><div class="k">Best on-time run</div><div class="v">${S.bestCombo||0}</div></div></div>
    <p class="src">Stars: one for keeping safety at 70 or above. Two for reaching the movement target with 87% on time and 88% of connections. Three for 90% on time, 92% of connections and safety 90.</p>
    ${why.length?`<h2>Where the stars went</h2><ul>${why.map(w=>`<li>${w}</li>`).join('')}</ul>`:''}
    <h2>What happened</h2><ul>${S.log.slice(-10).map(l=>`<li><span class="mono">${l.t}</span> ${l.text}</li>`).join('')||'<li>A quiet shift.</li>'}</ul>

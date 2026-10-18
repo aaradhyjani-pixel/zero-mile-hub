@@ -11,7 +11,9 @@
       <button data-s="1" class="on" title="1 real second = 20 airport seconds">1×</button>
       <button data-s="2">2×</button>
       <button data-s="4">4×</button>
+      <button id="snd" title="Sound: a soft tick for each on-time departure">Sound</button>
     </div>
+    <div id="combo" hidden aria-live="polite"></div>
     <div id="kpis">
       <div class="kpi" id="kMov" title="Take-offs and landings so far, against this level's target."><div class="k">Movements</div><div class="v">0</div></div>
       <div class="kpi" id="kRate" title="Movements in the last 30 minutes, scaled to an hour. This is the number the world record is measured in."><div class="k">Per hour</div><div class="v">0</div></div>
@@ -62,5 +64,6 @@
 
   <aside id="pop" class="panel" hidden aria-live="polite"><button class="x" id="popX" aria-label="Close">×</button><div id="popBody"></div></aside>
 
+  <div id="vign" aria-hidden="true"></div>
   <div id="overlay"><div class="sheet" id="sheet"></div></div>
 </div>

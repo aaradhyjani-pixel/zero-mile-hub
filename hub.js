@@ -740,7 +740,7 @@ const VQ_TTL={1:[4000,150],2:[12000,600]},VQ_MAX=8;
 // comes (speak() and say() call it for every line they queue; set pieces may call it early with their whole script)
 const VPRE=new Map();
 function voicePreload(keys){if(typeof SPG_AUDIO==='undefined'||!SND.on)return;(Array.isArray(keys)?keys:[keys]).forEach(k=>{const u=SPG_AUDIO[k];if(!u||VPRE.has(u))return;
-  try{const a=new Audio();a.preload='auto';a.src=u;a.load();VPRE.set(u,a);}catch(e){}});}
+  VPRE.set(u,1);try{fetch(u).catch(()=>{});}catch(e){}});}   // warm the cache; the sound itself plays on the unlocked element VAUD
 // a line can carry an accent (lang, e.g. 'ru-RU'): its clip is recorded in that voice; without a clip the browser's voice for
 // that language reads it (accented English), and a radio call with no clip and no matching voice stays silent
 function pickVoice(vs,lang){const sc=v=>(/en[-_]IN/i.test(v.lang)?4:/en[-_]GB/i.test(v.lang)?2:/^en/i.test(v.lang)?1:0)+(/enhanced|premium|natural|neural|google/i.test(v.name)?3:0)+(/aman/i.test(v.name)?2:0)-(/rishi|compact/i.test(v.name)?1:0);
@@ -772,6 +772,15 @@ const vqEst=it=>0.6+it.text.split(/\s+/).length/2.1;
 function vqEta(it){const now=performance.now();let s=0;
   if(vqIt){const a=vqCur,d=a&&isFinite(a.duration)&&a.duration>0?a.duration-a.currentTime:vqEst(vqIt)-(now-vqT0)/1000;s+=Math.max(0.1,d);if(vqIt===it)return s;s+=vqIt.gap/1000;}
   for(const x of VQ){s+=vqEst(x);if(x===it)return s;s+=x.gap/1000;}return null;}
+// Safari (and Chrome) refuse to start sound that no click has "unlocked", and unlock each audio ELEMENT separately: a fresh
+// Audio per clip was silently refused (NotAllowedError) and the line was lost. One element, unlocked by the first click or key,
+// carries every voice clip; a clip the browser still refuses waits for the next click instead of vanishing.
+const VAUD=new Audio();let AU_OK=false,AU_WAIT=null;
+const AU_SILENT='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=';
+function audioHint(on){let d=document.getElementById('audioHint');if(!d){d=document.createElement('div');d.id='audioHint';d.style.cssText='position:fixed;left:50%;top:84px;transform:translateX(-50%);z-index:60;padding:8px 14px;border-radius:8px;background:rgba(10,13,16,.94);border:1px solid #f4c430;color:#fff;font:600 14px Barlow Condensed,Arial Narrow,sans-serif;letter-spacing:.04em;pointer-events:none';d.textContent='🔇 The browser is blocking sound. Click anywhere on the page to turn it on.';document.body.appendChild(d);}d.hidden=!on;}
+function audioUnlock(){if(AU_OK)return;try{VAUD.src=AU_SILENT;const p=VAUD.play();if(p&&p.then)p.then(()=>{AU_OK=true;try{VAUD.pause();}catch(e){}audioHint(false);if(AU_WAIT){const f=AU_WAIT;AU_WAIT=null;f();}}).catch(()=>{});else AU_OK=true;}catch(e){}
+  if(!AU_OK&&AU_WAIT){const f=AU_WAIT;AU_WAIT=null;f();}}
+['pointerdown','keydown','touchstart','click'].forEach(ev=>document.addEventListener(ev,audioUnlock,true));
 function vqNext(){if(vqOn||audioHold())return;const now=performance.now();let it;
   while((it=VQ[0])&&vqStale(it,now)){if(it.g.on){VQ.shift();if(it.onEnd)it.onEnd();}else vqDrop(it.g);if(vqOn)return;}
   if(!it)return;VQ.shift();vqOn=true;vqG=it.g;it.g.on=true;vqIt=it;vqT0=now;const gen=vqGen;let fin=false,cutI=0,wd=null;
@@ -779,7 +788,8 @@ function vqNext(){if(vqOn||audioHold())return;const now=performance.now();let it
   const done=()=>{if(fin)return;fin=true;clearInterval(cutI);clearTimeout(wd);if(gen!==vqGen)return;{const a=vqCur;if(a){try{a.onended=a.onerror=a.onplaying=null;a.pause();}catch(e){}}}vqCur=null;vqIt=null;vqDone=null;if(VHOLD===it.hold)VHOLD=null;duck(false);if(it.onEnd)it.onEnd();setTimeout(()=>{if(gen!==vqGen)return;vqOn=false;vqNext();},Math.max(500,it.gap||0));};   // at least half a second between any two voices
   if(it.cut)cutI=setInterval(()=>{if(gen!==vqGen){clearInterval(cutI);return;}if(!it.cut())return;if(vqCur)try{vqCur.pause();}catch(e){}if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}done();},200);
   if(it.onStart)it.onStart();const clip=typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[it.text];
-  if(clip){const a=VPRE.get(clip)||new Audio(clip);VPRE.delete(clip);vqCur=a;a.volume=it.vol||0.95;a.onended=done;a.onerror=done;duck(true);const p=a.play();if(p&&p.catch)p.catch(done);
+  if(clip){VPRE.delete(clip);const a=VAUD;try{a.pause();}catch(e){}a.src=clip;vqCur=a;a.volume=it.vol||0.95;a.onended=done;a.onerror=done;duck(true);
+    const go=()=>{if(fin||gen!==vqGen)return;const p=a.play();if(p&&p.catch)p.catch(e=>{if(e&&e.name==='NotAllowedError'){audioHint(true);AU_WAIT=go;}else done();});};go();
     // the watchdog starts when the sound actually starts and trusts the clip's real length; while the game is held it waits
     const words=it.text.split(/\s+/).length,wdog=()=>{if(audioHold()){wd=setTimeout(wdog,500);return;}done();};
     a.onplaying=()=>{clearTimeout(wd);const d=isFinite(a.duration)&&a.duration>0?a.duration*1000:2500+words*600;wd=setTimeout(wdog,d+1500);};
@@ -806,7 +816,7 @@ function musFade(a,to,ms,cb){const from=a.volume,t0=performance.now();const st=(
 function music(name,o){o=o||{};if(!MUS)return;if(name&&MUS.name===name&&MUS.el)return;clearTimeout(MUS.tm);const old=MUS.el;MUS.el=null;MUS.name=null;
   if(old){if(o.now){old.pause();}else musFade(old,0,o.fadeOut||1500,()=>old.pause());}
   if(!name||!SND.on||ended)return;const src=(typeof MUSIC_SRC!=='undefined'&&MUSIC_SRC[name])||`music/${name}.mp3`;const a=new Audio(src);a.loop=o.loop!==false;a.volume=0;
-  MUS.el=a;MUS.name=name;MUS.vol=o.vol!=null?o.vol:0.4;a.onerror=()=>{if(MUS.el===a){MUS.el=null;MUS.name=null;}};const p=a.play();if(p&&p.catch)p.catch(()=>{});musFade(a,vqCur?MUS.vol*0.2:MUS.vol,o.fadeIn||1200);
+  MUS.el=a;MUS.name=name;MUS.vol=o.vol!=null?o.vol:0.4;a.onerror=()=>{if(MUS.el===a){MUS.el=null;MUS.name=null;}};const p=a.play();if(p&&p.catch)p.catch(e=>{if(e&&e.name==='NotAllowedError'){const r=()=>{if(MUS.el===a)a.play().catch(()=>{});document.removeEventListener('pointerdown',r,true);document.removeEventListener('keydown',r,true);};document.addEventListener('pointerdown',r,true);document.addEventListener('keydown',r,true);}});musFade(a,vqCur?MUS.vol*0.2:MUS.vol,o.fadeIn||1200);
   if(!a.loop)a.onended=()=>{if(MUS.el===a){MUS.el=null;MUS.name=null;}};if(o.ms)MUS.tm=setTimeout(()=>{if(MUS.el===a)music(null);},o.ms);}
 function duck(on){const a=MUS&&MUS.el;if(a)musFade(a,on?MUS.vol*0.2:MUS.vol,on?250:700);}
 // after a summit the SPG hands the runways back one by one, then signs off

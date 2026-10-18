@@ -3089,7 +3089,9 @@ const AFTER={REACH1:['SPG','The American motorcade has arrived before the Presid
 // the running order: protocol's alphabetical big three (China, Russia, then the United States, last), everyone else between
 const RUN=[['cer','REACH1',['REACH2']],['reg','BT'],['reg','NL'],['reg','KE'],['reg','IT'],['cer','AE1',['AE2']],['reg','TH'],['reg','MY'],['reg','CA'],['reg','PT'],['jp'],['reg','LK'],['reg','BE'],['reg','SG'],
   ['cn'],['reg','AU'],['reg','NZ'],['reg','IE'],['cer','DE1',['DE2']],['reg','SE'],['reg','PL'],['ru'],['reg','BR'],['reg','AR'],['mx'],['cer','GB1',[]],['reg','ID'],['reg','VN'],['spg'],['pk'],
-  ['reg','ZA'],['cer','SA1',['SA2','SA3']],['reg','QA'],['reg','TR'],['cer','FR1',['FR2']],['reg','ES'],['reg','NG'],['cer','KR1',[]],['reg','KZ'],['reg','BD'],['reg','EU'],['us']];
+  // after Pakistan only the five that matter land (South Africa, Saudi Arabia, France, Korea, then the United States); the rest
+  // (Qatar, Türkiye, Spain, Nigeria, Kazakhstan, Bangladesh, the EU) are not coming to the summit, so the player isn't kept waiting
+  ['reg','ZA'],['cer','SA1',['SA2','SA3']],['cer','FR1',['FR2']],['cer','KR1',[]],['us']];
 // Pakistan One's scene runs at a sixth of normal speed (the rest of the summit at a third): half the sim time for the same
 // minute and a quarter on screen, and its aircraft fly at a believable speed for the cinematics
 const PK_PACE=BASE/6;

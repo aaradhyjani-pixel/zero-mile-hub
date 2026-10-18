@@ -640,56 +640,75 @@ let MARKS=[];
 // 3D spectacles the stories ask for (read by 3d/fx.js through Z.fx): see 3d/FX.md for the item shapes
 let FXV=[];
 function drawMarks(g,toScr,now,skip){for(const m of MARKS){if(T>m.until||(skip&&m.k&&skip.has(m.k)))continue;const n=m.n||1;
+  if(m.path){const u=clamp((T-m.t0)/Math.max(1,m.t1-m.t0),0,1)*(m.path.length-1),i0=Math.min(m.path.length-2,Math.floor(u)),k=u-i0;m.x=lerp(m.path[i0][0],m.path[i0+1][0],k);m.y=lerp(m.path[i0][1],m.path[i0+1][1],k);}
   for(let i=0;i<n;i++){const x=m.x+(n>1?(((i*37)%7)-3)*m.sp/6+Math.sin(now*0.7+i)*m.sp*0.06:0),y=m.y+(n>1?(((i*53)%5)-2)*m.sp/10+Math.cos(now*0.9+i*2)*m.sp*0.04:0);
     const p=toScr(x,y,m.alt||0);if(!p)continue;g.font=`${m.px||26}px serif`;g.textAlign='center';g.textBaseline='middle';g.fillText(m.e,p.X,p.Y+(n>1?Math.sin(now*2+i)*3:0));}}
   g.textAlign='left';g.textBaseline='alphabetic';MARKS=MARKS.filter(m=>T<=m.until);}
-const WHO={protocol:{badge:'PROTOCOL · MINISTRY',svg:face('🙏','#3a2614')},ranger:{badge:'RANGE OFFICER · FOREST DEPT',svg:face('🐅','#1f3a14')},
+const WHO={protocol:{badge:'PROTOCOL · MINISTRY',svg:face('🙏','#3a2614')},ranger:{badge:'RANGE OFFICER · FOREST DEPT · SHERNI WATCH',svg:face('🐅','#1f3a14')},
   kid:{badge:'ROOFTOP · AHMEDABAD',svg:face('🪁','#14304a')},ramp:{badge:'GROUND OPS SUPERVISOR',svg:face('🏏','#123a22')},tower:{badge:'TOWER',svg:face('📣','#123a22')},
   dabba:{badge:'MUKADAM · DABBAWALAS',svg:face('🍱','#3a2a10')},admin:{badge:'GROUP ADMIN · OPS',svg:face('📱','#103a2a')},team:{badge:'TEAM MANAGER',svg:face('🏆','#123a5a')},
   surya:{badge:'SURYA KIRAN LEADER · IAF',svg:face('✈️','#3a1414')},langur:{badge:'LANGUR-CALL MAN · WILDLIFE',svg:face('🐒','#3a2a14')},radar:{badge:'RADAR CONTROLLER',svg:face('📡','#1c1440')},
   planner:{badge:'WEDDING PLANNER · CHAMBANI',svg:face('💍','#3a2a08')},fan:{badge:'FAN CLUB · JAMTHA',svg:face('🏏','#103a2a')}};
 
-// L1 · the ribbon: the first departure can't go until the Chief Guest cuts it, and he is always five minutes away
-STORY.ribbon={len:1500,start(c){const r=rwBy('dep')[0];if(!r)return false;c.r=r;
+// L1 · the ribbon: the first departure can't go until the Chief Minister cuts it, and he is always five minutes away.
+// A stage stands on the runway: officials, marigolds, a podium; when he arrives he gives a speech first (the joke is the
+// speech and the protocol, never the person).
+const SPEECH=['Brothers and sisters of Vidarbha, namaskar!','From the Zero Mile of India, we will fly to the whole world.','I will be brief.','Briefly, my second point.','In conclusion. And, secondly…','Jai Hind! Now, the ribbon.'];
+function speech(c,t0,len){SPEECH.forEach((l,i)=>c.lines.push([t0-c.E+Math.round(i*len/SPEECH.length),'CM ON STAGE',l]));}
+STORY.ribbon={len:2000,start(c){const r=rwBy('dep')[0];if(!r)return false;c.r=r;
   c.blk={from:T,to:T+1e6,open:true,why:'Inauguration ribbon',desk:'Ribbon across it, until it is cut'};r.blocks.push(c.blk);r.blocks.sort((a,b)=>a.from-b.from);
   const hx=r.holds.length?G.get(r.holds[0]).x:r.x1-300;c.mark={x:hx,y:r.y,e:'🎀',until:T+1e6,px:30,k:'ribbon'};MARKS.push(c.mark);
   c.fx={kind:'ribbon',id:'ribbon',x:hx,y:r.y,w:75,t0:T,t1:T+1e6,cutAt:null};FXV.push(c.fx);
-  guard(['Sir, no departures yet. The Chief Guest will cut the ribbon.','He is five minutes away. 🙏'],WHO.protocol);
-  c.lines.push([0,'PROTOCOL',`A ceremonial ribbon is tied across ${r.short}. No departures until the Chief Guest cuts it. He is five minutes away.`]);
-  const go=()=>{r.blocks=r.blocks.filter(b=>b!==c.blk);c.mark.until=T;c.fx.cutAt=T;c.fx.t1=T+150;renderRw();const f=flights.find(o=>o.rwy===r&&['lineup','hp'].includes(o.state))||flights.find(o=>o.rwy===r&&o.state==='taxi_out');
+  c.stage={kind:'stage',id:'stage1',x:hx-260,y:r.y,a:0,t0:T,t1:T+1e6,speaker:null};FXV.push(c.stage);MARKS.push(c.smark={x:hx-260,y:r.y,e:'🎤',until:T+1e6,px:26,k:'stage'});
+  c.wait=T+240+Math.floor(SIMR()*240);
+  guard(['Sir, no departures yet. The Chief Minister will cut the ribbon.','He is five minutes away. 🙏'],WHO.protocol);
+  c.lines.push([0,'PROTOCOL',`A stage and a ceremonial ribbon are on ${r.short}. No departures until the Chief Minister cuts it. He is five minutes away.`]);
+  const go=()=>{r.blocks=r.blocks.filter(b=>b!==c.blk);c.mark.until=T;c.fx.cutAt=T;c.fx.t1=T+150;c.stage.t1=T+90;c.smark.until=T;renderRw();const f=flights.find(o=>o.rwy===r&&['lineup','hp'].includes(o.state))||flights.find(o=>o.rwy===r&&o.state==='taxi_out');
     if(f)cinema(f,['OPENING DAY',`The first departure rolls through the ribbon on ${r.short}`,'BAS PAANCH MINUTE 🙏',icos('🎀','✂️','🛫')],{ms:7000});};
-  c.go=go;c.wait=T+240+Math.floor(SIMR()*240);
-  const I=storyCard(c,{icon:{g:'🎀',c:'#ff9933'},x:hx,y:r.y,title:`A ribbon across ${r.short}`,
-    text:`The opening ceremony has tied a ribbon across ${r.short}, and the first departures are queuing behind it. Cut it yourselves and traffic flows now, but Protocol will re-stage the ceremony in about 15 minutes on the arrivals runway, for 2 minutes. Or wait: the Chief Guest is "five minutes away".`,
-    def:1,defText:'you wait for the Chief Guest.',
-    acts:[{l:'Cut it ourselves',pri:1,fn(){go();const ra=rwBy('arr').sort((a,b)=>b.tdList.length-a.tdList.length)[0];
-        c.cut=true;if(ra){takeRunways([ra],T+900,120,0,'Inauguration, take two','Inauguration, take two');c.lines.push([T-c.E+900,()=>{guard(['The Chief Guest has arrived. We will now inaugurate again.','Only two minutes. Your arrivals runway, please. 🎀'],WHO.protocol);
-          flashBanner(['OPENING DAY',`The ceremony is re-staged on ${ra.short}`,'INAUGURATED. AGAIN. 🎀',icos('🎀','📸','🎀')]);}]);}
+  c.go=go;
+  const I=storyCard(c,{icon:{g:'🎀',c:'#ff9933'},x:hx,y:r.y,title:`A stage and a ribbon on ${r.short}`,
+    text:`The opening ceremony has put a stage and a ribbon on ${r.short}, and the first departures are queuing behind it. Cut the ribbon yourselves and traffic flows now, but Protocol will re-stage the whole ceremony, speech included, in about 15 minutes in the middle of the arrivals runway, for 3 minutes. Or wait: the Chief Minister is "five minutes away".`,
+    def:1,defText:'you wait for the Chief Minister.',
+    acts:[{l:'Cut it ourselves',pri:1,fn(){go();const ra=rwBy('arr').sort((a,b)=>b.tdList.length-a.tdList.length)[0];c.cut=true;
+        if(ra){const t2=T+900,mx=(ra.x0+ra.x1)/2;takeRunways([ra],t2,180,0,'Inauguration, take two','Inauguration, take two: a stage mid-runway');
+          const st={kind:'stage',id:'stage2',x:mx,y:ra.y,a:0,t0:t2-40,t1:t2+200,speaker:{t0:t2+5,t1:t2+165},cutAt:t2+165};FXV.push(st);MARKS.push({x:mx,y:ra.y,e:'🎤',until:t2+180,px:26,k:'stage'});
+          speech(c,t2+5,160);
+          c.lines.push([t2-c.E,()=>{guard(['The Chief Minister has arrived. We will now inaugurate again.','Only two minutes. Mid-runway, please. 🎤'],WHO.protocol);
+            cinema(null,['OPENING DAY · TAKE TWO',`The Chief Minister's speech, in the middle of ${ra.short}`,'"I will be brief." 🎤',icos('🎤','🎀','📸')],{view:{tx:mx,ty:ra.y+60,dist:520,pitch:0.32,yaw:0.9},at:[mx,ra.y],ms:9000});}]);
+          c.lines.push([t2-c.E+178,'PROTOCOL','The speech ran three minutes. That is a record. For brevity.']);}
         resolve(I,true,`${r.short}'s ribbon was cut by ops. Protocol will be back.`);}},
-      {l:'Wait for the Chief Guest',fn(){resolve(I,true,'');}}]});c.I=I;
-},tick(c,t){if(!c.cut&&!c.went){if(T>=c.wait){c.went=true;if(incidents.includes(c.I))resolve(c.I,true,'The Chief Guest arrived and cut the ribbon.');c.go();guard(['The Chief Guest has cut the ribbon.','He would like to do it again for the photographers. (No.)'],WHO.protocol);}
-    else if(T>=(c.nag||0)){if(c.nag)radio('PROTOCOL',['The Chief Guest is five minutes away.','Still five minutes, sir. Very consistent.','The convoy has been sighted. It was a different convoy.','Five minutes. Same five minutes.'][(c.nagN=(c.nagN||0)+1)%4]);c.nag=T+120;}}}};
+      {l:'Wait for the Chief Minister',fn(){resolve(I,true,'');}}]});c.I=I;
+  // waiting: he arrives a little before the cut and speaks first
+  c.arrive=Math.max(T+60,c.wait-150);c.stage.speaker={t0:c.arrive+10,t1:c.wait-5};speech(c,c.arrive+10,c.wait-c.arrive-15);
+},tick(c,t){if(c.cut){if(!c.packed){c.packed=true;c.stage.speaker=null;}return;}
+  if(!c.arrived&&T>=c.arrive){c.arrived=true;guard(['The Chief Minister has arrived.','He will say a few words. 🎤'],WHO.protocol);
+    cinema(null,['OPENING DAY','The Chief Minister takes the stage',"He'll be brief. 🎤",icos('🎤','🎀','📸')],{view:{tx:c.stage.x,ty:c.stage.y+60,dist:520,pitch:0.32,yaw:0.9},at:[c.stage.x,c.stage.y],ms:9000});}
+  if(!c.went){if(T>=c.wait){c.went=true;if(incidents.includes(c.I))resolve(c.I,true,'The Chief Minister arrived, spoke and cut the ribbon.');c.go();guard(['The Chief Minister has cut the ribbon.','He would like to do it again for the photographers. (No.)'],WHO.protocol);}
+    else if(!c.arrived&&T>=(c.nag||0)){if(c.nag)radio('PROTOCOL',['The Chief Minister is five minutes away.','Still five minutes, sir. Very consistent.','The convoy has been sighted. It was a different convoy.','Five minutes. Same five minutes.'][(c.nagN=(c.nagN||0)+1)%4]);c.nag=T+120;}}}};
 
-// L1 · the tigress: Nagpur is the tiger capital of India, and she has right of way
-STORY.tiger={len:1500,start(c){const r=rwBy('dep')[0];if(!r)return false;c.r=r;c.ra=rwBy('arr',r)[0]||null;
-  const f=flights.find(o=>o.rwy===r&&['hp','lineup'].includes(o.state))||flights.find(o=>o.rwy===r&&o.state==='taxi_out');
-  if(f)cinema(f,['TIGER CAPITAL OF INDIA',`A tigress is walking down ${r.short}`,'Shere Khan, you are not cleared to line up 🐅',icos('🐅','🛫','🌳')],{ms:6500});
-  c.mark={x:lerp(r.x0,r.x1,0.45),y:r.y,e:'🐅',until:T+1e6,px:34,k:'tiger'};MARKS.push(c.mark);
-  c.fx={kind:'tiger',id:'tiger1',path:[[lerp(r.x0,r.x1,0.62),r.y-20],[lerp(r.x0,r.x1,0.45),r.y+8],[lerp(r.x0,r.x1,0.3),r.y-12]],t0:T,t1:T+1e6,exit:null};FXV.push(c.fx);
+// L1 · Sherni on the loose: Nagpur is the tiger capital of India, and the tigress has right of way
+const walk=(r,a,b,n,side)=>Array.from({length:n},(_,i)=>[lerp(r.x0,r.x1,lerp(a,b,i/(n-1))),r.y+(i%2?1:-1)*(8+side*(i%3))]);
+STORY.tiger={len:2000,start(c){const r=rwBy('dep')[0];if(!r)return false;c.r=r;c.ra=rwBy('arr',r)[0]||null;
+  const p0=walk(r,0.66,0.38,6,6);
+  c.mark={x:p0[0][0],y:r.y,e:'🐅',until:T+1e6,px:34,k:'tiger',path:p0,t0:T,t1:T+420};MARKS.push(c.mark);
+  c.fx={kind:'tiger',id:'tiger1',path:p0,t0:T,t1:T+420,darted:null,exit:null};FXV.push(c.fx);
+  cinema(null,['SHERNI ON THE LOOSE',`A tigress is walking down ${r.short}`,'Shere Khan, you are not cleared to line up 🐅',icos('🐅','🛫','🌳')],{view:{tx:p0[0][0],ty:r.y+40,dist:480,pitch:0.3,yaw:1.1},at:[p0[0][0],r.y],ms:8000});
   guard(['Sir, she is not a bird. You cannot sweep her.','She is the senior-most resident here. 🐅'],WHO.ranger);
   c.lines.push([0,'TWR',`All stations: a tigress is on ${r.short}. Nobody is to taxi towards her. That includes the follow-me car.`]);
-  const I=storyCard(c,{icon:{g:'🐅',c:'#ff8c1a'},x:c.mark.x,y:r.y,title:`A tigress on ${r.short}`,
-    text:`A tigress from the Umred-Karhandla corridor has walked onto ${r.short}. Wait for the forest department's dart team and ${r.short} shuts for 4 to 6 minutes; nobody knows exactly. Or herd her off with sirens: ${r.short} stays open, but she is still out there.`,
+  const I=storyCard(c,{icon:{g:'🐅',c:'#ff8c1a'},x:p0[0][0],y:r.y,title:`Sherni on the loose: a tigress on ${r.short}`,
+    text:`A tigress from the Umred-Karhandla corridor is strolling down ${r.short}. Wait for the forest department's dart team and ${r.short} shuts for 4 to 6 minutes; nobody knows exactly. Or shoo her off with sirens: ${r.short} stays open, but she is still out there, and tigresses come back.`,
     def:0,defText:`${r.short} shuts until the dart team arrives.`,
-    acts:[{l:'Wait for the dart team',pri:1,fn(){const d=240+Math.floor(SIMR()*120);closeRw(r,d,'Tigress on the runway');c.mark.until=T+d;c.fx.t1=T+d;c.fx.darted=T+d-90;
-        c.lines.push([T-c.E+d,'FOREST','She has been darted, weighed and named. She is called Runway. She is going home to Tadoba.']);resolve(I,true,`${r.short} shut for the tigress.`);}},
-      {l:'Herd her off with sirens',fn(){c.mark.until=T+60;c.fx.t1=T+60;c.fx.exit=[lerp(r.x0,r.x1,0.4),r.y+(r.y<0?-900:900)];c.herd=true;resolve(I,true,'');
+    acts:[{l:'Wait for the dart team',pri:1,fn(){const d=240+Math.floor(SIMR()*120);closeRw(r,d,'Tigress on the runway');c.mark.until=T+d;c.mark.t1=T+d-90;c.fx.t1=T+d;c.fx.darted=T+d-90;
+        c.lines.push([T-c.E+d-90,'FOREST','Dart away. She is lying down. Very dignified about it.']);c.lines.push([T-c.E+d,'FOREST','She has been weighed and named. She is called Runway. She is going home to Tadoba.']);resolve(I,true,`${r.short} shut for the tigress.`);}},
+      {l:'Shoo her off with sirens',fn(){c.mark.until=T+60;c.fx.t1=T+60;c.fx.exit=[lerp(r.x0,r.x1,0.4),r.y+(r.y<0?-900:900)];c.herd=true;resolve(I,true,'');
         if(c.ra){const ra=c.ra,at=T-c.E+900;c.lines.push([at-60,'FOREST',`Update: the tigress has been seen heading towards ${ra.short}. She did not like the sirens.`]);
-          c.lines.push([at,()=>{closeRw(ra,240,'Tigress, again');MARKS.push({x:lerp(ra.x0,ra.x1,0.6),y:ra.y,e:'🐅',until:T+240,px:34,k:'tiger'});
-            FXV.push({kind:'tiger',id:'tiger2',path:[[lerp(ra.x0,ra.x1,0.7),ra.y+(ra.y<0?-700:700)],[lerp(ra.x0,ra.x1,0.6),ra.y],[lerp(ra.x0,ra.x1,0.5),ra.y+10]],t0:T,t1:T+240,exit:null});
-            guard(['She is back. On your arrivals runway.','Sirens only made her curious, sir. 🐅'],WHO.ranger);
-            const g=nextOn(ra);flashBanner(['SHE IS BACK',`The tigress is on ${ra.short}`,'Madam has right of way 🐅',icos('🐅','🐅')]);}]);}}}]});
-},lesson(c){return c.herd?{w:25,title:'The tigress came back',text:'Herding her off kept the departure runway open, but she walked onto the arrivals runway 15 minutes later, mid-wave. A cost you put off still has to be paid: when you choose the risky option, flip a second runway to MIX early so the bill lands softly.'}:null;}};
+          c.lines.push([at,()=>{const D=330,p=walk(ra,0.72,0.34,8,10);p.unshift([lerp(ra.x0,ra.x1,0.75),ra.y+(ra.y<0?-650:650)]);closeRw(ra,D,'Tigress, again');
+            MARKS.push({x:p[0][0],y:p[0][1],e:'🐅',until:T+D,px:34,k:'tiger',path:p,t0:T,t1:T+D});FXV.push({kind:'tiger',id:'tiger2',path:p,t0:T,t1:T+D,darted:null,exit:null});
+            guard(['Sherni is back. On your arrivals runway.','Sirens only made her curious, sir. She will take her time. 🐅'],WHO.ranger);
+            cinema(null,['SHERNI AFOOT',`She is back, on ${ra.short}, and in no hurry`,'Madam has right of way 🐅',icos('🐅','🐾','🐅')],{view:{tx:p[1][0],ty:ra.y+40,dist:480,pitch:0.3,yaw:1.1},at:[p[1][0],ra.y],ms:8000});}]);
+          c.lines.push([at+150,'TWR',`${ra.short} remains closed. The tigress is inspecting the touchdown zone. Thoroughly.`]);
+          c.lines.push([at+330,'FOREST','She has left for the jungle. On her own schedule.']);}}}]});
+},lesson(c){return c.herd?{w:25,title:'Sherni came back',text:'Shooing her off kept the departure runway open, but she walked onto the arrivals runway 15 minutes later and took her time, mid-wave. A cost you put off still has to be paid: when you choose the risky option, flip a second runway to MIX early so the bill lands softly.'}:null;}};
 
 // L2 · Uttarayan: Ahmedabad moved in, and so did its kites
 STORY.kites={len:1000,start(c){const ra=rwBy('arr').sort((a,b)=>b.tdList.length-a.tdList.length);const r=ra[0];if(!r)return false;c.r=r;r.kiteUntil=T+480;

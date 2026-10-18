@@ -2441,8 +2441,8 @@ STORY.tiger={len:2000,start(c){const r=rwBy('dep')[0];if(!r)return false;c.r=r;c
   c.lines.push([8,()=>tigerCam(['SHERNI PUTTAR ON THE LOOSE',`A tigress is walking down ${r.short}`,'Shere Khan, you are not cleared to line up 🐅',icos('🐅','🛫','🌳')],p0[0][0],r.y)]);
   guard(['Sir, she is not a bird. You cannot sweep her.','She is the senior-most resident here. 🐅'],WHO.ranger);
   c.lines.push([0,'TWR',`All stations: a tigress is on ${r.short}. Nobody is to taxi towards her. That includes the follow-me car.`]);
-  const I=c.I=storyCard(c,{icon:{g:'🐅',c:'#ff8c1a'},x:p0[0][0],y:r.y,title:`Sherni Puttar on the loose: a tigress on ${r.short}`,
-    text:`Sherni Puttar, a tigress from the Umred-Karhandla corridor, is strolling down ${r.short}. Wait for the forest department's dart team and ${r.short} shuts for 4 to 6 minutes; nobody knows exactly. Or shoo her off with sirens: ${r.short} stays open, but she is still out there, and tigresses come back.`,
+  const I=c.I=storyCard(c,{icon:{g:'🐅',c:'#ff8c1a'},x:p0[0][0],y:r.y,title:`Sherni on the loose: a tigress on ${r.short}`,
+    text:`Sherni, a tigress from the Umred-Karhandla corridor, is strolling down ${r.short}. Wait for the forest department's dart team and ${r.short} shuts for 4 to 6 minutes; nobody knows exactly. Or shoo her off with sirens: ${r.short} stays open, but she is still out there, and tigresses come back.`,
     def:0,defText:`${r.short} shuts until the dart team arrives.`,
     acts:[{l:'Wait for the dart team',pri:1,fn(){const d=240+Math.floor(SIMR()*120);closeRw(r,d,'Tigress on the runway');c.mark.until=T+d;c.mark.t1=T+d-90;c.fx.t1=T+d;c.fx.darted=T+d-90;
         c.lines.push([T-c.E+d-90,'FOREST','Dart away. She is lying down. Very dignified about it.']);c.lines.push([T-c.E+d,'FOREST','She has been weighed and named. She is called Runway. She is going home to Tadoba.']);resolve(I,true,`${r.short} shut for the tigress.`);}},
@@ -2450,13 +2450,13 @@ STORY.tiger={len:2000,start(c){const r=rwBy('dep')[0];if(!r)return false;c.r=r;c
         if(c.ra){const ra=c.ra,at=T-c.E+900;c.lines.push([at-60,'FOREST',`Update: the tigress has been seen heading towards ${ra.short}. She did not like the sirens.`]);
           c.lines.push([at,()=>{const D=330,p=walk(ra,0.72,0.34,8,10);p.unshift([lerp(ra.x0,ra.x1,0.75),ra.y+(ra.y<0?-650:650)]);closeRw(ra,D,'Tigress, again');
             MARKS.push({x:p[0][0],y:p[0][1],e:'🐅',until:T+D,px:34,k:'tiger',path:p,t0:T,t1:T+D});FXV.push({kind:'tiger',id:'tiger2',path:p,t0:T,t1:T+D,darted:null,exit:null});
-            guard(['Sherni Puttar is back. On your arrivals runway.','Sirens only made her curious, sir. She will take her time. 🐅'],WHO.ranger);
+            guard(['Sherni is back. On your arrivals runway.','Sirens only made her curious, sir. She will take her time. 🐅'],WHO.ranger);
             c.lines.push([at+8,()=>tigerCam(['SHERNI PUTTAR AFOOT',`She is back, on ${ra.short}, and in no hurry`,'Madam has right of way 🐅',icos('🐅','🐾','🐅')],p[0][0],p[0][1])]);}]);
           c.lines.push([at+150,'TWR',`${ra.short} remains closed. The tigress is inspecting the touchdown zone. Thoroughly.`]);
           c.lines.push([at+330,'FOREST','She has left for the jungle. On her own schedule.']);}}}]});
 },
 // her card's marker goes where she goes (as drawn: the 3D tigress, or the map's emoji)
-tick(c){if(c.I&&incidents.includes(c.I)){const p=tigerAt()||[c.mark.x,c.mark.y];c.I.x=p[0];c.I.y=p[1];}},lesson(c){return c.herd?{w:25,title:'Sherni Puttar came back',text:'Shooing her off kept the departure runway open, but she walked onto the arrivals runway 15 minutes later and took her time, mid-wave. A cost you put off still has to be paid: when you choose the risky option, flip a second runway to MIX early so the bill lands softly.'}:null;}};
+tick(c){if(c.I&&incidents.includes(c.I)){const p=tigerAt()||[c.mark.x,c.mark.y];c.I.x=p[0];c.I.y=p[1];}},lesson(c){return c.herd?{w:25,title:'Sherni came back',text:'Shooing her off kept the departure runway open, but she walked onto the arrivals runway 15 minutes later and took her time, mid-wave. A cost you put off still has to be paid: when you choose the risky option, flip a second runway to MIX early so the bill lands softly.'}:null;}};
 
 // L2 · Uttarayan: Ahmedabad moved in, and so did its kite fight. "Kai po che!" is what a kite fighter shouts on cutting a
 // rival's kite; today the rooftops' rival is your arrivals. The fight drifts south across every runway, about 4 minutes

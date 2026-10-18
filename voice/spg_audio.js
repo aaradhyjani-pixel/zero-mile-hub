@@ -102,7 +102,7 @@ const SPG_AUDIO={
 "The tower is not happy. 🍱": "voice/clips/351e335a76f3.mp3",
 "The tower is hungry. Changeovers are taking longer. Nobody talk to the supervisor.": "voice/clips/20cf36d4bcfb.mp3",
 "Lunch has arrived in the tower. Every dabba correct. Again.": "voice/clips/9b370797a9c5.mp3",
-"GPS says Muscat. Radar says Butibori.": "voice/clips/123e7f334eb8.mp3",
+"GPS says Khyber Pakhtunkhwa. Radar says Butibori.": "voice/clips/08fcdbc32a4a.mp3",
 "I believe my radar. 📡": "voice/clips/ea6eda1d5c21.mp3",
 "GPS spoofing has stopped. The aircraft are back over Nagpur, where they always were.": "voice/clips/aea1c1068825.mp3",
 "Sir, forty jets. One muhurat.": "voice/clips/a6be806c9e16.mp3",

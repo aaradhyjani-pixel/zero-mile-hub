@@ -2104,7 +2104,7 @@ const SPG_AUDIO={
 "The tower is not happy. 🍱": "voice/clips/351e335a76f3.mp3",
 "The tower is hungry. Changeovers are taking longer. Nobody talk to the supervisor.": "voice/clips/20cf36d4bcfb.mp3",
 "Lunch has arrived in the tower. Every dabba correct. Again.": "voice/clips/9b370797a9c5.mp3",
-"GPS says Muscat. Radar says Butibori.": "voice/clips/123e7f334eb8.mp3",
+"GPS says Khyber Pakhtunkhwa. Radar says Butibori.": "voice/clips/08fcdbc32a4a.mp3",
 "I believe my radar. 📡": "voice/clips/ea6eda1d5c21.mp3",
 "GPS spoofing has stopped. The aircraft are back over Nagpur, where they always were.": "voice/clips/aea1c1068825.mp3",
 "Sir, forty jets. One muhurat.": "voice/clips/a6be806c9e16.mp3",
@@ -2234,18 +2234,33 @@ function pickVoice(vs,lang){const sc=v=>(/en[-_]IN/i.test(v.lang)?4:/en[-_]GB/i.
   if(lang){const L=lang.toLowerCase().replace('_','-'),m=vs.filter(v=>v.lang.toLowerCase().replace('_','-').startsWith(L.split('-')[0])&&(L.indexOf('-')<0||v.lang.toLowerCase().replace('_','-')===L||true));
     const q=v=>(v.lang.toLowerCase().replace('_','-')===L?2:0)+(/enhanced|premium|natural|neural|google/i.test(v.name)?1:0);return m.sort((a,b)=>q(b)-q(a))[0]||null;}
   return vs.slice().sort((a,b)=>sc(b)-sc(a))[0]||null;}
-function vqNext(){if(vqOn)return;const it=VQ.shift();if(!it)return;if(it.valid&&!it.valid()){if(it.onEnd)it.onEnd();return vqNext();}vqOn=true;let fin=false;const done=()=>{if(fin)return;fin=true;vqCur=null;duck(false);if(it.onEnd)it.onEnd();setTimeout(()=>{vqOn=false;vqNext();},it.gap);};
+// one voice at a time, never two: a clip's watchdog starts when its sound actually starts and trusts the clip's real
+// length (a slow network load can't make the next line start on top of it), and moving on always stops the old clip.
+// Radio chatter (say) that has waited too long in the queue is dropped rather than played late; announcements and the
+// SPG (speak) are never dropped for age, only when their moment has passed (valid).
+const VQ_TTL=10000;   // a line that carries its own valid() test (L4's pilot calls) is judged by that instead
+function vqNext(){if(vqOn)return;let it=VQ.shift();
+  while(it&&((it.valid&&!it.valid())||(it.radio&&!it.valid&&it.ttl!==0&&performance.now()-it.qt>(it.ttl||VQ_TTL)))){if(it.onEnd)it.onEnd();it=VQ.shift();}
+  if(!it)return;vqOn=true;let fin=false,wd=null;
+  const done=()=>{if(fin)return;fin=true;clearTimeout(wd);const a=vqCur;vqCur=null;if(a){try{a.onended=a.onerror=a.onplaying=null;a.pause();}catch(e){}}duck(false);if(it.onEnd)it.onEnd();setTimeout(()=>{vqOn=false;vqNext();},Math.max(500,it.gap||0));};   // at least half a second between any two voices
   if(it.onStart)it.onStart();const clip=typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[it.text];
-  if(clip){const a=VPRE.get(clip)||new Audio(clip);VPRE.delete(clip);vqCur=a;a.volume=it.vol||0.95;a.onended=done;a.onerror=done;duck(true);const p=a.play();if(p&&p.catch)p.catch(done);setTimeout(done,2500+it.text.split(/\s+/).length*520);return;}
+  if(clip){const a=VPRE.get(clip)||new Audio(clip);VPRE.delete(clip);vqCur=a;a.volume=it.vol||0.95;a.onended=done;a.onerror=done;
+    const words=it.text.split(/\s+/).length;
+    a.onplaying=()=>{clearTimeout(wd);const d=isFinite(a.duration)&&a.duration>0?a.duration*1000:2500+words*600;wd=setTimeout(done,d+1500);};
+    wd=setTimeout(done,9000+words*600);   // it never started playing at all (blocked or failed to load): move on
+    duck(true);const p=a.play();if(p&&p.catch)p.catch(done);return;}
   if(!it.radio&&window.speechSynthesis&&window.SpeechSynthesisUtterance){try{const S2=window.speechSynthesis,v=pickVoice(S2.getVoices(),it.lang);if(it.lang&&!v)return done();const u=new SpeechSynthesisUtterance(it.text.replace(/[\u{1F000}-\u{1FAFF}☀-➿️]/gu,'').trim());
-    if(v){u.voice=v;u.lang=v.lang;}else u.lang='en-IN';u.rate=0.95;u.pitch=1;u.onend=done;u.onerror=done;duck(true);S2.speak(u);setTimeout(done,9000);return;}catch(e){}}
+    if(v){u.voice=v;u.lang=v.lang;}else u.lang='en-IN';u.rate=0.95;u.pitch=1;u.onend=done;u.onerror=done;duck(true);S2.speak(u);wd=setTimeout(done,9000);return;}catch(e){}}
   done();}
 // speak(lines,{onLine,onDone,gap,endGap,gaps,lang}): lines one after another; the gap after each line is gaps[i], else gap
 // (1200 ms: the SPG takes his time), and endGap after the last line
-function speak(lines,o){o=o||{};if(!SND.on)return false;voicePreload(lines);lines.forEach((t,i)=>{const last=i===lines.length-1;VQ.push({text:t,lang:o.lang,valid:o.valid,gap:o.gaps&&o.gaps[i]!=null?o.gaps[i]:last?(o.endGap!=null?o.endGap:900):(o.gap!=null?o.gap:1200),onStart:o.onLine?()=>o.onLine(i):null,onEnd:last?o.onDone:null});});vqNext();return true;}
+function speak(lines,o){o=o||{};if(!SND.on)return false;voicePreload(lines);lines.forEach((t,i)=>{const last=i===lines.length-1;VQ.push({text:t,qt:performance.now(),lang:o.lang,valid:o.valid,gap:o.gaps&&o.gaps[i]!=null?o.gaps[i]:last?(o.endGap!=null?o.endGap:900):(o.gap!=null?o.gap:1200),onStart:o.onLine?()=>o.onLine(i):null,onEnd:last?o.onDone:null});});vqNext();return true;}
 // a radio call in a speaker's own voice: shows on the ticker, and plays its recorded clip (keyed by the exact text) if there is one
-function say(src,text,o){o=o||{};radio(src,text);if(SND.on&&typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[text]){voicePreload(text);VQ.push({text,radio:true,gap:o.gap!=null?o.gap:500,vol:o.vol,valid:o.valid,onStart:o.onStart,onEnd:o.onEnd});vqNext();return true;}if(o.onEnd)o.onEnd();return false;}
-function voiceReset(){VQ.length=0;if(vqCur){try{vqCur.pause();}catch(e){}}vqCur=null;vqOn=false;if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}music(null,{now:true});}
+// the same radio line is never voiced twice within 30 s (a set piece that re-sends a call each tick can't make it echo)
+const VQ_SEEN=new Map();
+function say(src,text,o){o=o||{};radio(src,text);const now=performance.now(),seen=VQ_SEEN.get(text);
+  if(SND.on&&typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[text]&&!(seen&&now-seen<30000)){VQ_SEEN.set(text,now);voicePreload(text);VQ.push({text,qt:now,ttl:o.ttl,radio:true,gap:o.gap!=null?o.gap:700,vol:o.vol,valid:o.valid,onStart:o.onStart,onEnd:o.onEnd});vqNext();return true;}if(o.onEnd)o.onEnd();return false;}
+function voiceReset(){VQ.length=0;VQ_SEEN.clear();if(vqCur){try{vqCur.pause();}catch(e){}}vqCur=null;vqOn=false;if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}music(null,{now:true});}
 // music for set pieces: music('dj') plays music/dj.mp3 (looped unless {loop:false}), crossfading from whatever was playing;
 // music(null) fades it out. It ducks under voice lines. A missing file is simply silent, so tracks can be dropped in later.
 var MUS={el:null,name:null,vol:0.4,tm:null,fi:null};
@@ -2681,11 +2696,11 @@ STORY.monkeys={len:900,start(c){const pc=CONCI.FN;if(!pc)return false;const gs=G
 STORY.gps={len:900,start(c){const gr=RW.filter(r=>!r.locked&&['R2','R5'].includes(r.id));if(!gr.length)return false;c.gr=gr;
   const nm=gr.map(r=>r.short).join(' and '),il=RW.filter(r=>!r.locked&&!gr.includes(r)).map(r=>r.short).join(', ');
   for(const r of gr)MARKS.push({x:r.x1+2400,y:r.y,e:'📡',until:T+600,px:24,k:'ghosts'});FXV.push({kind:'ghosts',id:'gps',pts:gr.map(r=>[r.x1+2600,r.y]),t0:T,t1:T+600});
-  guard(['GPS says Muscat. Radar says Butibori.','I believe my radar. 📡'],WHO.radar);
+  guard(['GPS says Khyber Pakhtunkhwa. Radar says Butibori.','I believe my radar. 📡'],WHO.radar);
   const f=gr.map(nextOn).filter(Boolean)[0];
   if(f)cinema(f,['GPS SPOOFING','"TERRAIN, PULL UP." There is no terrain.','Nagpur is flat. 🗺️',icos('🛰️','📡','🛰️')],{ms:6500});
   const I=storyCard(c,{icon:{g:'📡',c:'#7a5cff'},x:gr[0].x1+2000,y:gr[0].y,title:`GPS spoofing: false alarms on ${nm}`,
-    text:`Someone is broadcasting fake satellite signals, and aircraft GPS now thinks it is over Muscat. ${nm} have no ILS (the radio beam on the ground that guides a plane onto the runway), so landings there use GPS, and the fake signal sets off "TERRAIN, PULL UP" alarms: the jet goes around, though Nagpur is flat. For 10 minutes: land only on the ILS runways (${il}) and use ${nm} for take-offs, or keep landing everywhere and expect surprise go-arounds.`,
+    text:`Someone is broadcasting fake satellite signals, and aircraft GPS now thinks it is over Khyber Pakhtunkhwa. ${nm} have no ILS (the radio beam on the ground that guides a plane onto the runway), so landings there use GPS, and the fake signal sets off "TERRAIN, PULL UP" alarms: the jet goes around, though Nagpur is flat. For 10 minutes: land only on the ILS runways (${il}) and use ${nm} for take-offs, or keep landing everywhere and expect surprise go-arounds.`,
     def:0,defText:`ops stops landings on ${nm} for 10 minutes.`,
     acts:[{l:'ILS runways only (10 min)',pri:1,fn(){for(const r of gr)r.noArrUntil=T+600;renderRw();resolve(I,true,`Landings moved off the GPS runways ${nm} for 10 minutes.`);}},
       {l:'Keep landing on GPS',fn(){for(const r of gr)r.gpsUntil=T+600;renderRw();resolve(I,true,'');}}]});
@@ -3600,7 +3615,7 @@ function startLevel(n){
 
 }
 function finish(){
-  ended=true;paused=true;closePop();
+  ended=true;paused=true;closePop();voiceReset();CINE=null;if(cinema.q)cinema.q.length=0;try{vipBanner(false);}catch(e){}
   const left=flights.filter(f=>f.kind==='dep'&&['at_gate','taxi_out','hp','push','start','stuck'].includes(f.state)&&T>f.std+1500).length;
   for(const f of flights)if(f.links&&f.kind==='dep'&&f.state==='at_gate'&&T>f.std){for(const l of f.links){if(l.arr.inBlock!=null&&l.arr.inBlock+l.x<=T)S.cnxMade+=l.n;else S.cnxMiss+=l.n;}}
   const st=stars(LV,S);const best=store.get('zm_stars')||{};if((best[LV.n]||0)<st){best[LV.n]=st;store.set('zm_stars',best);}

@@ -16,6 +16,45 @@ Read `build.md`, `progress.md` and the top of `hub.js` (LEVELS, resetState, buil
 
 **Out of scope for this session:** a hijack scenario, new set pieces, 3D work beyond showing money in the overlay, and new levels.
 
+## Read this first: two rules for this session
+
+### Rule 1 — Money is ADDED. Nothing is removed.
+This session adds a layer on top of a game people already replay. Keep everything that exists today, working exactly as it does now:
+- All 4 levels.
+- Every set piece: the summit, Pakistan One, the wedding, the dabbawalas, kites, fog and the rest.
+- The voices and music hooks.
+- The 3D view and the 2D map.
+- Incidents and ops teams, stars, the bank chart, the runway desk, quick play from the menu, and the `zm_stars` / `zm_cfg` saves.
+
+Specifically:
+- **Do not delete, rename or simplify** any existing feature, file, level, set piece or setting to make room for money. If something gets in the way, wrap it or add a hook beside it. Don't rewrite it.
+- **Money is off by default in quick play.** Quick play from the menu stays exactly as today, with at most a small money chip. The full economy and the 60-year concession live in a new **Concession** mode.
+- **Regression gate:** run `run_all.py` for every level and bot before you start, and again after each ship. Operational results (stars, OTP, connections, safety, movements) must stay the same within noise when money is off. Report both tables side by side. If something regresses, fix it before moving on.
+- Run the existing 3D and set-piece checks (shots.py, the ff runs from progress.md) after each ship: no new page errors, and every set piece still plays end to end.
+
+### Rule 2 — Ultracode is on for the whole session: decide deliberately when to run in parallel
+Ultracode makes you plan workflows (many sub-agents) for every substantive task. That is powerful and expensive, and on this codebase it can be destructive: many agents editing `hub.js` at once will collide. Follow this split.
+
+**Run as parallel workflows (fan out, then cross-check):**
+1. **Step 1 research.** One agent per topic: AERA tariffs and the till; UDF and parking; non-aero revenue per passenger; costs and runway-open cost; fuel burn and ATF price; DGCA passenger rights; concession finance (gearing, tenor, rates, DSCR); capex benchmarks; PPP bids. Give each topic a skeptic agent that tries to refute the claims, then merge everything into `research/money.md` and `money.json`. Cap it at about 10 to 16 agents.
+2. **Design options before committing.** Draft the economy from 3 independent angles (a regulator-realistic one, a fun-first one, and the simplest one that still teaches the lesson), have one judge agent compare them, then write `money-design.md`. About 4 agents.
+3. **Balancing runs (Step 5).** Bot games are independent: run levels × bots × 2 seeds in parallel, collect one table, then a single agent decides the tuning changes. Repeat the round until acceptance passes or two rounds in a row make no progress.
+4. **Visual QA.** One agent per screen (top strip, P&L tab, floaters, board meeting, AERA order, income statement, onboarding, bid, handback) takes headless screenshots in 2D and 3D and reports problems. One agent fixes them afterwards.
+5. **New, self-contained files.** Things that don't touch `hub.js` can be written in parallel, each agent owning one file: `money.json`, the onboarding and bid screens as a separate module (for example `money/onboarding.js` injected by build.py, the way `3d/` modules are), the glossary entries, `music/SOURCES.md`, and the audio replacements.
+
+**Keep sequential: one agent, one writer, no parallel edits:**
+1. **Every edit to `hub.js`, `hub3d.js`, `build.py` and `spec.json`.** One agent at a time, in small commits. If a workflow must touch `hub.js`, give each agent its own git worktree or branch, and merge them one by one with the regression gate between merges. Never have two agents edit the same file in the same checkout.
+2. **Wiring the economy into the simulation** (revenue and cost hooks on touchdown, lift-off, pushback, stand-hours, incidents, runway modes, ops teams). It's one coherent change, so one agent reads the code and makes it.
+3. **The era loop and the save format** (`zm_campaign`): one agent, because the schema has to be consistent.
+4. **Decisions on balancing numbers.** Agents run the games in parallel, but exactly one agent changes the numbers in `money.json`.
+5. **Commits and pushes to `main`.** One agent, after the regression gate passes.
+
+**Sizing and cost:**
+- Keep `/config` workflow size at `medium` (under 10 agents) for everything except research and balancing runs, where `large` is fine.
+- Use smaller models for the mechanical agents (screenshot QA, running bot games, collecting tables) and keep the session's model for design, the wiring and the judging.
+- Before any workflow over 25 agents, write one line in `progress.md` saying why it needs that many.
+- If a task is small (a typo, a CSS tweak, one function), just do it directly. No workflow.
+
 ## Step 0 — The frame: you are a concessionaire, not a manager (this changes everything below)
 
 The money layer lives inside a **public-private partnership (PPP) concession**, the way India's private airports really work. It is modelled on two real plays:

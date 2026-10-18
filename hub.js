@@ -132,10 +132,10 @@ const LEVELS=[
 let flights=[],FID=0,S=null,incidents=[],INC=0,selected=null,hover=null,selRw=null;
 const puffs=[],moveLog=[];
 function resetState(){
-  SUM=null;STO=[];CINE=null;MARKS=[];FXV=[];cinema.q=[];specialArr.list=[];flights=[];FID=0;incidents=[];INC=0;selected=null;hover=null;selRw=null;puffs.length=0;moveLog.length=0;ops.length=0;opsClock=0;lastCnx=-1e9;
+  SUM=null;STO=[];CINE=null;MARKS=[];FXV=[];{const kc=$('#kiteChip');if(kc)kc.hidden=true;}cinema.q=[];specialArr.list=[];flights=[];FID=0;incidents=[];INC=0;selected=null;hover=null;selRw=null;puffs.length=0;moveLog.length=0;ops.length=0;opsClock=0;lastCnx=-1e9;
   S={tl:[],flipLog:[],tlNext:0,combo:0,bestCombo:0,moves:0,arr:0,dep:0,depOnTime:0,arrOnTime:0,cnxMade:0,cnxMiss:0,safety:100,incOk:0,incDef:0,incTypes:{},hits:[],holdMin:0,div:0,goArounds:0,log:[],delaySum:0,flips:0};
   GATES.forEach(g=>{g.occ=null;g.res=null;});
-  RW.forEach(r=>{r.tdList=[];r.lastSchedTd=-1e9;r.lastDep=-1e9;r.arrExit=-1e9;r.occ=null;r.changeUntil=-1;r.closedUntil=-1;r.why='';r.ops=0;r.flash=0;r.blocks=[];r.gapReq=false;r.degraded=false;r.strike=null;r.shear=false;r.sepK=1;r.sepUntil=-1;r.kiteUntil=-1;r.noArrUntil=-1;r.gpsUntil=-1;});
+  RW.forEach(r=>{r.tdList=[];r.lastSchedTd=-1e9;r.lastDep=-1e9;r.arrExit=-1e9;r.occ=null;r.changeUntil=-1;r.closedUntil=-1;r.why='';r.ops=0;r.flash=0;r.blocks=[];r.gapReq=false;r.degraded=false;r.strike=null;r.shear=false;r.sepK=1;r.sepUntil=-1;r.kiteUntil=-1;r.kiteFrom=-1;r.kiteP=0.25;r.noArrUntil=-1;r.gpsUntil=-1;});
   Object.assign(FX,{chgK:1,chgUntil:-1,pushFreeze:-1,pushSlow:-1,pushSlowS:0});
   CONC.forEach(c=>{c.laneShut=-1;c.slowUntil=-1;});
   RC.clear();SIMR=mulberry(11);
@@ -366,7 +366,7 @@ function updateFlight(f,dt){
     if(f.pd>=f.finalStart){const k=(f.pd-f.finalStart)/f.finalLen;f.alt=Math.max(0,700*(1-k/0.96));}else f.alt=lerp(f.startAlt,700,clamp(f.pd/Math.max(1,f.finalStart),0,1));
     if(dustNow&&f.td-T<20&&f.td-T>10&&f.gaRoll<(f.rwy.shear?0.3:0.07)&&!f.gaDone){f.gaDone=true;goAround(f,'windshear in the dust');break;}
     if(f.birdHit&&f.td-T<20&&!f.gaDone){f.gaDone=true;goAround(f,'bird strike on short final');break;}
-    if(f.rwy.kiteUntil>T&&f.td-T<20&&f.td-T>10&&f.gaRoll<0.25&&!f.gaDone&&!f.vip){f.gaDone=true;goAround(f,'kite on short final. Yes, a kite');break;}
+    if(f.rwy.kiteUntil>T&&T>=f.rwy.kiteFrom&&f.td-T<20&&f.td-T>10&&f.gaRoll<(f.rwy.kiteP||0.25)&&!f.gaDone&&!f.vip){f.gaDone=true;goAround(f,'kite on short final. Yes, a kite');const kc=STO.find(o=>o.k==='kites');if(kc&&kc.hit)kc.hit(f);break;}
     if(f.rwy.gpsUntil>T&&f.td-T<25&&f.td-T>12&&f.gaRoll<0.3&&!f.gaDone&&!f.vip){f.gaDone=true;floater(f.x,f.y,f.alt,'PULL UP','#ff4d3f');goAround(f,'false TERRAIN PULL UP alarm, GPS spoofing');break;}
     if(T>=f.td)touchdown(f);break;}
   case 'rollout':{f.v=Math.max(14,f.v-1.15*dt);const done=advance(f,dt,f.v);if(f.rwy.occ===f&&f.pd>=f.exitAt){f.rwy.occ=null;f.rwy.arrExit=T;floater(f.x,f.y,0,'+1','#a99cff');}if(done){if(f.rwy.occ===f){f.rwy.occ=null;f.rwy.arrExit=T;}startTaxiIn(f);}break;}
@@ -639,7 +639,7 @@ function flashBanner(b,ms){if(CINE||(SUM&&SUM.cine))return;vipBanner(true,b[0],b
 let MARKS=[];
 // 3D spectacles the stories ask for (read by 3d/fx.js through Z.fx): see 3d/FX.md for the item shapes
 let FXV=[];
-function drawMarks(g,toScr,now,skip){for(const m of MARKS){if(T>m.until||(skip&&m.k&&skip.has(m.k)))continue;const n=m.n||1;
+function drawMarks(g,toScr,now,skip){for(const m of MARKS){if(T>m.until||(m.from&&T<m.from)||(skip&&m.k&&skip.has(m.k)))continue;const n=m.n||1;
   if(m.path){const u=clamp((T-m.t0)/Math.max(1,m.t1-m.t0),0,1)*(m.path.length-1),i0=Math.min(m.path.length-2,Math.floor(u)),k=u-i0;m.x=lerp(m.path[i0][0],m.path[i0+1][0],k);m.y=lerp(m.path[i0][1],m.path[i0+1][1],k);}
   for(let i=0;i<n;i++){const x=m.x+(n>1?(((i*37)%7)-3)*m.sp/6+Math.sin(now*0.7+i)*m.sp*0.06:0),y=m.y+(n>1?(((i*53)%5)-2)*m.sp/10+Math.cos(now*0.9+i*2)*m.sp*0.04:0);
     const p=toScr(x,y,m.alt||0);if(!p)continue;g.font=`${m.px||26}px serif`;g.textAlign='center';g.textBaseline='middle';g.fillText(m.e,p.X,p.Y+(n>1?Math.sin(now*2+i)*3:0));}}
@@ -710,19 +710,40 @@ STORY.tiger={len:2000,start(c){const r=rwBy('dep')[0];if(!r)return false;c.r=r;c
           c.lines.push([at+330,'FOREST','She has left for the jungle. On her own schedule.']);}}}]});
 },lesson(c){return c.herd?{w:25,title:'Sherni came back',text:'Shooing her off kept the departure runway open, but she walked onto the arrivals runway 15 minutes later and took her time, mid-wave. A cost you put off still has to be paid: when you choose the risky option, flip a second runway to MIX early so the bill lands softly.'}:null;}};
 
-// L2 · Uttarayan: Ahmedabad moved in, and so did its kites
-STORY.kites={len:1000,start(c){const ra=rwBy('arr').sort((a,b)=>b.tdList.length-a.tdList.length);const r=ra[0];if(!r)return false;c.r=r;r.kiteUntil=T+480;
-  c.nx=ra.find(o=>o!==r)||null;MARKS.push({x:r.x1+1600,y:r.y,e:'🪁',until:T+480,n:9,sp:2200,alt:160,px:24,k:'kites'});FXV.push({kind:'kites',id:'k1',x:r.x1+1600,y:r.y,sp:1800,alt:180,n:60,t0:T,t1:T+480});
-  const f=nextOn(r);if(f)cinema(f,['UTTARAYAN · KITE FESTIVAL',`Ahmedabad moved in. So did its kites, over ${r.short}.`,'KAI PO CHE! 🪁 Kites 1, A321neo 0',icos('🪁','🪁','🪁')],{ms:6500});
-  guard(['Uncle, the whole city is on the roof.','We are not cutting your planes. We are cutting each other. 🪁'],WHO.kid);
-  c.lines.push([0,'TWR',`All aircraft for ${r.short}: kites reported on final, 300 to 800 feet. Yes, kites.`]);
-  const I=storyCard(c,{icon:{g:'🪁',c:'#3aa0ff'},x:r.x1+1200,y:r.y,title:`Kites over the approach to ${r.short}`,
-    text:`It's Uttarayan, and a cloud of kites is drifting across ${r.short}'s final approach for the next 8 minutes: about 1 landing in 4 there will go around. Switch ${r.short} to departures while they pass (ops switches it back when they move on), or keep landing through them. They are drifting south${c.nx?`, towards ${c.nx.short}`:''}.`,
-    def:1,defText:`${r.short} keeps landing through the kites.`,
-    acts:[{l:`${r.short} to DEP while they pass`,pri:1,fn(){c.back=r.mode;setMode(r,'DEP');resolve(I,true,`${r.short} switched to departures while the kites passed.`);}},{l:'Keep landing',fn(){resolve(I,true,'');}}]});
-  if(c.nx){const n=c.nx;c.lines.push([400,'WX',`The kites are drifting south. Expect them over ${n.short} in about a minute.`]);
-    c.lines.push([480,()=>{if(c.back&&r.mode==='DEP'&&!r.locked)setMode(r,c.back);n.kiteUntil=T+360;MARKS.push({x:n.x1+1600,y:n.y,e:'🪁',until:T+360,n:8,sp:2200,alt:160,px:24,k:'kites'});FXV.push({kind:'kites',id:'k2',x:n.x1+1600,y:n.y,sp:1800,alt:180,n:50,t0:T,t1:T+360});radio('TWR',`Kites now on final for ${n.short}. ${r.short} is clear.`);guard(['Uncle, sorry. Wind changed.','Kai po che! 🪁'],WHO.kid);renderRw();}]);}
-  c.lines.push([860,'TWR','The kites have gone home for lunch. All finals clear.']);}};
+// L2 · Uttarayan: Ahmedabad moved in, and so did its kite fight. "Kai po che!" is what a kite fighter shouts on cutting a
+// rival's kite; today the rooftops' rival is your arrivals. The fight drifts south across every runway, about 4 minutes
+// each, and every go-around it causes is a point to the rooftops.
+(function(){const st=document.createElement('style');st.textContent=`#kiteChip{position:absolute;left:16px;top:200px;z-index:12;padding:7px 13px;border-radius:8px;background:rgba(10,13,16,.92);border:1px solid #3aa0ff;font-family:var(--f-sign);font-weight:700;font-size:18px;letter-spacing:.03em;color:#fff;box-shadow:0 8px 20px rgba(0,0,0,.45)}
+#kiteChip[hidden]{display:none}#kiteChip b{color:#ffd23f;font-size:21px}#kiteChip small{display:block;font-family:var(--f-mono);font-weight:500;font-size:10.5px;color:#9fb3c8;letter-spacing:.06em}#kiteChip.pop{animation:cpop .45s ease-out}`;document.head.appendChild(st);
+  const d=document.createElement('div');d.id='kiteChip';d.hidden=true;d.setAttribute('aria-live','polite');$('#app').appendChild(d);})();
+function kiteChip(c,on){const d=$('#kiteChip');if(!d)return;if(!on){d.hidden=true;return;}const nx=c.seq.find(r=>T<r.kiteUntil);
+  d.innerHTML=`<small>UTTARAYAN · KITE FIGHT${nx?` · OVER ${nx.short}`:''}</small>🪁 ROOFTOPS <b>${c.score}</b> · AIRLINES <b>0</b>`;d.hidden=false;d.classList.remove('pop');void d.offsetWidth;d.classList.add('pop');}
+STORY.kites={len:1400,start(c){const seq=RW.filter(r=>!r.locked).sort((a,b)=>a.y-b.y);if(!seq.length)return false;c.seq=seq;c.score=0;const V=240;
+  seq.forEach((r,i)=>{const t0=T+i*V;r.kiteFrom=t0;r.kiteUntil=t0+V;r.kiteP=0.3;
+    FXV.push({kind:'kites',id:'k'+i,x:r.x1+1600,y:r.y,sp:1800,alt:180,n:60,t0:t0-30,t1:t0+V+30});MARKS.push({x:r.x1+1600,y:r.y,e:'🪁',until:t0+V,from:t0,n:9,sp:2200,alt:160,px:24,k:'kites'});
+    if(i>0)c.lines.push([i*V-100,cc=>{radio('WX',`The kite fight is drifting south: over ${r.short} in about a minute and a half.`);kiteChip(cc,true);}]);});
+  c.end=T+seq.length*V;
+  c.hit=f=>{c.score++;floater(f.x,f.y,f.alt,'KAI PO CHE!','#ffd23f');kiteChip(c,true);
+    const cries=[`KAI PO CHE! We cut ${f.A.name}'s ${f.T.name}!`,'KAI PO CHE! Put it on the scoreboard, uncle!','KAI PO CHE! Rooftop 14 takes the lead!','KAI PO CHE! That one had 180 people in it. Still counts!','KAI PO CHE! Ahmedabad 5, aviation 0!'];
+    radio('ROOFTOPS',cries[Math.min(c.score-1,cries.length-1)]);logE(`A kite sent ${fl(f)} around. Rooftops ${c.score}, airlines 0.`);
+    if(c.score===1)guard([`KAI PO CHE! We cut ${f.A.name}'s ${f.T.name}!`,'Uncle, it is 1-0 to the rooftops. 🪁'],WHO.kid);};
+  kiteChip(c,true);
+  guard(['Uncle, all of Ahmedabad is on the roof.','Today the sky is ours. Kai po che! 🪁'],WHO.kid);
+  const r0=seq[0],f=nextOn(r0)||seq.map(nextOn).filter(Boolean)[0];
+  const ban=['UTTARAYAN · THE KITE FESTIVAL','Ahmedabad moved in, and brought its kite fight','"Kai po che!" means "I cut it!" Today they are cutting your arrivals 🪁',icos('🪁','🪁','🪁')];
+  if(f)cinema(f,ban,{ms:7000});else flashBanner(ban,6000);
+  c.lines.push([0,'TWR',`All aircraft: a kite fight is in progress over the approaches, starting with ${r0.short}. Yes, kites. Hundreds.`]);
+  const I=storyCard(c,{icon:{g:'🪁',c:'#3aa0ff'},x:r0.x1+1200,y:r0.y,title:'Uttarayan: a kite fight over every approach',
+    text:`It's Uttarayan, Gujarat's kite festival, and Ahmedabad brought it along. The rooftops' kite fight is drifting south across every runway's approach, about 4 minutes each: ${seq.map(r=>r.short).join(', then ')}. When a kite fouls a landing the jet goes around and the rooftops shout "Kai po che!" ("I cut it!"), a point to them. Keep landings off the runway under the kites (the desk shows "kites in…"). Or send 400 plates of undhiyu and jalebi to the rooftops: they fly lower and far fewer jets go around, but the catering trucks clog the apron (pushbacks 2 minutes slower for 10 minutes).`,
+    def:1,defText:'you chase the kites yourself: about 1 landing in 3 under them goes around.',
+    acts:[{l:'Send undhiyu and jalebi',pri:1,fn(){for(const r of seq)r.kiteP=0.08;FX.pushSlow=T+600;FX.pushSlowS=120;c.fed=true;radio('CATERING','400 plates of undhiyu and jalebi are on their way to the rooftops.');
+        c.lines.push([T-c.E+90,'ROOFTOPS','Thank you, uncle! We are flying lower now. We are also eating.']);resolve(I,true,'Undhiyu and jalebi went to the rooftops; the kites are flying lower.');}},
+      {l:'Chase the kites',fn(){resolve(I,true,'');}}]});
+  c.lines.push([c.end-T,cc=>{kiteChip(cc,true);flashBanner(['UTTARAYAN · FULL TIME',`Rooftops ${cc.score} · Airlines 0`,cc.score?'Kai po che! 🪁':'A clean sheet! The rooftops demand a rematch 🪁',icos('🪁','🏆','🪁')],6000);
+    const al=(flights.find(o=>o.landT!=null&&o.al==='6E')||{A:{name:'IndiGo'}}).A.name;
+    guard(['Uncle, good game. 🪁',`Can we have our pink kite back? It's on your ${al} jet's tail.`],WHO.kid);radio('TWR','The kite fight is over. All finals clear. One pink kite is on a tail fin; ground ops will return it.');
+    setTimeout(()=>kiteChip(cc,false),12000);}]);
+},lesson(c){return c.score>=3?{w:15,title:`The rooftops won ${c.score}-0`,text:'The kite fight moved south one runway every 4 minutes, and the desk warned "kites in…" before each. Chase the kites: just before they reach a runway, take arrivals off it (DEP), and hand it back once they pass.'}:null;}};
 
 // L2 · the last ball of the World Cup final: the country stops, and so does the apron
 STORY.lastball={len:900,start(c){
@@ -734,22 +755,30 @@ STORY.lastball={len:900,start(c){
     acts:[{l:'Put it on the PA (3 min)',pri:1,fn(){FX.pushFreeze=T+180;c.pa=true;c.six=T+180;radio('PA','Ladies and gentlemen, the last ball. Nobody move.');resolve(I,true,'The last ball went on the PA: pushbacks paused for 3 minutes.');}},
       {l:'Back to work',fn(){FX.pushSlow=T+360;FX.pushSlowS=150;c.six=T+180;resolve(I,true,'');}}]});
   c.sixFn=(cc=>{radio('PA','SIX! INDIA WIN THE WORLD CUP!');logE('India won the World Cup off the last ball.');
-    if(cc.pa)for(const f of flights)if(f.state==='at_gate'&&f.readyAt>T)f.readyAt=Math.max(T,f.readyAt-240);FXV.push({kind:'fireworks',id:'six',x:procC.x,y:procC.y,t0:T,t1:T+200});
+    for(const o of CONC)if(o.open!==false)floater(o.cx,o.cy,0,'SIX! 🏏','#ffd23f');radio('RAMP','The whole apron is honking. The tower has joined in. So has a fire tender.');
+    if(cc.pa)for(const f of flights)if(f.state==='at_gate'&&f.readyAt>T){f.readyAt=Math.max(T,f.readyAt-240);}FXV.push({kind:'fireworks',id:'six',x:procC.x,y:procC.y,t0:T,t1:T+200});
     const f=flights.find(o=>o.state==='push')||flights.find(o=>o.state==='at_gate'&&o.kind==='dep');
     const b=['LAST BALL · SIX TO WIN','SIX! India win the World Cup','IN-DI-A! IN-DI-A! 🏆',icos('🏏')+FLAG_IN+icos('🏆')];if(f)cinema(f,b,{ms:6500});else flashBanner(b);
     guard([cc.pa?'The crews are back. They are running.':'They are back. Slowly. Smiling.','Who is honking? … Fine. Honk. 📣'],WHO.tower);});c.len=4000;
 },tick(c){if(c.six&&T>=c.six&&!c.sixed){c.sixed=true;c.sixFn(c);}}};
 
 // L3 · the dabbawalas: Mumbai's lunch network moved with the airport, and it is never late
-STORY.dabba={len:900,start(c){const ds=CONC.filter(o=>o.id[0]==='D');if(!ds.length)return false;
-  const f=flights.filter(o=>o.state==='at_gate'&&o.gate&&o.gate.conc[0]==='D').sort((a,b)=>b.T.span-a.T.span)[0];
+STORY.dabba={len:1100,start(c){const ds=CONC.filter(o=>o.id[0]==='D');if(!ds.length)return false;c.ds=ds;
+  // they are already here when the call comes: riding in along Concourse D's apron road, then waiting at its edge
+  c.wait=[];for(const d of ds){const ex=d.lx-450;
+    FXV.push({kind:'cyclists',id:'dabbaIn'+d.id,x0:d.lx-1500,y0:d.ly,x1:ex,y1:d.ly,n:40,t0:T,t1:T+70});
+    const w={kind:'cyclists',id:'dabbaWait'+d.id,x0:ex,y0:d.ly,x1:ex,y1:d.ly,n:40,t0:T+70,t1:T+1e6,hold:true};FXV.push(w);c.wait.push([d,w]);
+    MARKS.push(c.mk=c.mk||{x:ex,y:d.ly,e:'🚲',until:T+1e6,n:6,sp:400,px:20,k:'cyclists'});}
+  const d0=ds[0],ban=['MUMBAI MOVED IN','120 dabbawalas at Concourse D, waiting to cross','A380 GIVES WAY TO TIFFIN 🍱',icos('🚲','🍱','🚲')];
+  cinema(null,ban,{view:{tx:d0.lx-450,ty:d0.ly,dist:650,pitch:0.34,yaw:0.7},at:[d0.lx-450,d0.ly],ms:8500});
   guard(['Saheb, since 1890, never late.',`Your on-time is ${OTPNOW()}%. Ours is 100. Please hold the aeroplane. 🍱`],WHO.dabba);
-  if(f)cinema(f,['MUMBAI MOVED IN','120 dabbawalas crossing at Concourse D','A380 GIVES WAY TO TIFFIN 🍱',icos('🚲','🍱','🚲')],{ms:6500});
-  const I=storyCard(c,{icon:{g:'🍱',c:'#f4c430'},x:ds[0].lx,y:ds[0].ly,title:'Dabbawalas crossing at Concourse D',
-    text:"Mumbai's dabbawalas moved with the airport, and they feed the tower. 120 bicycles on the tiffin run need to cross Concourse D's apron road. Let them cross and nothing moves at D for 3 minutes. Hold them and the tower's lunch is late: every runway changeover takes 3 minutes instead of 2 for the next 15 minutes.",
+  const cross=(t0,shut)=>{for(const [d,w] of c.wait){w.t1=t0;FXV.push({kind:'cyclists',id:'dabbaX'+d.id,x0:d.lx-450,y0:d.ly,x1:d.lx+450,y1:d.ly,n:40,t0,t1:t0+180});if(shut)d.laneShut=Math.max(d.laneShut,t0+180);}
+    if(c.mk){c.mk.until=t0+180;}};
+  const I=storyCard(c,{icon:{g:'🍱',c:'#f4c430'},x:d0.lx-450,y:d0.ly,title:'Dabbawalas waiting at Concourse D',
+    text:"Mumbai's dabbawalas moved with the airport, and they feed the tower. 120 bicycles on the tiffin run are lined up at the edge of Concourse D's apron road. Let them cross and nothing moves at D for 3 minutes. Hold them and the tower's lunch is late: every runway changeover takes 3 minutes instead of 2 for the next 15 minutes.",
     def:0,defText:'they cross anyway: Concourse D stops for 3 minutes.',
-    acts:[{l:'Let them cross (3 min)',pri:1,fn(){for(const d of ds){d.laneShut=Math.max(d.laneShut,T+180);MARKS.push({x:d.lx,y:d.ly,e:'🚲',until:T+180,n:6,sp:500,px:20,k:'cyclists'});FXV.push({kind:'cyclists',id:'dabba'+d.id,x0:d.lx-450,y0:d.ly,x1:d.lx+450,y1:d.ly,n:40,t0:T,t1:T+180});}resolve(I,true,'The dabbawalas crossed Concourse D. On time, obviously.');}},
-      {l:'Hold the bicycles',fn(){FX.chgK=1.5;FX.chgUntil=T+900;c.hangry=true;renderRw();resolve(I,true,'');}}]});
+    acts:[{l:'Let them cross (3 min)',pri:1,fn(){cross(T,true);resolve(I,true,'The dabbawalas crossed Concourse D. On time, obviously.');}},
+      {l:'Hold the bicycles',fn(){FX.chgK=1.5;FX.chgUntil=T+900;c.hangry=true;cross(T+300,false);renderRw();resolve(I,true,'');}}]});
   c.lines.push([200,cc=>{if(cc.hangry){radio('TWR','The tower is hungry. Changeovers are taking longer. Nobody talk to the supervisor.');guard(['Lunch is late, saheb.','The tower is not happy. 🍱'],WHO.dabba);}
     else radio('TWR','Lunch has arrived in the tower. Every dabba correct. Again.');}]);}};
 
@@ -1173,7 +1202,7 @@ function rwStatus(){
   document.querySelectorAll('#rwRows .rw').forEach(row=>{const r=RW.find(x=>x.id===row.dataset.r);const st=row.querySelector('.st');if(r.locked){st.textContent='Opens in a later level';return;}
     const fin=flights.filter(f=>f.state==='approach'&&f.rwy===r).length,q=flights.filter(f=>(f.state==='hp')&&f.rwy===r).length;
     let s='';const bk=r.blocks[0];if(T<r.closedUntil)s=`<span class="bad">closed ${Math.ceil((r.closedUntil-T)/60)} min · ${r.why}</span>`;else if(bk&&T>=bk.from)s=`<span class="bad">${bk.summit?'Taken by security':(bk.desk||'VVIP closure')}${bk.open?'':' · '+mmss(bk.to-T)}</span>`;else if(T<r.changeUntil)s=`<span class="hot">changeover ${Math.ceil((r.changeUntil-T)/60)} min</span>`;else s=`<b>${fin}</b> on final · <b class="${q>6?'hot':''}">${q}</b> queued · ${r.ops} ops`;
-    const tags=[];if(bk&&T<bk.from)tags.push(`<span class="bad">VVIP in ${mmss(bk.from-T)}</span>`);if(r.degraded)tags.push('<span class="hot">lights out: slower landings</span>');if(T<r.sepUntil)tags.push(`<span class="hot">${r.sepWhy||'double spacing'}</span>`);if(T<r.noArrUntil)tags.push('<span class="hot">GPS spoofed: no landings</span>');if(r.gpsUntil>T)tags.push('<span class="hot">GPS spoofed: false PULL UPs</span>');if(r.kiteUntil>T)tags.push('<span class="hot">kites on final: go-arounds</span>');if(r.strike)tags.push('<span class="hot">bird remains: risk</span>');if(ops.some(o=>o.kind==='fod'&&o.r===r&&o.phase==='wait'))tags.push('<span class="hot">sweep pending</span>');if(r.shear)tags.push('<span class="hot">windshear</span>');st.innerHTML=s+(tags.length?' · '+tags.join(' · '):'');});
+    const tags=[];if(bk&&T<bk.from)tags.push(`<span class="bad">VVIP in ${mmss(bk.from-T)}</span>`);if(r.degraded)tags.push('<span class="hot">lights out: slower landings</span>');if(T<r.sepUntil)tags.push(`<span class="hot">${r.sepWhy||'double spacing'}</span>`);if(T<r.noArrUntil)tags.push('<span class="hot">GPS spoofed: no landings</span>');if(r.gpsUntil>T)tags.push('<span class="hot">GPS spoofed: false PULL UPs</span>');if(r.kiteUntil>T&&T>=r.kiteFrom)tags.push('<span class="hot">🪁 NOW</span>');else if(r.kiteFrom>T&&r.kiteFrom-T<=180)tags.push(`<span class="hot">🪁 in ${mmss(r.kiteFrom-T)}</span>`);if(r.strike)tags.push('<span class="hot">bird remains: risk</span>');if(ops.some(o=>o.kind==='fod'&&o.r===r&&o.phase==='wait'))tags.push('<span class="hot">sweep pending</span>');if(r.shear)tags.push('<span class="hot">windshear</span>');st.innerHTML=s+(tags.length?' · '+tags.join(' · '):'');});
 }
 
 /* ============ HUD ============ */

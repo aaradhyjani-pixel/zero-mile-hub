@@ -1488,7 +1488,7 @@ const LEVELS=[
 let flights=[],FID=0,S=null,incidents=[],INC=0,selected=null,hover=null,selRw=null;
 const puffs=[],moveLog=[];
 function resetState(){
-  SUM=null;STO=[];CINE=null;PACE=null;HOLDDEP=null;MARKS=[];FXV=[];voiceReset();if(typeof ltReset==="function")ltReset();{const kc=$('#kiteChip');if(kc)kc.hidden=true;const wc=$('#wedChip');if(wc)wc.hidden=true;const sb=$('#stopBtn');if(sb)sb.hidden=true;const ft=$('#fogTag');if(ft)ft.hidden=true;fogF=0;}cinema.q=[];specialArr.list=[];flights=[];FID=0;incidents=[];INC=0;selected=null;hover=null;selRw=null;puffs.length=0;moveLog.length=0;ops.length=0;opsClock=0;lastCnx=-1e9;
+  SUM=null;STO=[];CINE=null;PACE=null;endDue.cut=false;HOLDDEP=null;MARKS=[];FXV=[];voiceReset();if(typeof ltReset==="function")ltReset();{const kc=$('#kiteChip');if(kc)kc.hidden=true;const wc=$('#wedChip');if(wc)wc.hidden=true;const sb=$('#stopBtn');if(sb)sb.hidden=true;const ft=$('#fogTag');if(ft)ft.hidden=true;fogF=0;}cinema.q=[];specialArr.list=[];flights=[];FID=0;incidents=[];INC=0;selected=null;hover=null;selRw=null;puffs.length=0;moveLog.length=0;ops.length=0;opsClock=0;lastCnx=-1e9;
   S={tl:[],flipLog:[],tlNext:0,combo:0,bestCombo:0,moves:0,arr:0,dep:0,depOnTime:0,arrOnTime:0,cnxMade:0,cnxMiss:0,safety:100,incOk:0,incDef:0,incTypes:{},hits:[],holdMin:0,div:0,goArounds:0,log:[],delaySum:0,flips:0};
   GATES.forEach(g=>{g.occ=null;g.res=null;});
   RW.forEach(r=>{r.tdList=[];r.lastSchedTd=-1e9;r.lastDep=-1e9;r.arrExit=-1e9;r.occ=null;r.changeUntil=-1;r.closedUntil=-1;r.why='';r.ops=0;r.flash=0;r.blocks=[];r.gapReq=false;r.degraded=false;r.strike=null;r.shear=false;r.sepK=1;r.sepUntil=-1;r.kiteUntil=-1;r.kiteFrom=-1;r.kiteP=0.25;r.noArrUntil=-1;r.gpsUntil=-1;r.noDepUntil=-1;r.btUntil=-1;});
@@ -1565,7 +1565,13 @@ function freeGate(f,initial){
   for(const g of GATES){if(g.occ||g.res||!g.open||CR[g.code]<code||!zoneOk(g,f)||marsBusy(g))continue;let s=(CR[g.code]-code)*400+(g.remote?2500:0);s+=dist(g.x,g.y,procC.x,procC.y)*(initial?0.02:0.1);if(s<bs){bs=s;best=g;}}
   return best;
 }
-function toDep(f){const t=f.turn;const hd=HOLDDEP&&t.std<HOLDDEP.until&&T<HOLDDEP.until;f.kind='dep';f.num=t.num;f.to=t.to;f.toCode=t.toCode;f.dir=t.dir;f.std=t.std;f.origStd=t.std;f.state='at_gate';f.links=f.turnLinks;f.readyAt=Math.max(f.std-120,f.inBlock+f.T.turn*60+(f.gate&&f.gate.remote?300:0));f.prio=false;f.held=false;if(hd)sumHold(f);}
+function toDep(f){const t=f.turn;
+  // a wind-down level ends when every departure has gone, so it may not hold one that cannot go: an onward flight whose
+  // turnaround (from a late arrival) would not be done by the time it would need to push to get away before the day's hard
+  // stop (push, start and taxi take 3 minutes at least) is cancelled, and the aircraft night-stops
+  if(LV.windDown&&Math.max(t.std-120,f.inBlock+f.T.turn*60+(f.gate&&f.gate.remote?300:0))>LEN+WIND-180){f.turn=null;f.turnLinks=null;f.nightStop=true;f.state='parked';f.towAt=T+1500;
+    logE(`${fl(f)}: its onward flight is cancelled, it would not be turned round before the day ends. It stays the night.`);return;}
+  const hd=HOLDDEP&&t.std<HOLDDEP.until&&T<HOLDDEP.until;f.kind='dep';f.num=t.num;f.to=t.to;f.toCode=t.toCode;f.dir=t.dir;f.std=t.std;f.origStd=t.std;f.state='at_gate';f.links=f.turnLinks;f.readyAt=Math.max(f.std-120,f.inBlock+f.T.turn*60+(f.gate&&f.gate.remote?300:0));f.prio=false;f.held=false;if(hd)sumHold(f);}
 // summit protocol: departures stay at their gates until the SPG hands the runways back (HOLDDEP.until), then they all go
 let HOLDDEP=null;function sumHold(f){f.held=true;f.sumHeld=true;f.holdUntil=HOLDDEP.until;f.readyAt0=f.readyAt0!=null?f.readyAt0:f.readyAt;f.readyAt=Math.max(f.readyAt0,HOLDDEP.until);}
 
@@ -1994,8 +2000,8 @@ function guardShow(text,who){const g=$('#guard'),t=$('#guardTxt');if(!g)return;i
   t.textContent=text;g.classList.add('on');}
 // the bodyguard by default; set pieces bring their own character (badge + 116x150 svg). When sound is on the bodyguard
 // speaks, and his popup follows his voice line by line.
-function guard(lines,who,o){const g=$('#guard');if(!g)return;clearTimeout(guard.t1);clearTimeout(guard.t2);o=o||{};
-  if((!who||(typeof SPG_AUDIO!=='undefined'&&lines.every(t=>SPG_AUDIO[t])))&&speak(lines,{gap:o.gap,gaps:o.gaps,endGap:o.endGap,valid:o.valid,onLine:i=>{clearTimeout(guard.t2);guardShow(lines[i],who);if(o.onLine)o.onLine(i);},onDone:()=>{guard.t2=setTimeout(()=>g.classList.remove('on'),1400);if(o.onDone)o.onDone();}}))return;
+function guard(lines,who,o){const g=$('#guard');if(!g||ended)return;clearTimeout(guard.t1);clearTimeout(guard.t2);o=o||{};
+  if((!who||(typeof SPG_AUDIO!=='undefined'&&lines.every(t=>SPG_AUDIO[t])))&&speak(lines,{gap:o.gap,gaps:o.gaps,endGap:o.endGap,valid:o.valid,pri:o.pri,hold:o.hold,onLine:i=>{clearTimeout(guard.t2);guardShow(lines[i],who);if(o.onLine)o.onLine(i);},onDone:()=>{guard.t2=setTimeout(()=>g.classList.remove('on'),1400);if(o.onDone)o.onDone();}}))return;
   guardShow(lines[0],who);if(o.onLine)o.onLine(0);let i=0;const step=()=>{i++;if(i<lines.length){$('#guardTxt').textContent=lines[i];if(o.onLine)o.onLine(i);guard.t1=setTimeout(step,2600);}};
   if(lines.length>1)guard.t1=setTimeout(step,2600);guard.t2=setTimeout(()=>{g.classList.remove('on');if(o.onDone)o.onDone();},2600*(lines.length-1)+3600+(o.extra||0));}
 // the voice: pre-recorded clips (voice/spg_audio.js maps each line to voice/clips/*.mp3) one after another with pauses; a line without a clip falls back
@@ -2034,84 +2040,84 @@ const SPG_AUDIO={
 "Then runway 28L.": "voice/clips/5a067a35edc6.mp3",
 "And finally, runway 28L.": "voice/clips/2208e166280e.mp3",
 "Can you have one runway back? No. We have chosen the runways. We choose the order. We are very fast at saying no.": "voice/clips/9af5566073a3.mp3",
-"All stations, summit protocol: every runway at Zero Mile is closed. Everyone else, hold.": "voice/clips/3690d9e374b0.mp3",
-"All stations, summit protocol: every runway at Zero Mile is closed. 1 on final, go around. Everyone else, hold.": "voice/clips/ba93455e06dd.mp3",
-"All stations, summit protocol: every runway at Zero Mile is closed. 2 on final, go around. Everyone else, hold.": "voice/clips/88282935247c.mp3",
-"All stations, summit protocol: every runway at Zero Mile is closed. 3 on final, go around. Everyone else, hold.": "voice/clips/81df7463099e.mp3",
-"Air India One, Nagpur Approach, radar contact. Expect runway 27L.": "voice/clips/5e26b712a959.mp3",
-"Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 27L.": "voice/clips/31067160b193.mp3",
-"Air India One, Nagpur Approach, radar contact. Expect runway 27R.": "voice/clips/73eaaed503c8.mp3",
-"Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 27R.": "voice/clips/dafe595b934d.mp3",
-"Air India One, Nagpur Approach, radar contact. Expect runway 28R.": "voice/clips/22c328069eb2.mp3",
-"Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 28R.": "voice/clips/382575a32d5d.mp3",
-"Air India One, Nagpur Approach, radar contact. Expect runway 27C.": "voice/clips/59bba212216a.mp3",
-"Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 27C.": "voice/clips/9b8b5bc84bef.mp3",
-"Air India One, Nagpur Approach, radar contact. Expect runway 28C.": "voice/clips/eb1b347eca22.mp3",
-"Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 28C.": "voice/clips/77d6de4b8e61.mp3",
+"All stations, summit protocol: every runway at Zero Mile is closed. Everyone else, hold.": "voice/clips/ccc7d201b75f.mp3",
+"All stations, summit protocol: every runway at Zero Mile is closed. 1 on final, go around. Everyone else, hold.": "voice/clips/3d2c2f7642a5.mp3",
+"All stations, summit protocol: every runway at Zero Mile is closed. 2 on final, go around. Everyone else, hold.": "voice/clips/50f53bdfc55f.mp3",
+"All stations, summit protocol: every runway at Zero Mile is closed. 3 on final, go around. Everyone else, hold.": "voice/clips/0934363ca1cc.mp3",
+"Air India One, Nagpur Approach, radar contact. Expect runway 27L.": "voice/clips/f72ab6dac03f.mp3",
+"Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India, Shri Narendra Modi, shall now be landing on runway 27L.": "voice/clips/557f9f5fc391.mp3",
+"Air India One, Nagpur Approach, radar contact. Expect runway 27R.": "voice/clips/21b9368748eb.mp3",
+"Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India, Shri Narendra Modi, shall now be landing on runway 27R.": "voice/clips/c26a1dfbae8c.mp3",
+"Air India One, Nagpur Approach, radar contact. Expect runway 28R.": "voice/clips/4bc840769bc2.mp3",
+"Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India, Shri Narendra Modi, shall now be landing on runway 28R.": "voice/clips/f773e9e862d0.mp3",
+"Air India One, Nagpur Approach, radar contact. Expect runway 27C.": "voice/clips/1d4983962b25.mp3",
+"Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India, Shri Narendra Modi, shall now be landing on runway 27C.": "voice/clips/fc004a0075bb.mp3",
+"Air India One, Nagpur Approach, radar contact. Expect runway 28C.": "voice/clips/fb627b753990.mp3",
+"Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India, Shri Narendra Modi, shall now be landing on runway 28C.": "voice/clips/f2d0b7ba4b12.mp3",
 "Air India One, welcome to Zero Mile. Follow the car with the very large flag.": "voice/clips/bc3a74b988ee.mp3",
 "An Antonov An-124 is inbound for 27L with the Russian motorcade. The motorcade has its own aeroplane.": "voice/clips/d5c4dde6a139.mp3",
-"Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 27L. By Antonov.": "voice/clips/eb9329db249b.mp3",
-"Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 27L.": "voice/clips/94883ff6c404.mp3",
+"Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation, Vladimir Putin, will now land on runway 27L. By Antonov.": "voice/clips/611bc67fff05.mp3",
+"Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation, Vladimir Putin, will now land on runway 27L.": "voice/clips/0c4e84dd2835.mp3",
 "An Antonov An-124 is inbound for 27R with the Russian motorcade. The motorcade has its own aeroplane.": "voice/clips/7a1a2a448636.mp3",
-"Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 27R. By Antonov.": "voice/clips/186c16f674e5.mp3",
-"Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 27R.": "voice/clips/6a687537dbed.mp3",
+"Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation, Vladimir Putin, will now land on runway 27R. By Antonov.": "voice/clips/9c0bb31b7df8.mp3",
+"Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation, Vladimir Putin, will now land on runway 27R.": "voice/clips/ad429ba5415e.mp3",
 "An Antonov An-124 is inbound for 28R with the Russian motorcade. The motorcade has its own aeroplane.": "voice/clips/a3143e7e4a97.mp3",
-"Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 28R. By Antonov.": "voice/clips/9bb7e1e1ccfb.mp3",
-"Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 28R.": "voice/clips/1540c4f68e47.mp3",
+"Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation, Vladimir Putin, will now land on runway 28R. By Antonov.": "voice/clips/a25903ddbed1.mp3",
+"Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation, Vladimir Putin, will now land on runway 28R.": "voice/clips/cf23ebd81c02.mp3",
 "An Antonov An-124 is inbound for 27C with the Russian motorcade. The motorcade has its own aeroplane.": "voice/clips/7415e7eea3a2.mp3",
-"Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 27C. By Antonov.": "voice/clips/22bd49d9b80d.mp3",
-"Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 27C.": "voice/clips/89d69e147ecf.mp3",
+"Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation, Vladimir Putin, will now land on runway 27C. By Antonov.": "voice/clips/5dfe5e66039a.mp3",
+"Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation, Vladimir Putin, will now land on runway 27C.": "voice/clips/96ea5b2cbd52.mp3",
 "An Antonov An-124 is inbound for 28C with the Russian motorcade. The motorcade has its own aeroplane.": "voice/clips/91f449a27559.mp3",
-"Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 28C. By Antonov.": "voice/clips/7eed3cbb17cc.mp3",
-"Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 28C.": "voice/clips/14d03ee23b49.mp3",
+"Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation, Vladimir Putin, will now land on runway 28C. By Antonov.": "voice/clips/0be9e8868a4b.mp3",
+"Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation, Vladimir Putin, will now land on runway 28C.": "voice/clips/9dde608eb6d5.mp3",
 "Antonov, welcome to Zero Mile. Please do not park on the red carpet.": "voice/clips/e61006247dd1.mp3",
 "Russia One, welcome to Zero Mile. Your follow-me car is the other car with the very large flag.": "voice/clips/411ccf1cbcea.mp3",
 "Russia Two, welcome. Yes, you look exactly like Russia One. Follow the third car with the very large flag.": "voice/clips/0eb522f18e93.mp3",
-"The Honourable Prime Minister is on the red carpet, to receive His Excellency the President of the Russian Federation.": "voice/clips/5631daf1e9df.mp3",
+"The Honourable Prime Minister is on the red carpet, to receive His Excellency the President of the Russian Federation.": "voice/clips/e29cf9d75d04.mp3",
 "The motorcade is driving out of the Antonov. Ten cars. Nobody has asked where they will park.": "voice/clips/fd2e19bc831a.mp3",
-"The Honourable Prime Minister has received His Excellency the President of the Russian Federation on the red carpet. Handshake: eleven seconds.": "voice/clips/c6f401ffa320.mp3",
+"The Honourable Prime Minister has received His Excellency the President of the Russian Federation on the red carpet. Handshake: eleven seconds.": "voice/clips/3d2f0dae6b6e.mp3",
 "The motorcade has left for Tadoba. Every road from here to the tigers is closed. The tigers have been informed.": "voice/clips/323fc320bcef.mp3",
-"Runway 27L is back in service.": "voice/clips/08cb874fdd32.mp3",
-"Runway 27R is back in service.": "voice/clips/1fd84476d2ff.mp3",
-"Runway 28R is back in service.": "voice/clips/eb6ea98876a1.mp3",
-"Runway 27C is back in service.": "voice/clips/f91dd797dd4b.mp3",
-"Runway 28C is back in service.": "voice/clips/508198e4dbb0.mp3",
+"Runway 27L is back in service.": "voice/clips/decbe5989d82.mp3",
+"Runway 27R is back in service.": "voice/clips/50651961ca78.mp3",
+"Runway 28R is back in service.": "voice/clips/443083e19940.mp3",
+"Runway 27C is back in service.": "voice/clips/bb558f8fd06d.mp3",
+"Runway 28C is back in service.": "voice/clips/c1679a65b8d1.mp3",
 "The summit stack is cleared. Normal service.": "voice/clips/59f90f68720c.mp3",
 "The summit stack is cleared: 1 left holding. Normal service.": "voice/clips/06b2b1b42642.mp3",
 "The summit stack is cleared: 2 left holding. Normal service.": "voice/clips/f812c3b703ce.mp3",
 "The summit stack is cleared: 3 left holding. Normal service.": "voice/clips/e5b518fe5e83.mp3",
-"The summit stack is 22 aircraft. Give arrivals every runway you can.": "voice/clips/9923ffaa4613.mp3",
-"The summit stack is 23 aircraft. Give arrivals every runway you can.": "voice/clips/0fc230b08e54.mp3",
-"The summit stack is 24 aircraft. Give arrivals every runway you can.": "voice/clips/49e0c31dd7b9.mp3",
-"The summit stack is 25 aircraft. Give arrivals every runway you can.": "voice/clips/c6542270efea.mp3",
-"The summit stack is 26 aircraft. Give arrivals every runway you can.": "voice/clips/e8829c108e9c.mp3",
-"The summit stack is 27 aircraft. Give arrivals every runway you can.": "voice/clips/1f9459d5765b.mp3",
-"The summit stack is 28 aircraft. Give arrivals every runway you can.": "voice/clips/53ee9a78e8c9.mp3",
-"The summit stack is 29 aircraft. Give arrivals every runway you can.": "voice/clips/0d87f311a67c.mp3",
-"The summit stack is 30 aircraft. Give arrivals every runway you can.": "voice/clips/cb4897387de7.mp3",
-"The summit stack is 31 aircraft. Give arrivals every runway you can.": "voice/clips/ff5837cdb507.mp3",
-"The summit stack is 32 aircraft. Give arrivals every runway you can.": "voice/clips/6622bd4f3e9e.mp3",
-"Stack down to 9. Keep the arrival runways coming.": "voice/clips/c0b9e6e2da85.mp3",
-"Stack down to 10. Keep the arrival runways coming.": "voice/clips/4ecf636b6c46.mp3",
-"Stack down to 11. Keep the arrival runways coming.": "voice/clips/9a5429c44be1.mp3",
-"Stack down to 12. Keep the arrival runways coming.": "voice/clips/6dd51692af5f.mp3",
-"Stack down to 13. Keep the arrival runways coming.": "voice/clips/366ee4d6a1a1.mp3",
-"Stack down to 14. Keep the arrival runways coming.": "voice/clips/73e148db454d.mp3",
-"Stack down to 15. Keep the arrival runways coming.": "voice/clips/ad2eba721f01.mp3",
-"Stack down to 16. Keep the arrival runways coming.": "voice/clips/286aed64d500.mp3",
+"The summit stack is 22 aircraft. Give arrivals every runway you can.": "voice/clips/560ac312c96e.mp3",
+"The summit stack is 23 aircraft. Give arrivals every runway you can.": "voice/clips/4770f9945295.mp3",
+"The summit stack is 24 aircraft. Give arrivals every runway you can.": "voice/clips/acb218aa632c.mp3",
+"The summit stack is 25 aircraft. Give arrivals every runway you can.": "voice/clips/f89f568481a2.mp3",
+"The summit stack is 26 aircraft. Give arrivals every runway you can.": "voice/clips/94a7d34f6797.mp3",
+"The summit stack is 27 aircraft. Give arrivals every runway you can.": "voice/clips/c4d27b4e0663.mp3",
+"The summit stack is 28 aircraft. Give arrivals every runway you can.": "voice/clips/8f271907f4bb.mp3",
+"The summit stack is 29 aircraft. Give arrivals every runway you can.": "voice/clips/fac4b1da0bb7.mp3",
+"The summit stack is 30 aircraft. Give arrivals every runway you can.": "voice/clips/a1ae18f36810.mp3",
+"The summit stack is 31 aircraft. Give arrivals every runway you can.": "voice/clips/cf988d95b6f8.mp3",
+"The summit stack is 32 aircraft. Give arrivals every runway you can.": "voice/clips/82e17f53c884.mp3",
+"Stack down to 9. Keep the arrival runways coming.": "voice/clips/52e4d68bb869.mp3",
+"Stack down to 10. Keep the arrival runways coming.": "voice/clips/4dfc4087280a.mp3",
+"Stack down to 11. Keep the arrival runways coming.": "voice/clips/2c52b17d3708.mp3",
+"Stack down to 12. Keep the arrival runways coming.": "voice/clips/4ee6d0d21b2c.mp3",
+"Stack down to 13. Keep the arrival runways coming.": "voice/clips/11f794e31f3a.mp3",
+"Stack down to 14. Keep the arrival runways coming.": "voice/clips/cc326ddb271a.mp3",
+"Stack down to 15. Keep the arrival runways coming.": "voice/clips/6b9fbb02a7bc.mp3",
+"Stack down to 16. Keep the arrival runways coming.": "voice/clips/b70c348b48af.mp3",
 "Saheb, since 1890, never late.": "voice/clips/24a8c786e75a.mp3",
-"Lunch is late, saheb.": "voice/clips/ea771788c2a2.mp3",
+"Lunch is late, saheb.": "voice/clips/968f24dea879.mp3",
 "The tower is not happy. 🍱": "voice/clips/351e335a76f3.mp3",
 "The tower is hungry. Changeovers are taking longer. Nobody talk to the supervisor.": "voice/clips/20cf36d4bcfb.mp3",
 "Lunch has arrived in the tower. Every dabba correct. Again.": "voice/clips/9b370797a9c5.mp3",
-"GPS says Muscat. Radar says Butibori.": "voice/clips/123e7f334eb8.mp3",
+"GPS says Khyber Pakhtunkhwa. Radar says Butibori.": "voice/clips/08fcdbc32a4a.mp3",
 "I believe my radar. 📡": "voice/clips/ea6eda1d5c21.mp3",
 "GPS spoofing has stopped. The aircraft are back over Nagpur, where they always were.": "voice/clips/aea1c1068825.mp3",
 "Sir, forty jets. One muhurat.": "voice/clips/a6be806c9e16.mp3",
 "Not one minute after. 💍": "voice/clips/fb9c0ab3f616.mp3",
 "Baraat 1, welcome to Zero Mile. Follow the car with the marigolds to the wedding apron.": "voice/clips/8f298e244289.mp3",
 "One elephant is arriving by road. It has been cleared.": "voice/clips/905339459f68.mp3",
-"Ten down, thirty to go. The groom's side has asked for a water salute. The bride's side has asked for a bigger one.": "voice/clips/2b15f01778a1.mp3",
+"Ten down, thirty to go. The groom's side has asked for a water salute. The bride's side has asked for a bigger one.": "voice/clips/22097b90a5b9.mp3",
 "Half the guest list is down. Baraat 21 is carrying only the lehengas. Baraat 22 is carrying the jewellery for Baraat 21.": "voice/clips/a776a4dbed98.mp3",
 "The groom will now change to a horse. The horse is on Baraat 31.": "voice/clips/5a131ad93d13.mp3",
 "All forty landed before the muhurat.": "voice/clips/346c420dae9f.mp3",
@@ -2119,27 +2125,27 @@ const SPG_AUDIO={
 "Return gift for the tower: one silver box of kaju katli. Each. We have accepted.": "voice/clips/cce56321790e.mp3",
 "Sir, fog. In the afternoon. At 46 degrees.": "voice/clips/d69b3007d1a8.mp3",
 "We are as surprised as you are. 🌫️": "voice/clips/41fc38ab93f7.mp3",
-"Low visibility procedures in force. Runway visual range 350 metres. Increased spacing on all runways.": "voice/clips/04a588326761.mp3",
-"Backtracking in this? I cannot see the runway from the cab.": "voice/clips/515248bfca15.mp3",
+"Low visibility procedures in force. Runway visual range 350 metres. Increased spacing on all runways.": "voice/clips/cd6d4651410e.mp3",
+"Backtracking in this? I cannot see the runway from the cab.": "voice/clips/eacf59af0dcc.mp3",
 "Every read-back in full. Nobody rushes.": "voice/clips/79e6a6b0334a.mp3",
-"Satpura 77, backtrack runway 27L, vacate at the next exit, report runway vacated.": "voice/clips/d872d2f99db3.mp3",
-"Orange City 1801, line up and wait, runway 27L.": "voice/clips/8d8038fecbbb.mp3",
+"Satpura 77, backtrack runway 27L, vacate at the next exit, report runway vacated.": "voice/clips/607ca9701648.mp3",
+"Orange City 1801, line up and wait, runway 27L.": "voice/clips/04c801e44420.mp3",
 "…we are now at take-off.": "voice/clips/32088d2b94c1.mp3",
 "OK… [squeal] …stand by for take-off, I will call you.": "voice/clips/32d07e72a898.mp3",
 "We are still on the runway! Satpura 77 still on the runway!": "voice/clips/86a3159594b3.mp3",
 "ORANGE CITY 1801, STOP IMMEDIATELY! I say again, STOP IMMEDIATELY!": "voice/clips/a56781f0a861.mp3",
-"Orange City 1801 stopped. Runway 27L closed for the investigation.": "voice/clips/ca4c979a8f6c.mp3",
+"Orange City 1801 stopped. Runway 27L closed for the investigation.": "voice/clips/9e5e62e04c82.mp3",
 "Orange City has stopped. Four hundred metres short.": "voice/clips/3e5013261518.mp3",
-"Nobody moves on that runway until I can see it.": "voice/clips/e6de920d9d59.mp3",
-"ALL STATIONS, ALL STATIONS: aircraft accident on runway 27L. All runways closed. Fire services responding.": "voice/clips/e985af677419.mp3",
+"Nobody moves on that runway until I can see it.": "voice/clips/ec3f3cc4ed40.mp3",
+"ALL STATIONS, ALL STATIONS: aircraft accident on runway 27L. All runways closed. Fire services responding.": "voice/clips/4bb1766d9283.mp3",
 "Crash tenders on scene. Foam going on now.": "voice/clips/d6d1135d3e8a.mp3",
 "Both crews are out. The medics have them.": "voice/clips/d19da05efb16.mp3",
 "Arrivals: hold. Divert if your fuel requires.": "voice/clips/ce10ec88ba0f.mp3",
 "27L is closed for the rest of the day.": "voice/clips/744610c71f0a.mp3",
 "We will run on the other four. Arrivals first.": "voice/clips/65afe6f87641.mp3",
-"Runways other than 27L reopening. 27L is closed for the rest of the day.": "voice/clips/1fa1870b8a0b.mp3",
+"Runways other than 27L reopening. 27L is closed for the rest of the day.": "voice/clips/5bf165c5515d.mp3",
 "Orange City 1801 airborne. That was too close.": "voice/clips/b2e71175b5b4.mp3",
-"The fog has lifted. Normal spacing on the open runways.": "voice/clips/7c86449147a8.mp3",
+"The fog has lifted. Normal spacing on the open runways.": "voice/clips/46b7fbe00084.mp3",
 "The fog has lifted.": "voice/clips/7dbbd02fcc92.mp3",
 "Fifteen minutes of fog at 46 degrees. We are writing a paper.": "voice/clips/857e1e95f5ab.mp3",
 "The fire is out.": "voice/clips/3c4efeca9b35.mp3",
@@ -2148,35 +2154,35 @@ const SPG_AUDIO={
 "Lost property from the summit: one fur hat, size large. At 46 degrees. It is being kept in the cold room.": "voice/clips/7a33ad1c6cdd.mp3",
 "The Chambanis thank the tower. The reception is tomorrow. Sixty jets.": "voice/clips/40a64910ad0f.mp3",
 "The evening shift takes over at 16:35. The last arrivals are on the bank chart: land them, clear the departure queue, and hand over.": "voice/clips/60aedb956d38.mp3",
-"Ladies and gentlemen, the motorcade of the President of the United States.": "voice/clips/35e8edba26e7.mp3",
+"Ladies and gentlemen, please welcome the motorcade of the President of the United States.": "voice/clips/2d138d8a4fba.mp3",
 "Zero Mile Tower, Reach One, heavy, 27R. We have the cars. All of them.": "voice/clips/80ee2654ad93.mp3",
 "Bhutan One, 27R. Smallest delegation. Happiest delegation.": "voice/clips/679125830b77.mp3",
 "Netherlands One, 27C. We brought our own bicycles.": "voice/clips/90a8e2e14abc.mp3",
 "Kenya One, 27R. Jambo, Nagpur.": "voice/clips/c300c70f62cf.mp3",
 "Italian Air Force, 27C. We are on time. Please write it down.": "voice/clips/52fd37ffdb5d.mp3",
-"Ladies and gentlemen: the United Arab Emirates.": "voice/clips/dd046352088c.mp3",
+"Ladies and gentlemen, please welcome the United Arab Emirates.": "voice/clips/23be7e93e3a4.mp3",
 "Zero Mile Tower, Emirates One, super, 27R. One delegation, two decks.": "voice/clips/ad2f964bc6e1.mp3",
-"Thai One, 27R. Sawasdee, Nagpur.": "voice/clips/04a1a11199a9.mp3",
+"Thai One, 27R. Sawasdee, Nagpur.": "voice/clips/1185cbfa59e0.mp3",
 "Malaysian One, 27C. We were told to land after Thailand. We did.": "voice/clips/9dc12636729a.mp3",
 "Canforce 001, 27R. Sorry, are we early? Sorry.": "voice/clips/5509437e4aab.mp3",
-"Portuguese Air Force One, 27C. Obrigado for the slot. Lovely stack.": "voice/clips/6e0c0e48d481.mp3",
-"Ladies and gentlemen: Japan.": "voice/clips/cf77455803ad.mp3",
+"Portuguese Air Force One, 27C. Obrigado for the slot. Lovely stack.": "voice/clips/a187c6050b6a.mp3",
+"Ladies and gentlemen, please welcome Japan.": "voice/clips/f0d7672a8592.mp3",
 "Zero Mile Tower, Japanese Air Force One, 27R. On time.": "voice/clips/e3894bd717b4.mp3",
 "Zero Mile Tower, Japanese Air Force Two. The backup. Also on time.": "voice/clips/717c41412aaa.mp3",
 "Sri Lanka One, 27R. We have brought tea for the holding stack.": "voice/clips/a917698cf5c6.mp3",
-"Belgian Air Force, 27C. Chocolates for the tower are on board.": "voice/clips/85469835b72a.mp3",
-"Singapore One, 27R. Touchdown planned at zero seconds past the minute.": "voice/clips/5159b2c15d1e.mp3",
-"Ladies and gentlemen. The aircraft carrying the President of the People's Republic of China shall now be landing on runway 27R.": "voice/clips/f0dd4089109b.mp3",
+"Belgian Air Force, 27C. Chocolates for the tower are on board.": "voice/clips/35a3f6c7c5ca.mp3",
+"Singapore One, 27R. Touchdown planned at zero seconds past the minute.": "voice/clips/a5a88f10746f.mp3",
+"Ladies and gentlemen. The aircraft carrying the President of the People's Republic of China shall now be landing on runway 27R.": "voice/clips/1771eaf86f87.mp3",
 "Zero Mile Tower, Air China One, established on the localiser, runway 27R.": "voice/clips/96a6c033de03.mp3",
-"Air China One, runway 27R, cleared to land. The red carpet has been measured twice.": "voice/clips/9ce8211a55bf.mp3",
-"Aussie One, 27R. G'day. Long way for a photo.": "voice/clips/8cc4e5144b8c.mp3",
+"Air China One, runway 27R, cleared to land. The red carpet has been measured twice.": "voice/clips/38d9bd63df0c.mp3",
+"Aussie One, 27R. G'day. Long way for a photo.": "voice/clips/753f950e3c72.mp3",
 "Kiwi One, 27C. Kia ora. We are not Australia.": "voice/clips/a1f3e41cd5cd.mp3",
 "Irish One, 27R. Grand day for it.": "voice/clips/70b70b78d911.mp3",
-"Ladies and gentlemen: the Federal Republic of Germany.": "voice/clips/88789aa7b5e1.mp3",
+"Ladies and gentlemen, please welcome the Federal Republic of Germany.": "voice/clips/99d32c27a12f.mp3",
 "Zero Mile Tower, German Air Force One, 27R. We are four seconds early. We apologise.": "voice/clips/7be2cc113239.mp3",
 "Swedish Air Force One, 27R. Our red carpet is flat-packed. Assembly takes ten minutes.": "voice/clips/05e4005ce0ad.mp3",
 "Polish Air Force 001, 27C. Dzień dobry. Who do we follow?": "voice/clips/1bdf1d3efd0f.mp3",
-"Attention, please. The delegation of the Russian Federation. First, the cars. Then two aircraft. They are identical.": "voice/clips/d84b8a6b9189.mp3",
+"Attention, please. The delegation of the President of the Russian Federation, Vladimir Putin. First, the cars. Then two aircraft. They are identical.": "voice/clips/70c194e2868a.mp3",
 "Russia Cargo, Antonov, heavy, 27C. The cars are on board.": "voice/clips/5fa79b7b37d1.mp3",
 "Zero Mile Tower, Russia, Ilyushin, established, runway 27R.": "voice/clips/08486ae656df.mp3",
 "Russia Two, also Ilyushin, also established, 27C.": "voice/clips/eeb30a3faa7d.mp3",
@@ -2185,44 +2191,52 @@ const SPG_AUDIO={
 "Tango 01, 27C. Longest flight of the day. Do we win something?": "voice/clips/8ec9d87e5d5d.mp3",
 "Zero Mile Approach, Aeromexico 92, still holding. Mexico flew commercial.": "voice/clips/bf5e62cf7231.mp3",
 "Zero Mile Tower, Aeromexico 92, on the ground. Mexico flew commercial.": "voice/clips/6a64bf85ef07.mp3",
-"Ladies and gentlemen: the United Kingdom.": "voice/clips/2f3f5c9df400.mp3",
+"Ladies and gentlemen, please welcome the United Kingdom.": "voice/clips/a882160cc7d9.mp3",
 "Zero Mile Tower, Ascot One, 27R. Lovely holding stack. Very orderly queue.": "voice/clips/3d443da9096b.mp3",
 "Indonesia One, heavy, 27C. Selamat siang, Nagpur.": "voice/clips/098a01c46001.mp3",
-"Vietnam One, 27R. Xin chào. Ready for the red carpet.": "voice/clips/9ea6a8305177.mp3",
+"Vietnam One, 27R. Xin chào. Ready for the red carpet.": "voice/clips/7a8ced6d4a41.mp3",
 "South African One, 27R. Howzit, Nagpur.": "voice/clips/c83ddab08dbd.mp3",
-"Ladies and gentlemen: the Kingdom of Saudi Arabia.": "voice/clips/b2bc9365f029.mp3",
-"Zero Mile Tower, Saudi One, heavy, 27R. Two more aircraft behind us. Luggage.": "voice/clips/c4775f63221d.mp3",
-"Amiri One, heavy, 27C. The gifts are in the forward hold.": "voice/clips/e5e1d5a7ac75.mp3",
+"Ladies and gentlemen, please welcome the Kingdom of Saudi Arabia.": "voice/clips/2bb2f8f398e5.mp3",
+"Zero Mile Tower, Saudi One, heavy, 27R. Two more aircraft behind us. Luggage.": "voice/clips/969a83a5cfd7.mp3",
+"Amiri One, heavy, 27C. The gifts are in the forward hold.": "voice/clips/b170731eb01e.mp3",
 "Turkish Government, 27R. We heard about the carpet. We have brought a carpet.": "voice/clips/1f12afd54591.mp3",
-"Ladies and gentlemen: the French Republic.": "voice/clips/6b91e11b8852.mp3",
+"Ladies and gentlemen, please welcome the French Republic.": "voice/clips/1c06b88d8f10.mp3",
 "Zero Mile Tower, Cotam 001, 27R. The press is in the second aircraft. They are already writing.": "voice/clips/c77e3b410c82.mp3",
 "Spanish Air Force, 27R. Buenas tardes, Nagpur.": "voice/clips/df6cf3fbee3c.mp3",
 "Nigerian One, heavy, 27C. Our delegation is bigger than our aircraft.": "voice/clips/be1d061831d1.mp3",
-"Ladies and gentlemen: the Republic of Korea.": "voice/clips/ffd7a43023ec.mp3",
+"Ladies and gentlemen, please welcome the Republic of Korea.": "voice/clips/929c45c7fb61.mp3",
 "Zero Mile Tower, Korean Air Force One, 27R. Code One, on the glide path. Exactly on it.": "voice/clips/d40f4cc45a9b.mp3",
 "Kazakh One, 27R. Long way from Astana. Short way to the carpet.": "voice/clips/100d8eea3655.mp3",
 "Bangladesh One, 27C. Short flight. Long holding.": "voice/clips/5cefc428d285.mp3",
 "EU 01, 27R. Twenty-seven countries, one aircraft.": "voice/clips/fd34288e65ff.mp3",
-"Ladies and gentlemen. The aircraft carrying the President of the United States shall now be landing on runway 27R.": "voice/clips/1f0727eec378.mp3",
+"Ladies and gentlemen. The aircraft carrying the President of the United States, Donald Trump, shall now be landing on runway 27R.": "voice/clips/cedcd0ee9823.mp3",
 "Zero Mile Tower, Air Force One, established on the localiser, runway 27R.": "voice/clips/46a445f213ee.mp3",
-"Air Force One, Zero Mile Tower, runway 27R, cleared to land. Welcome to India.": "voice/clips/8fc8d2ea5cdc.mp3",
-"SAM 29000, the spare, runway 27C, cleared to land.": "voice/clips/aa6625b585bb.mp3",
+"Air Force One, Zero Mile Tower, runway 27R, cleared to land. Welcome to India.": "voice/clips/dd1c26b2bbba.mp3",
+"SAM 29000, the spare, runway 27C, cleared to land.": "voice/clips/19e48e354274.mp3",
 "We now take 27L as well.": "voice/clips/edc9145e582f.mp3",
 "The spare aircraft needs a spare runway.": "voice/clips/2c85657dd48f.mp3",
-"Ladies and gentlemen. Three Presidents shall now be landing at the same time, on three runways. Nobody will be first.": "voice/clips/d431f671ccb8.mp3",
+"Ladies and gentlemen. Three Presidents shall now be landing at the same time, on three runways. Nobody will be first.": "voice/clips/4916a62ac9d7.mp3",
 "Air China One, runway 27R.": "voice/clips/2c038d472922.mp3",
 "Russia, runway 27C.": "voice/clips/b37826269b75.mp3",
 "Air Force One, runway 27L.": "voice/clips/06bcd01e21bb.mp3",
 "Air China One, Russia, Air Force One: all three cleared to land. Together.": "voice/clips/a204ad144528.mp3",
-"Aussie One, 27C. G'day. Long way for a photo.": "voice/clips/99da1101dbcf.mp3",
-"Attention, please. The cars of the Russian Federation. Then the second aircraft. Also identical.": "voice/clips/cf8cdd0902b6.mp3",
+"Aussie One, 27C. G'day. Long way for a photo.": "voice/clips/7ee9957e72d5.mp3",
+"Attention, please. The cars of the Russian Federation. Then the second aircraft. Also identical.": "voice/clips/f6999368e4c4.mp3",
 "Russia Two, also Ilyushin, also established, 27R.": "voice/clips/25bf68b204d5.mp3",
-"Ladies and gentlemen. The spare aircraft of the President of the United States.": "voice/clips/e4787ee6b004.mp3",
+"Ladies and gentlemen. The spare aircraft of the President of the United States.": "voice/clips/77d071c82df0.mp3",
 "Zero Mile Tower, SAM 29000, the spare, runway 27R. Nobody on board.": "voice/clips/67498f443b35.mp3"
 };
-const VOICE_LANG={"spg": "en-IN", "announcer": "en-IN", "tower": "en-IN", "in": "en-IN", "ru": "ru-RU", "ru_announcer": "ru-RU", "kz": "ru-RU", "cn": "zh-CN", "us": "en-US", "jp": "ja-JP", "kr": "ko-KR", "ae": "ar-AE", "de": "de-DE", "fr": "fr-FR", "ca": "fr-CA", "it": "it-IT", "es": "es-ES", "mx": "es-MX", "br": "pt-BR", "pt": "pt-PT", "nl": "nl-NL", "be": "nl-BE", "eu": "nl-BE", "tr": "tr-TR", "my": "ms-MY", "sg": "en-SG", "id": "id-ID", "th": "th-TH", "vn": "vi-VN", "pl": "pl-PL", "se": "sv-SE", "gb": "en-GB", "au": "en-AU", "ie": "en-IE", "za": "en-ZA", "ng": "en-NG"};
+const VOICE_LANG={"spg": "en-IN", "announcer": "en-IN", "announcer_hi": "hi-IN", "tower": "en-IN", "in": "en-IN", "ru": "ru-RU", "ru_announcer": "ru-RU", "kz": "ru-RU", "cn": "zh-CN", "us": "en-US", "jp": "ja-JP", "kr": "ko-KR", "ae": "ar-AE", "de": "de-DE", "fr": "fr-FR", "ca": "fr-CA", "it": "it-IT", "es": "es-ES", "mx": "es-MX", "br": "pt-BR", "pt": "pt-PT", "nl": "nl-NL", "be": "nl-BE", "eu": "nl-BE", "tr": "tr-TR", "my": "ms-MY", "sg": "en-SG", "id": "id-ID", "th": "th-TH", "vn": "vi-VN", "pl": "pl-PL", "se": "sv-SE", "gb": "en-GB", "au": "en-AU", "ie": "en-IE", "za": "en-ZA", "ng": "en-NG"};
 
-const VQ=[];let vqOn=false,vqCur=null;
+// The queue is ordered so that a line is heard while what it describes is still on screen (pri, highest first; FIFO within):
+//  3 a set piece's own beat (a ceremonial announcement, a line that belongs to a shot, the fog chain): next in line, and
+//    never dropped for age; give it valid() instead (a VIP's announcement goes once its aircraft is down; cut() stops it)
+//  2 a character speaking in a popup (the SPG, the wedding planner, the met office): dropped if it cannot start in 12 s
+//  1 radio chatter (say): dropped if it cannot start within 4 s (or 150 game seconds). Heard late, it would describe the past
+// One call's lines stay together, and at most VQ_MAX lines wait (whole calls go, oldest chatter first). A line may carry
+// hold: while it plays the sim runs no faster than that (VHOLD), so what it describes does not run away from it.
+const VQ=[];let vqOn=false,vqCur=null,vqIt=null,vqDone=null,vqT0=0,vqG=null,vqGen=0,VHOLD=null,FFING=false;
+const VQ_TTL={1:[4000,150],2:[12000,600]},VQ_MAX=8;
 // voicePreload(keys): start fetching the clips for these on-screen lines now, so they play without a gap when their turn
 // comes (speak() and say() call it for every line they queue; set pieces may call it early with their whole script)
 const VPRE=new Map();
@@ -2234,28 +2248,68 @@ function pickVoice(vs,lang){const sc=v=>(/en[-_]IN/i.test(v.lang)?4:/en[-_]GB/i.
   if(lang){const L=lang.toLowerCase().replace('_','-'),m=vs.filter(v=>v.lang.toLowerCase().replace('_','-').startsWith(L.split('-')[0])&&(L.indexOf('-')<0||v.lang.toLowerCase().replace('_','-')===L||true));
     const q=v=>(v.lang.toLowerCase().replace('_','-')===L?2:0)+(/enhanced|premium|natural|neural|google/i.test(v.name)?1:0);return m.sort((a,b)=>q(b)-q(a))[0]||null;}
   return vs.slice().sort((a,b)=>sc(b)-sc(a))[0]||null;}
-function vqNext(){if(vqOn)return;const it=VQ.shift();if(!it)return;if(it.valid&&!it.valid()){if(it.onEnd)it.onEnd();return vqNext();}vqOn=true;let fin=false;const done=()=>{if(fin)return;fin=true;vqCur=null;duck(false);if(it.onEnd)it.onEnd();setTimeout(()=>{vqOn=false;vqNext();},it.gap);};
+// sound follows the game: paused, ended, on the menu or in a background tab, the voice and the music hold where they
+// are and carry on when play resumes; no new line starts while held
+const audioHold=()=>!running||paused||ended||document.hidden;let AHELD=false;
+function audioSync(){const h=audioHold();if(h===AHELD)return;AHELD=h;
+  try{if(vqCur){if(h)vqCur.pause();else{const p=vqCur.play();if(p&&p.catch)p.catch(()=>{});}}}catch(e){}
+  try{if(MUS&&MUS.el){if(h)MUS.el.pause();else{const p=MUS.el.play();if(p&&p.catch)p.catch(()=>{});}}}catch(e){}
+  try{if(window.speechSynthesis){if(h)speechSynthesis.pause();else speechSynthesis.resume();}}catch(e){}
+  if(!h)vqNext();}
+document.addEventListener('visibilitychange',audioSync);
+function vqAdd(items){if(!items.length)return null;const g={on:false},p=items[0].pri,now=performance.now();
+  for(const it of items){it.g=g;it.born=now;it.bornT=T;}
+  let i=0;while(i<VQ.length&&(VQ[i].g===vqG||VQ[i].pri>=p))i++;VQ.splice(i,0,...items);
+  while(VQ.length>VQ_MAX){let v=null;for(const it of VQ)if(it.g!==vqG&&it.pri<3&&(!v||it.pri<v.pri))v=it;if(!v)break;vqDrop(v.g);}
+  vqNext();return items;}
+function vqClear(maxPri){for(let i=VQ.length-1;i>=0;i--)if(VQ[i].pri<=maxPri&&VQ[i].g!==vqG)VQ.splice(i,1);}
+// a set piece takes the air: everything of priority maxPri or below goes, the line playing now included (stopped mid-word)
+function vqCut(maxPri){for(let i=VQ.length-1;i>=0;i--)if(VQ[i].pri<=maxPri)VQ.splice(i,1);
+  if(vqIt&&vqIt.pri<=maxPri&&vqDone){if(vqCur)try{vqCur.pause();}catch(e){}if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}vqDone();}}
+function vqDrop(g){let last=null;for(let i=VQ.length-1;i>=0;i--)if(VQ[i].g===g){if(!last)last=VQ[i];VQ.splice(i,1);}if(last&&last.onEnd)last.onEnd();}
+function vqStale(it,now){if(it.valid&&!it.valid())return true;if(it.g.on)return false;const L=VQ_TTL[it.pri];return !!L&&(now-it.born>L[0]||T-it.bornT>L[1]);}
+// real seconds until a queued (or playing) line has been heard: the clip's own length once it is loaded, else an estimate
+const vqEst=it=>0.6+it.text.split(/\s+/).length/2.1;
+function vqEta(it){const now=performance.now();let s=0;
+  if(vqIt){const a=vqCur,d=a&&isFinite(a.duration)&&a.duration>0?a.duration-a.currentTime:vqEst(vqIt)-(now-vqT0)/1000;s+=Math.max(0.1,d);if(vqIt===it)return s;s+=vqIt.gap/1000;}
+  for(const x of VQ){s+=vqEst(x);if(x===it)return s;s+=x.gap/1000;}return null;}
+function vqNext(){if(vqOn||audioHold())return;const now=performance.now();let it;
+  while((it=VQ[0])&&vqStale(it,now)){if(it.g.on){VQ.shift();if(it.onEnd)it.onEnd();}else vqDrop(it.g);if(vqOn)return;}
+  if(!it)return;VQ.shift();vqOn=true;vqG=it.g;it.g.on=true;vqIt=it;vqT0=now;const gen=vqGen;let fin=false,cutI=0,wd=null;
+  if(it.hold!=null)VHOLD=it.hold;vqDone=()=>done();
+  const done=()=>{if(fin)return;fin=true;clearInterval(cutI);clearTimeout(wd);if(gen!==vqGen)return;{const a=vqCur;if(a){try{a.onended=a.onerror=a.onplaying=null;a.pause();}catch(e){}}}vqCur=null;vqIt=null;vqDone=null;if(VHOLD===it.hold)VHOLD=null;duck(false);if(it.onEnd)it.onEnd();setTimeout(()=>{if(gen!==vqGen)return;vqOn=false;vqNext();},Math.max(500,it.gap||0));};   // at least half a second between any two voices
+  if(it.cut)cutI=setInterval(()=>{if(gen!==vqGen){clearInterval(cutI);return;}if(!it.cut())return;if(vqCur)try{vqCur.pause();}catch(e){}if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}done();},200);
   if(it.onStart)it.onStart();const clip=typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[it.text];
-  if(clip){const a=VPRE.get(clip)||new Audio(clip);VPRE.delete(clip);vqCur=a;a.volume=it.vol||0.95;a.onended=done;a.onerror=done;duck(true);const p=a.play();if(p&&p.catch)p.catch(done);setTimeout(done,2500+it.text.split(/\s+/).length*520);return;}
+  if(clip){const a=VPRE.get(clip)||new Audio(clip);VPRE.delete(clip);vqCur=a;a.volume=it.vol||0.95;a.onended=done;a.onerror=done;duck(true);const p=a.play();if(p&&p.catch)p.catch(done);
+    // the watchdog starts when the sound actually starts and trusts the clip's real length; while the game is held it waits
+    const words=it.text.split(/\s+/).length,wdog=()=>{if(audioHold()){wd=setTimeout(wdog,500);return;}done();};
+    a.onplaying=()=>{clearTimeout(wd);const d=isFinite(a.duration)&&a.duration>0?a.duration*1000:2500+words*600;wd=setTimeout(wdog,d+1500);};
+    wd=setTimeout(wdog,9000+words*600);   // it never started playing at all (blocked or failed to load): move on
+    return;}
   if(!it.radio&&window.speechSynthesis&&window.SpeechSynthesisUtterance){try{const S2=window.speechSynthesis,v=pickVoice(S2.getVoices(),it.lang);if(it.lang&&!v)return done();const u=new SpeechSynthesisUtterance(it.text.replace(/[\u{1F000}-\u{1FAFF}☀-➿️]/gu,'').trim());
-    if(v){u.voice=v;u.lang=v.lang;}else u.lang='en-IN';u.rate=0.95;u.pitch=1;u.onend=done;u.onerror=done;duck(true);S2.speak(u);setTimeout(done,9000);return;}catch(e){}}
+    if(v){u.voice=v;u.lang=v.lang;}else u.lang='en-IN';u.rate=0.95;u.pitch=1;u.onend=done;u.onerror=done;duck(true);S2.speak(u);wd=setTimeout(done,9000);return;}catch(e){}}
   done();}
-// speak(lines,{onLine,onDone,gap,endGap,gaps,lang}): lines one after another; the gap after each line is gaps[i], else gap
-// (1200 ms: the SPG takes his time), and endGap after the last line
-function speak(lines,o){o=o||{};if(!SND.on)return false;voicePreload(lines);lines.forEach((t,i)=>{const last=i===lines.length-1;VQ.push({text:t,lang:o.lang,valid:o.valid,gap:o.gaps&&o.gaps[i]!=null?o.gaps[i]:last?(o.endGap!=null?o.endGap:900):(o.gap!=null?o.gap:1200),onStart:o.onLine?()=>o.onLine(i):null,onEnd:last?o.onDone:null});});vqNext();return true;}
-// a radio call in a speaker's own voice: shows on the ticker, and plays its recorded clip (keyed by the exact text) if there is one
-function say(src,text,o){o=o||{};radio(src,text);if(SND.on&&typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[text]){voicePreload(text);VQ.push({text,radio:true,gap:o.gap!=null?o.gap:500,vol:o.vol,valid:o.valid,onStart:o.onStart,onEnd:o.onEnd});vqNext();return true;}if(o.onEnd)o.onEnd();return false;}
-function voiceReset(){VQ.length=0;if(vqCur){try{vqCur.pause();}catch(e){}}vqCur=null;vqOn=false;if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}music(null,{now:true});}
+// speak(lines,{onLine,onDone,gap,endGap,gaps,lang,pri,hold,valid}): lines one after another; the gap after each line is
+// gaps[i], else gap (1200 ms: the SPG takes his time), and endGap after the last line
+function speak(lines,o){o=o||{};if(!SND.on||ended)return false;voicePreload(lines);vqAdd(lines.map((t,i)=>{const last=i===lines.length-1;return{text:t,lang:o.lang,valid:o.valid,pri:o.pri||2,hold:o.hold,gap:o.gaps&&o.gaps[i]!=null?o.gaps[i]:last?(o.endGap!=null?o.endGap:900):(o.gap!=null?o.gap:1200),onStart:o.onLine?()=>o.onLine(i):null,onEnd:last?o.onDone:null};}));return true;}
+// a radio call in a speaker's own voice: shows on the ticker, and plays its recorded clip (keyed by the exact text) if there
+// is one. o: {pri (1), valid, cut, hold, gap, vol, onStart, onEnd, ref (gets .it, the queued line)}
+// the same radio line is never voiced twice within 30 s (a set piece that re-sends a call each tick can't make it echo)
+const VQ_SEEN=new Map();
+function say(src,text,o){o=o||{};radio(src,text);const now=performance.now(),seen=VQ_SEEN.get(text);if(SND.on&&!ended&&typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[text]&&!(seen&&now-seen<30000)){VQ_SEEN.set(text,now);voicePreload(text);const q=vqAdd([{text,radio:true,pri:o.pri||1,gap:o.gap!=null?o.gap:500,vol:o.vol,valid:o.valid,cut:o.cut,hold:o.hold,onStart:o.onStart,onEnd:o.onEnd}]);if(o.ref)o.ref.it=q[0];return true;}if(o.onEnd)o.onEnd();return false;}
+// silence: the queue, the line playing (its callbacks are dropped with it) and, unless keepMusic, the music
+function voiceReset(keepMusic){VQ.length=0;VQ_SEEN.clear();vqGen++;if(vqCur){try{vqCur.pause();}catch(e){}}vqCur=null;vqIt=null;vqDone=null;vqG=null;vqOn=false;VHOLD=null;if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}duck(false);
+  if(!keepMusic){music(null,{now:true});const g=$('#guard');if(g)g.classList.remove('on');}}
 // music for set pieces: music('dj') plays music/dj.mp3 (looped unless {loop:false}), crossfading from whatever was playing;
 // music(null) fades it out. It ducks under voice lines. A missing file is simply silent, so tracks can be dropped in later.
 var MUS={el:null,name:null,vol:0.4,tm:null,fi:null};
 function musFade(a,to,ms,cb){const from=a.volume,t0=performance.now();const st=()=>{const k=Math.min(1,(performance.now()-t0)/ms);try{a.volume=Math.max(0,Math.min(1,from+(to-from)*k));}catch(e){}if(k<1)a._f=requestAnimationFrame(st);else if(cb)cb();};cancelAnimationFrame(a._f);st();}
 function music(name,o){o=o||{};if(!MUS)return;if(name&&MUS.name===name&&MUS.el)return;clearTimeout(MUS.tm);const old=MUS.el;MUS.el=null;MUS.name=null;
   if(old){if(o.now){old.pause();}else musFade(old,0,o.fadeOut||1500,()=>old.pause());}
-  if(!name||!SND.on)return;const src=(typeof MUSIC_SRC!=='undefined'&&MUSIC_SRC[name])||`music/${name}.mp3`;const a=new Audio(src);a.loop=o.loop!==false;a.volume=0;
-  MUS.el=a;MUS.name=name;MUS.vol=o.vol!=null?o.vol:0.4;a.onerror=()=>{if(MUS.el===a){MUS.el=null;MUS.name=null;}};const p=a.play();if(p&&p.catch)p.catch(()=>{});musFade(a,vqCur?MUS.vol*0.35:MUS.vol,o.fadeIn||1200);
+  if(!name||!SND.on||ended)return;const src=(typeof MUSIC_SRC!=='undefined'&&MUSIC_SRC[name])||`music/${name}.mp3`;const a=new Audio(src);a.loop=o.loop!==false;a.volume=0;
+  MUS.el=a;MUS.name=name;MUS.vol=o.vol!=null?o.vol:0.4;a.onerror=()=>{if(MUS.el===a){MUS.el=null;MUS.name=null;}};const p=a.play();if(p&&p.catch)p.catch(()=>{});musFade(a,vqCur?MUS.vol*0.2:MUS.vol,o.fadeIn||1200);
   if(!a.loop)a.onended=()=>{if(MUS.el===a){MUS.el=null;MUS.name=null;}};if(o.ms)MUS.tm=setTimeout(()=>{if(MUS.el===a)music(null);},o.ms);}
-function duck(on){const a=MUS&&MUS.el;if(a)musFade(a,on?MUS.vol*0.35:MUS.vol,on?250:700);}
+function duck(on){const a=MUS&&MUS.el;if(a)musFade(a,on?MUS.vol*0.2:MUS.vol,on?250:700);}
 // after a summit the SPG hands the runways back one by one, then signs off
 function spgReturn(order){const n=order.length;guard(['Your runways shall now be cleared, in a staged manner.'].concat(order.map((r,i)=>i===0?`Runway ${r.short} shall be cleared first.`:i===n-1?`And finally, runway ${r.short}.`:`Then runway ${r.short}.`)));}
 function spgOpen(r){}
@@ -2269,8 +2323,10 @@ const STAGED=[];
 function spgStaged(rws,o){o=o||{};const t0=o.at!=null?o.at:T,n=rws.length,tm=spgStaged.times(t0,n,o),s={lv:LV,t0,ev:[],prev:null};
   const line=i=>i===0?`Runway ${rws[0].short} shall be cleared first.`:i===n-1?`And finally, runway ${rws[i].short}.`:`Then runway ${rws[i].short}.`;
   const hold=()=>{if(SND.on&&speed>1&&s.prev==null){s.prev=speed;speed=1;if(running)setSpeed(1,true);}};
-  s.ev.push([t0,()=>{hold();guard(['Your runways shall now be cleared, in a staged manner.']);}]);
-  rws.forEach((r,i)=>{s.ev.push([tm.say[i],()=>{hold();guard([line(i)]);}]);s.ev.push([tm.open[i],()=>{if(o.open)o.open(r,i);say('TWR',`Runway ${r.short} is back in service.`);renderRw();}]);});
+  // (each line is said only while it is still ahead of the runway it names, and the clock runs at half speed while he
+  // and the tower speak, so a line and the next runway never run into each other)
+  s.ev.push([t0,()=>{hold();guard(['Your runways shall now be cleared, in a staged manner.'],null,{valid:()=>T<tm.open[0],hold:0.5});}]);
+  rws.forEach((r,i)=>{s.ev.push([tm.say[i],()=>{hold();guard([line(i)],null,{valid:()=>T<tm.open[i],hold:0.5});}]);s.ev.push([tm.open[i],()=>{if(o.open)o.open(r,i);say('TWR',`Runway ${r.short} is back in service.`,{hold:0.5});renderRw();}]);});
   s.ev.push([tm.open[n-1]+1,()=>{if(s.prev!=null){speed=s.prev;if(running)setSpeed(speed,true);s.prev=null;}if(o.done)o.done();if(o.finale!==false)spgFinale();}]);
   s.ev.sort((a,b)=>a[0]-b[0]);STAGED.push(s);return tm;}
 spgStaged.times=(t0,n,o)=>{o=o||{};const first=o.first||100,lead=o.lead||60,step=o.step||110,say=[],open=[];for(let i=0;i<n;i++){say.push(t0+first+step*i);open.push(t0+first+step*i+lead);}return{say,open};};
@@ -2284,9 +2340,17 @@ function vipBanner(on,k,title,meme,icons){const b=$('#vipBanner');if(!on){b.clas
 //          'rasputin', only while they are on approach and landing); each is shown landing on the runway it names
 //  APRON   the Prime Minister receives the President at the VIP stands; the motorcade drives off to Tadoba
 //  RETURN  spgStaged: the SPG names each runway and it reopens a game minute later; then his sign-off; then the stack
-// A cinematic never lands its aircraft before the announcement has finished: the last 45 s of the approach run in slow
-// motion until it has. Everything here is event-driven and allocation-free per tick (no DOM work outside the events).
-const SUMT={pm:200,an:390,il1:550,il2:680,ret:800,cue:125,first:100,step:110,lead:60};
+// Voice first, one VIP at a time: its announcement plays over the strategic view (banner up, its music in), and only as it
+// ends does the camera ride the aircraft down from short final; the next announcement waits until this one has landed.
+// The summit runs live (PACE, as L4's does) from the takeover until the SPG starts handing the runways back (the apron
+// ceremony included): about a third of normal speed between the VIPs, and while an announcement plays the clock is paced
+// (vipPace) so that its aircraft reaches short final (SUMT.fin game seconds out) just as the voice ends, however long the
+// line or whatever was still being said. The sim's own times do not change (fast-forward and the bots see the same
+// summit); only how fast real time walks through them.
+// Lines for the gaps between VIPs (SUM.fill) wait for a gap long enough to finish in, and go if their moment passes.
+// Everything here is event-driven and allocation-free per tick (no DOM work outside the events).
+const SUMT={pm:200,an:390,il1:550,il2:680,ret:800,cue:110,fin:40,first:100,step:110,lead:60};
+const SUMV={gap:0.3,shot:0.25};   // live pace (1 = 1x) between VIPs, and while the camera rides one down
 // a staged announcement: each line goes on the ticker as it is spoken (its recorded clip in that speaker's accent, if there
 // is one; otherwise it stays up for a reading time), then onDone
 function announce(src,lines,o){o=o||{};const s0=S;let i=0;
@@ -2294,13 +2358,13 @@ function announce(src,lines,o){o=o||{};const s0=S;let i=0;
     let ok=false;ok=say(src,t,{gap:o.gap!=null?o.gap:600,onEnd:()=>{if(ok)next();}});if(!ok)setTimeout(next,Math.max(1800,t.length*60));};
   next();}
 // a character's popup that follows their recorded voice line by line, like the SPG's; without clips it reads at 2.6 s a line
-function voiced(lines,who,o){o=o||{};const g=$('#guard');if(!g)return;
+function voiced(lines,who,o){o=o||{};const g=$('#guard');if(!g||ended)return;
   if(!(SND.on&&typeof SPG_AUDIO!=='undefined'&&lines.every(t=>SPG_AUDIO[t])))return guard(lines,who,o);
   clearTimeout(guard.t1);clearTimeout(guard.t2);
-  speak(lines,{gap:o.gap!=null?o.gap:700,onLine:i=>{clearTimeout(guard.t2);guardShow(lines[i],who);if(o.onLine)o.onLine(i);},onDone:()=>{guard.t2=setTimeout(()=>g.classList.remove('on'),1400);if(o.onDone)o.onDone();}});}
+  speak(lines,{gap:o.gap!=null?o.gap:700,pri:o.pri,hold:o.hold,onLine:i=>{clearTimeout(guard.t2);guardShow(lines[i],who);if(o.onLine)o.onLine(i);},onDone:()=>{guard.t2=setTimeout(()=>g.classList.remove('on'),1400);if(o.onDone)o.onDone();}});}
 function startSummit(){
   const open=RW.filter(r=>!r.locked&&r.mode!=='OFF');if(open.length<2)return false;S.summitAt=T;
-  const E=T,order=open.slice().sort((a,b)=>b.len-a.len),ret=E+SUMT.ret,so={first:SUMT.first,step:SUMT.step,lead:SUMT.lead},tm=spgStaged.times(ret,order.length,so);
+  vqCut(1);const E=T,order=open.slice().sort((a,b)=>b.len-a.len),ret=E+SUMT.ret,so={first:SUMT.first,step:SUMT.step,lead:SUMT.lead},tm=spgStaged.times(ret,order.length,so);
   // every runway is the SPG's until he names it in the staged return; the blocks end exactly when he reopens each one
   const blk=order.map((r,i)=>{const b={from:E,to:tm.open[i],why:'Security (VVIP)',summit:true};r.blocks.push(b);r.blocks.sort((a,c)=>a.from-c.from);return b;});
   let waved=0;for(const f of flights)if(f.state==='approach'&&f.td-T>25&&f.rwy&&open.includes(f.rwy)&&!f.vip){goAround(f,'VVIP protocol, all runways closed');waved++;}
@@ -2323,41 +2387,55 @@ function startSummit(){
   // the Prime Minister on the long runway; the Russians on the other long one nearest the terminal
   const rp=order[0],rr=order.slice(1,3).sort((a,b)=>Math.abs(a.y-procC.y)-Math.abs(b.y-procC.y))[0]||order[0];cinema.q.length=0;
   const pm=vip('IN1','B77W','Air India One','INDIA ONE','Delhi','DEL',E+SUMT.pm,rp,{mus:'india',src:'SPG',
-    ann:`Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway ${rp.short}.`,
+    ann:`Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India, Shri Narendra Modi, shall now be landing on runway ${rp.short}.`,
     ban:['SPG · CEREMONIAL ARRIVAL','The Honourable Prime Minister of India',`Air India One · Boeing 777 · on final for runway ${rp.short}`,FLAG_IN],
     hello:'Air India One, welcome to Zero Mile. Follow the car with the very large flag.'});
   const an=vip('RSD','A124','Antonov An-124','RUSSIA CARGO','Moscow','VKO',E+SUMT.an,rr,{mus:'rasputin',src:'RUSSIAN PROTOCOL',
-    ann:`Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway ${rr.short}. By Antonov.`,
+    ann:`Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation, Vladimir Putin, will now land on runway ${rr.short}. By Antonov.`,
     ban:['PROTOCOL · RUSSIAN FEDERATION','The motorcade arrives first',`Antonov An-124 on final for runway ${rr.short} · the cars have their own aeroplane 🚗`,FLAG_RU],
     hello:'Antonov, welcome to Zero Mile. Please do not park on the red carpet.'});
-  const ilAnn=`Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway ${rr.short}.`;
+  const ilAnn=`Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation, Vladimir Putin, will now land on runway ${rr.short}.`;
   const il1=vip('RSD','IL96','Russia One','RUSSIA ONE','Moscow','VKO',E+SUMT.il1,rr,{mus:'rasputin',src:'RUSSIAN PROTOCOL',ann:ilAnn,
     ban:['PROTOCOL · RUSSIAN FEDERATION','His Excellency the President of the Russian Federation',`Russia One · Ilyushin Il-96 on final for runway ${rr.short} 🎶`,FLAG_RU],
     hello:'Russia One, welcome to Zero Mile. Your follow-me car is the other car with the very large flag.'});
   const il2=vip('RSD','IL96','Russia Two','RUSSIA TWO','Moscow','VKO',E+SUMT.il2,rr,{mus:'rasputin',src:'RUSSIAN PROTOCOL',ann:ilAnn,
     ban:['PROTOCOL · RUSSIAN FEDERATION','The same announcement. The identical Il-96.',`Russia Two on final for runway ${rr.short} · which one was his? Classified 🎶`,FLAG_RU],
     hello:'Russia Two, welcome. Yes, you look exactly like Russia One. Follow the third car with the very large flag.'});
-  SUM={E,ret,tm,order,blk,vips:[pm,an,il1,il2],ci:0,cine:null,ev:[],pm,an,il1,il2,held};
-  // timed lines (relative to E); the rest are events below (spawned, landed, docked)
+  SUM={E,ret,tm,order,blk,vips:[pm,an,il1,il2],ci:0,cine:null,ann:null,ev:[],fill:[],pm,an,il1,il2,held};
+  // timed lines (relative to E); the rest are events below (spawned, landed, docked) and gap lines (SUM.fill)
   SUM.ev=[[15,()=>{if(held||nc){radio('ATC',`Airlines have cancelled ${nc} flights for the summit. Flow control is holding ${held} more on the ground at their origins until the runways come back.`);logE(`The summit: ${nc} flights cancelled, ${held} arrivals held at their origins.`);}}],
     [40,()=>say('SPG','Can you have one runway back? No. We have chosen the runways. We choose the order. We are very fast at saying no.')]];
+  say('TWR',`All stations, summit protocol: every runway at Zero Mile is closed.${waved?` ${waved} on final, go around.`:''} Everyone else, hold.`,{pri:2});
   guard(['Sir. We have taken over your runways.','All of them. Yes, the long one too.']);
-  say('TWR',`All stations, summit protocol: every runway at Zero Mile is closed.${waved?` ${waved} on final, go around.`:''} Everyone else, hold.`);
   logE('The summit: the SPG took every runway.');renderRw();return true;
 }
-function vipCine(f){const s=SUM;s.cine={f,ann:false,landed:0};
-  if(s.prevSpeed==null){s.prevSpeed=speed;}speed=0.5;
+// a VIP's turn begins: the announcement (it jumps the queue; dropped if the aircraft is somehow down first, cut if it lands
+// while it plays), the banner and its music, over the strategic view. Without sound the line stays up for a reading time.
+function vipAnn(f){const s=SUM,a={f,done:false,it:null,read:0};s.ann=a;f.annT=T;
   vipBanner(true,f.ban[0],f.ban[1],f.ban[2],f.ban[3]);
   if(f.mus==='rasputin')music('rasputin',{vol:0.5});else music(f.mus||null,{fadeOut:900});
-  if(V3.on&&V3.ready){if(!s.prevCam)s.prevCam={t:Object.assign({},C3.t)};V3.mode='approach';C3.follow=f;C3.fpos=null;C3.apT=-99;camLabel();}else centerOn(f.x,f.y);
-  announce(f.src,[f.ann],{onDone:()=>{if(SUM===s&&s.cine&&s.cine.f===f)s.cine.ann=true;}});}
+  logE(f.ann);if(!say(f.src,f.ann,{pri:3,gap:300,ref:a,valid:()=>f.landT==null,cut:()=>f.landT!=null,onEnd:()=>{a.done=true;}})){a.done=false;a.read=performance.now()+Math.max(1800,f.ann.length*60);}}
+// real seconds until the announcement has been heard (or read)
+// (a line silenced without being heard, by a sound switch or a reset, counts as heard)
+function vipEta(a){if(a.read)return Math.max(0,(a.read-performance.now())/1000);if(a.done||!a.it)return 0;const e=vqEta(a.it);if(e==null){a.done=true;return 0;}return e;}
+// ...then the shot: the camera rides it down from short final; it ends 3.6 s after touchdown, once the tower's welcome is heard
+function vipShot(f){const s=SUM;s.ann=null;s.cine={f,landed:0,vo:false};
+  if(V3.on&&V3.ready){if(!s.prevCam)s.prevCam={t:Object.assign({},C3.t)};V3.mode='approach';C3.follow=f;C3.fpos=null;C3.apT=-99;camLabel();}else centerOn(f.x,f.y);}
 function vipCineEnd(){const s=SUM,c=s.cine;s.cine=null;
-  // the next VIP already on its approach takes over the camera straight away (and keeps the same music if it has it)
-  const nx=s.vips[s.ci];const now=nx&&nx.state==='approach'&&nx.landT==null&&T>=nx.vipTd-SUMT.cue-40;
-  if(!(nx&&nx.mus===c.f.mus&&nx.state==='approach'))music(null,{fadeOut:2200});
-  if(now){s.ci++;vipCine(nx);return;}
-  vipBanner(false);if(s.prevSpeed!=null){speed=s.prevSpeed;s.prevSpeed=null;if(running)setSpeed(speed);}
+  // the music carries on into the next VIP's announcement if it shares it and is due soon (the Russians); else it fades
+  const nx=s.vips[s.ci],soon=nx&&nx.landT==null&&!['gone','diverted'].includes(nx.state)&&T>=nx.vipTd-SUMT.cue-120;
+  if(!(soon&&nx.mus===c.f.mus))music(null,{fadeOut:2200});
+  vipBanner(false);
   if(V3.on&&V3.ready&&s.prevCam){setCam('map');Object.assign(C3.t,s.prevCam.t);s.prevCam=null;}}
+// the live pace: between VIPs a third of normal speed; while an announcement plays, whatever brings its aircraft to short
+// final as the voice ends (so it never lands under its own announcement, and never waits long after it); during the shot
+// a slow-motion quarter speed. Real time only: the sim's schedule is untouched.
+function vipPace(s){if(s.ann){const a=s.ann,need=a.f.td-SUMT.fin-T,eta=vipEta(a);return eta>0.05?clamp(need/eta/BASE,0.03,0.6):SUMV.gap;}
+  return s.cine?SUMV.shot:SUMV.gap;}
+// a gap line may start when nobody is being announced or shown, the radio is free, and it can finish (at the live pace)
+// before the next VIP's announcement is due (or a few seconds into its turn: the pacing absorbs that)
+function sumFits(s,x){if(s.ann||s.cine||CINE||vqOn||VQ.length)return false;const nx=s.vips[s.ci];if(!nx||!SND.on)return true;
+  if(x.est==null)x.est=vqEst(x);return (nx.vipTd-SUMT.cue-T)/(SUMV.gap*BASE)>x.est-4;}
 // while anyone speaks during the summit the game runs at no more than 1x, so each line is heard with what it describes
 function sumHold(s,off){if(!off&&SND.on&&!s.cine&&!CINE&&(vqOn||VQ.length)){if(speed>1){if(s.hold==null)s.hold=speed;speed=1;if(running)setSpeed(1);}}
   else if(s.hold!=null&&(off||(!vqOn&&!VQ.length&&!STAGED.length&&!s.cine&&!CINE))){speed=s.hold;s.hold=null;if(running)setSpeed(speed);}}
@@ -2367,30 +2445,49 @@ function summitTick(){
   for(const f of s.vips){
     if(f.state==='sched'&&T>=f.vipTd-D_APP-10){const r=f.vipRw;f.x=r.x1+14000;f.y=r.y+(r.y<0?-2600:2600);f.alt=2000;f.heading=Math.PI;f.state='inbound';beginApproach(f,r,f.vipTd);
       if(f===s.pm)say('APP',`Air India One, Nagpur Approach, radar contact. Expect runway ${r.short}.`);
-      else if(f===s.an)say('APP',`An Antonov An-124 is inbound for ${r.short} with the Russian motorcade. The motorcade has its own aeroplane.`);}
-    if(f.landT!=null&&!f.helloed){f.helloed=true;say('TWR',f.hello);}
+      else if(f===s.an)s.fill.push({src:'APP',text:`An Antonov An-124 is inbound for ${r.short} with the Russian motorcade. The motorcade has its own aeroplane.`,from:T,ok:()=>s.an.annT==null&&s.an.landT==null});}
+    // the tower's welcome belongs to the landing shot: the shot stays up until it has been heard
+    if(f.landT!=null&&!f.helloed){f.helloed=true;const c=s.cine&&s.cine.f===f?s.cine:null;if(c)c.vo=true;say('TWR',f.hello,{pri:3,onEnd:()=>{if(c)c.vo=false;}});}
     if(f.inBlock!=null&&!f.docked){f.docked=T;
-      if(f===s.pm){say('PROTOCOL','The Honourable Prime Minister is on the red carpet, to receive His Excellency the President of the Russian Federation.');if(f.stand)MARKS.push({x:f.stand.x,y:f.stand.y,e:'🇮🇳',until:T+1500,px:24});}
-      else if(f===s.an&&f.stand){say('RAMP','The motorcade is driving out of the Antonov. Ten cars. Nobody has asked where they will park.');
-        const g=s.pm.stand||f.stand;MARKS.push({e:'🚗',n:4,sp:120,px:18,path:[[f.stand.x,f.stand.y],[lerp(f.stand.x,g.x,0.5),lerp(f.stand.y,g.y,0.5)+80],[g.x,g.y+60]],t0:T,t1:T+240,until:T+700,x:f.stand.x,y:f.stand.y});}}}
-  // one cinematic at a time, in the order they land
-  const c=s.cine;
-  if(!c){const f=s.vips[s.ci];if(f){if(f.landT!=null||['gone','diverted'].includes(f.state))s.ci++;else if(f.state==='approach'&&T>=f.vipTd-SUMT.cue){if(CINE){const p=CINE;CINE=null;speed=p.prevSpeed;if(p.prevCam&&V3.on&&V3.ready){setCam('map');Object.assign(C3.t,p.prevCam.t);}}s.ci++;vipCine(f);}}}
+      // (what is seen happens at once; its line waits for a gap, and goes if the moment passes first)
+      if(f===s.pm){if(f.stand)MARKS.push({x:f.stand.x,y:f.stand.y,e:'🇮🇳',until:T+1500,px:24});
+        s.fill.push({src:'PROTOCOL',text:'The Honourable Prime Minister is on the red carpet, to receive His Excellency the President of the Russian Federation.',from:T,ok:()=>!s.shook});}
+      else if(f===s.an&&f.stand){const g=s.pm.stand||f.stand,t1=T+240;MARKS.push({e:'🚗',n:4,sp:120,px:18,path:[[f.stand.x,f.stand.y],[lerp(f.stand.x,g.x,0.5),lerp(f.stand.y,g.y,0.5)+80],[g.x,g.y+60]],t0:T,t1,until:T+700,x:f.stand.x,y:f.stand.y});
+        s.fill.push({src:'RAMP',text:'The motorcade is driving out of the Antonov. Ten cars. Nobody has asked where they will park.',from:T,ok:()=>!s.gone&&T<t1});}}}
+  // one VIP at a time, in the order they land: announcement, then shot
+  const c=s.cine,a=s.ann;
+  if(!c&&!a){const f=s.vips[s.ci];if(f){if(f.landT!=null||['gone','diverted'].includes(f.state))s.ci++;else if(f.state==='approach'&&T>=f.vipTd-SUMT.cue){if(CINE){const p=CINE;CINE=null;speed=p.prevSpeed;if(p.prevCam&&V3.on&&V3.ready){setCam('map');Object.assign(C3.t,p.prevCam.t);}}s.ci++;vipAnn(f);}}}
+  else if(a){const f=a.f;if(a.read&&performance.now()>=a.read)a.done=true;
+    // the shot starts as the voice ends (or, if the voice is somehow still going, at the last moment: 20 s out)
+    if(a.done||f.td-T<=SUMT.fin/2||f.landT!=null||['gone','diverted'].includes(f.state))vipShot(f);}
   else{const f=c.f;if(!V3.on)centerOn(f.x,f.y);
-    if(f.landT==null){if(!c.ann&&f.td-T<45){if(speed>0.15)speed=0.15;}else if(speed<0.5)speed=0.5;}
-    else if(!c.landed)c.landed=performance.now();
-    if(c.landed&&performance.now()-c.landed>3600)vipCineEnd();}
-  // the Prime Minister receives the President once both Il-96s are down and Russia One is on its stand
-  if(!s.shook&&s.il1.docked&&s.il2.landT!=null&&!s.cine){s.shook=T;const g=s.il1.stand||s.pm.stand;
-    say('PROTOCOL','The Honourable Prime Minister has received His Excellency the President of the Russian Federation on the red carpet. Handshake: eleven seconds.');logE('The Prime Minister received the President at the VIP stands.');
-    if(g){MARKS.push({x:g.x,y:g.y,e:'🤝',until:T+400,px:30});if(T<s.ret+80&&!CINE)cinema(null,['ZERO MILE · THE SUMMIT','The Prime Minister receives the President of the Russian Federation','Hindi-Rusi bhai bhai 🤝',FLAG_IN+FLAG_RU],{view:{tx:g.x,ty:g.y,dist:650,pitch:0.32,yaw:0.7},at:[g.x,g.y],ms:5500});}}
-  if(s.shook&&!s.gone&&T>=s.shook+40){s.gone=true;say('SPG','The motorcade has left for Tadoba. Every road from here to the tigers is closed. The tigers have been informed.');
+    if(f.landT!=null&&!c.landed)c.landed=performance.now();
+    if(['gone','diverted'].includes(f.state)||c.landed&&performance.now()-c.landed>3600&&!(c.vo&&!FFING&&performance.now()-c.landed<15000))vipCineEnd();}
+  // live: the clock follows the voices from the takeover until the SPG starts handing the runways back, the ceremony on
+  // the apron included (the speed buttons wait, as in L4's summit)
+  const live=!s.back;if(live)PACE=vipPace(s);else if(s.liveW)PACE=null;
+  if(s.liveW!==live){s.liveW=live;document.querySelectorAll('.speeds').forEach(x=>x.classList.toggle('live',live));}
+  // the Prime Minister receives the President once both Il-96s are down and Russia One is on its stand: the shot and the
+  // announcer's line together, and the shot stays up until the line has been heard
+  if(!s.shook&&s.il1.docked&&s.il2.landT!=null&&!s.cine){s.shook=T;s.hs=1;}
+  // (shown once the radio is free, so nothing else is being said over it; in a fast-forward at once)
+  if(s.hs===1&&(FFING||!SND.on||!(vqOn||VQ.length||CINE)||T>=s.shook+120)){s.hs=2;s.hsT=T;const g=s.il1.stand||s.pm.stand;let C=null;
+    if(g){MARKS.push({x:g.x,y:g.y,e:'🤝',until:T+400,px:30});if(T<s.ret+80&&!CINE){cinema(null,['ZERO MILE · THE SUMMIT','The Prime Minister receives the President of the Russian Federation','Hindi-Rusi bhai bhai 🤝',FLAG_IN+FLAG_RU],{view:{tx:g.x,ty:g.y,dist:650,pitch:0.32,yaw:0.7},at:[g.x,g.y],ms:5500});C=CINE;}}
+    if(C)C.vo=true;say('PROTOCOL','The Honourable Prime Minister has received His Excellency the President of the Russian Federation on the red carpet. Handshake: eleven seconds.',{pri:3,onEnd:()=>{if(C)C.vo=false;}});logE('The Prime Minister received the President at the VIP stands.');}
+  // a gap line, if one fits now (one at a time; a line whose moment has passed is dropped, it is on the log already)
+  if(s.fill.length&&s.hs!==1)for(let i=0;i<s.fill.length;i++){const x=s.fill[i];if(!x.ok()){s.fill.splice(i--,1);continue;}
+    if(T>=x.from&&sumFits(s,x)){s.fill.splice(i,1);say(x.src,x.text,{pri:2});break;}}
+  if(s.hs===2&&!s.gone&&T>=s.hsT+40){s.gone=true;say('SPG','The motorcade has left for Tadoba. Every road from here to the tigers is closed. The tigers have been informed.',{pri:2});
     const g=s.il1.stand||s.pm.stand;if(g)MARKS.push({e:'🚗',n:6,sp:160,px:18,path:[[g.x,g.y],[lerp(g.x,procC.x,0.5),lerp(g.y,procC.y,0.5)],[procC.x-900,procC.y]],t0:T,t1:T+300,until:T+300,x:g.x,y:g.y});}
   // the staged return: he names a runway, it reopens a game minute later, then the next one
   // (anything still queued for the radio voice is stale by now: drop it so his lines keep step with the runways)
   // (if a cinematic held it up, it starts now, and every runway's block moves to the time he will actually reopen it)
   // he starts once the handshake has been shown (or at the latest 2 minutes after the plan)
-  if(!s.back&&T>=s.ret&&!s.cine&&!CINE&&(s.shook?T>=s.shook+50:T>=s.ret+120)){s.back=T;VQ.length=0;
+  // (and, with sound, once the radio is free, so his lines are heard as he names the runways, not behind a backlog)
+  // (played live, no runway comes back before he has named it: until then their blocks are held open-ended; a fast-forward
+  // keeps the planned times, as the bots always have)
+  if(!s.back&&!FFING)for(const b of s.blk)if(b.to<T+5)b.to=T+5;
+  if(!s.back&&T>=s.ret&&!s.cine&&!CINE&&s.hs!==1&&(s.shook?T>=s.hsT+50:T>=s.ret+120)&&(FFING||!SND.on||!(vqOn||VQ.length)||T>=s.ret+300)){s.back=T;vqClear(1);
     const tm=spgStaged(s.order,{at:T,first:SUMT.first,step:SUMT.step,lead:SUMT.lead,open:(r,i)=>{r.blocks=r.blocks.filter(b=>b!==s.blk[i]);},done:()=>{s.done=T;}});
     s.blk.forEach((b,i)=>{b.to=tm.open[i];});S.summitBack=tm.open[0];renderRw();}
   // then the stack the summit left: the approach controller calls it down
@@ -2415,17 +2512,21 @@ function storyTick(){
   cineTick();
 }
 // a cinematic cut on one aircraft: the sim slows to half speed, the camera follows it, a banner names the moment
-function cinema(f,ban,o){o=o||{};if(f?['gone','diverted'].includes(f.state):!o.view)return;let keep=null;if(o.force&&CINE){keep=CINE;CINE=null;speed=keep.prevSpeed;}if(!o.force&&(CINE||(SUM&&SUM.cine))){(cinema.q=cinema.q||[]).push([f,ban,o]);return;}
+function cinema(f,ban,o){o=o||{};if(ended)return;if(f?['gone','diverted'].includes(f.state):!o.view)return;let keep=null;if(o.force&&CINE){keep=CINE;CINE=null;speed=keep.prevSpeed;}if(!o.force&&(CINE||(SUM&&(SUM.cine||SUM.ann)))){(cinema.q=cinema.q||[]).push([f,ban,o]);return;}
   CINE={f,ban,o,c:o.c,t0:performance.now(),prevSpeed:keep?keep.prevSpeed:speed,prevCam:keep?keep.prevCam:V3.on&&V3.ready?{t:Object.assign({},C3.t)}:null};speed=o.speed||0.5;
   vipBanner(true,ban[0],ban[1],ban[2],ban[3]==null?'':ban[3]);
   if(V3.on&&V3.ready){if(f){V3.mode=f.state==='approach'?'approach':'follow';C3.follow=f;C3.fpos=null;C3.apT=-99;camLabel();}else{setCam('map');Object.assign(C3.t,o.view);}}else if(f)centerOn(f.x,f.y);else if(o.at)centerOn(o.at[0],o.at[1]);}
+// a line that belongs to the shot on screen: it plays next, and the shot stays up until it has been heard
+function cineSay(C,src,text,o){if(!C)return say(src,text,Object.assign({pri:2},o));C.vo=true;return say(src,text,Object.assign({pri:3},o,{onEnd:()=>{C.vo=false;if(o&&o.onEnd)o.onEnd();}}));}
 // a queued shot whose moment has passed (its aircraft landed a while ago, or its sim-time window is over) is dropped, not shown late
 const cineStale=(f,o)=>(o.until!=null&&T>=o.until-2)||(f&&['gone','diverted','towed'].includes(f.state))||(o.landed&&f&&f.landT!=null&&T-f.landT>25);
 function cineTick(){stagedTick();
-  if(!CINE){const q=cinema.q;while(q&&q.length&&!(SUM&&SUM.cine)){const [f,b,o]=q.shift();if(cineStale(f,o))continue;cinema(f,b,o);break;}return;}
+  if(!CINE){const q=cinema.q;while(q&&q.length&&!(SUM&&(SUM.cine||SUM.ann))){const [f,b,o]=q.shift();if(cineStale(f,o))continue;cinema(f,b,o);break;}return;}
   const c=CINE,now=performance.now();if(!V3.on&&c.f)centerOn(c.f.x,c.f.y);
   if(c.o.landed&&c.f&&c.f.landT!=null&&!c.landAt)c.landAt=now;
-  const over=(c.f&&['gone','diverted'].includes(c.f.state))||(c.o.until!=null?T>=c.o.until||now-c.t0>40000:(c.landAt&&now-c.landAt>3500)||now-c.t0>(c.o.ms||(c.o.landed?20000:6500)));
+  const gone=c.f&&['gone','diverted'].includes(c.f.state);let over=gone||(c.o.until!=null?T>=c.o.until||now-c.t0>40000:(c.landAt&&now-c.landAt>3500)||now-c.t0>(c.o.ms||(c.o.landed?20000:6500)));
+  // a shot with a line of its own (CINE.vo, see cineSay) stays up until the line has been heard (at most 25 s; not in a fast-forward)
+  if(over&&!gone&&c.vo&&!FFING&&now-c.t0<25000)over=false;
   if(over){CINE=null;vipBanner(false);speed=c.prevSpeed;if(running)setSpeed(speed,true);if(V3.on&&V3.ready&&c.prevCam){setCam('map');Object.assign(C3.t,c.prevCam.t);}}
 }
 // a special arrival that appears 14 km out and lands on runway r at sim time td (holds a stand if one is given)
@@ -2443,8 +2544,8 @@ const nextOn=r=>flights.filter(o=>o.state==='approach'&&o.rwy===r).sort((a,b)=>a
 // an incident card that belongs to a story (buttons are ordered best-first: the bots take the first)
 function storyCard(c,o){const I=Object.assign({id:++INC,type:'story',born:T,total:40,def:0,st:c},o);I.left=I.total;
   S.incTypes['st_'+c.k]=(S.incTypes['st_'+c.k]||0)+1;incidents.push(I);renderInc();radio('AOCC',I.title+'.');return I;}
-function flashBanner(b,ms){if(CINE||(SUM&&SUM.cine))return;vipBanner(true,b[0],b[1],b[2],b[3]==null?'':b[3]);clearTimeout(flashBanner.t);
-  flashBanner.t=setTimeout(()=>{if(!CINE&&!(SUM&&SUM.cine))vipBanner(false);},ms||4500);}
+function flashBanner(b,ms){if(ended||CINE||(SUM&&(SUM.cine||SUM.ann)))return;vipBanner(true,b[0],b[1],b[2],b[3]==null?'':b[3]);clearTimeout(flashBanner.t);
+  flashBanner.t=setTimeout(()=>{if(!CINE&&!(SUM&&(SUM.cine||SUM.ann)))vipBanner(false);},ms||4500);}
 // emoji on the field (2D map and 3D overlay): {x,y,e,until,n,sp,alt,px}
 let MARKS=[];
 // 3D spectacles the stories ask for (read by 3d/fx.js through Z.fx): see 3d/FX.md for the item shapes
@@ -2681,11 +2782,11 @@ STORY.monkeys={len:900,start(c){const pc=CONCI.FN;if(!pc)return false;const gs=G
 STORY.gps={len:900,start(c){const gr=RW.filter(r=>!r.locked&&['R2','R5'].includes(r.id));if(!gr.length)return false;c.gr=gr;
   const nm=gr.map(r=>r.short).join(' and '),il=RW.filter(r=>!r.locked&&!gr.includes(r)).map(r=>r.short).join(', ');
   for(const r of gr)MARKS.push({x:r.x1+2400,y:r.y,e:'📡',until:T+600,px:24,k:'ghosts'});FXV.push({kind:'ghosts',id:'gps',pts:gr.map(r=>[r.x1+2600,r.y]),t0:T,t1:T+600});
-  guard(['GPS says Muscat. Radar says Butibori.','I believe my radar. 📡'],WHO.radar);
+  guard(['GPS says Khyber Pakhtunkhwa. Radar says Butibori.','I believe my radar. 📡'],WHO.radar);
   const f=gr.map(nextOn).filter(Boolean)[0];
   if(f)cinema(f,['GPS SPOOFING','"TERRAIN, PULL UP." There is no terrain.','Nagpur is flat. 🗺️',icos('🛰️','📡','🛰️')],{ms:6500});
   const I=storyCard(c,{icon:{g:'📡',c:'#7a5cff'},x:gr[0].x1+2000,y:gr[0].y,title:`GPS spoofing: false alarms on ${nm}`,
-    text:`Someone is broadcasting fake satellite signals, and aircraft GPS now thinks it is over Muscat. ${nm} have no ILS (the radio beam on the ground that guides a plane onto the runway), so landings there use GPS, and the fake signal sets off "TERRAIN, PULL UP" alarms: the jet goes around, though Nagpur is flat. For 10 minutes: land only on the ILS runways (${il}) and use ${nm} for take-offs, or keep landing everywhere and expect surprise go-arounds.`,
+    text:`Someone is broadcasting fake satellite signals, and aircraft GPS now thinks it is over Khyber Pakhtunkhwa. ${nm} have no ILS (the radio beam on the ground that guides a plane onto the runway), so landings there use GPS, and the fake signal sets off "TERRAIN, PULL UP" alarms: the jet goes around, though Nagpur is flat. For 10 minutes: land only on the ILS runways (${il}) and use ${nm} for take-offs, or keep landing everywhere and expect surprise go-arounds.`,
     def:0,defText:`ops stops landings on ${nm} for 10 minutes.`,
     acts:[{l:'ILS runways only (10 min)',pri:1,fn(){for(const r of gr)r.noArrUntil=T+600;renderRw();resolve(I,true,`Landings moved off the GPS runways ${nm} for 10 minutes.`);}},
       {l:'Keep landing on GPS',fn(){for(const r of gr)r.gpsUntil=T+600;renderRw();resolve(I,true,'');}}]});
@@ -2709,7 +2810,7 @@ const WED_CUTS={1:[['THE CHAMBANI WEDDING','Baraat 1 of 40 · Gulfstream G650 on
   36:[['BARAAT 36 OF 40','The DJ\'s speakers','The DJ came on Baraat 1. He has not stopped 🎧',icos('🎧','🔊','💃')],false]};
 STORY.wedding={len:2200,start(c){const L=r=>r.tdList.length+flights.filter(f=>f.rwy===r&&['hp','taxi_out'].includes(f.state)).length;
   const MK={DEP:0,MIX:1,ARR:2};const r=RW.filter(o=>!o.locked&&o.mode!=='OFF'&&o!==LONGEST).sort((a,b)=>(MK[a.mode]-MK[b.mode])||(L(a)-L(b)))[0];if(!r)return false;c.r=r;
-  const n=40,gap=28,tA=T+300,tM=tA+n*gap+15;Object.assign(c,{n,gap,tA,tM,jets:[],cut:{}});VQ.length=0;
+  const n=40,gap=28,tA=T+300,tM=tA+n*gap+15;Object.assign(c,{n,gap,tA,tM,jets:[],cut:{}});vqCut(2);
   voiced(['Sir, forty jets. One muhurat.','Not one minute after. 💍'],WHO.planner);
   c.lines.push([0,'AOCC',`The Chambani family's wedding guests are inbound: 40 private jets from ${clk(tA)}. Shananth Chambani weds Kanika Merchant at ${clk(tM)}.`]);
   const mkJets=own=>{for(let i=0;i<n;i++){const k=WED_C[i%8],td=tA+i*gap,o={al:'CHW',type:'GLF6',num:String(i+1),disp:`Baraat ${i+1}`,callsign:`BARAAT ${i+1}`,from:k[0],fromCode:k[1],intl:!!k[2]};let f;
@@ -2727,7 +2828,7 @@ STORY.wedding={len:2200,start(c){const L=r=>r.tdList.length+flights.filter(f=>f.
       {l:'Fit them into traffic',fn(){c.own=false;mkJets(false);resolve(I,true,'The Chambani wedding jets were fitted into normal arrivals.');}}]});c.I=I;
   // the muhurat: fireworks over the wedding apron, the count, the sign-off
   c.lines.push([tM-T,cc=>{if(!cc.jets.length)return;const pk=G.get(PARK);FXV.push({kind:'fireworks',id:'muhurat',x:pk.x,y:pk.y,t0:T,t1:T+150});const k=cc.jets.filter(f=>f.landT!=null).length;cc.kn=k;
-    if(k===40)voiced(['All forty landed before the muhurat.','Shubh vivah! 💐'],WHO.planner);else guard([`${k} of 40 landed before the muhurat.`,'Shubh vivah! 💐'],WHO.planner);
+    if(k===40)voiced(['All forty landed before the muhurat.','Shubh vivah! 💐'],WHO.planner,{pri:3,hold:0.3});else guard([`${k} of 40 landed before the muhurat.`,'Shubh vivah! 💐'],WHO.planner,{pri:3,hold:0.3});
     flashBanner(['THE MUHURAT',`Shananth weds Kanika · ${k} of 40 jets made it`,'Shubh vivah! 💐',icos('💍','💐','🐘')],5000);wedChip(cc,true);}]);
   c.lines.push([tM-T+60,cc=>{if(cc.jets.length)say('TWR','Return gift for the tower: one silver box of kaju katli. Each. We have accepted.');}]);
   c.lines.push([tM-T+130,cc=>{music(null,{fadeOut:3500});}]);
@@ -2741,13 +2842,18 @@ STORY.wedding={len:2200,start(c){const L=r=>r.tdList.length+flights.filter(f=>f.
     if(+n===30&&!c.arch){c.arch=true;FXV.push({kind:'waterarch',id:'groom',x:f.rwy.x1-1700,y:f.rwy.y,a:Math.PI,t0:f.td-40,t1:f.td+160});}
     const [b,landed]=WED_CUTS[n];if(f.td-T>(landed?100:60))continue;c.cut[n]=true;if(CINE||(SUM&&SUM.cine)||(cinema.q&&cinema.q.length))continue;
     if(+n===1)music('dj',{vol:0.35});
-    cinema(f,[b[0],b[1].replace('RWY',f.rwy.short),b[2],b[3]],landed?{landed:true}:{ms:5200});}
-  // what the radio says follows the count of jets actually down
-  const k=c.kn||0;
-  if(!c.m1&&c.jets[0].landT!=null){c.m1=true;say('TWR','Baraat 1, welcome to Zero Mile. Follow the car with the marigolds to the wedding apron.');if(!MUS.name)music('dj',{vol:0.35});}
-  if(!c.m10&&k>=10){c.m10=true;say('PLANNER','Ten down, thirty to go. The groom\'s side has asked for a water salute. The bride\'s side has asked for a bigger one.');}
-  if(!c.m20&&k>=20){c.m20=true;say('PLANNER','Half the guest list is down. Baraat 21 is carrying only the lehengas. Baraat 22 is carrying the jewellery for Baraat 21.');}
-  if(!c.m30&&c.jets[29].landT!=null){c.m30=true;say('PLANNER','The groom will now change to a horse. The horse is on Baraat 31.');}}};
+    cinema(f,[b[0],b[1].replace('RWY',f.rwy.short),b[2],b[3]],landed?{landed:true}:{ms:5200});
+    // voice first: Baraat 21's line is about Baraat 21, so it plays over Baraat 21's own shot, which waits for it
+    if(+n===21&&!c.m20&&CINE&&CINE.f===f){c.m20=true;cineSay(CINE,'PLANNER',WED_L.m20,{hold:0.3});}}
+  // what the radio says follows the count of jets actually down; while the planner speaks the clock is held to 0.3x (hold),
+  // so the count on the chip does not run away from what she is saying
+  const k=c.kn||0,shot=i=>CINE&&CINE.f===c.jets[i]?CINE:null;
+  if(!c.m1&&c.jets[0].landT!=null){c.m1=true;cineSay(shot(0),'TWR','Baraat 1, welcome to Zero Mile. Follow the car with the marigolds to the wedding apron.');if(!MUS.name)music('dj',{vol:0.35});}
+  if(!c.m10&&k>=10){c.m10=true;say('PLANNER',WED_L.m10,{pri:2,hold:0.3});}
+  if(!c.m20&&k>=20){c.m20=true;say('PLANNER',WED_L.m20,{pri:2,hold:0.3});}
+  if(!c.m30&&c.jets[29].landT!=null){c.m30=true;cineSay(shot(29),'PLANNER',WED_L.m30,{hold:0.3});}}};
+const WED_L={m10:'Ten down, thirty to go. The groom\'s side has asked for a water salute. The bride\'s side has asked for a bigger one.',
+  m20:'Half the guest list is down. Baraat 21 is carrying only the lehengas. Baraat 22 is carrying the jewellery for Baraat 21.',m30:'The groom will now change to a horse. The horse is on Baraat 31.'};
 
 // L4 · Super Over at Jamtha: 16 fan charters sit on the bank chart all day, then the fans decide to stay
 STORY.superover={len:3200,start(c){const ch=flights.filter(f=>f.charter);if(!ch.length)return false;c.ch=ch;const std=Math.min(...ch.map(f=>f.std));
@@ -2796,16 +2902,16 @@ const DELEG=[
   ['JP2','Japan','🇯🇵','JAF','B77W','JAPANESE AIR FORCE 2','Japanese Air Force Two','Japan Air Force One (the backup)','Tokyo','HND','jp','Zero Mile Tower, {C}. The backup. Also on time.'],
   ['AE1','United Arab Emirates','🇦🇪','EK','A388','EMIRATES 1','Emirates One','Emirates A380 (the UAE delegation)','Dubai','DXB','ae','Zero Mile Tower, {C}, super, {R}. One delegation, two decks.'],
   ['AE2','United Arab Emirates','🇦🇪','EK','B77W','EMIRATES 2','Emirates Two','Emirates 777 (the luggage)','Dubai','DXB','ae',''],
-  ['SA1','Saudi Arabia','🇸🇦','SV','B748','SAUDI 1','Saudi One','Saudi royal 747-8','Riyadh','RUH','ae','Zero Mile Tower, {C}, heavy, {R}. Two more aircraft behind us. Luggage.'],
-  ['SA2','Saudi Arabia','🇸🇦','SV','B77W','SAUDI 2','Saudi Two','Saudi 777 (luggage)','Riyadh','RUH','ae',''],
-  ['SA3','Saudi Arabia','🇸🇦','SV','B789','SAUDI 3','Saudi Three','Saudi 787 (more luggage)','Riyadh','RUH','ae',''],
+  ['SA1','Saudi Arabia','🇸🇦','SV','B748','SAUDI 1','Saudi One','Saudi royal 747-8','Riyadh','RUH','gb','Zero Mile Tower, {C}, heavy, {R}. Two more aircraft behind us. Luggage.'],
+  ['SA2','Saudi Arabia','🇸🇦','SV','B77W','SAUDI 2','Saudi Two','Saudi 777 (luggage)','Riyadh','RUH','gb',''],
+  ['SA3','Saudi Arabia','🇸🇦','SV','B789','SAUDI 3','Saudi Three','Saudi 787 (more luggage)','Riyadh','RUH','gb',''],
   ['KR1','Republic of Korea','🇰🇷','ROK','B748','KOREAN AIR FORCE 1','Korean Air Force One','Korea Code One 747-8','Seoul','ICN','kr','Zero Mile Tower, {C}, {R}. Code One, on the glide path. Exactly on it.'],
   ['GB1','United Kingdom','🇬🇧','RRR','A333','ASCOT 1','Ascot One','RAF Voyager','London','LHR','gb','Zero Mile Tower, {C}, {R}. Lovely holding stack. Very orderly queue.'],
   ['FR1','France','🇫🇷','CTM','A333','COTAM 001','Cotam 001','French Republic A330','Paris','CDG','fr','Zero Mile Tower, {C}, {R}. The press is in the second aircraft. They are already writing.'],
   ['FR2','France','🇫🇷','CTM','A21N','COTAM 002','Cotam 002','French press A321','Paris','CDG','fr',''],
   ['DE1','Germany','🇩🇪','GAF','A359','GERMAN AIR FORCE 1','German Air Force One','Luftwaffe A350','Berlin','BER','de','Zero Mile Tower, {C}, {R}. We are four seconds early. We apologise.'],
   ['DE2','Germany','🇩🇪','GAF','A21N','GERMAN AIR FORCE 2','German Air Force Two','Luftwaffe A321','Berlin','BER','de',''],
-  ['QA','Qatar','🇶🇦','QR','B748','AMIRI 1','Amiri One','Qatar Amiri 747-8','Doha','DOH','ae','{C}, heavy, {R}. The gifts are in the forward hold.'],
+  ['QA','Qatar','🇶🇦','QR','B748','AMIRI 1','Amiri One','Qatar Amiri 747-8','Doha','DOH','in','{C}, heavy, {R}. The gifts are in the forward hold.'],
   ['TR','Türkiye','🇹🇷','TCG','B748','TURKISH GOVERNMENT','Turkish Government','Turkish state 747-8','Ankara','ESB','tr','{C}, {R}. We heard about the carpet. We have brought a carpet.'],
   ['CA','Canada','🇨🇦','RCF','A333','CANFORCE 001','Canforce 001','RCAF CC-330 Husky','Ottawa','YOW','ca','{C}, {R}. Sorry, are we early? Sorry.'],
   ['AU','Australia','🇦🇺','RAA','A333','AUSSIE 1','Aussie One','RAAF KC-30A','Canberra','CBR','au',"{C}, {R}. G'day. Long way for a photo."],
@@ -2841,10 +2947,10 @@ const RWW={L:'left',R:'right',C:'centre'},DIG=['zero','one','two','three','four'
 // what the voice says: runway designators spelled out, numbered callsigns as a pilot reads them
 function spoken(t){let s=t.replace(/\b(\d)(\d)([LRC])\b/g,(m,a,b,c)=>`${DIG[+a]} ${DIG[+b]} ${RWW[c]}`);for(const k in SPOKEN)s=s.split(k).join(SPOKEN[k]);return s;}
 // how long a line takes to say, in real seconds (the announcer and the SPG take their time)
-const lineDur=(t,v)=>0.6+spoken(t).split(/\s+/).length/(v==='announcer'||v==='ru_announcer'?2.25:v==='spg'?2.1:2.7);
-const ANN={REACH1:'Ladies and gentlemen, the motorcade of the President of the United States.',AE1:'Ladies and gentlemen: the United Arab Emirates.',
-  JP1:'Ladies and gentlemen: Japan.',DE1:'Ladies and gentlemen: the Federal Republic of Germany.',GB1:'Ladies and gentlemen: the United Kingdom.',
-  SA1:'Ladies and gentlemen: the Kingdom of Saudi Arabia.',FR1:'Ladies and gentlemen: the French Republic.',KR1:'Ladies and gentlemen: the Republic of Korea.'};
+const lineDur=(t,v)=>v==='announcer_hi'?3.2+t.split(/\s+/).length/2.3:0.6+spoken(t).split(/\s+/).length/(v==='announcer'||v==='ru_announcer'?2.25:v==='spg'?2.1:2.7);
+const ANN={REACH1:'Ladies and gentlemen, please welcome the motorcade of the President of the United States.',AE1:'Ladies and gentlemen, please welcome the United Arab Emirates.',
+  JP1:'Ladies and gentlemen, please welcome Japan.',DE1:'Ladies and gentlemen, please welcome the Federal Republic of Germany.',GB1:'Ladies and gentlemen, please welcome the United Kingdom.',
+  SA1:'Ladies and gentlemen, please welcome the Kingdom of Saudi Arabia.',FR1:'Ladies and gentlemen, please welcome the French Republic.',KR1:'Ladies and gentlemen, please welcome the Republic of Korea.'};
 const SBAN={REACH1:r=>['THE MOTORCADE ARRIVES FIRST',`US Air Force C-17s, carrying the cars · ${r[0].short}`,'The car has its own aeroplane. Two, actually 🚗',FLAG_US],
   AE1:r=>['THE UAE DELEGATION',`An Emirates A380. All of it. · ${r[0].short}`,'Business class: the whole aeroplane ✨',icos('🇦🇪')],
   JP1:r=>['JAPAN AIR FORCE ONE',`Boeing 777 · on final for ${r[0].short}`,'Exactly on time 🇯🇵',icos('🇯🇵')],
@@ -2885,29 +2991,32 @@ function sumPlan(E,R3,trio){
   const blk={
     reg(k){return rw=>{const d=DL[k],call=V(d.v,d.cs,fillC(d.call,d,rw[0])),c0=-(call.dur+1.1);
       return{ac:[{d,off:0}],a0:c0,a1:c0+call.dur+0.2,beats:[[c0,'lt',{ds:[d],q:call.text}],[c0,'say',call]]};};},
-    cer(k,sups){return rw=>{const d=DL[k],ann=V('announcer','ANNOUNCER',ANN[k]),call=V(d.v,d.cs,fillC(d.call,d,rw[0])),cs=-9.4,as=cs-0.5-ann.dur,ban=SBAN[k](rw),ds=[d].concat(sups.map(s=>DL[s]));
+    cer(k,sups){return rw=>{const d=DL[k],ann=V('announcer_hi','ANNOUNCER',ANN[k]),call=V(d.v,d.cs,fillC(d.call,d,rw[0])),cs=-9.4,as=cs-0.5-ann.dur,ban=SBAN[k](rw),ds=[d].concat(sups.map(s=>DL[s]));
       return{ac:[{d,off:0}].concat(sups.map((s,i)=>({d:DL[s],off:i?13:3.5,ri:i?0:1}))),a0:as,a1:2.8,beats:[[as,'ban',ban],[as,'lt',{ds,q:ann.text,ann:true}],[as,'say',ann],[cs,'lt',{ds,q:call.text}],[cs,'say',call],[-8.6,'shot',{i:0,ban,until:2.6}]]};};},
-    jp(){return rw=>{const d1=DL.JP1,d2=DL.JP2,ann=V('announcer','ANNOUNCER',ANN.JP1),c1=V('jp',d1.cs,fillC(d1.call,d1,rw[0])),c2=V('jp',d2.cs,fillC(d2.call,d2,rw[1])),cs=-9.4,as=cs-0.5-ann.dur;
+    jp(){return rw=>{const d1=DL.JP1,d2=DL.JP2,ann=V('announcer_hi','ANNOUNCER',ANN.JP1),c1=V('jp',d1.cs,fillC(d1.call,d1,rw[0])),c2=V('jp',d2.cs,fillC(d2.call,d2,rw[1])),cs=-9.4,as=cs-0.5-ann.dur;
       return{ac:[{d:d1,off:0},{d:d2,off:8,ri:1}],a0:as,a1:10.6,beats:[[as,'ban',SBAN.JP1(rw)],[as,'lt',{ds:[d1,d2],q:ann.text,ann:true}],[as,'say',ann],[cs,'lt',{ds:[d1],q:c1.text}],[cs,'say',c1],
         [-8.6,'shot',{i:0,ban:SBAN.JP1(rw),until:2.2}],[2.4,'lt',{ds:[d2],q:c2.text}],[2.4,'say',c2],[2.2,'shot',{i:1,ban:SBAN.JP2(rw),until:10.5}]]};};},
-    cn(){return rw=>{const d=DL.CN1,s=DL.CN2,ann=V('announcer','ANNOUNCER',`Ladies and gentlemen. The aircraft carrying the President of the People's Republic of China shall now be landing on runway ${rw[0].short}.`),
+    cn(){return rw=>{const d=DL.CN1,s=DL.CN2,ann=V('announcer_hi','ANNOUNCER',`Ladies and gentlemen. The aircraft carrying the President of the People's Republic of China shall now be landing on runway ${rw[0].short}.`),
       call=V('cn',d.cs,fillC(d.call,d,rw[0])),twr=V('tower','TWR',`${d.nm}, runway ${rw[0].short}, cleared to land. The red carpet has been measured twice.`),tw=-2.4-twr.dur,cs=tw-0.4-call.dur,as=cs-0.6-ann.dur,ban=SBAN.CN1(rw);
       return{ac:[{d,off:0},{d:s,off:5,ri:1}],a0:as,a1:3.2,stop:[-90,90],beats:[[as,'ban',ban],[as,'lt',{ds:[d,s],q:ann.text,ann:true}],[as,'say',ann],[cs,'lt',{ds:[d,s],q:call.text}],[cs,'say',call],
-        [tw,'lt',{ds:[d,s],q:twr.text,twr:true}],[tw,'say',twr],[-9,'shot',{i:0,ban,until:3}]]};};},
-    ru(){return rw=>{const d0=DL.RUCARGO,d1=DL.RU1,d2=DL.RU2,ann=V('ru_announcer','PROTOCOL','Attention, please. The delegation of the Russian Federation. First, the cars. Then two aircraft. They are identical.'),
+        [tw,'lt',{ds:[d,s],q:twr.text,twr:true}],[tw,'say',twr],
+        // the guqin (music/guqin.mp3, 18.9 s) plays over the whole landing shot, which is cut to its length: it opens 16.5 s out
+        // and holds 2.4 s past touchdown, so Air China One lands on the music's last phrase
+        [-16.5,'music','guqin'],[-16.5,'shot',{i:0,ban,until:2.4}],[2.6,'music',null]]};};},
+    ru(){return rw=>{const d0=DL.RUCARGO,d1=DL.RU1,d2=DL.RU2,ann=V('ru_announcer','PROTOCOL','Attention, please. The delegation of the President of the Russian Federation, Vladimir Putin. First, the cars. Then two aircraft. They are identical.'),
       c0=V('ru',d0.cs,fillC(d0.call,d0,rw[1])),c1=V('ru',d1.cs,fillC(d1.call,d1,rw[0])),c2=V('ru',d2.cs,fillC(d2.call,d2,rw[1])),twr=V('tower','TWR','Russia, Russia Two, welcome to Zero Mile. We will not ask which one.'),
       as=-12.8-ann.dur,s2=2.2,tw=Math.max(5.9,s2+c2.dur+0.3),all=[d0,d1,d2];
       return{ac:[{d:d0,off:-6,ri:1},{d:d1,off:0},{d:d2,off:7.5,ri:1}],a0:as,a1:Math.max(10.6,tw+twr.dur+0.2),stop:[-100,80],beats:[[as,'ban',SBAN.RU0(rw)],[as,'lt',{ds:all,q:ann.text,ann:true}],[as,'say',ann],
         [-12.2,'music','rasputin'],[-12.2,'shot',{i:0,ban:SBAN.RUC(rw),until:-5.5}],[-12.2,'lt',{ds:[d0],q:c0.text}],[-12.2,'say',c0],
         [-5.5,'shot',{i:1,ban:SBAN.RU1(rw),until:2.1}],[-5.5,'lt',{ds:[d1,d2],q:c1.text}],[-5.5,'say',c1],
         [2.1,'shot',{i:2,ban:SBAN.RU2(rw),until:10.4}],[s2,'lt',{ds:[d2,d1],q:c2.text}],[s2,'say',c2],[tw,'lt',{ds:[d2,d1],q:twr.text,twr:true}],[tw,'say',twr],[9.3,'music',null]]};};},
-    us(){return rw=>{const d=DL.AF1,s=DL.SAM,sp=SPARE_LINES(R3[2]),ann=V('announcer','ANNOUNCER',`Ladies and gentlemen. The aircraft carrying the President of the United States shall now be landing on runway ${rw[0].short}.`),
+    us(){return rw=>{const d=DL.AF1,s=DL.SAM,sp=SPARE_LINES(R3[2]),ann=V('announcer_hi','ANNOUNCER',`Ladies and gentlemen. The aircraft carrying the President of the United States, Donald Trump, shall now be landing on runway ${rw[0].short}.`),
       call=V('us',d.cs,fillC(d.call,d,rw[0])),twr=V('tower','TWR',`${d.nm}, Zero Mile Tower, runway ${rw[0].short}, cleared to land. Welcome to India.`),stw=V('tower','TWR',`SAM 29000, the spare, runway ${rw[1].short}, cleared to land.`),
       tw=-2.4-twr.dur,cs=tw-0.4-call.dur,as=cs-0.6-ann.dur,g0=as-0.8-lineDur(sp[0],'spg')-1.2-lineDur(sp[1],'spg'),ban=SBAN.AF1(rw);sp.forEach(t=>tl.push({key:t,voice:'spg',say:spoken(t)}));
       return{ac:[{d,off:0},{d:s,off:6.5,ri:1}],a0:g0,a1:8,stop:[-90,90],spare:g0,beats:[[g0,'guard',{lines:sp,gap:1200}],[as,'ban',ban],[as,'lt',{ds:[d,s],q:ann.text,ann:true}],[as,'say',ann],[cs,'lt',{ds:[d,s],q:call.text}],[cs,'say',call],
         [tw,'lt',{ds:[d,s],q:twr.text,twr:true}],[tw,'say',twr],[-9,'shot',{i:0,ban,until:3}],[3.3,'lt',{ds:[s],q:stw.text,twr:true}],[3.3,'say',stw]]};};},
     // trio mode: the three land together on three runways; then the second Il-96 alone; then the spare 747 alone
-    trio(){return rw=>{const a=DL.CN1,b=DL.RU1,c=DL.AF1,ann=V('announcer','ANNOUNCER','Ladies and gentlemen. Three Presidents shall now be landing at the same time, on three runways. Nobody will be first.'),
+    trio(){return rw=>{const a=DL.CN1,b=DL.RU1,c=DL.AF1,ann=V('announcer_hi','ANNOUNCER','Ladies and gentlemen. Three Presidents shall now be landing at the same time, on three runways. Nobody will be first.'),
       ca=V('cn',a.cs,`${a.nm}, runway ${R3[0].short}.`),cb=V('ru',b.cs,`${b.nm}, runway ${R3[1].short}.`),cc=V('us',c.cs,`${c.nm}, runway ${R3[2].short}.`),twr=V('tower','TWR','Air China One, Russia, Air Force One: all three cleared to land. Together.'),
       tw=-1.6-twr.dur,s3=tw-0.4-cc.dur,s2=s3-0.3-cb.dur,s1=s2-0.3-ca.dur,as=s1-0.6-ann.dur,ban=SBAN.TRIO(R3);
       return{ac:[{d:a,off:0,rw:R3[0]},{d:b,off:0,rw:R3[1]},{d:c,off:0,rw:R3[2]},{d:DL.CN2,off:12.5,rw:R3[0]}],a0:as,a1:4.2,stop:[-90,90],trio:1,beats:[[as,'ban',ban],[as,'lt',{ds:[a,b,c],q:ann.text,ann:true}],[as,'say',ann],
@@ -2916,7 +3025,7 @@ function sumPlan(E,R3,trio){
       call=V('ru',d.cs,fillC(d.call,d,rw[0])),as=-12.8-ann.dur,ban=SBAN.RU2B(rw);
       return{ac:[{d:d0,off:-6,ri:1},{d,off:0}],a0:as,a1:4.6,beats:[[as,'ban',SBAN.RUC(rw)],[as,'lt',{ds:[d0,d],q:ann.text,ann:true}],[as,'say',ann],
         [-12.2,'music','rasputin'],[-12.2,'shot',{i:0,ban:SBAN.RUC(rw),until:-5.5}],[-12.2,'lt',{ds:[d0],q:c0.text}],[-12.2,'say',c0],[-5.5,'shot',{i:1,ban,until:3}],[-5.5,'lt',{ds:[d],q:call.text}],[-5.5,'say',call],[3.4,'music',null]]};};},
-    sam(){return rw=>{const d=DL.SAM,sp=SPARE_LINES(R3[2]),ann=V('announcer','ANNOUNCER','Ladies and gentlemen. The spare aircraft of the President of the United States.'),call=V('us',d.cs,fillC(d.call,d,rw[0])),cs=-10.6-call.dur+2,as=cs-0.6-ann.dur,
+    sam(){return rw=>{const d=DL.SAM,sp=SPARE_LINES(R3[2]),ann=V('announcer_hi','ANNOUNCER','Ladies and gentlemen. The spare aircraft of the President of the United States.'),call=V('us',d.cs,fillC(d.call,d,rw[0])),cs=-10.6-call.dur+2,as=cs-0.6-ann.dur,
       g0=as-0.8-lineDur(sp[0],'spg')-1.2-lineDur(sp[1],'spg'),ban=SBAN.SAM(rw);sp.forEach(t=>tl.push({key:t,voice:'spg',say:spoken(t)}));
       return{ac:[{d,off:0}],a0:g0,a1:3.2,spare:g0,beats:[[g0,'guard',{lines:sp,gap:1200}],[as,'ban',ban],[as,'lt',{ds:[d],q:ann.text,ann:true}],[as,'say',ann],[cs,'lt',{ds:[d],q:call.text}],[cs,'say',call],[-10,'shot',{i:0,ban,until:3}]]};};},
     spg(){return()=>{MID_LINES.forEach(t=>tl.push({key:t,voice:'spg',say:spoken(t)}));return{ac:[],a0:0,a1:lineDur(MID_LINES[0],'spg')+1.5+lineDur(MID_LINES[1],'spg')+0.6,beats:[[0,'guard',{lines:MID_LINES}]]};};},
@@ -3015,8 +3124,8 @@ tick(c,t){const pl=c.pl;
   // the beats, in order: lower-thirds, voices, banners, shots, music, the SPG
   if(c.beatsPl!==pl){c.beatsPl=pl;c.beats=pl.items.flatMap(it=>it.abs.map(b=>[b[0],b[1],b[2],it])).filter(b=>c.doneT==null||b[0]>c.doneT).sort((a,b)=>a[0]-b[0]);c.bi=0;}
   const beats=c.beats;
-  while(c.bi<beats.length&&T>=beats[c.bi][0]){const [at,ty,p,it]=beats[c.bi++];const late=at+3*SUMP;
-    if(ty==='say')say(p.src,p.text,{gap:150,valid:()=>T<=late});
+  while(c.bi<beats.length&&T>=beats[c.bi][0]){const [at,ty,p,it]=beats[c.bi++];const late=at+10*SUMP;   // a reply queued behind a pilot call still gets heard; later than this it would be out of step with the shot
+    if(ty==='say')say(p.src,p.text,{pri:3,gap:150,valid:()=>T<=late});
     else if(ty==='lt')ltSet(Object.assign({fs:c.fs},p));
     else if(ty==='ban'){if(!CINE)vipBanner(true,p[0],p[1],p[2],p[3]);}
     else if(ty==='shot'){const until=it.td+p.until*SUMP;if(p.view){const v=trioView(c.R3);cinema(null,p.ban,{force:true,until,speed:PACE||0.5,view:v,at:[v.tx,v.ty]});}
@@ -3024,7 +3133,7 @@ tick(c,t){const pl=c.pl;
     else if(ty==='music'){if(p)music(p,{loop:false,vol:0.45});else music(null,{fadeOut:1200});}
     else if(ty==='guard')guard(p.lines,null,{gap:p.gap||1500,valid:()=>T<=at+5*SUMP});
     else if(ty==='radio'){radio(p[0],p[1]);logE(p[1]);}
-    else if(ty==='mx'){const f=c.mx,txt=f&&f.landT!=null?MX_LINES[1]:MX_LINES[0];say('AEROMEXICO 92',txt,{gap:150,valid:()=>T<=late});ltSet({fs:c.fs,ds:[DL.MX],q:txt});}}
+    else if(ty==='mx'){const f=c.mx,txt=f&&f.landT!=null?MX_LINES[1]:MX_LINES[0];say('AEROMEXICO 92',txt,{pri:3,gap:150,valid:()=>T<=late});ltSet({fs:c.fs,ds:[DL.MX],q:txt});}}
   // the banner of an announcement that never got its shot (or after it) goes when the item's airtime is over
   for(const it of pl.items)if(!it.banOff&&T>=it.A1&&T<it.A1+40){it.banOff=true;if(!CINE&&$('#vipBanner').classList.contains('on'))vipBanner(false);}
   // landings: the counter, and the lower-third's status
@@ -3080,7 +3189,7 @@ WHO.met={badge:'MET OFFICE · NAGPUR',svg:face('🌫️','#2a3440')};
 // airport's fire chief (never the SPG: anything of his still queued is dropped when the fog rolls in)
 WHO.sup={badge:'TOWER SUPERVISOR · ZERO MILE',svg:face('🎧','#123a22')};WHO.arff={badge:'FIRE CHIEF · AIRPORT RESCUE & FIREFIGHTING',svg:face('🚒','#4a1010')};
 STORY.fog={len:1700,start(c){const r=LONGEST;if(r.locked)return false;c.r=r;
-  VQ.length=0;music(null,{fadeOut:1500});{const wc=$('#wedChip');if(wc)wc.hidden=true;}
+  vqCut(2);music(null,{fadeOut:1500});{const wc=$('#wedChip');if(wc)wc.hidden=true;}
   voiced(['Sir, fog. In the afternoon. At 46 degrees.','We are as surprised as you are. 🌫️'],WHO.met);
   flashBanner(['FOG · RVR 350 m','A freak fog bank rolls in off Gorewada lake after the storm','Low visibility procedures: wider spacing on every runway',icos('🌫️')],5500);
   c.lines.push([0,()=>say('ATC','Low visibility procedures in force. Runway visual range 350 metres. Increased spacing on all runways.')]);
@@ -3099,24 +3208,28 @@ tick(c,t){const r=c.r;if(c.bt&&!c.sc&&T>=c.scenAt&&!r.occ&&T<r.btUntil-60)this.b
 begin(c){const r=c.r,side=procC.y>r.y?1:-1;
   const B=mk({kind:'dep',state:'xhold',al:'OCA',type:'B77W',intl:false,to:'Mumbai',toCode:'BOM',dir:'W',std:T});Object.assign(B,{num:'1801',disp:'Orange City Cargo 1801 (777F)',callsign:'ORANGE CITY 1801',x:r.x1-60,y:r.y,heading:Math.PI,v:0,rwy:r,origStd:T,readyAt:T,cargo:true});
   const A=mk({kind:'dep',state:'xbt',al:'SPC',type:'B748',intl:false,to:'Kolkata',toCode:'CCU',dir:'E',std:T+900});Object.assign(A,{num:'77',disp:'Satpura Cargo 77 (747-8F)',callsign:'SATPURA 77',x:r.x1-1500,y:r.y,heading:0,v:8,rwy:r,origStd:T+900,readyAt:T,cargo:true});
-  r.occ=B;c.sc={A,B,t0:T,go:SIMR()<0.4,side,turn:0,phase:'bt'};
-  say('TWR',`Satpura 77, backtrack runway ${r.short}, vacate at the next exit, report runway vacated.`);logE(`Satpura 77 backtracking on ${r.short} in fog.`);},
-run(c){const s=c.sc,{A,B}=s,r=c.r,t=T-s.t0,dt=Math.min(1,T-(s.last||T));s.last=T;
+  // backtracking in fog is the first link, and the player chose it: the garbled clearance that follows is certain (the
+  // chain still needs the player to miss the STOP). The draw stays, so the random stream is the same as before.
+  SIMR();r.occ=B;const sc=c.sc={A,B,t0:T,t:0,go:true,side,turn:0,phase:'bt',wait:1};
+  // voice first: the scene's clock (and the freighter) waits while its radio calls are heard, and the sim is held to 0.25x
+  say('TWR',`Satpura 77, backtrack runway ${r.short}, vacate at the next exit, report runway vacated.`,{pri:3,hold:0.25,onEnd:()=>{sc.wait=0;}});logE(`Satpura 77 backtracking on ${r.short} in fog.`);},
+run(c){const s=c.sc,{A,B}=s,r=c.r,dt0=Math.min(1,T-(s.last||T));s.last=T;const dt=!s.rolled&&s.wait&&!FFING?0:dt0;s.t+=dt;const t=s.t;
   // the freighter backtracks east towards the threshold, then turns off towards the taxiway on the terminal side
   if(A.state==='xbt'){if(A.x<r.x1-1200&&!s.turn)A.x+=8*dt;else{s.turn=Math.min(1,s.turn+dt/16);A.heading=s.side*s.turn*Math.PI/2;A.x+=8*dt*Math.cos(A.heading);A.y+=8*dt*Math.sin(A.heading);
       if(Math.abs(A.y-r.y)>70){A.state='wedtaxi';const p=route(nearestNode(A.x,A.y).k,PARK);if(p)setPath(A,[{x:A.x,y:A.y}].concat(p),TAXI_R);else A.state='towed';
         if(B.state==='xhold'){radio('TWR',`Satpura 77 has vacated. Orange City 1801, runway ${r.short}, cleared for take-off.`);B.state='lineup';B.rollT=T;setPath(B,[{x:B.x,y:B.y},{x:B.x-1,y:B.y}],50);}
         if(s.phase==='bt'){s.phase='done';r.occ=B;}}}}
-  if(t>=10&&!s.lu){s.lu=1;say('TWR',`Orange City 1801, line up and wait, runway ${r.short}.`);}
-  if(s.go&&!s.rolled&&t>=16){s.rolled=1;B.state='xroll';B.v=8;B.s=60;B.rollT=T;s.rollT=T;
-    let ok1=false;const l2=()=>say('TWR','OK… [squeal] …stand by for take-off, I will call you.');ok1=say('ORANGE CITY 1801','…we are now at take-off.',{gap:150,onEnd:()=>{if(ok1)l2();}});if(!ok1)setTimeout(l2,900);
+  if(t>=10&&!s.lu&&(!s.wait||FFING)){s.lu=1;s.wait=1;say('TWR',`Orange City 1801, line up and wait, runway ${r.short}.`,{pri:3,hold:0.25,onEnd:()=>{s.wait=0;}});}
+  if(s.go&&!s.rolled&&t>=16&&s.lu&&(!s.wait||FFING)){s.rolled=1;B.state='xroll';B.v=8;B.s=60;B.rollT=T;s.rollT=T;
+    // (the tower's garbled reply follows the call at once; the Satpura crew's cry comes after it, as at Tenerife)
+    let ok1=false;const l2=()=>{s.l2=1;say('TWR','OK… [squeal] …stand by for take-off, I will call you.',{pri:3});};ok1=say('ORANGE CITY 1801','…we are now at take-off.',{pri:3,gap:150,onEnd:()=>{if(ok1)l2();}});if(!ok1)setTimeout(l2,900);
     s.prevSpeed=speed;stopUI(c,true);
     cinema(null,['RUNWAY INCURSION · '+r.short,'Orange City 1801 is rolling. Satpura 77 is still on the runway.','STOP IT',''],{view:{tx:r.x1-700,ty:r.y,dist:1150,pitch:0.17,yaw:Math.PI/2},at:[r.x1-700,r.y],ms:60000,speed:0.15,force:true});s.stopMs=performance.now()+3000;}
-  if(B.state==='xroll'){if(speed!==0.15){speed=0.15;}const px=B.x;B.v=Math.min(95,B.v+(B.rto?-5:2.0)*dt);B.s+=B.v*dt;B.x=r.x1-B.s;if(t-(s.rollT-s.t0)>3&&!s.cry){s.cry=1;say('SATPURA 77','We are still on the runway! Satpura 77 still on the runway!');}
+  if(B.state==='xroll'){if(speed!==0.15){speed=0.15;}const px=B.x;B.v=Math.min(95,B.v+(B.rto?-5:2.0)*dt);B.s+=B.v*dt;B.x=r.x1-B.s;if(T-s.rollT>3&&s.l2&&!s.cry){s.cry=1;say('SATPURA 77','We are still on the runway! Satpura 77 still on the runway!',{pri:3});}
     stopUI(c,true);
     if(B.rto&&B.v<=0.5){B.v=0;s.stopped=1;this.end(c,'near');}
     else if(px>A.x+20&&B.x<=A.x+20){if(A.state==='xbt'&&Math.abs(A.y-r.y)<70)this.end(c,'crash');else{B.state='roll';r.occ=B;this.end(c,'clear');}}}},
-stop(c){const s=c.sc;if(!s||s.B.state!=='xroll'||s.B.rto||performance.now()>s.stopMs)return;s.B.rto=true;VQ.length=0;say('TWR','ORANGE CITY 1801, STOP IMMEDIATELY! I say again, STOP IMMEDIATELY!');logE('You cancelled Orange City 1801\'s take-off roll.');stopUI(c,true);},
+stop(c){const s=c.sc;if(!s||s.B.state!=='xroll'||s.B.rto||performance.now()>s.stopMs)return;s.B.rto=true;voiceReset(true);say('TWR','ORANGE CITY 1801, STOP IMMEDIATELY! I say again, STOP IMMEDIATELY!',{pri:3});logE('You cancelled Orange City 1801\'s take-off roll.');stopUI(c,true);},
 end(c,how){const s=c.sc,{A,B}=s,r=c.r;stopUI(c,false);c.out=how;
   if(CINE&&CINE.o&&CINE.o.ms===60000)CINE.t0=performance.now()-CINE.o.ms+(how==='crash'?9000:3500);
   if(how==='near'){hitSafety(12,`Near collision on ${r.short} in fog: Orange City 1801 rolled without a clearance with Satpura 77 still on the runway. You stopped it.`);
@@ -3131,7 +3244,7 @@ end(c,how){const s=c.sc,{A,B}=s,r=c.r;stopUI(c,false);c.out=how;
     const others=RW.filter(o=>!o.locked&&o!==r);takeRunways(others,T,600,0,'Accident: all runways closed','Accident: all runways closed');
     for(const f of flights)if(f.state==='approach'&&f.rwy===r)goAround(f,'runway accident');
     vipBanner(true,'RUNWAY COLLISION · '+r.short,'Two aircraft have collided in fog','Emergency services are responding. All runways closed.','');setTimeout(()=>{if(!CINE)vipBanner(false);},9000);
-    const allst=`ALL STATIONS, ALL STATIONS: aircraft accident on runway ${r.short}. All runways closed. Fire services responding.`;radio('ATC',allst);setTimeout(()=>{if(STO.includes(c))say('ATC',allst);},4200);
+    const allst=`ALL STATIONS, ALL STATIONS: aircraft accident on runway ${r.short}. All runways closed. Fire services responding.`;radio('ATC',allst);setTimeout(()=>{if(STO.includes(c))say('ATC',allst,{pri:3});},4200);
     c.lines.push([T-c.E+40,()=>{radio('FIRE',`Crash tenders on scene on ${r.short}. Foam going on now.`);voiced(['Crash tenders on scene. Foam going on now.','Both crews are out. The medics have them.'],WHO.arff);}]);
     c.lines.push([T-c.E+120,()=>{say('ATC','Arrivals: hold. Divert if your fuel requires.');voiced([`${r.short} is closed for the rest of the day.`,'We will run on the other four. Arrivals first.'],WHO.sup);}]);
     c.lines.push([T-c.E+600,()=>say('ATC',`Runways other than ${r.short} reopening. ${r.short} is closed for the rest of the day.`)]);}
@@ -3160,7 +3273,7 @@ function renderInc(){
   $('#incList').innerHTML=incidents.map(I=>{const ic=I.icon||ICON[I.type];return `<div class="inc" data-id="${I.id}"><div class="ic" style="background:${ic.c}">${ic.g}</div><h4 data-find="${I.id}">${I.title}</h4><p>${I.text}</p><div class="acts">${I.acts.map((a,i)=>`<button data-i="${i}" class="${a.pri?'pri':''}" ${a.dis&&a.dis()?'disabled':''}>${a.l}</button>`).join('')}</div><div class="dflt">If you leave it: ${I.defText}</div><div class="tm"><span>${tleft(I)}</span><i style="width:${clamp(I.left/I.total*120,0,120)}px"></i></div></div>`;}).join('');
 }
 $('#incList').addEventListener('click',e=>{const row=e.target.closest('.inc');if(!row)return;const I=incidents.find(i=>i.id===+row.dataset.id);if(!I)return;const b=e.target.closest('button[data-i]');if(b&&!b.disabled){I.acts[+b.dataset.i].fn();return;}if(e.target.closest('[data-find]')){const p=incPos(I);centerOn(p.x,p.y);}});
-function incTimers(){document.querySelectorAll('#incList .inc').forEach(row=>{const I=incidents.find(i=>i.id===+row.dataset.id);if(!I)return;row.querySelector('.tm span').textContent=tleft(I);row.querySelector('.tm i').style.width=clamp(I.left/I.total*120,0,120)+'px';row.querySelectorAll('button[data-i]').forEach(b=>{const a=I.acts[+b.dataset.i];b.disabled=!!(a.dis&&a.dis());});});}
+function incTimers(){document.querySelectorAll('#incList .inc').forEach(row=>{const I=incidents.find(i=>i.id===+row.dataset.id);if(!I)return;setT(row.querySelector('.tm span'),tleft(I));const bar=row.querySelector('.tm i'),w=Math.round(clamp(I.left/I.total*120,0,120))+'px';if(bar._w!==w){bar.style.width=w;bar._w=w;}row.querySelectorAll('button[data-i]').forEach(b=>{const a=I.acts[+b.dataset.i],d=!!(a.dis&&a.dis());if(b.disabled!==d)b.disabled=d;});});}
 
 /* ============ popover ============ */
 let popInc=null,popRw=null,popF=null;
@@ -3421,7 +3534,7 @@ function drawWave(){
   if(LV&&T0C+LEN){const xe=X(LEN);if(xe<W){wctx.fillStyle='rgba(255,255,255,.06)';wctx.fillRect(xe,0,W-xe,H);wctx.fillStyle='#6f7a80';wctx.fillText('END',xe+3,10);}}
   wctx.fillStyle='#8a7cff';wctx.fillText('ARR',2,12);wctx.fillStyle='#2fd3c6';wctx.fillText('DEP',2,H-12);
   const hold=flights.filter(f=>f.state==='holding').length,q=flights.filter(f=>f.state==='hp').length,taxi=flights.filter(f=>f.state==='taxi_out').length;
-  $('#wCounts').innerHTML=`<span style="color:${hold>8?'var(--stop)':hold>3?'var(--warn)':'var(--ink-2)'}">${hold} holding</span> · <span style="color:${q>14?'var(--stop)':q>6?'var(--warn)':'var(--ink-2)'}">${q} queued to depart</span> · ${taxi} taxiing out · capacity ${Math.round(capNow('arr'))}↓ ${Math.round(capNow('dep'))}↑ per hr`;
+  setH($('#wCounts'),`<span style="color:${hold>8?'var(--stop)':hold>3?'var(--warn)':'var(--ink-2)'}">${hold} holding</span> · <span style="color:${q>14?'var(--stop)':q>6?'var(--warn)':'var(--ink-2)'}">${q} queued to depart</span> · ${taxi} taxiing out · capacity ${Math.round(capNow('arr'))}↓ ${Math.round(capNow('dep'))}↑ per hr`);
 }
 
 (function(){const tip=document.createElement('div');tip.id='wTip';tip.className='panel';tip.hidden=true;$('#wave').appendChild(tip);
@@ -3441,11 +3554,11 @@ function renderRw(){
   rwStatus();
 }
 function rwStatus(){
-  let a=0,d=0,m=0;RW.forEach(r=>{if(r.locked)return;if(r.mode==='ARR')a++;if(r.mode==='DEP')d++;if(r.mode==='MIX')m++;});$('#rwSum').textContent=`ARR ${a} · DEP ${d}${m?` · MIX ${m}`:''}`;
-  document.querySelectorAll('#rwRows .rw').forEach(row=>{const r=RW.find(x=>x.id===row.dataset.r);const st=row.querySelector('.st');if(r.locked){st.textContent='Opens in a later level';return;}
+  let a=0,d=0,m=0;RW.forEach(r=>{if(r.locked)return;if(r.mode==='ARR')a++;if(r.mode==='DEP')d++;if(r.mode==='MIX')m++;});setT($('#rwSum'),`ARR ${a} · DEP ${d}${m?` · MIX ${m}`:''}`);
+  document.querySelectorAll('#rwRows .rw').forEach(row=>{const r=RW.find(x=>x.id===row.dataset.r);const st=row.querySelector('.st');if(r.locked){setH(st,'Opens in a later level');return;}
     const fin=flights.filter(f=>f.state==='approach'&&f.rwy===r).length,q=flights.filter(f=>(f.state==='hp')&&f.rwy===r).length;
     let s='';const bk=r.blocks[0];if(T<r.closedUntil)s=r.closedUntil-T>43200?`<span class="bad">closed · ${r.why.toLowerCase()}</span>`:`<span class="bad">closed ${Math.ceil((r.closedUntil-T)/60)} min · ${r.why}</span>`;else if(bk&&T>=bk.from)s=`<span class="bad">${bk.summit?'Taken by security':(bk.desk||'VVIP closure')}${bk.open?'':' · '+mmss(bk.to-T)}</span>`;else if(T<r.changeUntil)s=`<span class="hot">changeover ${Math.ceil((r.changeUntil-T)/60)} min</span>`;else s=`<b>${fin}</b> on final · <b class="${q>6?'hot':''}">${q}</b> queued · ${r.ops} ops`;
-    const tags=[];if(bk&&T<bk.from)tags.push(`<span class="bad">VVIP in ${mmss(bk.from-T)}</span>`);if(r.degraded)tags.push('<span class="hot">lights out: slower landings</span>');if(T<r.sepUntil)tags.push(`<span class="hot">${r.sepWhy||'double spacing'}</span>`);if(T<r.noArrUntil)tags.push('<span class="hot">GPS spoofed: no landings</span>');if(T<r.noDepUntil)tags.push('<span class="hot">no departures: taxiway blocked</span>');if(T<r.btUntil)tags.push('<span class="bad">backtracking in fog</span>');if(r.gpsUntil>T)tags.push('<span class="hot">GPS spoofed: false PULL UPs</span>');if(r.kiteUntil>T&&T>=r.kiteFrom)tags.push('<span class="hot">🪁 NOW</span>');else if(r.kiteFrom>T&&r.kiteFrom-T<=180)tags.push(`<span class="hot">🪁 in ${mmss(r.kiteFrom-T)}</span>`);if(r.strike)tags.push('<span class="hot">bird remains: risk</span>');if(ops.some(o=>o.kind==='fod'&&o.r===r&&o.phase==='wait'))tags.push('<span class="hot">sweep pending</span>');if(r.shear)tags.push('<span class="hot">windshear</span>');st.innerHTML=s+(tags.length?' · '+tags.join(' · '):'');});
+    const tags=[];if(bk&&T<bk.from)tags.push(`<span class="bad">VVIP in ${mmss(bk.from-T)}</span>`);if(r.degraded)tags.push('<span class="hot">lights out: slower landings</span>');if(T<r.sepUntil)tags.push(`<span class="hot">${r.sepWhy||'double spacing'}</span>`);if(T<r.noArrUntil)tags.push('<span class="hot">GPS spoofed: no landings</span>');if(T<r.noDepUntil)tags.push('<span class="hot">no departures: taxiway blocked</span>');if(T<r.btUntil)tags.push('<span class="bad">backtracking in fog</span>');if(r.gpsUntil>T)tags.push('<span class="hot">GPS spoofed: false PULL UPs</span>');if(r.kiteUntil>T&&T>=r.kiteFrom)tags.push('<span class="hot">🪁 NOW</span>');else if(r.kiteFrom>T&&r.kiteFrom-T<=180)tags.push(`<span class="hot">🪁 in ${mmss(r.kiteFrom-T)}</span>`);if(r.strike)tags.push('<span class="hot">bird remains: risk</span>');if(ops.some(o=>o.kind==='fod'&&o.r===r&&o.phase==='wait'))tags.push('<span class="hot">sweep pending</span>');if(r.shear)tags.push('<span class="hot">windshear</span>');setH(st,s+(tags.length?' · '+tags.join(' · '):''));});
 }
 
 /* ============ HUD ============ */
@@ -3454,27 +3567,38 @@ function rwStatus(){
 #windChip[hidden]{display:none}#windChip b{color:#2fd3c6;font-size:21px}#windChip small{display:block;font-family:var(--f-mono);font-weight:500;font-size:10.5px;color:#9fb3c8;letter-spacing:.06em}`;document.head.appendChild(st);
   const d=document.createElement('div');d.id='windChip';d.hidden=true;d.setAttribute('aria-live','polite');$('#app').appendChild(d);})();
 function windChip(){const d=$('#windChip');if(!d)return;const on=!!(LV&&LV.windDown&&!ended&&T>=LEN-900);if(d.hidden===on)d.hidden=!on;if(!on)return;const n=depLeft();
-  const h=`🛫 Last departures: <b>${n}</b> to go<small>${T<LEN?`THE EVENING BANK · ${Math.ceil((LEN-T)/60)} MIN OF SCHEDULE LEFT`:'THE DAY ENDS WHEN THEY ARE AWAY'}</small>`;if(d.innerHTML!==h)d.innerHTML=h;}
-function kpi(id,txt,cls){const el=$(id);el.querySelector('.v').innerHTML=txt;el.className='kpi '+(cls||'');}
+  const h=`🛫 Last departures: <b>${n}</b> to go<small>${T<LEN?`THE EVENING BANK · ${Math.ceil((LEN-T)/60)} MIN OF SCHEDULE LEFT`:`THE DAY ENDS WHEN THEY ARE AWAY · AT ${clk(LEN+WIND)} AT THE LATEST`}</small>`;if(d.innerHTML!==h)d.innerHTML=h;}
+// the HUD refreshes four times a second: write only what changed (every write, even of the same text, costs a style and layout
+// pass over the page and a repaint of its panel; Safari pays it on the main thread, between frames)
+const setH=(el,h)=>{if(el&&el._h!==h){el.innerHTML=h;el._h=h;}},setT=(el,t)=>{if(el&&el._t!==t){el.textContent=t;el._t=t;}};
+function kpi(id,txt,cls){const el=$(id);setH(el.querySelector('.v'),txt);const c='kpi '+(cls||'');if(el.className!==c)el.className=c;}
 const RATE={v:0};
 function hud(){
-  $('#clock').textContent=clk(T);$('#left').textContent=ended?'Level over':LV.windDown&&T>=LEN?`${depLeft()} to go`:`${Math.max(0,Math.ceil((LEN-T)/60))} min left`;windChip();
+  setT($('#clock'),clk(T));setT($('#left'),ended?'Level over':LV.windDown&&T>=LEN?`${depLeft()} to go`:`${Math.max(0,Math.ceil((LEN-T)/60))} min left`);windChip();
   while(moveLog.length&&moveLog[0]<T-1800)moveLog.shift();
   const rate=Math.round(moveLog.length*2);
   kpi('#kMov',`${S.moves}<small>/${LV.target}</small>`,S.moves>=LV.target?'good':'');
   RATE.v+=(rate-RATE.v)*0.35;if(Math.abs(rate-RATE.v)<0.6)RATE.v=rate;kpi('#kRate',`${Math.round(RATE.v)}`,RATE.v>=250?'gold':'');
-  const hold=flights.filter(f=>f.state==='holding').length;$('#vign').style.opacity=clamp((hold-6)/28,0,0.85).toFixed(2);
+  const hold=flights.filter(f=>f.state==='holding').length;{const v=$('#vign'),o=clamp((hold-6)/28,0,0.85).toFixed(2);if(v._o!==o){v.style.opacity=o;v._o=o;}}
   const otp=S.dep+S.arr?Math.round((S.depOnTime+S.arrOnTime)/(S.dep+S.arr)*100):null;kpi('#kOtp',otp==null?'—':otp+'%',otp==null?'':otp>=85?'good':otp>=65?'mid':'bad');
   const ct=S.cnxMade+S.cnxMiss;const cx=ct?Math.round(S.cnxMade/ct*100):null;kpi('#kCnx',cx==null?'—':cx+'%',cx==null?'':cx>=90?'good':cx>=78?'mid':'bad');
   kpi('#kSafe',Math.round(S.safety),S.safety>=90?'good':S.safety>=70?'mid':'bad');
   rwStatus();incTimers();renderLate();if(popF)renderFlightPop();
 }
-let lastLate='';
+let lastLate='';const LROW=[];
+// the board changes a row or two at a time (a departure's "+12m" ticks over): only the rows whose text changed are rewritten.
+// (Rebuilding the whole 40-row table four times a second was the HUD's biggest cost during the summit: 5-35 ms a time in WebKit.)
 function renderLate(){
   const rows=flights.filter(f=>(f.kind==='dep'&&['at_gate','taxi_out','hp','push','start','stuck'].includes(f.state)&&T>f.std-300)||(f.state==='holding'&&f.endurance<20)||f.state==='nogate').sort((a,b)=>(b.state==='holding'?1:0)-(a.state==='holding'?1:0)||(a.std||a.eta)-(b.std||b.eta)).slice(0,40);
-  const late=flights.filter(f=>f.kind==='dep'&&['at_gate','taxi_out','hp','push','start','stuck'].includes(f.state)&&T>f.std+900).length;$('#lateCount').textContent=late||'';
-  const h='<table class="board"><thead><tr><th>Flight</th><th>Time</th><th>Where</th><th>Status</th></tr></thead><tbody>'+rows.map(f=>{const late=f.kind==='dep'?mins(T-f.std):0;const c=f.state==='holding'||f.state==='nogate'?'#ffae3b':late>15?'#ff4d3f':late>0?'#ffae3b':'#3ad07f';return `<tr data-id="${f.id}"><td class="f">${fl(f)}<div class="sub">${f.type}</div></td><td class="f">${f.kind==='dep'?clk(f.std):clk(f.eta)}${late>0?`<div class="sub" style="color:var(--stop)">+${late}m</div>`:''}</td><td>${f.kind==='dep'?f.toCode:f.fromCode}</td><td><span class="pill" style="background:${c};color:#0b0b0b">${stateText(f)}</span></td></tr>`;}).join('')+'</tbody></table>';
-  if(h!==lastLate){$('#tabLate').innerHTML=rows.length?h:'<p style="padding:9px 10px;color:var(--ink-3);font-size:12.5px;margin:0">Nothing late or at risk.</p>';lastLate=h;}
+  const late=flights.filter(f=>f.kind==='dep'&&['at_gate','taxi_out','hp','push','start','stuck'].includes(f.state)&&T>f.std+900).length;setT($('#lateCount'),String(late||''));
+  const el=$('#tabLate');
+  if(!rows.length){if(lastLate!=='none'){el.innerHTML='<p style="padding:9px 10px;color:var(--ink-3);font-size:12.5px;margin:0">Nothing late or at risk.</p>';lastLate='none';LROW.length=0;}return;}
+  if(lastLate!=='table'){el.innerHTML='<table class="board"><thead><tr><th>Flight</th><th>Time</th><th>Where</th><th>Status</th></tr></thead><tbody></tbody></table>';lastLate='table';LROW.length=0;}
+  const tb=el.querySelector('tbody');
+  for(let i=0;i<rows.length;i++){const f=rows[i],late=f.kind==='dep'?mins(T-f.std):0;const c=f.state==='holding'||f.state==='nogate'?'#ffae3b':late>15?'#ff4d3f':late>0?'#ffae3b':'#3ad07f';
+    const h=`<td class="f">${fl(f)}<div class="sub">${f.type}</div></td><td class="f">${f.kind==='dep'?clk(f.std):clk(f.eta)}${late>0?`<div class="sub" style="color:var(--stop)">+${late}m</div>`:''}</td><td>${f.kind==='dep'?f.toCode:f.fromCode}</td><td><span class="pill" style="background:${c};color:#0b0b0b">${stateText(f)}</span></td>`;
+    const tr=tb.rows[i]||tb.insertRow();if(LROW[i]!==h){tr.innerHTML=h;LROW[i]=h;}if(tr._id!==f.id){tr.setAttribute('data-id',f.id);tr._id=f.id;}}
+  while(tb.rows.length>rows.length)tb.deleteRow(-1);LROW.length=rows.length;
 }
 $('#tabLate').addEventListener('pointerdown',e=>{const tr=e.target.closest('tr[data-id]');if(!tr)return;const f=flights.find(f=>f.id===+tr.dataset.id);if(f){centerOn(f.x,f.y);selected=f;}});
 document.querySelectorAll('.tabbar button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabbar button').forEach(x=>x.classList.toggle('on',x===b));$('#tabLate').hidden=b.dataset.tab!=='late';$('#tabCoach').hidden=b.dataset.tab!=='coach';$('#tabTerms').hidden=b.dataset.tab!=='terms';});
@@ -3497,9 +3621,16 @@ function tick(dt){
   summitTick();specialTick();storyTick();
   if(!ended&&endDue())finish();
 }
-// the level ends at LEN; a level with windDown:true runs on (at most 30 minutes) until every departure due by LEN is airborne
-const depLeft=()=>flights.filter(f=>f.kind==='dep'&&!f.counted&&f.std<=LEN&&['sched','at_gate','push','start','taxi_out','hp','lineup','stuck','roll'].includes(f.state)).length;
-function endDue(){if(T<LEN)return false;if(!LV.windDown||T>=LEN+1800)return true;return depLeft()===0;}
+// the level ends at LEN; a level with windDown:true runs on (at most 30 minutes, LEN+WIND) until every departure there is
+// is airborne (on the bank chart, at a gate or on its way out, whenever it was due: the chip counts the same) and every
+// arrival in the air is down. Arrivals not yet airborne at LEN are cancelled (the day is over). No departure can be
+// impossible: toDep cancels an onward flight that could not be ready in time.
+const WIND=1800,DEP_LEFT=new Set(['sched','at_gate','push','start','taxi_out','hp','lineup','stuck','roll','xhold','xroll']);
+const depLeft=()=>{let n=0;for(const f of flights)if(f.kind==='dep'&&!f.counted&&DEP_LEFT.has(f.state))n++;return n;};
+const arrLeft=()=>flights.filter(f=>f.kind==='arr'&&['inbound','holding','approach','goaround','rollout'].includes(f.state)).length;
+function endDue(){if(T<LEN)return false;if(!LV.windDown||T>=LEN+WIND)return true;
+  if(!endDue.cut){endDue.cut=true;for(const f of flights)if(f.kind==='arr'&&f.state==='sched'&&!f.vip){f.state='cancelled';if(f.gate){f.gate.occ=null;f.gate=null;}if(f.res){f.res.res=null;f.res=null;}}}
+  return depLeft()===0&&arrLeft()===0;}
 const onceSet=new Set();function once(k,fn){if(onceSet.has(k))return;onceSet.add(k);fn();}
 
 /* ============ input ============ */
@@ -3515,7 +3646,7 @@ function pick(mx,my){let best=null,bd=1e9;for(const f of flights){if(f.sx==null|
 function pickInc(mx,my){for(const I of incidents)if(I.sx!=null&&Math.hypot(I.sx-mx,I.sy-my)<20)return I;return null;}
 function pickRw(mx,my){for(const s of rwSigns)if(mx>=s.x&&mx<=s.x+s.w&&my>=s.y-3&&my<=s.y+s.h+3)return s.r;let wx=mx/cam.s+cam.x,wy=my/cam.s+cam.y,tol=10/cam.s;if(V3.on){const g=groundAt(mx,my);if(!g)return null;wx=g.x;wy=g.y;tol=45;}for(const r of RW){if(wx>=r.x0&&wx<=r.x1&&Math.abs(wy-r.y)<Math.max(r.width/2+10,tol))return r;}return null;}
 // while a set piece runs live (PACE) the speed buttons only take effect afterwards; say so instead of silently ignoring them
-const liveNote=s=>{if(PACE!=null&&s>0)radio('AOCC',`The summit runs live: the clock stays at a third of normal speed until the last delegation lands, then goes to ${s}×.`);};
+const liveNote=s=>{if(PACE!=null&&s>0)radio('AOCC',`The summit runs live: the clock stays at about a third of normal speed until ${SUM?'the SPG hands the runways back':'the last delegation lands'}, then goes to ${s}×.`);};
 document.querySelectorAll('.speeds button').forEach(b=>b.onclick=()=>{liveNote(+b.dataset.s);setSpeed(+b.dataset.s);});
 (function(){const b=$('#snd');const paint=()=>{b.textContent=SND.on?'Sound on':'Sound off';b.classList.toggle('on',SND.on);};paint();b.onclick=()=>{SND.on=!SND.on;store.set('zm_snd',SND.on);paint();if(SND.on)tickSound(true);else voiceReset();};})();
 // keep: restore a speed without un-pausing (a cinematic ending while the player has paused must not resume the game)
@@ -3601,6 +3732,8 @@ function startLevel(n){
 }
 function finish(){
   ended=true;paused=true;closePop();
+  // the day is over: nothing may speak, play music or cut away behind the score sheet (late timers find ended set)
+  voiceReset();CINE=null;if(cinema.q)cinema.q.length=0;if(SUM){SUM.cine=null;SUM.ann=null;}PACE=null;vipBanner(false);{const sb=$('#stopBtn');if(sb)sb.hidden=true;}
   const left=flights.filter(f=>f.kind==='dep'&&['at_gate','taxi_out','hp','push','start','stuck'].includes(f.state)&&T>f.std+1500).length;
   for(const f of flights)if(f.links&&f.kind==='dep'&&f.state==='at_gate'&&T>f.std){for(const l of f.links){if(l.arr.inBlock!=null&&l.arr.inBlock+l.x<=T)S.cnxMade+=l.n;else S.cnxMiss+=l.n;}}
   const st=stars(LV,S);const best=store.get('zm_stars')||{};if((best[LV.n]||0)<st){best[LV.n]=st;store.set('zm_stars',best);}
@@ -3634,6 +3767,7 @@ function menu(tab){
     <p>Ahmedabad (SVPIA), Mumbai (CSMIA) and Bengaluru (KIA) close and merge into one airport near Nagpur's Zero Mile, long held to mark the centre of India. You run it. It is sized for the combined traffic of Delhi, Mumbai, Bengaluru and Hyderabad: about 3,630 movements and 209 million passengers a year, 1.7 times Atlanta. The airlines move in one city at a time, and the waves get taller.</p>
     <div class="levels">${lv}</div>
     <div class="cfgrow"><b>Incidents</b><div class="seg2" role="group" aria-label="Incidents"><button data-inc="std" class="${CFG.inc!=='off'?'on':''}">Standard</button><button data-inc="off" class="${CFG.inc==='off'?'on':''}">Off: runways only</button></div><small>${CFG.inc==='off'?'Just you, the bank chart and the runways. Fuel emergencies still happen if the stack grows.':'A few real calls per level. The ops teams handle the routine.'}</small></div>
+    <div class="cfgrow"><b>Performance meter</b><div class="seg2" role="group" aria-label="Performance meter"><button data-perf="0" class="${PERFM.on?'':'on'}">Off</button><button data-perf="1" class="${PERFM.on?'on':''}">On</button></div><small>Frame rate and the slowest moments, with a report you can copy and send us. <span class="kbd">Shift</span> <span class="kbd">P</span> in game.</small></div>
     <h2>How to play</h2>
     <ul>
      <li><b>The bank chart</b> at the bottom is your radar for the next hour. Purple bars are arrivals due, teal bars are departures due, dashed lines are what your runways can handle. When the bars poke above the line, you are about to fall behind.</li>
@@ -3652,10 +3786,11 @@ function menu(tab){
   $('#sheet').querySelectorAll('.tabs2 button').forEach(b=>b.onclick=()=>menu(b.dataset.t));
   $('#sheet').querySelectorAll('.lc').forEach(b=>b.onclick=()=>startLevel(+b.dataset.n));
   $('#sheet').querySelectorAll('[data-inc]').forEach(b=>b.onclick=()=>{CFG.inc=b.dataset.inc;store.set('zm_cfg',CFG);menu('levels');});
+  $('#sheet').querySelectorAll('[data-perf]').forEach(b=>b.onclick=()=>{perfSet(b.dataset.perf==='1');menu('levels');});
 }
 window.HUB={get T(){return T;},get S(){return S;},get LV(){return LV;},flights:()=>flights,RW,incidents:()=>incidents,setMode:(id,m)=>{const r=RW.find(x=>x.id===id||x.short===id);if(r)setMode(r,m);},startLevel,capNow,forceIncursion:()=>{const c=STO.find(o=>o.k==='fog');if(c&&c.sc)c.sc.go=true;},resolveAll:()=>{for(const I of incidents.slice()){const a=I.botPick!=null?I.acts[I.botPick]:I.acts.find(a=>!(a.dis&&a.dis()));if(a)a.fn();}},speed:s=>setSpeed(s),ops:()=>ops,cfg:CFG,
   // test hooks: run the sim forward synchronously, and point the camera
-  ff:secs=>{VQ.length=0;for(let i=0;i<secs&&!ended;i++){tick(1);if(CINE&&CINE.o.until==null){const ms=1000/BASE/Math.max(0.25,speed);CINE.t0-=ms;if(CINE.landAt)CINE.landAt-=ms;}}puffs.length=0;hud();drawWave();},look:(x,y,z)=>{camT.s=cam.fit*z;camT.anchor=null;camT.x=x-((cam.region.L+cam.region.R)/2)/camT.s;camT.y=y-((cam.region.Tp+cam.region.B)/2)/camT.s;clampCam(camT);Object.assign(cam,{x:camT.x,y:camT.y,s:camT.s});},spawn:(t,x)=>spawnInc(t,x),opsSpawn:(k,x)=>opsSpawn(k,x),pause:()=>{paused=true;},
+  ff:secs=>{VQ.length=0;FFING=true;try{for(let i=0;i<secs&&!ended;i++){tick(1);if(CINE&&CINE.o.until==null){const ms=1000/BASE/Math.max(0.25,speed);CINE.t0-=ms;if(CINE.landAt)CINE.landAt-=ms;}}}finally{FFING=false;}puffs.length=0;hud();drawWave();},look:(x,y,z)=>{camT.s=cam.fit*z;camT.anchor=null;camT.x=x-((cam.region.L+cam.region.R)/2)/camT.s;camT.y=y-((cam.region.Tp+cam.region.B)/2)/camT.s;clampCam(camT);Object.assign(cam,{x:camT.x,y:camT.y,s:camT.s});},spawn:(t,x)=>spawnInc(t,x),opsSpawn:(k,x)=>opsSpawn(k,x),pause:()=>{paused=true;},
   view:v=>setView(v),ready3d:()=>new Promise(r=>{if(V3.ready||V3.failed)r(V3.ready);else{V3.waiters.push(r);init3D();}}),
   cam3d:o=>{if(o.mode&&o.mode!=='map'){setCam(o.mode,o.fid?flights.find(f=>f.id===o.fid):null);return;}setCam('map');Object.assign(C3.t,o);Object.assign(C3,C3.t);},
   // the Delhi summit's running order (both protocol orders) and every line it can voice, for tests and voice/lines/l4.json
@@ -3670,6 +3805,8 @@ window.HUB={get T(){return T;},get S(){return S;},get LV(){return LV;},flights:(
   banner:(k,t,m,ic)=>{const F={IN:FLAG_IN,RU:FLAG_RU,US:FLAG_US,CN:FLAG_CN};ic=ic==null?'':/^[A-Z+]+$/.test(ic)?ic.split('+').map(x=>F[x]).join(''):ic.replace(/@(IN|RU|US|CN)/g,(_,x)=>F[x]);
     vipBanner(k!=null,k,t,m||'',ic);return k!=null?$('#vipBanner').getBoundingClientRect().toJSON():null;},
   dbg:()=>({cine:CINE?{f:CINE.f?CINE.f.callsign:null,ban:CINE.ban[0],until:CINE.o.until}:null,mus:MUS.name,pace:PACE,speed}),
+  // the voice queue, for timing probes: queue a line (say's options), start a track, read the queue
+  voice:{say:(src,text,o)=>say(src,text,o),music:(n,o)=>music(n,o),q:()=>({on:vqOn,n:VQ.length,cur:vqIt&&vqIt.text,pri:vqIt&&vqIt.pri,hold:VHOLD,mus:MUS.name,ended})},
   stats3d:()=>V3.ready?{cpuMs:+(V3.cpu||0).toFixed(2),fps:V3.fps,calls:Z.renderer.info.render.calls,tris:Z.renderer.info.render.triangles,geoms:Z.renderer.info.memory.geometries,tex:Z.renderer.info.memory.textures,mods:Object.keys(Z.mods),mode:V3.mode}:null,Z:()=>Z};
 
 /* ---- hub3d.js ---- */
@@ -4157,14 +4294,15 @@ function signHit(rc,blk,taken){const g=cam.region||{L:0,R:VW,Tp:0,B:VH};
 const RWA=[0.18,0.5,0.82,0.34,0.66,0.06,0.94,0.26,0.42,0.58,0.74];
 function rwSigns3D(blk,taken){
   const cp=Z.camera.position;ctx.font='700 12px Barlow Condensed, Arial Narrow, sans-serif';
-  const L=RW.map(r=>{const s=rwSign(r);return{r,s,pri:(r===selRw?0:s.col==='#ff4d3f'?1:r.locked?3:2)*1e6+Math.hypot(cp.x-(r.x0+r.x1)/2,cp.z-r.y)+(r._sOn?0:6000)};}).sort((a,b)=>a.pri-b.pri);
+  // camera elevation over the runway's middle, in degrees: below ~1.5 the sign is a smear on the horizon, so it goes
+  // (worked out first: a low camera, every cinematic, hides them all, and then no label is built or sorted)
+  const L=[];for(const r of RW){const ex=r.x0+r.len*0.5,el=Math.atan2(cp.y,Math.hypot(cp.x-ex,cp.z-r.y))/D2R,fa=r===selRw?clamp((el-0.5)/2,0.8,1):clamp((el-1.5)/3,0,1);
+    if(fa<0.1){r._sOn=false;continue;}const s=rwSign(r);L.push({r,s,fa,pri:(r===selRw?0:s.col==='#ff4d3f'?1:r.locked?3:2)*1e6+Math.hypot(cp.x-(r.x0+r.x1)/2,cp.z-r.y)+(r._sOn?0:6000)});}
+  L.sort((a,b)=>a.pri-b.pri);
   rwSigns=[];
-  for(const o of L){const r=o.r,txt=[`${r.short} · ${o.s.lbl}`,`${r.short} · ${o.s.lbl.split(' · ')[0]}`,r.short];
+  for(const o of L){const r=o.r,fa=o.fa,txt=[`${r.short} · ${o.s.lbl}`,`${r.short} · ${o.s.lbl.split(' · ')[0]}`,r.short];
     const ord=RWA.map((_,i)=>i);if(r._sa!=null){ord.splice(r._sa,1);ord.unshift(r._sa);}
     let put=null;r._sOn=false;
-    // camera elevation over the runway's middle, in degrees: below ~1.5 the sign is a smear on the horizon, so it goes
-    const ex=r.x0+r.len*0.5,el=Math.atan2(cp.y,Math.hypot(cp.x-ex,cp.z-r.y))/D2R,fa=r===selRw?clamp((el-0.5)/2,0.8,1):clamp((el-1.5)/3,0,1);
-    if(fa<0.1)continue;
     for(let ti=0;ti<3&&!put;ti++){if(ti&&txt[ti]===txt[ti-1])continue;const w=ctx.measureText(txt[ti]).width+12;
       for(const ai of ord){const x=r.x0+r.len*RWA[ai],p=proj(x,r.y,0);if(!p)continue;
         for(const dy of [-16,16]){const rc={x:p.X-w/2,y:p.Y+dy-9,w,h:18};if(!signHit(rc,blk,taken)){put={p,dy,t:txt[ti],ai,x};break;}}if(put)break;}}
@@ -4293,7 +4431,9 @@ function quality3D(dtR){
   const top=QTOP[V3.tier];if(V3.ql==null||V3.ql<top)V3.ql=top;
   // stutter counts as slow too: a fine median with 1 frame in 10 running double length is what players feel as lag
   if(med>18.5||p90>26){V3.qSlow=(V3.qSlow||0)+1;V3.qFast=0;
-    if(V3.qSlow>=2&&V3.ql<QL.length-1){V3.qSlow=0;if(performance.now()-(V3.qUpT||0)<6000)V3.qWait=Math.min(240,(V3.qWait||20)*2);V3.ql++;while(V3.cine&&V3.ql<QL.length-1&&QL[V3.ql].pr===QL[V3.ql-1].pr)V3.ql++;qApply();}}   // (in a shot AO and bloom are already off: skip to a rung that changes something)
+    // (in a shot the only rung left is the pixel ratio, and a step reallocates every render target: a 100-300 ms freeze in
+    // WebKit. So a shot steps down at most once, after 1.5 s of slow frames, never on the turbulence right after its cut)
+    if(V3.qSlow>=(V3.cine?3:2)&&V3.ql<QL.length-1&&!(V3.cine&&V3.cineStep)){V3.qSlow=0;if(V3.cine)V3.cineStep=true;if(performance.now()-(V3.qUpT||0)<6000)V3.qWait=Math.min(240,(V3.qWait||20)*2);V3.ql++;while(V3.cine&&V3.ql<QL.length-1&&QL[V3.ql].pr===QL[V3.ql-1].pr)V3.ql++;qApply();}}   // (in a shot AO and bloom are already off: skip to a rung that changes something)
   else if(med<17.2&&p90<19){V3.qSlow=0;V3.qFast=(V3.qFast||0)+1;
     if(!V3.cine&&V3.ql>top&&V3.qFast*0.5>=(V3.qWait||20)){V3.qFast=0;V3.ql--;V3.qUpT=performance.now();qApply();}}
   else{V3.qSlow=0;V3.qFast=0;}}
@@ -4318,7 +4458,7 @@ function draw3D(now,dtR){
   // cinematics are the most expensive shots (a low camera looking across the whole field and sky): they run on the
   // cinematic profile (no AO, no bloom: nobody misses them in a slow-motion cut, everybody feels a stutter), switched at
   // the cut; the adaptive ladder only steps down until the shot is over (see quality3D)
-  {const on=!!(CINE||(SUM&&SUM.cine));if(on!==!!V3.cine){V3.cine=on;V3.qn=0;V3.qAcc=0;V3.qSlow=0;V3.qFast=0;qApply();}}
+  {const on=!!(CINE||(SUM&&SUM.cine));if(on!==!!V3.cine){V3.cine=on;V3.cineStep=false;V3.qn=0;V3.qAcc=0;V3.qSlow=0;V3.qFast=0;qApply();}}
   for(const k in Z.mods){const m=Z.mods[k];if(m&&m.update){try{m.update(dtR,now);}catch(err){console.error('3D '+k,err);m.update=null;}}}
   atmoApply(now);guides3D(now);overlayAtmo();
   try{envUpdate(now);}catch(err){console.warn('3D: environment map failed',err);V3.pmrem=null;}
@@ -4341,6 +4481,91 @@ function draw3D(now,dtR){
   if(V3.tierMsg&&performance.now()>V3.tierMsg){V3.tierMsg=0;camLabel();}
   V3.frames++;V3.fpsT+=dtR;if(V3.fpsT>1){V3.fps=V3.frames/V3.fpsT;V3.frames=0;V3.fpsT=0;}quality3D(dtR);
 }
+
+// ============ the perf meter (Shift+P, or "Performance meter" in the menu) ============
+// fps, a frame-time sparkline, the worst frame of the last 10 s and what was going on around it, and a short report to copy
+// and send. A slow frame's interval holds the previous frame's work: its JS (sim, 3D, HUD, of which 3D modules and the render
+// submit) and everything outside it ("other": the GPU, the browser's style/layout/paint, timers, garbage collection).
+// Off it costs one test a frame; on, a few clock reads a frame and one small redraw four times a second.
+const PERFM={on:false,N:240,i:0,n:0,dt:new Float32Array(240),js:new Float32Array(240),srt:new Float32Array(240),hD:new Uint32Array(252),hJ:new Uint32Array(252),
+  last:0,p1:0,p2:0,mods:0,rend:0,prev:null,slow:[],top:[],med:16.7,acc:0,frames:0,sum:0,t0:0,c33:0,c50:0,c100:0,cine:{n:0,s:0,c50:0},map:{n:0,s:0,c50:0},el:null};
+function perfWrap(on){const P=PERFM;if(!V3.ready||P.wr===on)return;P.wr=on;
+  for(const k in Z.mods){const m=Z.mods[k];if(!m)continue;
+    if(on){if(m.update&&!m._pu){const u=m.update;m._pu=u;m.update=function(a,b){const s=performance.now();try{return u.call(this,a,b);}finally{PERFM.mods+=performance.now()-s;}};}}
+    else if(m._pu){if(m.update)m.update=m._pu;m._pu=null;}}
+  const c=V3.comp;if(c){if(on&&!c._pr){const r=c.render;c._pr=r;c.render=function(d){const s=performance.now();r.call(this,d);PERFM.rend+=performance.now()-s;};}else if(!on&&c._pr){c.render=c._pr;c._pr=null;}}}
+function perfSet(on){const P=PERFM;on=!!on;store.set('zm_perf',on);if(on===P.on)return;P.on=on;
+  if(on){if(!P.el)perfUI();P.el.hidden=false;perfPlace();P.last=0;P.prev=null;P.t0=performance.now();P.slow.length=0;P.top.length=0;P.frames=0;P.sum=0;P.c33=P.c50=P.c100=0;P.i=P.n=0;
+    P.hD.fill(0);P.hJ.fill(0);for(const q of [P.cine,P.map]){q.n=q.s=q.c50=0;}}
+  else if(P.el)P.el.hidden=true;
+  perfWrap(on);}
+function perfUI(){const P=PERFM,st=document.createElement('style');
+  st.textContent=`#perfM{position:absolute;right:calc(var(--rail,0px) + 24px);bottom:var(--perfB,200px);z-index:19;width:300px;box-sizing:border-box;padding:6px 8px 7px;font:10.5px/1.35 var(--f-mono);color:#cfd8e3;pointer-events:auto}
+#perfM[hidden]{display:none}#perfM .h{display:flex;align-items:center;gap:6px;margin-bottom:3px}#perfM .h b{color:var(--sign,#f4c430);letter-spacing:.06em}#perfM .h span{flex:1;color:#fff}
+#perfM button{font:inherit;font-size:10px;padding:1px 6px;border-radius:3px;border:1px solid #3a4654;background:#151b22;color:#cfd8e3;cursor:pointer}#perfM button:hover{border-color:#6c7c8e}
+#perfM .f{display:flex;justify-content:flex-end;margin-top:4px}#perfM canvas{display:block;width:284px;height:36px;background:#0b0f14;border-radius:3px}#perfM pre{margin:4px 0 0;white-space:pre-wrap;font:inherit;max-height:180px;overflow:auto}`;
+  document.head.appendChild(st);const d=document.createElement('div');d.id='perfM';d.className='panel';d.hidden=true;
+  d.innerHTML='<div class="h"><b>PERF</b><span></span><button data-a="x" title="Close (Shift+P)">×</button></div><canvas width="284" height="36"></canvas><pre></pre><div class="f"><button data-a="c" title="Copy a short report to paste to the developers">Copy report</button></div>';
+  ($('#app')||document.body).appendChild(d);P.el=d;P.hd=d.querySelector('.h span');P.pre=d.querySelector('pre');P.cv=d.querySelector('canvas');P.btn=d.querySelector('[data-a="c"]');
+  const dpr=Math.min(2,window.devicePixelRatio||1);P.cv.width=284*dpr;P.cv.height=36*dpr;P.g=P.cv.getContext('2d');P.g.scale(dpr,dpr);
+  d.addEventListener('pointerdown',e=>e.stopPropagation());window.addEventListener('resize',perfPlace);
+  d.querySelector('[data-a="x"]').onclick=()=>perfSet(false);P.btn.onclick=()=>perfCopy();}
+function perfPlace(){const P=PERFM,w=$('#wave'),a=$('#app');if(!P.el||!w||!a)return;const r=w.getBoundingClientRect(),b=a.getBoundingClientRect();
+  P.el.style.setProperty('--perfB',(r.height?Math.round(b.bottom-r.top+8):12)+'px');}
+// what is going on right now (built only for slow frames and the report)
+function perfCtx(){const R=Z.renderer,inf=R&&R.info,cine=CINE?(CINE.f?fl(CINE.f):(CINE.ban&&(CINE.ban[1]||CINE.ban[0]))||'shot'):SUM&&SUM.cine?fl(SUM.cine.f):'';
+  const fx=[];for(const o of FXV)if(o&&o.kind&&T>=o.t0&&T<=o.t1&&!fx.includes(o.kind))fx.push(o.kind);
+  let vl=0;for(const a of VPRE.values())if(a.readyState<4)vl++;
+  return{at:(performance.now()-PERFM.t0)/1000,clk:LV?clk(T):'',cine,sto:STO.map(c=>c.k).join(','),fx:fx.join(','),calls:inf?inf.render.calls:0,tris:inf?inf.render.triangles:0,prog:inf?inf.programs.length:0,
+    q:V3.ready?`${Z.tier} r${V3.ql}${V3.cine?' cine':''} pr${R.getPixelRatio()}`:'2D',cam:V3.ready?V3.mode:'',spd:`${paused?'paused':speed+'x'}${PACE!=null?' PACE '+(+PACE).toFixed(2):''}`,
+    voice:`${vqOn?'speaking':'quiet'}${VQ.length?' +'+VQ.length+' queued':''}${vl?' · '+vl+' clips loading':''}`,mus:MUS&&MUS.name||''};}
+function perfFrame(ms,a){const P=PERFM,e=performance.now(),dt=P.last?ms-P.last:0;P.last=ms;
+  const js=e-a,cur={js,sim:P.p1-a,d3:P.p2-P.p1,hud:e-P.p2,mods:P.mods,rend:P.rend,dP:0,dT:0,dG:0,dE:0};P.mods=0;P.rend=0;
+  if(V3.ready&&!P.wr)perfWrap(true);
+  const R=Z.renderer;if(R){const inf=R.info,pg=inf.programs.length,tx=inf.memory.textures,ge=inf.memory.geometries,en=V3.envN|0;
+    if(P.pg!=null){cur.dP=pg-P.pg;cur.dT=tx-P.tx;cur.dG=ge-P.ge;cur.dE=en-P.en;}P.pg=pg;P.tx=tx;P.ge=ge;P.en=en;}
+  const pv=P.prev;P.prev=cur;if(!pv||dt<=0||dt>4000)return;   // (the first frame, and a hidden tab's gap, are not frames)
+  const k=P.i;P.dt[k]=dt;P.js[k]=pv.js;P.i=(k+1)%P.N;if(P.n<P.N)P.n++;
+  P.frames++;P.sum+=dt;P.hD[Math.min(251,dt|0)]++;P.hJ[Math.min(251,pv.js|0)]++;if(dt>33.4)P.c33++;if(dt>50)P.c50++;if(dt>100)P.c100++;
+  const ph=V3.cine?P.cine:P.map;ph.n++;ph.s+=dt;if(dt>50)ph.c50++;
+  if(dt>Math.max(25,P.med*1.6)){const s=Object.assign(perfCtx(),{dt,js:pv.js,sim:pv.sim,d3:pv.d3,hud:pv.hud,mods:pv.mods,rend:pv.rend,other:Math.max(0,dt-pv.js),dP:pv.dP,dT:pv.dT,dG:pv.dG,dE:pv.dE,t:ms});
+    P.slow.push(s);if(P.slow.length>80)P.slow.shift();
+    if(P.top.length<8||dt>P.top[P.top.length-1].dt){P.top.push(s);P.top.sort((x,y)=>y.dt-x.dt);if(P.top.length>8)P.top.pop();}}
+  P.acc+=dt;if(P.acc>=250){P.acc=0;perfPaint(ms);}}
+const perfQ=(h,n,q)=>{let c=0;const want=n*q;for(let i=0;i<h.length;i++){c+=h[i];if(c>=want)return i;}return h.length-1;};
+const perfS=s=>`${s.dt.toFixed(0)} ms at ${s.clk||'menu'}: JS ${s.js.toFixed(1)} (sim ${s.sim.toFixed(1)}, 3D ${s.d3.toFixed(1)} [modules ${s.mods.toFixed(1)}, render ${s.rend.toFixed(1)}], HUD ${s.hud.toFixed(1)}), other ${s.other.toFixed(0)}`+
+  `${s.dP||s.dT||s.dG?` · new: ${s.dP?s.dP+' shader ':''}${s.dT?s.dT+' tex ':''}${s.dG?s.dG+' geom':''}`:''}${s.dE?' · env map refresh':''}\n   ${s.cine?'CINE '+s.cine:'no cinematic'}${s.fx?' · fx '+s.fx:''}${s.sto?' · story '+s.sto:''} · ${s.calls} calls ${(s.tris/1e6).toFixed(2)}M tris ${s.prog} progs\n   ${s.q} · cam ${s.cam} · ${s.spd} · voice ${s.voice}${s.mus?' · music '+s.mus:''}`;
+function perfPaint(ms){const P=PERFM,n=P.n;if(!n||!P.el)return;
+  const a=P.srt;for(let i=0;i<n;i++)a[i]=P.dt[i];const s=a.subarray(0,n).sort();P.med=s[n>>1];const p95=s[Math.min(n-1,Math.floor(n*0.95))];
+  let js=0;for(let i=0;i<n;i++)js+=P.js[i];
+  let w=null;for(let i=P.slow.length-1;i>=0;i--){const x=P.slow[i];if(ms-x.t>10000)break;if(!w||x.dt>w.dt)w=x;}
+  P.hd.textContent=`${(1000/P.med).toFixed(0)} fps · ${P.med.toFixed(0)} ms · p95 ${p95.toFixed(0)} · JS ${(js/n).toFixed(1)}`;
+  if(performance.now()<(P.holdT||0))return;
+  const c=perfCtx();
+  P.pre.textContent=(w?`worst of the last 10 s (${((ms-w.t)/1000).toFixed(0)} s ago): ${perfS(w)}`:'no frame over 25 ms in the last 10 s')+
+    `\nnow: ${c.cine?'CINE '+c.cine+' · ':''}${c.calls} calls ${(c.tris/1e6).toFixed(2)}M tris ${c.prog} progs · ${c.q} · ${c.spd}${c.fx?' · fx '+c.fx:''} · voice ${c.voice}`;
+  // the sparkline: the last 240 frames, 0..66 ms, with the 60 fps and 30 fps lines
+  const g=P.g,W=284,H=36,bw=W/P.N;g.clearRect(0,0,W,H);g.fillStyle='#24303c';g.fillRect(0,H-H*16.7/66,W,1);g.fillRect(0,H-H*33.3/66,W,1);
+  for(const [lo,hi,col] of [[0,18,'#3ad07f'],[18,34,'#f4c430'],[34,1e9,'#ff4d3f']]){g.fillStyle=col;
+    for(let j=0;j<n;j++){const v=P.dt[(P.i-n+j+P.N)%P.N];if(v<lo||v>=hi)continue;const h=Math.max(1,Math.min(H,H*v/66));g.fillRect((P.N-n+j)*bw,H-h,Math.max(1,bw-0.2),h);}}}
+function perfReport(){const P=PERFM,n=P.frames,R=Z.renderer;let gpu='';
+  if(R){try{const gl=R.getContext(),x=gl.getExtension('WEBGL_debug_renderer_info');gpu=P.gpu||(P.gpu=String(gl.getParameter(x?x.UNMASKED_RENDERER_WEBGL:gl.RENDERER)));}catch(e){}}
+  const secs=(performance.now()-P.t0)/1000,c=perfCtx(),ph=q=>q.n?`${q.n} frames, ${(q.s/q.n).toFixed(1)} ms avg, ${q.c50} over 50 ms`:'none';
+  const L=[`ZMI perf report · ${new Date().toISOString().slice(0,19)} · meter on ${secs.toFixed(0)} s`,
+    `${navigator.userAgent}`,`screen ${VW}x${VH} dpr ${window.devicePixelRatio||1} · 3D pr ${R?R.getPixelRatio():'-'} · ${V3.on?'3D':'2D'} ${c.q} · gpu ${gpu||'?'} · cores ${navigator.hardwareConcurrency||'?'}`,
+    `level ${LV&&running?LV.n:'-'} at ${c.clk} · ${c.spd}`,
+    n?`frames ${n}: ${(n*1000/P.sum).toFixed(0)} fps avg · median ${perfQ(P.hD,n,0.5)} ms · p95 ${perfQ(P.hD,n,0.95)} · p99 ${perfQ(P.hD,n,0.99)} · over 33 ms ${P.c33}, over 50 ms ${P.c50}, over 100 ms ${P.c100}`:'no frames yet',
+    n?`JS per frame: median ${perfQ(P.hJ,n,0.5)} ms · p95 ${perfQ(P.hJ,n,0.95)} · cinematics: ${ph(P.cine)} · rest: ${ph(P.map)}`:'',
+    'worst frames:'].concat(P.top.map((s,i)=>`${i+1}. [+${s.at.toFixed(0)} s] ${perfS(s)}`));
+  return L.filter(Boolean).join('\n');}
+function perfCopy(){const t=perfReport(),b=PERFM.btn,ok=()=>{b.textContent='Copied ✓';setTimeout(()=>{b.textContent='Copy report';},1600);};
+  const fb=()=>{const ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;left:-9999px;top:0';document.body.appendChild(ta);ta.select();let done=false;try{done=document.execCommand('copy');}catch(e){}ta.remove();
+    if(done)ok();else{const P=PERFM;P.holdT=performance.now()+30000;P.pre.textContent=t;b.textContent='Select + copy';   // (no clipboard: the report stays up, selected)
+      try{const r=document.createRange();r.selectNodeContents(P.pre);const sl=getSelection();sl.removeAllRanges();sl.addRange(r);}catch(e){}}};
+  try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok,fb);return;}}catch(e){}fb();}
+window.addEventListener('keydown',e=>{if((e.key==='P'||e.key==='p')&&e.shiftKey&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!(e.target.closest&&e.target.closest('input,textarea,select'))){e.preventDefault();perfSet(!PERFM.on);}});
+window.HUB.perf=on=>{perfSet(on==null?!PERFM.on:on);return PERFM.on;};window.HUB.perfReport=()=>perfReport();
+if(store.get('zm_perf')||/[?&#]perf\b/.test(location.search+location.hash))setTimeout(()=>perfSet(true),0);
 
 /* ---- 3d/aircraft.js ---- */
 Z3MOD.aircraft = function (Z) {
@@ -11150,14 +11375,18 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
 buildTerrain();resize();
 let last=performance.now(),hudT=0;
 function frame(ms){
-  requestAnimationFrame(frame);
+  requestAnimationFrame(frame);audioSync();const pf=PERFM.on?performance.now():0;   // the perf meter (hub3d.js), off by default
   if(cv.clientWidth&&(cv.clientWidth!==VW||cv.clientHeight!==VH))resize();
   const dtR=Math.min(0.1,(ms-last)/1000);last=ms;camEase(dtR);
-  if(running&&!paused&&!ended){let d=dtR*BASE*(PACE!=null?PACE:speed);try{while(d>0){const st=Math.min(1,d);tick(st);d-=st;}}catch(err){console.error(err);}incTick(dtR);if(toastTimer>0&&!frame.cine&&!toastFold){toastTimer-=dtR;if(toastTimer<=0&&!$('#toast').matches(':hover'))$('#toast').hidden=true;}}
+  if(running&&!paused&&!ended){let d=dtR*BASE*Math.min(PACE!=null?PACE:speed,VHOLD!=null?VHOLD:99);try{while(d>0){const st=Math.min(1,d);tick(st);d-=st;}}catch(err){console.error(err);}incTick(dtR);if(toastTimer>0&&!frame.cine&&!toastFold){toastTimer-=dtR;if(toastTimer<=0&&!$('#toast').matches(':hover'))$('#toast').hidden=true;}}
   // while a cinematic runs the coach card folds down to its title (#app.cine), and its timer waits until the shot is over
   {const on=!!(CINE||(SUM&&SUM.cine));if(on!==!!frame.cine){frame.cine=on;$('#app').classList.toggle('cine',on);toastRoom();}}
+  if(pf)PERFM.p1=performance.now();
   if(V3.on){try{draw3D(ms/1000,dtR);}catch(err){console.error(err);}}else{try{draw(ms/1000);}catch(err){console.error(err);}}
-  hudT+=dtR;if(hudT>0.25&&LV){hudT=0;try{hud();toastRoom();}catch(err){console.error(err);}try{drawWave();}catch(err){console.error(err);}}
+  if(pf)PERFM.p2=performance.now();
+  // (toastRoom reads layout, so it goes first, while the page is still laid out from the last frame; hud() then writes)
+  hudT+=dtR;if(hudT>0.25&&LV){hudT=0;try{toastRoom();hud();}catch(err){console.error(err);}try{drawWave();}catch(err){console.error(err);}}
+  if(pf)perfFrame(ms,pf);
 }
 // idle preview: show level 4's layout behind the menu
 LV=LEVELS[3];RW.forEach(r=>{r.locked=false;r.mode=r.role==='arr'?'ARR':r.role==='dep'?'DEP':'MIX';});resetState();

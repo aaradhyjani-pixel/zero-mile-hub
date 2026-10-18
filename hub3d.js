@@ -482,14 +482,15 @@ function signHit(rc,blk,taken){const g=cam.region||{L:0,R:VW,Tp:0,B:VH};
 const RWA=[0.18,0.5,0.82,0.34,0.66,0.06,0.94,0.26,0.42,0.58,0.74];
 function rwSigns3D(blk,taken){
   const cp=Z.camera.position;ctx.font='700 12px Barlow Condensed, Arial Narrow, sans-serif';
-  const L=RW.map(r=>{const s=rwSign(r);return{r,s,pri:(r===selRw?0:s.col==='#ff4d3f'?1:r.locked?3:2)*1e6+Math.hypot(cp.x-(r.x0+r.x1)/2,cp.z-r.y)+(r._sOn?0:6000)};}).sort((a,b)=>a.pri-b.pri);
+  // camera elevation over the runway's middle, in degrees: below ~1.5 the sign is a smear on the horizon, so it goes
+  // (worked out first: a low camera, every cinematic, hides them all, and then no label is built or sorted)
+  const L=[];for(const r of RW){const ex=r.x0+r.len*0.5,el=Math.atan2(cp.y,Math.hypot(cp.x-ex,cp.z-r.y))/D2R,fa=r===selRw?clamp((el-0.5)/2,0.8,1):clamp((el-1.5)/3,0,1);
+    if(fa<0.1){r._sOn=false;continue;}const s=rwSign(r);L.push({r,s,fa,pri:(r===selRw?0:s.col==='#ff4d3f'?1:r.locked?3:2)*1e6+Math.hypot(cp.x-(r.x0+r.x1)/2,cp.z-r.y)+(r._sOn?0:6000)});}
+  L.sort((a,b)=>a.pri-b.pri);
   rwSigns=[];
-  for(const o of L){const r=o.r,txt=[`${r.short} · ${o.s.lbl}`,`${r.short} · ${o.s.lbl.split(' · ')[0]}`,r.short];
+  for(const o of L){const r=o.r,fa=o.fa,txt=[`${r.short} · ${o.s.lbl}`,`${r.short} · ${o.s.lbl.split(' · ')[0]}`,r.short];
     const ord=RWA.map((_,i)=>i);if(r._sa!=null){ord.splice(r._sa,1);ord.unshift(r._sa);}
     let put=null;r._sOn=false;
-    // camera elevation over the runway's middle, in degrees: below ~1.5 the sign is a smear on the horizon, so it goes
-    const ex=r.x0+r.len*0.5,el=Math.atan2(cp.y,Math.hypot(cp.x-ex,cp.z-r.y))/D2R,fa=r===selRw?clamp((el-0.5)/2,0.8,1):clamp((el-1.5)/3,0,1);
-    if(fa<0.1)continue;
     for(let ti=0;ti<3&&!put;ti++){if(ti&&txt[ti]===txt[ti-1])continue;const w=ctx.measureText(txt[ti]).width+12;
       for(const ai of ord){const x=r.x0+r.len*RWA[ai],p=proj(x,r.y,0);if(!p)continue;
         for(const dy of [-16,16]){const rc={x:p.X-w/2,y:p.Y+dy-9,w,h:18};if(!signHit(rc,blk,taken)){put={p,dy,t:txt[ti],ai,x};break;}}if(put)break;}}
@@ -618,7 +619,9 @@ function quality3D(dtR){
   const top=QTOP[V3.tier];if(V3.ql==null||V3.ql<top)V3.ql=top;
   // stutter counts as slow too: a fine median with 1 frame in 10 running double length is what players feel as lag
   if(med>18.5||p90>26){V3.qSlow=(V3.qSlow||0)+1;V3.qFast=0;
-    if(V3.qSlow>=2&&V3.ql<QL.length-1){V3.qSlow=0;if(performance.now()-(V3.qUpT||0)<6000)V3.qWait=Math.min(240,(V3.qWait||20)*2);V3.ql++;while(V3.cine&&V3.ql<QL.length-1&&QL[V3.ql].pr===QL[V3.ql-1].pr)V3.ql++;qApply();}}   // (in a shot AO and bloom are already off: skip to a rung that changes something)
+    // (in a shot the only rung left is the pixel ratio, and a step reallocates every render target: a 100-300 ms freeze in
+    // WebKit. So a shot steps down at most once, after 1.5 s of slow frames, never on the turbulence right after its cut)
+    if(V3.qSlow>=(V3.cine?3:2)&&V3.ql<QL.length-1&&!(V3.cine&&V3.cineStep)){V3.qSlow=0;if(V3.cine)V3.cineStep=true;if(performance.now()-(V3.qUpT||0)<6000)V3.qWait=Math.min(240,(V3.qWait||20)*2);V3.ql++;while(V3.cine&&V3.ql<QL.length-1&&QL[V3.ql].pr===QL[V3.ql-1].pr)V3.ql++;qApply();}}   // (in a shot AO and bloom are already off: skip to a rung that changes something)
   else if(med<17.2&&p90<19){V3.qSlow=0;V3.qFast=(V3.qFast||0)+1;
     if(!V3.cine&&V3.ql>top&&V3.qFast*0.5>=(V3.qWait||20)){V3.qFast=0;V3.ql--;V3.qUpT=performance.now();qApply();}}
   else{V3.qSlow=0;V3.qFast=0;}}
@@ -643,7 +646,7 @@ function draw3D(now,dtR){
   // cinematics are the most expensive shots (a low camera looking across the whole field and sky): they run on the
   // cinematic profile (no AO, no bloom: nobody misses them in a slow-motion cut, everybody feels a stutter), switched at
   // the cut; the adaptive ladder only steps down until the shot is over (see quality3D)
-  {const on=!!(CINE||(SUM&&SUM.cine));if(on!==!!V3.cine){V3.cine=on;V3.qn=0;V3.qAcc=0;V3.qSlow=0;V3.qFast=0;qApply();}}
+  {const on=!!(CINE||(SUM&&SUM.cine));if(on!==!!V3.cine){V3.cine=on;V3.cineStep=false;V3.qn=0;V3.qAcc=0;V3.qSlow=0;V3.qFast=0;qApply();}}
   for(const k in Z.mods){const m=Z.mods[k];if(m&&m.update){try{m.update(dtR,now);}catch(err){console.error('3D '+k,err);m.update=null;}}}
   atmoApply(now);guides3D(now);overlayAtmo();
   try{envUpdate(now);}catch(err){console.warn('3D: environment map failed',err);V3.pmrem=null;}
@@ -666,3 +669,88 @@ function draw3D(now,dtR){
   if(V3.tierMsg&&performance.now()>V3.tierMsg){V3.tierMsg=0;camLabel();}
   V3.frames++;V3.fpsT+=dtR;if(V3.fpsT>1){V3.fps=V3.frames/V3.fpsT;V3.frames=0;V3.fpsT=0;}quality3D(dtR);
 }
+
+// ============ the perf meter (Shift+P, or "Performance meter" in the menu) ============
+// fps, a frame-time sparkline, the worst frame of the last 10 s and what was going on around it, and a short report to copy
+// and send. A slow frame's interval holds the previous frame's work: its JS (sim, 3D, HUD, of which 3D modules and the render
+// submit) and everything outside it ("other": the GPU, the browser's style/layout/paint, timers, garbage collection).
+// Off it costs one test a frame; on, a few clock reads a frame and one small redraw four times a second.
+const PERFM={on:false,N:240,i:0,n:0,dt:new Float32Array(240),js:new Float32Array(240),srt:new Float32Array(240),hD:new Uint32Array(252),hJ:new Uint32Array(252),
+  last:0,p1:0,p2:0,mods:0,rend:0,prev:null,slow:[],top:[],med:16.7,acc:0,frames:0,sum:0,t0:0,c33:0,c50:0,c100:0,cine:{n:0,s:0,c50:0},map:{n:0,s:0,c50:0},el:null};
+function perfWrap(on){const P=PERFM;if(!V3.ready||P.wr===on)return;P.wr=on;
+  for(const k in Z.mods){const m=Z.mods[k];if(!m)continue;
+    if(on){if(m.update&&!m._pu){const u=m.update;m._pu=u;m.update=function(a,b){const s=performance.now();try{return u.call(this,a,b);}finally{PERFM.mods+=performance.now()-s;}};}}
+    else if(m._pu){if(m.update)m.update=m._pu;m._pu=null;}}
+  const c=V3.comp;if(c){if(on&&!c._pr){const r=c.render;c._pr=r;c.render=function(d){const s=performance.now();r.call(this,d);PERFM.rend+=performance.now()-s;};}else if(!on&&c._pr){c.render=c._pr;c._pr=null;}}}
+function perfSet(on){const P=PERFM;on=!!on;store.set('zm_perf',on);if(on===P.on)return;P.on=on;
+  if(on){if(!P.el)perfUI();P.el.hidden=false;perfPlace();P.last=0;P.prev=null;P.t0=performance.now();P.slow.length=0;P.top.length=0;P.frames=0;P.sum=0;P.c33=P.c50=P.c100=0;P.i=P.n=0;
+    P.hD.fill(0);P.hJ.fill(0);for(const q of [P.cine,P.map]){q.n=q.s=q.c50=0;}}
+  else if(P.el)P.el.hidden=true;
+  perfWrap(on);}
+function perfUI(){const P=PERFM,st=document.createElement('style');
+  st.textContent=`#perfM{position:absolute;right:calc(var(--rail,0px) + 24px);bottom:var(--perfB,200px);z-index:19;width:300px;box-sizing:border-box;padding:6px 8px 7px;font:10.5px/1.35 var(--f-mono);color:#cfd8e3;pointer-events:auto}
+#perfM[hidden]{display:none}#perfM .h{display:flex;align-items:center;gap:6px;margin-bottom:3px}#perfM .h b{color:var(--sign,#f4c430);letter-spacing:.06em}#perfM .h span{flex:1;color:#fff}
+#perfM button{font:inherit;font-size:10px;padding:1px 6px;border-radius:3px;border:1px solid #3a4654;background:#151b22;color:#cfd8e3;cursor:pointer}#perfM button:hover{border-color:#6c7c8e}
+#perfM .f{display:flex;justify-content:flex-end;margin-top:4px}#perfM canvas{display:block;width:284px;height:36px;background:#0b0f14;border-radius:3px}#perfM pre{margin:4px 0 0;white-space:pre-wrap;font:inherit;max-height:180px;overflow:auto}`;
+  document.head.appendChild(st);const d=document.createElement('div');d.id='perfM';d.className='panel';d.hidden=true;
+  d.innerHTML='<div class="h"><b>PERF</b><span></span><button data-a="x" title="Close (Shift+P)">×</button></div><canvas width="284" height="36"></canvas><pre></pre><div class="f"><button data-a="c" title="Copy a short report to paste to the developers">Copy report</button></div>';
+  ($('#app')||document.body).appendChild(d);P.el=d;P.hd=d.querySelector('.h span');P.pre=d.querySelector('pre');P.cv=d.querySelector('canvas');P.btn=d.querySelector('[data-a="c"]');
+  const dpr=Math.min(2,window.devicePixelRatio||1);P.cv.width=284*dpr;P.cv.height=36*dpr;P.g=P.cv.getContext('2d');P.g.scale(dpr,dpr);
+  d.addEventListener('pointerdown',e=>e.stopPropagation());window.addEventListener('resize',perfPlace);
+  d.querySelector('[data-a="x"]').onclick=()=>perfSet(false);P.btn.onclick=()=>perfCopy();}
+function perfPlace(){const P=PERFM,w=$('#wave'),a=$('#app');if(!P.el||!w||!a)return;const r=w.getBoundingClientRect(),b=a.getBoundingClientRect();
+  P.el.style.setProperty('--perfB',(r.height?Math.round(b.bottom-r.top+8):12)+'px');}
+// what is going on right now (built only for slow frames and the report)
+function perfCtx(){const R=Z.renderer,inf=R&&R.info,cine=CINE?(CINE.f?fl(CINE.f):(CINE.ban&&(CINE.ban[1]||CINE.ban[0]))||'shot'):SUM&&SUM.cine?fl(SUM.cine.f):'';
+  const fx=[];for(const o of FXV)if(o&&o.kind&&T>=o.t0&&T<=o.t1&&!fx.includes(o.kind))fx.push(o.kind);
+  let vl=0;for(const a of VPRE.values())if(a.readyState<4)vl++;
+  return{at:(performance.now()-PERFM.t0)/1000,clk:LV?clk(T):'',cine,sto:STO.map(c=>c.k).join(','),fx:fx.join(','),calls:inf?inf.render.calls:0,tris:inf?inf.render.triangles:0,prog:inf?inf.programs.length:0,
+    q:V3.ready?`${Z.tier} r${V3.ql}${V3.cine?' cine':''} pr${R.getPixelRatio()}`:'2D',cam:V3.ready?V3.mode:'',spd:`${paused?'paused':speed+'x'}${PACE!=null?' PACE '+(+PACE).toFixed(2):''}`,
+    voice:`${vqOn?'speaking':'quiet'}${VQ.length?' +'+VQ.length+' queued':''}${vl?' · '+vl+' clips loading':''}`,mus:MUS&&MUS.name||''};}
+function perfFrame(ms,a){const P=PERFM,e=performance.now(),dt=P.last?ms-P.last:0;P.last=ms;
+  const js=e-a,cur={js,sim:P.p1-a,d3:P.p2-P.p1,hud:e-P.p2,mods:P.mods,rend:P.rend,dP:0,dT:0,dG:0,dE:0};P.mods=0;P.rend=0;
+  if(V3.ready&&!P.wr)perfWrap(true);
+  const R=Z.renderer;if(R){const inf=R.info,pg=inf.programs.length,tx=inf.memory.textures,ge=inf.memory.geometries,en=V3.envN|0;
+    if(P.pg!=null){cur.dP=pg-P.pg;cur.dT=tx-P.tx;cur.dG=ge-P.ge;cur.dE=en-P.en;}P.pg=pg;P.tx=tx;P.ge=ge;P.en=en;}
+  const pv=P.prev;P.prev=cur;if(!pv||dt<=0||dt>4000)return;   // (the first frame, and a hidden tab's gap, are not frames)
+  const k=P.i;P.dt[k]=dt;P.js[k]=pv.js;P.i=(k+1)%P.N;if(P.n<P.N)P.n++;
+  P.frames++;P.sum+=dt;P.hD[Math.min(251,dt|0)]++;P.hJ[Math.min(251,pv.js|0)]++;if(dt>33.4)P.c33++;if(dt>50)P.c50++;if(dt>100)P.c100++;
+  const ph=V3.cine?P.cine:P.map;ph.n++;ph.s+=dt;if(dt>50)ph.c50++;
+  if(dt>Math.max(25,P.med*1.6)){const s=Object.assign(perfCtx(),{dt,js:pv.js,sim:pv.sim,d3:pv.d3,hud:pv.hud,mods:pv.mods,rend:pv.rend,other:Math.max(0,dt-pv.js),dP:pv.dP,dT:pv.dT,dG:pv.dG,dE:pv.dE,t:ms});
+    P.slow.push(s);if(P.slow.length>80)P.slow.shift();
+    if(P.top.length<8||dt>P.top[P.top.length-1].dt){P.top.push(s);P.top.sort((x,y)=>y.dt-x.dt);if(P.top.length>8)P.top.pop();}}
+  P.acc+=dt;if(P.acc>=250){P.acc=0;perfPaint(ms);}}
+const perfQ=(h,n,q)=>{let c=0;const want=n*q;for(let i=0;i<h.length;i++){c+=h[i];if(c>=want)return i;}return h.length-1;};
+const perfS=s=>`${s.dt.toFixed(0)} ms at ${s.clk||'menu'}: JS ${s.js.toFixed(1)} (sim ${s.sim.toFixed(1)}, 3D ${s.d3.toFixed(1)} [modules ${s.mods.toFixed(1)}, render ${s.rend.toFixed(1)}], HUD ${s.hud.toFixed(1)}), other ${s.other.toFixed(0)}`+
+  `${s.dP||s.dT||s.dG?` · new: ${s.dP?s.dP+' shader ':''}${s.dT?s.dT+' tex ':''}${s.dG?s.dG+' geom':''}`:''}${s.dE?' · env map refresh':''}\n   ${s.cine?'CINE '+s.cine:'no cinematic'}${s.fx?' · fx '+s.fx:''}${s.sto?' · story '+s.sto:''} · ${s.calls} calls ${(s.tris/1e6).toFixed(2)}M tris ${s.prog} progs\n   ${s.q} · cam ${s.cam} · ${s.spd} · voice ${s.voice}${s.mus?' · music '+s.mus:''}`;
+function perfPaint(ms){const P=PERFM,n=P.n;if(!n||!P.el)return;
+  const a=P.srt;for(let i=0;i<n;i++)a[i]=P.dt[i];const s=a.subarray(0,n).sort();P.med=s[n>>1];const p95=s[Math.min(n-1,Math.floor(n*0.95))];
+  let js=0;for(let i=0;i<n;i++)js+=P.js[i];
+  let w=null;for(let i=P.slow.length-1;i>=0;i--){const x=P.slow[i];if(ms-x.t>10000)break;if(!w||x.dt>w.dt)w=x;}
+  P.hd.textContent=`${(1000/P.med).toFixed(0)} fps · ${P.med.toFixed(0)} ms · p95 ${p95.toFixed(0)} · JS ${(js/n).toFixed(1)}`;
+  if(performance.now()<(P.holdT||0))return;
+  const c=perfCtx();
+  P.pre.textContent=(w?`worst of the last 10 s (${((ms-w.t)/1000).toFixed(0)} s ago): ${perfS(w)}`:'no frame over 25 ms in the last 10 s')+
+    `\nnow: ${c.cine?'CINE '+c.cine+' · ':''}${c.calls} calls ${(c.tris/1e6).toFixed(2)}M tris ${c.prog} progs · ${c.q} · ${c.spd}${c.fx?' · fx '+c.fx:''} · voice ${c.voice}`;
+  // the sparkline: the last 240 frames, 0..66 ms, with the 60 fps and 30 fps lines
+  const g=P.g,W=284,H=36,bw=W/P.N;g.clearRect(0,0,W,H);g.fillStyle='#24303c';g.fillRect(0,H-H*16.7/66,W,1);g.fillRect(0,H-H*33.3/66,W,1);
+  for(const [lo,hi,col] of [[0,18,'#3ad07f'],[18,34,'#f4c430'],[34,1e9,'#ff4d3f']]){g.fillStyle=col;
+    for(let j=0;j<n;j++){const v=P.dt[(P.i-n+j+P.N)%P.N];if(v<lo||v>=hi)continue;const h=Math.max(1,Math.min(H,H*v/66));g.fillRect((P.N-n+j)*bw,H-h,Math.max(1,bw-0.2),h);}}}
+function perfReport(){const P=PERFM,n=P.frames,R=Z.renderer;let gpu='';
+  if(R){try{const gl=R.getContext(),x=gl.getExtension('WEBGL_debug_renderer_info');gpu=P.gpu||(P.gpu=String(gl.getParameter(x?x.UNMASKED_RENDERER_WEBGL:gl.RENDERER)));}catch(e){}}
+  const secs=(performance.now()-P.t0)/1000,c=perfCtx(),ph=q=>q.n?`${q.n} frames, ${(q.s/q.n).toFixed(1)} ms avg, ${q.c50} over 50 ms`:'none';
+  const L=[`ZMI perf report · ${new Date().toISOString().slice(0,19)} · meter on ${secs.toFixed(0)} s`,
+    `${navigator.userAgent}`,`screen ${VW}x${VH} dpr ${window.devicePixelRatio||1} · 3D pr ${R?R.getPixelRatio():'-'} · ${V3.on?'3D':'2D'} ${c.q} · gpu ${gpu||'?'} · cores ${navigator.hardwareConcurrency||'?'}`,
+    `level ${LV&&running?LV.n:'-'} at ${c.clk} · ${c.spd}`,
+    n?`frames ${n}: ${(n*1000/P.sum).toFixed(0)} fps avg · median ${perfQ(P.hD,n,0.5)} ms · p95 ${perfQ(P.hD,n,0.95)} · p99 ${perfQ(P.hD,n,0.99)} · over 33 ms ${P.c33}, over 50 ms ${P.c50}, over 100 ms ${P.c100}`:'no frames yet',
+    n?`JS per frame: median ${perfQ(P.hJ,n,0.5)} ms · p95 ${perfQ(P.hJ,n,0.95)} · cinematics: ${ph(P.cine)} · rest: ${ph(P.map)}`:'',
+    'worst frames:'].concat(P.top.map((s,i)=>`${i+1}. [+${s.at.toFixed(0)} s] ${perfS(s)}`));
+  return L.filter(Boolean).join('\n');}
+function perfCopy(){const t=perfReport(),b=PERFM.btn,ok=()=>{b.textContent='Copied ✓';setTimeout(()=>{b.textContent='Copy report';},1600);};
+  const fb=()=>{const ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;left:-9999px;top:0';document.body.appendChild(ta);ta.select();let done=false;try{done=document.execCommand('copy');}catch(e){}ta.remove();
+    if(done)ok();else{const P=PERFM;P.holdT=performance.now()+30000;P.pre.textContent=t;b.textContent='Select + copy';   // (no clipboard: the report stays up, selected)
+      try{const r=document.createRange();r.selectNodeContents(P.pre);const sl=getSelection();sl.removeAllRanges();sl.addRange(r);}catch(e){}}};
+  try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok,fb);return;}}catch(e){}fb();}
+window.addEventListener('keydown',e=>{if((e.key==='P'||e.key==='p')&&e.shiftKey&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!(e.target.closest&&e.target.closest('input,textarea,select'))){e.preventDefault();perfSet(!PERFM.on);}});
+window.HUB.perf=on=>{perfSet(on==null?!PERFM.on:on);return PERFM.on;};window.HUB.perfReport=()=>perfReport();
+if(store.get('zm_perf')||/[?&#]perf\b/.test(location.search+location.hash))setTimeout(()=>perfSet(true),0);

@@ -1466,7 +1466,7 @@ const LEVELS=[
    blurb:'Sardar Vallabhbhai Patel International closes and Ahmedabad\'s flights move in, with Hyderabad\'s hub traffic. Four runways, taller waves: flip runways as each bank comes through.',
    last:{t:'Last flight out of Sardar Vallabhbhai Patel',d:'<p>At 08:50, IndiGo 6E 6202 left Ahmedabad and SVPIA closed. Ahmedabad\'s flights and Hyderabad\'s connecting banks now run through ZMI.</p><p>Ahmedabad lives on in the building\'s edges: jaali screens shade every sun-facing glass wall, and the forecourt is a stepwell, terraces stepping down to shaded water. Sardar Patel brought more than 560 princely states into one India; the unity marker under the oculus remembers it.</p>'},
    script:[[700,'st_kites'],[1500,'strike'],[3000,'medical'],[4000,'st_lastball']],ops:[[400,'birds'],[1200,'tug'],[2400,'fod'],[3800,'birds']]},
-  {n:3,name:'Mumbai and the Gulf',sub:'+ Mumbai',from:'BLR+AMD+HYD+BOM',clock:'14:00',len:9300,windDown:true,phase:3000,taper:{arr:[8300,8900],dep:[8500,9200]},fog:[6600,7500],arr:90,dep:90,amp:0.85,starsAt:{otp2:70,cx2:80,otp3:71,cx3:86},rw:5,rwOpen:{R1:'ARR',R2:'MIX',R3:'DEP',R4:'MIX',R5:'ARR'},concs:'ABCDE',intl:0.22,wide:0.18,a380:5,target:450,light:'heat',
+  {n:3,name:'Mumbai and the Gulf',sub:'+ Mumbai',from:'BLR+AMD+HYD+BOM',clock:'14:00',len:9300,windDown:true,phase:3000,taper:{arr:[8300,8900],dep:[8500,9200]},fog:[6600,7500],arr:90,dep:90,amp:0.85,starsAt:{otp2:69,cx2:80,otp3:69,cx3:86},rw:5,rwOpen:{R1:'ARR',R2:'DEP',R3:'DEP',R4:'MIX',R5:'ARR'},concs:'ABCDE',intl:0.22,wide:0.18,a380:5,target:450,light:'heat',
    blurb:'Chhatrapati Shivaji Maharaj International closes: Mumbai\'s airlines and the Gulf wave arrive. 46 °C. Hot air is thin, so heavy jets need the long runway to get airborne.',
    last:{t:'Last flight out of Chhatrapati Shivaji Maharaj',d:'<p>At 13:50, Air India AI 629 left Mumbai\'s Terminal 2 and the airport closed. Mumbai\'s widebodies and the Gulf carriers now fly from here.</p><p>Mumbai holds up ZMI\'s roof: branching columns that flare into a field of coffers with coloured lenses, a 40 m cantilever over the kerb, and an art wall along the transfer route.</p>'},
    // 14:00 an arrival bank · 14:25 dabbawalas · 14:35 GPS spoofing · 14:50 the summit shuts every runway as the next arrival
@@ -3460,7 +3460,7 @@ function recordShift(){let hold=0,q=0,aDue=0,dDue=0;for(const f of flights){if(f
   const md={};for(const r of RW)if(!r.locked)md[r.short]=T<r.changeUntil?'CHG':r.mode;
   S.tl.push({t:T,hold,q,aDue,dDue,capA:Math.round(capNow('arr')),capD:Math.round(capNow('dep')),md,moves:S.moves});}
 // the expert autopilot's result on the same schedule (headless runs, run_all.py)
-const EXPERT={1:{st:3,moves:128,otp:88,cx:94},2:{st:3,moves:240,otp:93,cx:93},3:{st:3,moves:480,otp:74,cx:93},4:{st:3,moves:751,otp:77,cx:94}};
+const EXPERT={1:{st:3,moves:128,otp:88,cx:94},2:{st:3,moves:240,otp:93,cx:93},3:{st:3,moves:480,otp:72,cx:95},4:{st:3,moves:751,otp:77,cx:94}};
 const NEXT_TIP={1:'Level 2 opens with only one arrival runway and one MIX. The first purple wave arrives about 10 minutes in: have two runways on ARR before it.',
   2:'Level 3 is 46 °C: 777s and A380s can only take off from 27L, the 4,500 m runway. Keep 27L on DEP or MIX through the heat. And keep some slack in hand around 14:50: Nagpur has visitors today.',
   3:'Level 4 is all six runways at once, with a dust storm at 12:40 that widens the gaps between landings by 40%. Put an extra runway on ARR just before the storm, not during it.',

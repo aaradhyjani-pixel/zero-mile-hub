@@ -1462,7 +1462,7 @@ let flights=[],FID=0,S=null,incidents=[],INC=0,selected=null,hover=null,selRw=nu
 const puffs=[],moveLog=[];
 function resetState(){
   flights=[];FID=0;incidents=[];INC=0;selected=null;hover=null;selRw=null;puffs.length=0;moveLog.length=0;ops.length=0;opsClock=0;lastCnx=-1e9;
-  S={combo:0,bestCombo:0,moves:0,arr:0,dep:0,depOnTime:0,arrOnTime:0,cnxMade:0,cnxMiss:0,safety:100,incOk:0,incDef:0,incTypes:{},hits:[],holdMin:0,div:0,goArounds:0,log:[],delaySum:0,flips:0};
+  S={tl:[],flipLog:[],tlNext:0,combo:0,bestCombo:0,moves:0,arr:0,dep:0,depOnTime:0,arrOnTime:0,cnxMade:0,cnxMiss:0,safety:100,incOk:0,incDef:0,incTypes:{},hits:[],holdMin:0,div:0,goArounds:0,log:[],delaySum:0,flips:0};
   GATES.forEach(g=>{g.occ=null;g.res=null;});
   RW.forEach(r=>{r.tdList=[];r.lastSchedTd=-1e9;r.lastDep=-1e9;r.arrExit=-1e9;r.occ=null;r.changeUntil=-1;r.closedUntil=-1;r.why='';r.ops=0;r.flash=0;r.blocks=[];r.gapReq=false;r.degraded=false;r.strike=null;r.shear=false;});
   CONC.forEach(c=>{c.laneShut=-1;c.slowUntil=-1;});
@@ -1574,7 +1574,7 @@ const canDep=r=>!r.locked&&(r.mode==='DEP'||r.mode==='MIX')&&T>=r.changeUntil&&T
 const depModeOk=r=>!r.locked&&(r.mode==='DEP'||r.mode==='MIX');
 const needsLong=f=>heatNow&&f.T.hot&&!f.offloaded;
 function setMode(r,m,silent){
-  if(r.locked||r.mode===m)return;const was=r.mode;r.mode=m;r.changeUntil=T+CHANGE;S.flips++;
+  if(r.locked||r.mode===m)return;const was=r.mode;r.mode=m;r.changeUntil=T+CHANGE;S.flips++;S.flipLog.push({t:T,r:r.short,from:was,to:m});
   if(r.degraded){r.degraded=false;r.changeUntil+=120;radio('OPS',`Electricians fixing ${r.short}'s edge lights during the changeover.`);logE(`Edge lights on ${r.short} repaired during a changeover.`);}
   if(r.strike){r.strike=null;logE(`${r.short} inspected for bird remains during the changeover.`);}
   if(m!=='ARR'&&m!=='MIX')for(const f of flights)if(f.state==='approach'&&f.rwy===r&&f.td-T>40)breakOff(f,r);
@@ -2157,6 +2157,7 @@ function tick(dt){
   for(const r of RW){if(r.strike&&T>=r.strike.until){r.strike=null;opsSpawn('fod',r);}if(r.shear&&!dustNow)r.shear=false;if(r.blocks.length&&r.blocks[0].to<T)r.blocks.shift();}
   opsTick(dt);
   incSpawner(dt);
+  if(T>=S.tlNext&&T>=0){S.tlNext=T+60;recordShift();}
   if(T>=LEN&&!ended)finish();
 }
 const onceSet=new Set();function once(k,fn){if(onceSet.has(k))return;onceSet.add(k);fn();}
@@ -2177,6 +2178,58 @@ document.querySelectorAll('.speeds button').forEach(b=>b.onclick=()=>setSpeed(+b
 (function(){const b=$('#snd');const paint=()=>{b.textContent=SND.on?'Sound on':'Sound off';b.classList.toggle('on',SND.on);};paint();b.onclick=()=>{SND.on=!SND.on;store.set('zm_snd',SND.on);paint();if(SND.on)tickSound(true);};})();
 function setSpeed(s){if(!running)return;if(s===0)paused=!paused;else{speed=s;paused=false;}document.querySelectorAll('.speeds button').forEach(b=>{const v=+b.dataset.s;b.classList.toggle('on',v===0?paused:(!paused&&v===speed));});$('#spP').textContent=paused?'Resume':'Pause';}
 window.addEventListener('keydown',e=>{if(e.key===' '&&!(e.target.closest&&e.target.closest('button'))){e.preventDefault();setSpeed(0);}if(e.key==='1')setSpeed(1);if(e.key==='2')setSpeed(2);if(e.key==='3')setSpeed(4);if(e.key==='Escape'){closePop();if(V3.on&&V3.mode!=='map')setCam('map');}if(e.key==='+'||e.key==='=')zoomCenter(1.6);if(e.key==='-')zoomCenter(1/1.6);if(e.key==='f')V3.on?cam3Fit():fitCam();if(e.key==='m'||e.key==='M')setView(V3.on?'2d':'3d');if(e.key==='c'||e.key==='C')cycleCam();if(V3.on&&(e.key==='q'||e.key==='Q'))C3.t.yaw+=0.25;if(V3.on&&(e.key==='e'||e.key==='E'))C3.t.yaw-=0.25;});
+
+/* ============ the debrief: what to do better next time, from your own shift ============ */
+(function(){const st=document.createElement('style');st.textContent=`.sheet ol.lessons{margin:4px 0 8px;padding-left:22px;color:var(--ink-2);font-size:14px}.sheet ol.lessons li{margin-bottom:7px}.sheet ol.lessons b{color:var(--ink);font-family:var(--f-sign);font-weight:600;font-size:15.5px;letter-spacing:.01em}
+.shift{border:1px solid var(--panel-edge);border-radius:6px;padding:6px 8px 2px;margin:8px 0;background:#0c1114}.shift svg{display:block;width:100%;height:auto}.lg2{display:flex;gap:14px;flex-wrap:wrap;font-family:var(--f-mono);font-size:11px}
+.sheet .bench{font-size:13.5px;color:var(--ink-2)}.sheet .bench b{color:var(--sign);font-weight:400}.sheet .nexttip{border-left:3px solid var(--sign);padding:4px 10px;background:#13181b;font-size:13.5px}
+details.log{margin-top:10px}details.log summary{cursor:pointer;font-family:var(--f-sign);font-weight:600;font-size:18px;color:var(--ink-2)}`;document.head.appendChild(st);})();
+function recordShift(){let hold=0,q=0,aDue=0,dDue=0;for(const f of flights){if(f.state==='holding')hold++;else if(f.state==='hp'||f.state==='taxi_out')q++;
+    if(f.kind==='arr'&&f.landT==null&&!['diverted','divert'].includes(f.state)&&f.eta>=T&&f.eta<T+900)aDue++;
+    if(f.kind==='dep'&&['at_gate','push','start'].includes(f.state)&&f.std>=T&&f.std<T+900)dDue++;}
+  const md={};for(const r of RW)if(!r.locked)md[r.short]=T<r.changeUntil?'CHG':r.mode;
+  S.tl.push({t:T,hold,q,aDue,dDue,capA:Math.round(capNow('arr')),capD:Math.round(capNow('dep')),md,moves:S.moves});}
+// the expert autopilot's result on the same schedule (headless runs, run_all.py)
+const EXPERT={1:{st:3,moves:131,otp:97,cx:100},2:{st:3,moves:236,otp:95,cx:99},3:{st:3,moves:287,otp:92,cx:97},4:{st:3,moves:352,otp:92,cx:96}};
+const NEXT_TIP={1:'Level 2 opens with only one arrival runway and one MIX. The first purple wave arrives about 10 minutes in: have two runways on ARR before it.',
+  2:'Level 3 is 46 °C: 777s and A380s can only take off from 27L, the 4,500 m runway. Keep 27L on DEP or MIX through the heat, and watch the VVIP call: give protocol the runway with the least traffic on it.',
+  3:'Level 4 is all six runways at once, with a dust storm at 12:40 that widens the gaps between landings by 40%. Put an extra runway on ARR just before the storm, not during it.',
+  4:'Replay any level to chase three stars: the bank chart\'s red forecast line tells you when the stack will grow, so flip before it climbs.'};
+function debrief(otp,cx){
+  const tl=S.tl,out=[];if(tl.length<6)return{lessons:out,svg:''};
+  const avg=(a,k)=>a.reduce((x,s)=>x+s[k],0)/Math.max(1,a.length);
+  const pk=tl.reduce((a,s)=>s.hold>a.hold?s:a,tl[0]);
+  if(pk.hold>=8){const w=tl.filter(s=>s.t>=pk.t-1500&&s.t<=pk.t);const dem=Math.round(avg(w,'aDue')*4),cap=Math.round(avg(w,'capA'));
+    const dep=Object.keys(pk.md).filter(k=>w.filter(s=>s.md[k]==='DEP').length>=w.length*0.6);const by=clk(Math.max(0,pk.t-1800));
+    const late=S.flipLog.find(f=>(f.to==='ARR'||f.to==='MIX')&&f.t>pk.t-1500&&f.t<=pk.t);
+    let tip=dep.length?`Next time, turn ${dep[0]} to ARR (or MIX) by about ${by}, as the purple bars start to rise.`:'Every open runway was already landing; turning a departure runway to MIX would have taken the edge off.';
+    if(late){const at=tl.find(s=>s.t>=late.t)||pk;tip+=` You did turn ${late.r} to ${late.to} at ${clk(late.t)}, but the stack was already ${at.hold} by then: flip about 15 minutes earlier.`;}
+    out.push({w:pk.hold*3,title:`The stack peaked at ${pk.hold} aircraft at ${clk(pk.t)}`,text:`In the 25 minutes before it, arrivals came in at about ${dem} an hour against ${cap} an hour of landing capacity. ${tip}`});}
+  const pq=tl.reduce((a,s)=>s.q>a.q?s:a,tl[0]);
+  if(pq.q>=14){const w=tl.filter(s=>s.t>=pq.t-1500&&s.t<=pq.t);const arr=Object.keys(pq.md).filter(k=>w.filter(s=>s.md[k]==='ARR').length>=w.length*0.6);const calm=avg(w,'hold')<5;
+    const capD=Math.round(avg(w,'capD')),due=Math.round(avg(w,'dDue')*4);
+    const why=capD>due*1.2?`Take-off capacity (about ${capD} an hour) was above the rate new departures fell due (about ${due}), so this was a backlog: aircraft already late from the wave before.`:`Take-off capacity was about ${capD} an hour while departures were due at about ${due}.`;
+    out.push({w:pq.q*2,title:`${pq.q} departures queued at ${clk(pq.t)}`,text:`${why} ${arr.length&&calm?`${arr[0]} stayed on arrivals with almost nobody holding: turn it to DEP until the backlog clears, then hand it back before the purple wave.`:'Hand a runway to departures before the teal wave peaks, and back again before the purple one.'}`});}
+  const idle=tl.filter(s=>s.hold>=6&&s.dDue<=3&&Object.values(s.md).includes('DEP'));
+  if(idle.length>=5){const k=Object.keys(idle[0].md).find(x=>idle[0].md[x]==='DEP');out.push({w:idle.length*2,title:`${k} sat on departures with little to launch`,text:`For about ${idle.length} minutes (from ${clk(idle[0].t)}) aircraft were holding while a departure runway had almost nothing due. A runway that is idle in one direction is free capacity for the other.`});}
+  const open=RW.filter(r=>!r.locked).length;
+  if(S.flips===0)out.push({w:60,title:'You never flipped a runway',text:'The hub runs in waves: about 30 minutes of arrivals, then 30 of departures, and the starting setup only suits the departure wave. Before each purple wave turn one or two departure runways to ARR; before each teal wave, turn them back.'});
+  else if(S.flips>open*4)out.push({w:S.flips,title:`${S.flips} runway flips`,text:'Every flip closes a runway for 2 minutes while traffic clears. Fewer, earlier flips beat many late ones: plan each change about 10 to 15 minutes ahead using the bank chart.'});
+  const may=S.hits.filter(h=>/MAYDAY|almost no fuel/.test(h.msg)).length;
+  if(may)out.push({w:30*may,title:`${may} fuel emergenc${may>1?'ies':'y'}`,text:'Minimum fuel becomes MAYDAY after about 8 more minutes in the stack. Answer the fuel card with "Land next", and treat it as a warning that the stack is too long: add an arrival runway.'});
+  if(cx<90)out.push({w:(90-cx)*3,title:`Connections ${cx}%`,text:'Transfer passengers miss their flights when their inbound sits in the stack. Keeping the stack short protects connections; for big groups, the "Hold 10 min" call trades a late departure for the passengers.'});
+  if(otp<87&&!out.length)out.push({w:10,title:`On time ${otp}%`,text:'Watch the forecast lines on the bank chart: red is the stack, amber the departure queue. When either starts to climb, flip a runway before it peaks.'});
+  out.sort((a,b)=>b.w-a.w);
+  // a compact chart of the shift: stack (red), departure queue (amber), arrivals due (purple) and the flips
+  const W=960,H=150,mx=Math.max(10,...tl.map(s=>Math.max(s.hold,s.q,s.aDue))),X=t=>16+t/LEN*(W-32),Y=v=>H-26-v/mx*(H-46);
+  const line=(k,c)=>`<polyline fill="none" stroke="${c}" stroke-width="2.2" points="${tl.map(s=>`${X(s.t).toFixed(1)},${Y(s[k]).toFixed(1)}`).join(' ')}"/>`;
+  const area=`<polygon fill="rgba(138,124,255,.18)" points="${X(tl[0].t)},${Y(0)} ${tl.map(s=>`${X(s.t).toFixed(1)},${Y(s.aDue).toFixed(1)}`).join(' ')} ${X(tl[tl.length-1].t)},${Y(0)}"/>`;
+  const flips=S.flipLog.filter(f=>f.t>=0).map(f=>`<g><line x1="${X(f.t)}" x2="${X(f.t)}" y1="${H-24}" y2="${H-14}" stroke="${f.to==='ARR'?'#8a7cff':f.to==='DEP'?'#2fd3c6':f.to==='MIX'?'#f4c430':'#a6afb4'}" stroke-width="2"/></g>`).join('');
+  const ticks=[0,900,1800,2700,3600,4500,5400].map(t=>`<text x="${X(t)}" y="${H-2}" fill="#6f7a80" font-size="10" font-family="JetBrains Mono, monospace" text-anchor="middle">${clk(t)}</text>`).join('');
+  const pkm=pk.hold>=4?`<circle cx="${X(pk.t)}" cy="${Y(pk.hold)}" r="4" fill="#ff7a6b"/><text x="${X(pk.t)+6}" y="${Y(pk.hold)-6}" fill="#ff9a8d" font-size="11" font-family="JetBrains Mono, monospace">stack ${pk.hold}</text>`:'';
+  const svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Your shift: arrivals due, the holding stack, the departure queue and your runway flips over the 90 minutes"><line x1="16" x2="${W-16}" y1="${Y(0)}" y2="${Y(0)}" stroke="rgba(255,255,255,.15)"/>${area}${line('q','#ffd27a')}${line('hold','#ff7a6b')}${pkm}${flips}${ticks}</svg>`;
+  return{lessons:out.slice(0,3),svg};
+}
 
 /* ============ levels: start and finish ============ */
 function stars(L,s){let n=0;const otp=s.dep+s.arr?(s.depOnTime+s.arrOnTime)/(s.dep+s.arr)*100:0,ct=s.cnxMade+s.cnxMiss,cx=ct?s.cnxMade/ct*100:100;if(s.safety>=70)n=1;if(n>=1&&s.moves>=L.target&&otp>=87&&cx>=88)n=2;if(n>=2&&otp>=90&&cx>=92&&s.safety>=90)n=3;return n;}
@@ -2209,10 +2262,14 @@ function finish(){
   const next=LEVELS[LV.n];
   $('#sheet').innerHTML=`<div class="band"><span>Level ${LV.n} · ${LV.name}</span><span>${clk(0)} to ${clk(LEN)}</span></div><div class="in">
    <div class="bigstars">${starStr(st)}</div><h1 style="margin-top:8px">${st?'Level complete':'Level failed'}</h1><p>${verdict}</p>
-   <div class="score"><div><div class="k">Movements</div><div class="v">${S.moves}/${LV.target}</div></div><div><div class="k">On time</div><div class="v">${otp}%</div><div class="sub">arrivals ${otpA}% · departures ${otpD}%</div></div><div><div class="k">Connections</div><div class="v">${cx}%</div></div><div><div class="k">Safety</div><div class="v">${Math.round(S.safety)}</div></div><div><div class="k">Your calls</div><div class="v">${S.incOk}/${S.incOk+S.incDef}</div><div class="sub">${S.incDef?`${S.incDef} left to ops`:'all made by you'}</div></div><div><div class="k">Runway flips</div><div class="v">${S.flips}</div></div><div><div class="k">Best on-time run</div><div class="v">${S.bestCombo||0}</div></div></div>
+   <div class="score"><div><div class="k">Movements</div><div class="v">${S.moves}/${LV.target}</div></div><div><div class="k">On time</div><div class="v">${otp}%</div><div class="sub">arrivals ${otpA}% · departures ${otpD}%</div></div><div><div class="k">Connections</div><div class="v">${cx}%</div></div><div><div class="k">Safety</div><div class="v">${Math.round(S.safety)}</div></div><div><div class="k">Your calls</div><div class="v">${S.incOk}/${S.incOk+S.incDef}</div><div class="sub">${S.incDef?`${S.incDef} left to ops`:S.incOk?'all made by you':'no calls this shift'}</div></div><div><div class="k">Runway flips</div><div class="v">${S.flips}</div></div><div><div class="k">Best on-time run</div><div class="v">${S.bestCombo||0}</div></div></div>
    <p class="src">Stars: one for keeping safety at 70 or above. Two for reaching the movement target with 87% on time and 88% of connections. Three for 90% on time, 92% of connections and safety 90.</p>
+   ${(()=>{const D=debrief(otp,cx),E=EXPERT[LV.n];return `<h2>What to do better next time</h2>${D.lessons.length?`<ol class="lessons">${D.lessons.map(l=>`<li><b>${l.title}.</b> ${l.text}</li>`).join('')}</ol>`:'<p>A clean shift: nothing to fix. Chase a longer on-time run, or try the next level.</p>'}
+     ${D.svg?`<div class="shift"><div class="lg2"><span style="color:#ff7a6b">━ holding stack</span><span style="color:#ffd27a">━ departure queue</span><span style="color:#a99cff">▮ arrivals due</span><span style="color:var(--ink-3)">ticks: your runway flips</span></div>${D.svg}</div>`:''}
+     ${E?`<p class="bench">The expert autopilot on this schedule: <b>${'★'.repeat(E.st)}</b> · ${E.moves} movements · ${E.otp}% on time · ${E.cx}% connections.${S.moves>=E.moves&&otp>=E.otp?' You beat it.':''}</p>`:''}
+     ${NEXT_TIP[LV.n]?`<p class="nexttip"><b>${LEVELS[LV.n]?'Before level '+(LV.n+1):'Next'}:</b> ${NEXT_TIP[LV.n]}</p>`:''}`;})()}
    ${why.length?`<h2>Where the stars went</h2><ul>${why.map(w=>`<li>${w}</li>`).join('')}</ul>`:''}
-   <h2>What happened</h2><ul>${S.log.slice(-10).map(l=>`<li><span class="mono">${l.t}</span> ${l.text}</li>`).join('')||'<li>A quiet shift.</li>'}</ul>
+   <details class="log"><summary>What happened</summary><ul>${S.log.slice(-14).map(l=>`<li><span class="mono">${l.t}</span> ${l.text}</li>`).join('')||'<li>A quiet shift.</li>'}</ul></details>
    <button class="go" id="again">Replay level ${LV.n}</button> ${next?`<button class="go" id="nextL">Level ${next.n}: ${next.name}</button>`:''} <button class="go ghost" id="toMenu">All levels</button></div>`;
   $('#overlay').hidden=false;$('#again').onclick=()=>startLevel(LV.n);if(next)$('#nextL').onclick=()=>startLevel(next.n);$('#toMenu').onclick=()=>menu('levels');
   window.__hubResult={level:LV.n,stars:st,moves:S.moves,target:LV.target,otp,otpA,otpD,cx,safety:S.safety,incOk:S.incOk,incFail:S.incDef,incTypes:S.incTypes,hits:S.hits.map(h=>h.msg),flips:S.flips,div:S.div,goArounds:S.goArounds};

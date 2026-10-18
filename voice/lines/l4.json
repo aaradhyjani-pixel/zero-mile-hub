@@ -201,14 +201,6 @@
   "say": "Vietnam One, two seven right. [[slnc 300]] Xin chào. [[slnc 300]] Ready for the red carpet."
  },
  {
-  "key": "Your holding stack is now the second-largest gathering in Nagpur today.",
-  "voice": "spg"
- },
- {
-  "key": "Very impressive, sir.",
-  "voice": "spg"
- },
- {
   "key": "South African One, 27R. Howzit, Nagpur.",
   "voice": "za",
   "say": "South African One, two seven right. [[slnc 300]] Howzit, Nagpur."
@@ -353,55 +345,5 @@
   "key": "Zero Mile Tower, SAM 29000, the spare, runway 27R. Nobody on board.",
   "voice": "us",
   "say": "Zero Mile Tower, Sam two nine thousand, the spare, runway two seven right. [[slnc 300]] Nobody on board."
- },
- {
-  "key": "Sir. Delhi has brought its summit. We have taken over your runways.",
-  "voice": "spg",
-  "say": "Sir. [[slnc 700]] Delhi has brought its summit. [[slnc 700]] We have taken over your runways."
- },
- {
-  "key": "Thank you for giving us your runways. Thank you for your support.",
-  "voice": "spg",
-  "say": "Thank you for giving us your runways. [[slnc 700]] Thank you for your support."
- },
- {
-  "key": "Your runways shall now be cleared, in a staged manner.",
-  "voice": "spg"
- },
- {
-  "key": "Runway 27L shall be cleared first.",
-  "voice": "spg",
-  "say": "Runway two seven left shall be cleared first."
- },
- {
-  "key": "Then runway 27C.",
-  "voice": "spg",
-  "say": "Then runway two seven centre."
- },
- {
-  "key": "And finally, runway 27R.",
-  "voice": "spg",
-  "say": "And finally, runway two seven right."
- },
- {
-  "key": "Thank you, sir, for this.",
-  "voice": "spg"
- },
- {
-  "key": "And thank you for serving the nation.",
-  "voice": "spg"
- },
- {
-  "key": "Jai Hind.",
-  "voice": "spg"
- },
- {
-  "key": "The three motorcades have met on the apron.",
-  "voice": "spg"
- },
- {
-  "key": "Nobody will reverse. Talks are under way.",
-  "voice": "spg",
-  "say": "Nobody will reverse. [[slnc 700]] Talks are under way."
  }
 ]

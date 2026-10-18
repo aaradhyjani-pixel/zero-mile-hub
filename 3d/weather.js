@@ -14,7 +14,7 @@ Z3MOD.weather = function (Z) {
     fogDensity: A.fogDensity != null ? A.fogDensity : 0.000035,
     hazeHeight: A.hazeHeight != null ? A.hazeHeight : 1200,
     ambientK: A.ambientK != null ? A.ambientK : 1, bloom: A.bloom != null ? A.bloom : 1,
-    grade: Object.assign({ exposure: 1, contrast: 1, saturation: 1, warmth: 0, vignette: 0.18, grain: 0.015 }, A.grade || {}),
+    grade: Object.assign({ exposure: 1, contrast: 1.1, saturation: 1.08, warmth: 0, vignette: 0.08, grain: 0.015 }, A.grade || {}),
   };
   if (!A.fogColor || !A.fogColor.isColor) A.fogColor = def.fogColor.clone();
   if (!A.skyTint || !A.skyTint.isColor) A.skyTint = lin('#a8794a');
@@ -193,7 +193,8 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
         float fx=uFrontX-uCurv*c.z*c.z;vec2 rel=abs(c.xz-uMB.xz)/box.xz;
         a=uMassA*iC.w*smoothstep(fx+300.,fx-900.,c.x)*(1.-smoothstep(0.3,0.5,max(rel.x,rel.y)));hb=0.;ht=box.y+R;}
       else{vec2 cc=mod(iC.xy+uCumOff+uDom*0.5,uDom)-uDom*0.5;float e=max(abs(cc.x),abs(cc.y));c.xz+=cc;c.y+=sin(th)*15.;R*=0.96+0.06*sin(th*0.7);
-        a=uCumA*smoothstep(uDom*0.5,uDom*0.5-6000.,e);hb=iC.z;ht=iC.z+iC.w+250.;}
+        a=uCumA*smoothstep(uDom*0.5,uDom*0.5-6000.,e);hb=iC.z;ht=iC.z+iC.w+250.;
+        a*=1.-smoothstep(hb-900.,hb-250.,cameraPosition.y);}  // never between a high (strategic) camera and the field
       vec4 mv=modelViewMatrix*vec4(c,1.);float d=length(mv.xyz);
       a*=smoothstep(R*0.3,R*1.5,d);
       if(a<0.003){gl_Position=vec4(0.,0.,-2.,1.);return;}
@@ -485,7 +486,7 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
     for (let i = 0; i < NCL; i++) { const c = CLU[i], v = clU[i]; if (!c) { v.w = 0; continue; }
       let x = ((c[0] + cumX % dom) % dom + dom * 1.5) % dom - dom * 0.5, z = ((c[1] + cumZ % dom) % dom + dom * 1.5) % dom - dom * 0.5;
       v.set(x, z, c[2] * 1.05, cumA * smooth(dom * 0.5, dom * 0.5 - 6000, Math.max(Math.abs(x), Math.abs(z)))); }
-    shU.uCloudSh.value = 0.95; shU.uStormSh.value = appr * wall * 0.8;
+    shU.uCloudSh.value = mix(0.95, 0.4, smooth(800, 3000, camY)); shU.uStormSh.value = appr * wall * 0.8;
     shU.uCen.value.set(camPos.x, 0, camPos.z); shU.uSize.value = 90000; shU.uH.value = Math.min(40, Math.max(0.5, camY * 0.25));
     shadow.visible = cumA > 0.01 || shU.uStormSh.value > 0.01;
 

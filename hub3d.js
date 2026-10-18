@@ -30,7 +30,7 @@ const CAM_NAMES={map:'Strategic view',tower:'Tower cab',follow:'Follow',approach
 // render quality tiers; frame-time trouble drops AO first, then bloom, then pixel ratio (then shadows, as a last resort)
 const TIERS=[{name:'High',ao:true,bloom:true,pr:1.5},{name:'Medium',ao:false,bloom:true,pr:1.5},{name:'Low',ao:false,bloom:false,pr:1}];
 // height haze: fog density is base * (1 + HAZE_K * exp(-height / HAZE_H)); the sky gets the same haze toward the horizon
-const HAZE_K=1.2,HAZE_H=650;
+const HAZE_K=0.5,HAZE_H=400;
 const ENV_K=0.5;   // sky light scale in the environment map (keeps a ~3:1 sun to sky ratio, so shadows read)
 
 function init3D(){
@@ -267,7 +267,7 @@ function lightRig(){
   V3.sunC.lerpColors(col('#fff4e2'),col('#ff9a52'),warm*0.85);
   V3.sunBase=3.0*day*(heat?1.12:1);V3.heat=heat;
   // clear-day haze: pale blue-grey on a May morning, a whiter, thicker haze at 46 C
-  V3.atmoDef.fogColor.copy(heat?col('#d3d4cc'):col('#c3d0dc'));V3.atmoDef.fogDensity=heat?0.000052:0.000036;
+  V3.atmoDef.fogColor.copy(heat?col('#dcd2bf'):col('#c3d0dc'));V3.atmoDef.fogDensity=heat?0.000034:0.000022;
   atmoReset();
 }
 function atmoReset(){
@@ -281,15 +281,18 @@ function atmoReset(){
 // apply the (weather-written) atmosphere to fog, lights, sky and grade
 function atmoApply(now){
   const a=Z.atmo,fog=V3.fog,lt=clamp(a.lightning||0,0,1),tk=clamp(a.skyTintK,0,1),sd=clamp(a.sunDim,0,1.5);
-  fog.color.copy(a.fogColor);fog.density=Math.max(0,a.fogDensity);const dd=Math.max(1e-6,fog.density);fog.near=0.25/dd;fog.far=1.6/dd;
+  fog.color.copy(a.fogColor);
+  // the strategic view must stay readable: a high camera looks through much less of the day haze (storm dust thins less)
+  const hiK=clamp((Z.camera.position.y-1500)/5500,0,1),fb=V3.atmoDef.fogDensity,fx=Math.max(0,a.fogDensity-fb);
+  fog.density=Math.max(0,Math.min(a.fogDensity,fb)*(1-0.6*hiK)+fx*(1-0.3*hiK));const dd=Math.max(1e-6,fog.density);fog.near=0.25/dd;fog.far=1.6/dd;
   V3.sun.color.copy(V3.sunC).multiply(a.sunTint);V3.sun.intensity=V3.sunBase*sd;
   const env=!!Z.scene.environment;
   V3.hemi.color.copy(col('#cfe3ff')).lerp(V3.tc.copy(a.fogColor).multiplyScalar(1.5),tk*0.85);V3.hemi.groundColor.copy(col('#6d7f4c')).lerp(a.fogColor,tk*0.6);
   V3.hemi.intensity=(env?0.42:1.0)*a.ambientK*(1+lt*5);
   if(V3.skyKind==='preetham'){const u=V3.skyU;
-    u.sunPosition.value.copy(Z.sunDir);u.turbidity.value=(V3.heat?7.5:4.2)+tk*10;u.rayleigh.value=(V3.heat?1.15:1.55)*(1-tk*0.6);
-    u.mieCoefficient.value=(V3.heat?0.009:0.0055)+tk*0.02;u.mieDirectionalG.value=0.82;
-    u.skyGain.value=0.4*(V3.heat?1.08:1);u.tintCol.value.copy(a.skyTint);u.tintK.value=tk;u.fogCol.value.copy(a.fogColor);u.fogDens.value=a.fogDensity;u.hazeH.value=a.hazeHeight||HAZE_H;
+    u.sunPosition.value.copy(Z.sunDir);u.turbidity.value=(V3.heat?4.6:2.6)+tk*10;u.rayleigh.value=(V3.heat?1.15:1.55)*(1-tk*0.6);
+    u.mieCoefficient.value=(V3.heat?0.0055:0.0035)+tk*0.02;u.mieDirectionalG.value=0.82;
+    u.skyGain.value=0.5*(V3.heat?1.05:1);u.tintCol.value.copy(a.skyTint);u.tintK.value=tk;u.fogCol.value.copy(a.fogColor);u.fogDens.value=a.fogDensity;u.hazeH.value=a.hazeHeight||HAZE_H;
     u.discK.value=clamp(1-tk*1.3,0,1)*Math.min(1,sd);u.paleK.value=tk*sd*2.2;u.sunTintC.value.copy(V3.sunC).multiply(a.sunTint);u.flash.value=lt;
     u.envMode.value=0;
   }else{const u=V3.skyU;

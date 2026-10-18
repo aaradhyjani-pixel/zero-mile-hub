@@ -50,6 +50,7 @@ Shipped in this pass:
 - [ ] Bank chart "due now" labels overlap time labels; approach spaghetti at full zoom-out (known since build.md).
 - [ ] Screenshot set: every level x 3 zooms.
 - [ ] Phase 1+ (3D) per prompt.md.
+- [ ] Art-direction fixes from `art-review.md` (round-2 3D scored about 5/10). Do the top 4 first: remove the milky veil, runway readability, the runway-light halo bug, and the andhi interior draw order. Then do ground detail, the haboob wall scale, storm light and clouds.
 - Sensitivity note: AI171 (Air India 787, Ahmedabad, 12 Jun 2025) - never script an Ahmedabad departure accident or use an AI 787 for the AMD last-flight moment.
 
 ### 3D (started 06:45, user: "make it 3d, improve animations heavily")

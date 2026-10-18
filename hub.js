@@ -797,20 +797,23 @@ STORY.ribbon={len:2000,start(c){const r=rwBy('dep')[0];if(!r)return false;c.r=r;
   c.blk={from:T,to:T+1e6,open:true,why:'Inauguration ribbon',desk:'Ribbon across it, until it is cut'};r.blocks.push(c.blk);r.blocks.sort((a,b)=>a.from-b.from);
   const hx=r.holds.length?G.get(r.holds[0]).x:r.x1-300;c.mark={x:hx,y:r.y,e:'🎀',until:T+1e6,px:30,k:'ribbon'};MARKS.push(c.mark);
   c.fx={kind:'ribbon',id:'ribbon',x:hx,y:r.y,w:75,t0:T,t1:T+1e6,cutAt:null};FXV.push(c.fx);
-  c.stage={kind:'stage',id:'stage1',x:hx-260,y:r.y,a:0,t0:T,t1:T+1e6,speaker:null};FXV.push(c.stage);MARKS.push(c.smark={x:hx-260,y:r.y,e:'🎤',until:T+1e6,px:26,k:'stage'});
+  c.stage={kind:'stage',id:'stage1',x:hx-480,y:r.y,a:0,t0:T,t1:T+1e6,speaker:null};FXV.push(c.stage);MARKS.push(c.smark={x:hx-480,y:r.y,e:'🎤',until:T+1e6,px:26,k:'stage'});
   c.wait=T+240+Math.floor(SIMR()*240);
   guard(['Sir, no departures yet. The Chief Minister will cut the ribbon.','He is five minutes away. 🙏'],WHO.protocol);
   c.lines.push([0,'PROTOCOL',`A stage and a ceremonial ribbon are on ${r.short}. No departures until the Chief Minister cuts it. He is five minutes away.`]);
-  const go=()=>{r.blocks=r.blocks.filter(b=>b!==c.blk);c.mark.until=T;c.fx.cutAt=T;c.fx.t1=T+150;c.stage.t1=T+90;c.smark.until=T;renderRw();const f=flights.find(o=>o.rwy===r&&['lineup','hp'].includes(o.state))||flights.find(o=>o.rwy===r&&o.state==='taxi_out');
-    if(f)cinema(f,['OPENING DAY',`The first departure rolls through the ribbon on ${r.short}`,'BAS PAANCH MINUTE 🙏',icos('🎀','✂️','🛫')],{ms:7000});};
+  // after the cut the stage packs away before anything rolls: the runway stays shut until it is gone, then the first departure goes
+  const PACK=40,go=()=>{Object.assign(c.blk,{to:T+PACK,open:false,why:'Stage packing away',desk:'Ribbon cut: the stage is packing away'});c.mark.until=T;c.fx.cutAt=T;c.fx.t1=T+150;c.stage.t1=T+PACK-4;c.smark.until=T;renderRw();
+    c.lines.push([T-c.E+PACK,()=>{const f=flights.find(o=>o.rwy===r&&['lineup','hp'].includes(o.state))||flights.find(o=>o.rwy===r&&o.state==='taxi_out');
+      if(f)cinema(f,['OPENING DAY',`The first departure rolls through the ribbon on ${r.short}`,'BAS PAANCH MINUTE 🙏',icos('🎀','✂️','🛫')],{ms:7000});}]);};
   c.go=go;
   const I=storyCard(c,{icon:{g:'🎀',c:'#ff9933'},x:hx,y:r.y,title:`A stage and a ribbon on ${r.short}`,
     text:`The opening ceremony has put a stage and a ribbon on ${r.short}, and the first departures are queuing behind it. Cut the ribbon yourselves and traffic flows now, but Protocol will re-stage the whole ceremony, speech included, in about 15 minutes in the middle of the arrivals runway, for 3 minutes. Or wait: the Chief Minister is "five minutes away".`,
     def:1,defText:'you wait for the Chief Minister.',
     acts:[{l:'Cut it ourselves',pri:1,fn(){go();const ra=rwBy('arr').sort((a,b)=>b.tdList.length-a.tdList.length)[0];c.cut=true;
         if(ra){const t2=T+900,mx=(ra.x0+ra.x1)/2;takeRunways([ra],t2,180,0,'Inauguration, take two','Inauguration, take two: a stage mid-runway');
-          const st={kind:'stage',id:'stage2',x:mx,y:ra.y,a:0,t0:t2-40,t1:t2+200,speaker:{t0:t2+5,t1:t2+165},cutAt:t2+165};FXV.push(st);MARKS.push({x:mx,y:ra.y,e:'🎤',until:t2+180,px:26,k:'stage'});
-          speech(c,t2+5,160);
+          // the stage stands only inside the closure: it goes up as the runway shuts and is packed away before it reopens
+          const st={kind:'stage',id:'stage2',x:mx,y:ra.y,a:0,t0:t2,t1:t2+180,speaker:{t0:t2+30,t1:t2+160},cutAt:t2+160};FXV.push(st);MARKS.push({x:mx,y:ra.y,e:'🎤',until:t2+180,px:26,k:'stage'});
+          speech(c,t2+30,130);
           c.lines.push([t2-c.E,()=>{guard(['The Chief Minister has arrived. We will now inaugurate again.','Only two minutes. Mid-runway, please. 🎤'],WHO.protocol);
             cinema(null,['OPENING DAY · TAKE TWO',`The Chief Minister's speech, in the middle of ${ra.short}`,'"I will be brief." 🎤',icos('🎤','🎀','📸')],{view:{tx:mx,ty:ra.y+60,dist:520,pitch:0.32,yaw:0.9},at:[mx,ra.y],ms:9000});}]);
           c.lines.push([t2-c.E+178,'PROTOCOL','The speech ran three minutes. That is a record. For brevity.']);}
@@ -1608,7 +1611,7 @@ cv.addEventListener('pointerdown',e=>{if(V3.on){drag={x:e.clientX,y:e.clientY,lx
 cv.addEventListener('pointermove',e=>{const r=cv.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;if(drag&&V3.on){if(Math.abs(e.clientX-drag.x)+Math.abs(e.clientY-drag.y)>4){drag.moved=true;cv.classList.add('drag');}if(drag.moved)cam3Drag(e.clientX-drag.lx,e.clientY-drag.ly,drag.orbit);drag.lx=e.clientX;drag.ly=e.clientY;}else if(drag){const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>4){drag.moved=true;cv.classList.add('drag');}if(drag.moved){camT.x=drag.cx-dx/camT.s;camT.y=drag.cy-dy/camT.s;clampCam(camT);cam.x=camT.x;cam.y=camT.y;}}else{hover=pick(mx,my);cv.classList.toggle('point',!!(hover||pickInc(mx,my)||pickRw(mx,my)));}});
 cv.addEventListener('pointerup',e=>{const r=cv.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;if(drag&&!drag.moved&&running){const I=pickInc(mx,my);if(I)openIncPop(I);else{const f=pick(mx,my);if(f)openFlightPop(f,mx,my);else{const rw=pickRw(mx,my);if(rw)openRwPop(rw,mx,my);else{closePop();selected=null;}}}}drag=null;cv.classList.remove('drag');});
 cv.addEventListener('wheel',e=>{e.preventDefault();const r=cv.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;const line=e.deltaMode===1;const mw=line||(e.deltaX===0&&Math.abs(e.deltaY)>=40&&Math.abs(e.deltaY)%1===0);if(V3.on){if(e.ctrlKey||e.metaKey)cam3Zoom(Math.exp(e.deltaY*0.012),mx,my);else if(mw)cam3Zoom(Math.exp((line?e.deltaY*33:e.deltaY)*0.0016),mx,my);else cam3Drag(-e.deltaX,-e.deltaY,false);return;}if(e.ctrlKey||e.metaKey)zoomAt(mx,my,Math.exp(-e.deltaY*0.012));else if(mw)zoomAt(mx,my,Math.exp(-(line?e.deltaY*33:e.deltaY)*0.0016));else{camT.anchor=null;camT.x+=e.deltaX/camT.s;camT.y+=e.deltaY/camT.s;clampCam(camT);}},{passive:false});
-$('#zIn').onclick=()=>V3.on?cam3Zoom(1/1.6,VW/2,VH/2):zoomCenter(1.6);$('#zOut').onclick=()=>V3.on?cam3Zoom(1.6):zoomCenter(1/1.6);$('#zFit').onclick=()=>V3.on?cam3Fit():fitCam();
+$('#zIn').onclick=()=>V3.on?cam3Zoom(1/1.6):zoomCenter(1.6);$('#zOut').onclick=()=>V3.on?cam3Zoom(1.6):zoomCenter(1/1.6);$('#zFit').onclick=()=>V3.on?cam3Fit():fitCam();
 function pick(mx,my){let best=null,bd=1e9;for(const f of flights){if(f.sx==null||['sched','diverted','gone','cancelled','towed'].includes(f.state))continue;const d=Math.hypot(f.sx-mx,f.sy-my);const lim=Math.max(9,f.sr||0);if(d<lim&&d<bd){bd=d;best=f;}}return best;}
 function pickInc(mx,my){for(const I of incidents)if(I.sx!=null&&Math.hypot(I.sx-mx,I.sy-my)<20)return I;return null;}
 function pickRw(mx,my){for(const s of rwSigns)if(mx>=s.x&&mx<=s.x+s.w&&my>=s.y-3&&my<=s.y+s.h+3)return s.r;let wx=mx/cam.s+cam.x,wy=my/cam.s+cam.y,tol=10/cam.s;if(V3.on){const g=groundAt(mx,my);if(!g)return null;wx=g.x;wy=g.y;tol=45;}for(const r of RW){if(wx>=r.x0&&wx<=r.x1&&Math.abs(wy-r.y)<Math.max(r.width/2+10,tol))return r;}return null;}

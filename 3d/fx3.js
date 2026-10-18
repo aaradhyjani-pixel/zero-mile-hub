@@ -648,7 +648,8 @@ Z3MOD.fx3 = function (Z) {
     // placement and scale: bigger with the real camera distance so it reads from the strategic camera, capped near aircraft
     const cp = Z.camera.position, cdx = cp.x - it.x, cdz = cp.z - it.y, cd = Math.sqrt(cdx * cdx + cp.y * cp.y + cdz * cdz);
     let tgt = clamp(Math.max(Math.sqrt(Math.max(1, cd) / 38), cd / 500), 1, 22);
-    if (near < 600) tgt = Math.min(tgt, 2.5 * (Z.kEx || 1));
+    // near aircraft it stays clear of them: no wider than the gap to the nearest one (but never under 2.5x their own boost)
+    if (near < 600) tgt = Math.min(tgt, Math.max(2.5 * (Z.kEx || 1), (near - 60) / 15));
     if (scl < 0 || !isFinite(scl)) scl = tgt; else scl += (tgt - scl) * (1 - Math.exp(-dt * 3));
     root.position.set(it.x, 0, it.y); root.rotation.y = -(it.a || 0); root.scale.setScalar(scl);
     const kz = clamp((32 / scl - Z0) / (21.6 - Z0), 0.12, 1), kc = Math.max(kz, 0.45), sqz = z => z > Z0 ? Z0 + (z - Z0) * kc : z;

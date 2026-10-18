@@ -913,6 +913,7 @@ Z3MOD.aircraft = function (Z) {
   const hiN = {}, loN = {}, gN = {}; for (const k of TKEYS) { hiN[k] = 0; loN[k] = 0; gN[k] = 0; }
   let nProp = 0, nDisc = 0, nBlob = 0;
   const _mb = new THREE.Matrix4(), _qb = new THREE.Quaternion(), _pb = new THREE.Vector3(), _sb = new THREE.Vector3(), _eb = new THREE.Euler(0, 0, 0, 'YZX');
+  const _fr = new THREE.Frustum(), _pm = new THREE.Matrix4(), _sph = new THREE.Sphere();
   const SKIP = { sched: 1, gone: 1, diverted: 1, towed: 1, cancelled: 1 };
   const OFF = { at_gate: 1, parked: 1, dock: 1, tow: 1 };
   const AIR = { inbound: 1, holding: 1, approach: 1, goaround: 1, divert: 1, climb: 1, roll: 1 };
@@ -980,7 +981,10 @@ Z3MOD.aircraft = function (Z) {
   const sm = (tS, tR) => 1 - Math.exp(-Math.min(SDT / tS, RDT / tR));
   const uIn = (T, ib, d) => (ib < -1e8 ? 1 : clamp((T - ib - d) / 30, 0, 1)), uOut = (T, ra, lead) => clamp((T - (ra - lead)) / 30, 0, 1);
   const cleaner = (st, id) => { if (st.seen !== frame) mem.delete(id); };
-  function upd(a, n) { a.needsUpdate = true; if (a.addUpdateRange) { a.clearUpdateRanges(); a.addUpdateRange(0, Math.max(1, n) * a.itemSize); } }
+  // upload only the instances in use (a whole 500-slot matrix buffer is 32 KB; every type, vehicle kind and the blobs re-sent
+  // in full came to ~0.6 MB a frame, which Safari copies across to its GPU process)
+  // (one range object per attribute, reused: addUpdateRange() would allocate one per attribute per frame)
+  function upd(a, n) { a.needsUpdate = true; const R = a.updateRanges; if (R) { const r = a._zr || (a._zr = { start: 0, count: 0 }); r.count = Math.max(1, n) * a.itemSize; R.length = 0; R.push(r); } }
 
   return {
     update(dt, now) {
@@ -1000,7 +1004,13 @@ Z3MOD.aircraft = function (Z) {
       pU.lum.value = 0.28 + 0.72 * (1 - NF);
       for (let j = 0; j < TKEYS.length; j++) { const kk = TKEYS[j]; hiN[kk] = 0; loN[kk] = 0; gN[kk] = 0; }
       nL = 0; nB = 0; nBird = 0; nProp = 0; nDisc = 0; nBlob = 0;
-      const cp = cam.position, nearR = 1250 * k, nearR2 = nearR * nearR;
+      // (the cinematic profile draws the hi mesh to 700 m, not 1250: past that an aircraft is a few dozen pixels in a 38-degree
+      // shot, and the hi mesh is also the shadow caster, so each one dropped saves its triangles twice)
+      const cp = cam.position, nearR = (Z.V3 && Z.V3.cine ? 700 : 1250) * k, nearR2 = nearR * nearR;
+      // the hi mesh only where it can be seen: in the view, or casting into the shadow map (it is the only one that casts);
+      // a low camera has a hundred aircraft within range, a third of them behind it or off to the side
+      cam.updateMatrixWorld(); _pm.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse); _fr.setFromProjectionMatrix(_pm);
+      const sun = Z.sun, shF = sun && sun.castShadow ? (sun.shadow.updateMatrices(sun), sun.shadow.getFrustum()) : null;
       const sd = Z.sunDir || _pb.set(0, 1, 0), sdy = Math.max(0.3, sd.y), sunUp = clamp(sd.y * 4, 0, 1), blobLift = 0.15 + Math.min(3, (Z.camDist || 1000) * 0.0003);
       bU.fogN.value = fN; bU.fogF.value = fF;
       const nav = 1.1 + 0.6 * NF, navS = (0.7 + 2.4 * NF) * k;
@@ -1049,7 +1059,9 @@ Z3MOD.aircraft = function (Z) {
         _v1.set(P.pv * sx * k, 0, 0); _v2.copy(_v1).applyQuaternion(_q); _v1.applyQuaternion(_qy);
         _p.set(X + _v1.x - _v2.x, alt + _v1.y - _v2.y, Y + _v1.z - _v2.z); _s.set(sx * k, sy * k, sz * k);
         _m.compose(_p, _q, _s);
-        const ddx = f.x - cp.x, ddy = alt - cp.y, ddz = f.y - cp.z, near = ddx * ddx + ddy * ddy + ddz * ddz < nearR2; let li = fam === 'C17' && C17L[f.al] != null ? C17L[f.al] : (AIDX[f.al] || 0);
+        const ddx = f.x - cp.x, ddy = alt - cp.y, ddz = f.y - cp.z; let near = ddx * ddx + ddy * ddy + ddz * ddz < nearR2;
+        if (near) { _sph.center.set(X, alt, Y); _sph.radius = 0.6 * Math.max(f.T.len, f.T.span) * k + 12; near = _fr.intersectsSphere(_sph) || (!!shF && shF.intersectsSphere(_sph)); }
+        let li = fam === 'C17' && C17L[f.al] != null ? C17L[f.al] : (AIDX[f.al] || 0);
         if (dead) li = -li - 1 - ((f.id | 0) % 2 ? 1000 : 0);
         if (near) { const idx = hiN[fam]++; M.hi.setMatrixAt(idx, _m); M.livH.array[idx] = li; M.gearA.array[idx] = st.gear > 0.01 ? sstep(clamp(st.gear, 0, 1)) : 0; }
         else { const idx = loN[fam]++; M.lo.setMatrixAt(idx, _m); M.livL.array[idx] = li; }
@@ -1176,17 +1188,17 @@ Z3MOD.aircraft = function (Z) {
       // ---- instance counts ----
       for (let j = 0; j < TKEYS.length; j++) {
         const kk = TKEYS[j], M = MESH[kk], h = hiN[kk], l = loN[kk];
-        M.hi.count = h; M.hi.visible = h > 0; if (h) { M.hi.instanceMatrix.needsUpdate = true; upd(M.livH, h); upd(M.gearA, h); }
-        M.lo.count = l; M.lo.visible = l > 0; if (l) { M.lo.instanceMatrix.needsUpdate = true; upd(M.livL, l); }
+        M.hi.count = h; M.hi.visible = h > 0; if (h) { upd(M.hi.instanceMatrix, h); upd(M.livH, h); upd(M.gearA, h); }
+        M.lo.count = l; M.lo.visible = l > 0; if (l) { upd(M.lo.instanceMatrix, l); upd(M.livL, l); }
       }
-      if (props) { props.count = nProp; props.visible = nProp > 0; if (nProp) props.instanceMatrix.needsUpdate = true; }
-      discs.count = nDisc; discs.visible = nDisc > 0; if (nDisc) discs.instanceMatrix.needsUpdate = true;
-      blobs.count = nBlob; blobs.visible = nBlob > 0; if (nBlob) { blobs.instanceMatrix.needsUpdate = true; blobs.instanceColor.needsUpdate = true; }
+      if (props) { props.count = nProp; props.visible = nProp > 0; if (nProp) upd(props.instanceMatrix, nProp); }
+      discs.count = nDisc; discs.visible = nDisc > 0; if (nDisc) upd(discs.instanceMatrix, nDisc);
+      blobs.count = nBlob; blobs.visible = nBlob > 0; if (nBlob) { upd(blobs.instanceMatrix, nBlob); upd(blobs.instanceColor, nBlob); }
       ambU.value = 0.1 * Math.max(NF, Z.dustNow ? 0.5 : 0);
       if (ownEnv && Z.scene.environment) { matBody.envMap = null; matBody.envMapIntensity = 1; matBody.needsUpdate = true; ownEnv = null; }
-      for (let j = 0; j < VEH.length; j++) { const V = VEH[j], n = V.n; V.m.count = n; V.m.visible = n > 0; if (n) { V.m.instanceMatrix.needsUpdate = true; upd(V.lift, n); upd(V.tint, n); } V.n = 0; }
+      for (let j = 0; j < VEH.length; j++) { const V = VEH[j], n = V.n; V.m.count = n; V.m.visible = n > 0; if (n) { upd(V.m.instanceMatrix, n); upd(V.lift, n); upd(V.tint, n); } V.n = 0; }
       if (!ownEnv && matVeh.envMap) { matVeh.envMap = null; matVeh.needsUpdate = true; }
-      birds.count = nBird; birds.visible = nBird > 0; if (nBird) birds.instanceMatrix.needsUpdate = true;
+      birds.count = nBird; birds.visible = nBird > 0; if (nBird) upd(birds.instanceMatrix, nBird);
       if (now - cleanT > 2) { cleanT = now; mem.forEach(cleaner); }
     },
   };

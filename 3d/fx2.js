@@ -674,12 +674,12 @@ vec3 fxCol(vec3 P,float reg,float t){
         if(aPart>5.5){float u=pow(max(0.,sin(ph*0.17+1.)),10.)*hold;transformed.xy=fxRot(transformed.xy,vec2(0.02,1.56),1.9*u);}
         if(aPart<0.5||aPart>4.5){transformed.y+=0.015*sin(ph*2.)*(1.-hold);}`);
     };
-    const mesh = new THREE.InstancedMesh(g, mat, N); mesh.frustumCulled = false; mesh.count = 0; mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); root.add(mesh);
+    const mesh = new THREE.InstancedMesh(g, mat, N); mesh.boundingSphere = new THREE.Sphere(); mesh.count = 0; mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); root.add(mesh);
     const rnd = new Float32Array(N * 4); { const R = mulberry(31); for (let i = 0; i < rnd.length; i++) rnd[i] = R(); }
     return { mesh, an, rnd, N };
   })();
   function cyclistsUpdate(list, dt, now) {
-    let n = 0; const T = Z.T, kc = clamp(Z.camDist / 140, 1, 55), N = CY.N, rnd = CY.rnd;
+    let n = 0, x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; const T = Z.T, kc = clamp(Z.camDist / 140, 1, 55), N = CY.N, rnd = CY.rnd;
     for (const it of list) {
       const m = Math.min(it.n || 30, N - n), dx = it.x1 - it.x0, dy = it.y1 - it.y0, L = Math.hypot(dx, dy), hold = it.hold || L < 1;
       const hx = hold ? 1 : dx / L, hy = hold ? 0 : dy / L, hd = Math.atan2(hy, hx), fade = smooth(it.t0 - 1, it.t0 + 2, T) * (1 - smooth(it.t1 - 3, it.t1, T));
@@ -700,10 +700,13 @@ vec3 fxCol(vec3 P,float reg,float t){
         _e.set(mode ? Math.sin(now * 0.5 + j) * 0.04 : Math.sin(ph) * 0.03, -h, 0, 'YXZ'); _q.setFromEuler(_e);
         _v.set(x, 0.12, y); _s.setScalar(kc * Math.max(0.01, fade)); _m.compose(_v, _q, _s); CY.mesh.setMatrixAt(n, _m); CY.an.setXY(n, ph, mode);
         blob(x, y, -h, 1.9 * kc, 0.55 * kc, 0.45 * fade);
+        if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
         n++;
       }
     }
-    CY.mesh.count = n; CY.mesh.visible = n > 0; if (n) { CY.mesh.instanceMatrix.needsUpdate = true; CY.an.needsUpdate = true; }
+    CY.mesh.count = n; CY.mesh.visible = n > 0; if (n) { CY.mesh.instanceMatrix.needsUpdate = true; CY.an.needsUpdate = true;
+      // culled as one group (80 riders are 72k triangles: a cinematic across the field rarely has them in view)
+      const bs = CY.mesh.boundingSphere; bs.center.set((x0 + x1) / 2, kc, (y0 + y1) / 2); bs.radius = Math.hypot(x1 - x0, y1 - y0) / 2 + 3 * kc; }
   }
   KS.add('cyclists');
 

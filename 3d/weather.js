@@ -93,9 +93,8 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
       vec3 v=normalize(vDir);float up=max(v.y,0.);float hl=max(length(v.xz),1e-3);
       vec2 pc=v.xz/max(v.y,0.035)*1800.;
       vec4 n=texture2D(uNoise,(pc-uWD*uFlow*0.5)*0.00011+0.31);
-      vec4 n2=texture2D(uNoise,(pc-uWD*uFlow*0.9)*0.00042+n.ra*0.25);
       vec3 dust=mix(uHor,uZen,pow(up,0.55));
-      float tex=n.r*0.6+n2.g*0.4;dust*=0.8+0.38*tex*smoothstep(0.,0.25,up+0.05);
+      float tex=n.r*0.6+n.g*0.4;dust*=0.8+0.38*tex*smoothstep(0.,0.25,up+0.05);
       float s=max(dot(v,normalize(uSunD)),0.);
       dust+=uSunDisc*(smoothstep(0.99962,0.9998,s)*1.6+pow(s,90.)*0.45+pow(s,10.)*0.16);
       float fl=pow(max(dot(v,uFlashD),0.),5.);dust+=uFlash*vec3(0.75,0.7,0.85)*(0.18+1.6*fl)*(0.6+0.8*tex);
@@ -170,7 +169,7 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
   for (let z = -16000; z <= 16000; z += 170) for (let k = 0; k < 2; k++) push(R() * 150, 6 + R() * 30, z + (R() - 0.5) * 160, 70 + R() * 90, R(), 0.03 + R() * 0.04, 2, 900 + R() * 1400, 25 + R() * 70, 2.8 + R() * 2.2, 0.55 + R() * 0.45);
   // drifting dust masses: big soft volumes that wrap around the view and stream with the wind (inside the storm)
   const nMass0 = BL.length;
-  for (let i = 0; i < 170; i++) push(R(), Math.pow(R(), 1.6), R(), 0.05 + R() * 0.07, R(), 0.006 + R() * 0.01, 5, 0.6 + R() * 0.8, R(), 0, 0.5 + R() * 0.5);
+  for (let i = 0; i < 110; i++) push(R(), Math.pow(R(), 1.6), R(), 0.05 + R() * 0.07, R(), 0.006 + R() * 0.01, 5, 0.6 + R() * 0.8, R(), 0, 0.6 + R() * 0.5);
   const NB = BL.length, bP = new Float32Array(NB * 4), bS = new Float32Array(NB * 4), bC = new Float32Array(NB * 4);
   BL.forEach((b, i) => { bP.set(b.slice(0, 4), i * 4); bS.set(b.slice(4, 8), i * 4); bC.set(b.slice(8, 12), i * 4); });
   const billU = Object.assign({}, U, { uWallA: { value: 0 }, uSkirtA: { value: 0 }, uCellA: { value: 0 }, uCumA: { value: 1 }, uDom: { value: 60000 }, uCumOff: { value: new THREE.Vector2() },
@@ -234,7 +233,8 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
     }` }), -20);
 
   // ---------- 4. drifting dust sheets at several heights (the flowing veils seen from above and from inside) ----------
-  const LAY = [[3, 0.42, 700, 2.2], [40, 0.34, 1100, 1.8], [160, 0.3, 1700, 1.5], [450, 0.28, 2400, 1.3], [900, 0.26, 3400, 1.2]];
+  // three layers (each one is a full-screen transparent pass from inside the storm, so they are kept few and denser)
+  const LAY = [[3, 0.5, 800, 2.1], [110, 0.42, 1500, 1.6], [650, 0.36, 2900, 1.25]];
   const shtGeo = new THREE.BufferGeometry(); { const p = [], l = [], ix = []; LAY.forEach((L, i) => { p.push(-0.5, 0, -0.5, 0.5, 0, -0.5, 0.5, 0, 0.5, -0.5, 0, 0.5); for (let k = 0; k < 4; k++) l.push(...L); ix.push(i * 4, i * 4 + 2, i * 4 + 1, i * 4, i * 4 + 3, i * 4 + 2); });
     shtGeo.setAttribute('position', new THREE.Float32BufferAttribute(p, 3)); shtGeo.setAttribute('aL', new THREE.Float32BufferAttribute(l, 4)); shtGeo.setIndex(ix); }
   const shtU = Object.assign({}, U, { uCen: { value: new THREE.Vector3() }, uSize: { value: 30000 }, uSheetA: { value: 0 }, uLead: { value: 900 }, uDustA: { value: new THREE.Color() }, uDustB: { value: new THREE.Color() }, uFade: { value: 12000 } });
@@ -266,7 +266,10 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
   const NP = { dust: 10000, debris: 800, field: 1400, rain: 7000, farRain: 4500 };
   const NPT = NP.dust + NP.debris + NP.field + NP.rain + NP.farRain;
   const pR = new Float32Array(NPT * 4), pK = new Float32Array(NPT * 4);
-  { const Rp = mulberry(99); let i = 0; [[0, NP.dust], [1, NP.debris], [2, NP.field], [3, NP.rain], [4, NP.farRain]].forEach(([k, n]) => { for (let j = 0; j < n; j++, i++) { pR.set([Rp(), Rp(), Rp(), Rp()], i * 4); pK.set([k, Rp(), Rp(), Rp()], i * 4); } }); }
+  // interleaved by kind, so drawing only the first N instances (the quality tiers) thins every kind evenly
+  { const Rp = mulberry(99), KN = [NP.dust, NP.debris, NP.field, NP.rain, NP.farRain], acc = [0, 0, 0, 0, 0];
+    for (let i = 0; i < NPT; i++) { let k = 0, best = -1; for (let j = 0; j < 5; j++) { const lag = (i + 1) * KN[j] / NPT - acc[j]; if (lag > best) { best = lag; k = j; } } acc[k]++;
+      pR.set([Rp(), Rp(), Rp(), Rp()], i * 4); pK.set([k, Rp(), Rp(), Rp()], i * 4); } }
   const parU = Object.assign({}, U, { uBoxN: { value: 140 }, uBoxF: { value: 6000 }, uFieldH: { value: 60 }, uPxK: { value: 0.001 }, uWindV: { value: new THREE.Vector3(20, 0, 0) }, uFieldV: { value: new THREE.Vector3(60, 0, 0) },
     uFocus: { value: new THREE.Vector3() }, uAmt: { value: new THREE.Vector4() }, uFarRain: { value: 0 }, uLead: { value: 900 }, uDustP: { value: new THREE.Color() }, uDebC: { value: lin('#3a2c20') }, uRainC: { value: lin('#e4e8ee') } });
   const parts = mk(quadGeo(NPT, { iR: pR, iK: pK }), mat({ uniforms: parU,
@@ -515,6 +518,8 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
     parU.uAmt.value.set(dustAmt * lowCam * (0.6 + 0.4 * gust) * 0.85, dustAmt * lowCam * gust, Math.max(I, frontNear) * env * (1 - 0.6 * tail) * 0.6 * smooth(250, 1500, camY), rain * lowCam);
     parU.uFarRain.value = rain * (1 - lowCam * 0.4) * 0.8;
     parU.uDustP.value.copy(P.dustP).multiplyScalar(0.95 + 0.7 * A.sunDim + fl);
+    const pq = Z.quality >= 2 ? 0.6 : Z.quality === 1 ? 0.42 : 0.28, pAk = 1 / Math.sqrt(pq);   // fewer streaks, each a little denser
+    parts.geometry.instanceCount = Math.round(NPT * pq); parU.uAmt.value.multiplyScalar(pAk); parU.uFarRain.value *= pAk;
     parts.visible = parU.uAmt.value.x + parU.uAmt.value.y + parU.uAmt.value.z + parU.uAmt.value.w + parU.uFarRain.value > 0.003;
     massFlow += dt * wSpd * kv * 1.1;
     billU.uMB.value.set(mix(camPos.x, focus.x, hi), 0, mix(camPos.z, focus.z, hi), Math.min(24000, Math.max(2600, cd * 2.2)));

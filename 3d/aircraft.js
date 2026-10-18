@@ -10,7 +10,7 @@ Z3MOD.aircraft = function (Z) {
   const C = h => new THREE.Color(h);
   const COL = { white: C('#ffffff'), wing: C('#c3c8cf'), wingB: C('#a9b0b9'), stab: C('#d9dde2'), pylon: C('#c9cdd2'), exh: C('#8a8f96'),
     strut: C('#c9ced4'), tyre: C('#1d1e20'), prop: C('#26292d'), hub: C('#8d939a'), lip: C('#d6dade'), glass: C('#0b1016'), fan: C('#16181b'),
-    blade: C('#5d636a'), spin: C('#2a2d31'), inner: C('#3a3f45'), door: C('#e9ebee'), cone: C('#9ca1a8') };
+    blade: C('#5d636a'), spin: C('#2a2d31'), inner: C('#3a3f45'), door: C('#e9ebee'), cone: C('#9ca1a8'), char: C('#1b1816') };
   // per-vertex material: [roughness, metalness, clearcoat]; the 4th channel carries the gear pivot height (retracts in the shader)
   const MAT = { paint: [0.34, 0, 1], wing: [0.46, 0.12, 0.45], wingB: [0.55, 0.1, 0.2], le: [0.2, 1, 0], glass: [0.04, 0.1, 1], tyre: [0.93, 0, 0],
     strut: [0.25, 0.95, 0], hub: [0.42, 0.7, 0], fan: [0.45, 0.8, 0], blade: [0.3, 0.95, 0], exh: [0.42, 1, 0], inner: [0.7, 0.2, 0], door: [0.36, 0, 0.8] };
@@ -440,8 +440,10 @@ Z3MOD.aircraft = function (Z) {
     if (UVP && UVP.deck === 2) { const d = q * 180; q = d <= 50 ? d / 180 * 1.3 : 0.361 + (d - 50) / 130 * 0.639; }
     return [t * UF, FA0 + FAK * q]; };
   function patch(g, P, t0, t1, nt, thF, nth, off, col, uvF) {
-    for (let i = 0; i < nt; i++) for (let j = 0; j < nth; j++) {
-      const ta = t0 + (t1 - t0) * i / nt, tb = t0 + (t1 - t0) * (i + 1) / nt, ua = j / nth, ub = (j + 1) / nth;
+    const te = []; for (let i = 0; i <= nt; i++) te.push(t0 + (t1 - t0) * i / nt);
+    if (P.cutT) { for (const ct of P.cutT) if (ct > t0 + 1e-4 && ct < t1 - 1e-4) te.push(ct); te.sort((a, b) => a - b); }
+    for (let i = 0; i < te.length - 1; i++) for (let j = 0; j < nth; j++) {
+      const ta = te[i], tb = te[i + 1], ua = j / nth, ub = (j + 1) / nth;
       const A = surf(P, ta, thF(ta, ua), off), B = surf(P, tb, thF(tb, ua), off), Cc = surf(P, tb, thF(tb, ub), off), D = surf(P, ta, thF(ta, ub), off);
       quad(g, A.p, B.p, Cc.p, D.p, col, A.n, B.n, Cc.n, D.n, uvF ? [uvF(ta, ua), uvF(tb, ua), uvF(tb, ub), uvF(ta, ub)] : PU.dark);
     }
@@ -458,6 +460,9 @@ Z3MOD.aircraft = function (Z) {
   function buildType(P, hi, liv, extra) {
     const body = Geo(), prop = Geo(), N = hi ? (P.N || (P.W > 2.5 ? 26 : 22)) : (P.hump ? 10 : 8);
     const WG = wingGeom(P); P.WG = WG; UVP = P;
+    // wreck break lines (see below): fuselage rings, patches and wing stations are split there so no triangle straddles a break
+    P.cutF = P.wing.x + Math.max(3, 0.1 * P.L); P.cutA = P.wing.x - P.wing.cr - Math.max(2.5, 0.07 * P.L); P.zb = WG.zr + 0.55 * (WG.half - WG.zr);
+    P.cutT = [tOfX(P, P.cutF), tOfX(P, P.cutA)];
     P.nx = P.L / 2 - P.gear.nd; P.mains = P.gear.mains.map(m => ({ x: P.wing.x - m.dx, z: m.z, b: m.b }));
     P.gy = P.yb + 0.3 * P.H; P.pv = Math.min(...P.mains.map(m => m.x));
     // fuselage (smooth: analytic normals from the section function)
@@ -465,9 +470,11 @@ Z3MOD.aircraft = function (Z) {
     for (const s of hi ? [0, .03, .07, .12, .18, .26, .35, .45, .56, .68, .8, .9, 1] : [0, .12, .4, 1]) ts.push(s * P.tn);
     if (hi) for (const s of [0.25, 0.5, 0.75]) ts.push(P.tn + (P.tt - P.tn) * s);
     for (const s of hi ? [0, .12, .25, .38, .5, .62, .74, .85, .93, .98, 1] : [0, .4, .75, 1]) ts.push(P.tt + s * (1 - P.tt));
+    ts.push(P.cutT[0], P.cutT[1]);
     if (P.hump) { const H = P.hump; for (const s of hi ? [0.15, 0.3, 0.45, 0.6, 0.75, 0.9] : [0.4]) ts.push(H[0] + (H[1] - H[0]) * s);
       for (const s of hi ? [0, 0.25, 0.5, 0.75, 1] : [0, 0.5, 1]) ts.push(H[2] + (H[3] - H[2]) * s); ts.push(H[1]);
-      ts.sort((a, b) => a - b); for (let i = ts.length - 1; i > 0; i--) if (ts[i] - ts[i - 1] < 1e-4) ts.splice(i, 1); }
+    }
+    ts.sort((a, b) => a - b); for (let i = ts.length - 1; i > 0; i--) if (ts[i] - ts[i - 1] < 1e-4) ts.splice(i, 1);
     const ring = (t, j) => surf(P, t, j / N * 2 * Math.PI, 0);
     for (let i = 0; i < ts.length - 1; i++) for (let j = 0; j < N; j++) {
       const A = ring(ts[i], j), B = ring(ts[i + 1], j), Cc = ring(ts[i + 1], j + 1), D = ring(ts[i], j + 1);
@@ -489,7 +496,8 @@ Z3MOD.aircraft = function (Z) {
       ellX(body, rs, P.yb + 2 * P.H - 0.55, 0.62, 0.3, EN, COL.white, fusUV(0.4, 0.2)); }
     // wings: airfoil sections (hi) with polished leading edges; flat slabs far away
     const { zr, half, xLE, yAt, zk, chord } = WG, wt = P.wing.t, wl = P.wing.wl;
-    const sta = [zr]; if (P.wing.kink) sta.push(zk); if (hi) for (const u of [0.3, 0.55, 0.78]) sta.push(zk + (half - zk) * u); sta.push(half);
+    const sta = [zr]; if (P.wing.kink) sta.push(zk); if (hi) for (const u of [0.3, 0.55, 0.78]) sta.push(zk + (half - zk) * u); sta.push(half, P.zb);
+    sta.sort((a, b) => a - b); for (let i = sta.length - 1; i > 0; i--) if (sta[i] - sta[i - 1] < 0.05) sta.splice(i, 1);
     const rake = wl === 'raked' ? (P.L > 70 ? 3.6 : 4.4) : 0;
     for (const sgn of [-1, 1]) {
       const pt = (z, le) => [le ? xLE(z) : xLE(z) - chord(z), yAt(z), sgn * z], th = z => wt * (1 - 0.72 * (z - zr) / (half - zr));
@@ -628,10 +636,20 @@ Z3MOD.aircraft = function (Z) {
       }
       body.G = 0; body.M = MAT.paint;
     }
+    // wreck pieces: where the fuselage breaks (ahead of the wing, behind it) and where the starboard wing snaps; the dark end caps sit
+    // inside the closed fuselage (unseen) until a wreck pulls the pieces apart; every triangle is tagged with its piece and pivot
+    const { cutF, cutA, zb } = P;
+    if (hi) { body.M = MAT.tyre; const ash = COL.char; for (const [xc, dir] of [[cutF + 0.06, 1], [cutF - 0.06, -1], [cutA + 0.06, 1], [cutA - 0.06, -1]]) {
+      const t = tOfX(P, xc), rc = ringAt(P, t); body.o = [xc + 5 * dir, rc[1], 0];
+      for (let j = 0; j < N; j++) tri(body, surf(P, t, j / N * 2 * Math.PI, -0.03).p, surf(P, t, (j + 1) / N * 2 * Math.PI, -0.03).p, [xc, rc[1], 0], ash); } body.M = MAT.paint; }
+    const segA = new Float32Array(body.p.length), bp = body.p, PH = Math.max(P.W * 1.4, P.hs.half + 0.6);
+    for (let i = 0; i < bp.length; i += 9) { const cx = (bp[i] + bp[i + 3] + bp[i + 6]) / 3, cz = (bp[i + 2] + bp[i + 5] + bp[i + 8]) / 3, az = Math.abs(cz);
+      let s = 0, pa = 0, pb = 0; if (cx > cutF && az < P.W * 1.4) { s = 1; pa = cutF; pb = P.yb; } else if (cx < cutA && az < PH) { s = 2; pa = cutA; pb = P.yb; } else if (cz > zb) { s = 3; pa = zb; pb = yAt(zb); }
+      for (let j = 0; j < 3; j++) { segA[i + j * 3] = s; segA[i + j * 3 + 1] = pa; segA[i + j * 3 + 2] = pb; } }
     const tipX = xLE(half) - P.wing.ct * 0.15 - (rake ? rake * 1.05 : 0), tipY = yAt(half) + 0.05 + (rake ? rake * 0.12 : 0), rt = ringAt(P, 1);
     P.LP = { tipX, tipY, tipZ: half + rake + 0.05, tailX: rt[0] - 0.15, tailY: rt[1], topX: P.wing.x - P.wing.cr * 0.3, topY: P.yb + 2 * P.H + 0.12,
       botX: P.wing.x - P.wing.cr * 0.75, botY: P.yb - 0.05, noseX: P.nx + 0.4, noseY: P.yb * 0.8, rootX: P.wing.x + 0.2, rootY: WG.rootY, rootZ: P.W + 1.2 };
-    return { body: toGeom(body, liv, extra), prop: prop.p.length ? toGeom(prop) : null };
+    return { body: toGeom(body, liv, Object.assign({ aSeg: new THREE.Float32BufferAttribute(segA, 3) }, extra)), prop: prop.p.length ? toGeom(prop) : null };
   }
 
   /* ---------------- meshes: per type a hi (near, casts shadows, gear inside) and a lo (far) ---------------- */
@@ -651,22 +669,36 @@ Z3MOD.aircraft = function (Z) {
     envMap: ownEnv, envMapIntensity: ownEnv ? 0.85 : 1 });
   const ambU = { value: 0 };
   const GEARV = 'if (aMat.w > 0.0) transformed.y = aMat.w + (transformed.y - aMat.w) * iGear;';
+  // a wreck (negative livery index): the nose piece kinks down and aside, the tail section is torn off, yawed and rolled onto its side,
+  // the starboard outer wing droops; rotations about each piece's pivot (aSeg = piece, pivot along, pivot height)
+  const WRK = 'attribute vec3 aSeg;\nvec3 zwRot(vec3 d, vec3 r) { float c = cos(r.z), s = sin(r.z); d.xy = vec2(c * d.x - s * d.y, s * d.x + c * d.y); c = cos(r.x); s = sin(r.x); d.yz = vec2(c * d.y - s * d.z, s * d.y + c * d.z);' +
+    ' c = cos(r.y); s = sin(r.y); d.xz = vec2(c * d.x + s * d.z, -s * d.x + c * d.z); return d; }\n' +
+    'vec3 zwR(float s) { return s < 0.5 ? vec3(0.) : s < 1.5 ? vec3(0.06, 0.13, -0.055) : s < 2.5 ? vec3(0.34, -0.42, 0.035) : vec3(0.19, 0.03, 0.); }\n' +
+    'vec3 zwT(float s) { return s < 0.5 ? vec3(0.) : s < 1.5 ? vec3(2.6, -0.3, 1.1) : s < 2.5 ? vec3(-8.5, -0.2, -5.5) : vec3(-0.3, -0.25, 0.); }\n' +
+    'vec3 zwO(vec3 a) { return a.x > 2.5 ? vec3(0., a.z, a.y) : vec3(a.y, a.z, 0.); }\n';
+  const WRKV = 'if (aLiv < -0.5 && aSeg.x > 0.5) { vec3 zo = zwO(aSeg); transformed = zo + zwRot(transformed - zo, zwR(aSeg.x)) + zwT(aSeg.x); }';
   matBody.onBeforeCompile = sh => {
     sh.uniforms.uAmb = ambU;
-    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float aLiv;\nattribute vec4 aMat;\nattribute float iGear;\nvarying vec3 vMat;')
-      .replace('#include <uv_vertex>', '#include <uv_vertex>\n#ifdef USE_MAP\nif (uv.x > 1.5) { float fc = mod(aLiv, 3.), fr = floor(aLiv / 3. + 0.01); vMapUv = vec2((' + FX0.toFixed(1) + ' + (fc + 0.02 + 0.96 * (uv.x - 2.)) * ' + FT.toFixed(1) + ') / ' + AW.toFixed(1) + ', (fr + 0.02 + 0.96 * uv.y) * ' + (FT / AH).toFixed(6) + '); }\nelse vMapUv.y = (vMapUv.y + aLiv) * ' + VK.toFixed(6) + ';\n#endif')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvMat = aMat.xyz;\n' + GEARV);
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uAmb;\nvarying vec3 vMat;')
-      .replace('#include <color_fragment>', '#include <color_fragment>\nfloat lvSat = max(diffuseColor.r, max(diffuseColor.g, diffuseColor.b)) - min(diffuseColor.r, min(diffuseColor.g, diffuseColor.b));')
-      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = clamp(vMat.x + 0.12 * lvSat, 0.03, 1.0);')
-      .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = vMat.y;')
-      .replace('#include <lights_physical_fragment>', '#include <lights_physical_fragment>\n#ifdef USE_CLEARCOAT\nmaterial.clearcoat *= vMat.z;\n#endif')
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float aLiv;\nattribute vec4 aMat;\nattribute float iGear;\nvarying vec3 vMat;\nvarying float vWr;\nvarying vec3 vOP;\n' + WRK)
+      .replace('#include <beginnormal_vertex>', '#include <beginnormal_vertex>\nif (aLiv < -0.5 && aSeg.x > 0.5) objectNormal = zwRot(objectNormal, zwR(aSeg.x));')
+      .replace('#include <uv_vertex>', '#include <uv_vertex>\nfloat zLiv = aLiv < -0.5 ? -aLiv - 1.0 : aLiv;\n#ifdef USE_MAP\nif (uv.x > 1.5) { float fc = mod(zLiv, 3.), fr = floor(zLiv / 3. + 0.01); vMapUv = vec2((' + FX0.toFixed(1) + ' + (fc + 0.02 + 0.96 * (uv.x - 2.)) * ' + FT.toFixed(1) + ') / ' + AW.toFixed(1) + ', (fr + 0.02 + 0.96 * uv.y) * ' + (FT / AH).toFixed(6) + '); }\nelse vMapUv.y = (vMapUv.y + zLiv) * ' + VK.toFixed(6) + ';\n#endif')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvMat = aMat.xyz;\n' + GEARV + '\nvOP = transformed; vWr = aLiv < -0.5 ? 1.0 : 0.0;\n' + WRKV);
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uAmb;\nvarying vec3 vMat;\nvarying float vWr;\nvarying vec3 vOP;\n' +
+        'float zwH(vec3 p) { return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }\n' +
+        'float zwN(vec3 p) { vec3 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(mix(zwH(i), zwH(i + vec3(1., 0., 0.)), f.x), mix(zwH(i + vec3(0., 1., 0.)), zwH(i + vec3(1., 1., 0.)), f.x), f.y),' +
+        ' mix(mix(zwH(i + vec3(0., 0., 1.)), zwH(i + vec3(1., 0., 1.)), f.x), mix(zwH(i + vec3(0., 1., 1.)), zwH(i + vec3(1., 1., 1.)), f.x), f.y), f.z); }')
+      .replace('#include <color_fragment>', '#include <color_fragment>\nfloat zwC = 0.0;\nif (vWr > 0.5) { float nz = zwN(vOP * 0.16) * 0.72 + zwN(vOP * 0.55) * 0.28;' +
+        ' zwC = smoothstep(0.17, 0.29, nz); vec3 soot = mix(vec3(0.01, 0.009, 0.008), vec3(0.034, 0.031, 0.028), smoothstep(0.35, 0.8, zwN(vOP * 0.7 + 3.1)));' +
+        ' diffuseColor.rgb = mix(diffuseColor.rgb * mix(vec3(0.5, 0.43, 0.36), vec3(0.22, 0.16, 0.11), smoothstep(0.05, 0.17, nz)), soot, zwC); }\nfloat lvSat = max(diffuseColor.r, max(diffuseColor.g, diffuseColor.b)) - min(diffuseColor.r, min(diffuseColor.g, diffuseColor.b));')
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(clamp(vMat.x + 0.12 * lvSat, 0.03, 1.0), 0.97, max(zwC, vWr * 0.5));')
+      .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = vMat.y * (1.0 - zwC);')
+      .replace('#include <lights_physical_fragment>', '#include <lights_physical_fragment>\n#ifdef USE_CLEARCOAT\nmaterial.clearcoat *= vMat.z * (1.0 - vWr);\n#endif\nmaterial.specularColor *= 1.0 - 0.8 * zwC; material.specularF90 *= 1.0 - 0.8 * zwC;')
       .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += diffuseColor.rgb * uAmb;');
   };
-  matBody.customProgramCacheKey = () => 'zmh-air-body-2';
+  matBody.customProgramCacheKey = () => 'zmh-air-body-3';
   const matDepth = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking });
-  matDepth.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec4 aMat;\nattribute float iGear;').replace('#include <begin_vertex>', '#include <begin_vertex>\n' + GEARV); };
-  matDepth.customProgramCacheKey = () => 'zmh-air-depth-2';
+  matDepth.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec4 aMat;\nattribute float iGear;\nattribute float aLiv;\n' + WRK).replace('#include <begin_vertex>', '#include <begin_vertex>\n' + GEARV + '\n' + WRKV); };
+  matDepth.customProgramCacheKey = () => 'zmh-air-depth-3';
   const matProp = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, side: THREE.DoubleSide });
   const matDisc = new THREE.MeshBasicMaterial({ color: 0x2a2d31, transparent: true, opacity: 0.26, depthWrite: false, side: THREE.DoubleSide });
   const IM = (geo, mat, cap, shadow) => { const m = new THREE.InstancedMesh(geo, mat, cap); m.frustumCulled = false; m.castShadow = !!shadow; m.receiveShadow = !!shadow; m.count = 0;
@@ -901,7 +933,7 @@ Z3MOD.aircraft = function (Z) {
         let st = mem.get(f.id), fresh = false;
         if (!st) { st = { hd: f.heading, hr: 0, bank: 0, pitch: 0, gear: 1, prev: s, px: f.x, py: f.y, spd: 0, tdT: -1e9, smokeT: -1e9, smokeN: 0, ph: Math.random(), ph2: Math.random(), prop: Math.random() * 6, spool: 0, acc: 0, seen: 0, crab: 0 }; mem.set(f.id, st); fresh = true; }
         st.seen = frame;
-        const alt = visAlt(f);
+        const dead = s === 'wreck', alt = dead ? -0.55 * P.yb * k : visAlt(f);
         if (st.prev !== s) { if (s === 'rollout' && st.prev === 'approach' && !fresh) { st.tdT = T; st.smokeT = T; st.smokeN = 0; } st.prev = s; }
         if (fresh && s === 'rollout') st.tdT = T - 30;
         const pt = pitchT(f, st, alt, T) * D2R, gt = gearT(f, alt);
@@ -916,6 +948,7 @@ Z3MOD.aircraft = function (Z) {
           const rate = Math.min((s === 'rollout' ? 2.6 : 3.2) * dts, 14 * rdt) * D2R; st.pitch += clamp(pt - st.pitch, -rate, rate);
           const gr = Math.min(dts / 7, rdt / 0.9); st.gear += clamp(gt - st.gear, -gr, gr);
         }
+        if (dead) { st.pitch = -0.03; st.bank = st.ph > 0.5 ? 0.055 : -0.055; st.gear = 0; st.hr = 0; }
         // crab into the crosswind while airborne (de-crabbed in the flare), and buffeting in gusts / the andhi
         let bf = 0, pf = 0;
         { let ct = 0;
@@ -931,7 +964,8 @@ Z3MOD.aircraft = function (Z) {
         _v1.set(P.pv * sx * k, 0, 0); _v2.copy(_v1).applyQuaternion(_q); _v1.applyQuaternion(_qy);
         _p.set(f.x + _v1.x - _v2.x, alt + _v1.y - _v2.y, f.y + _v1.z - _v2.z); _s.set(sx * k, sy * k, sz * k);
         _m.compose(_p, _q, _s);
-        const ddx = f.x - cp.x, ddy = alt - cp.y, ddz = f.y - cp.z, near = ddx * ddx + ddy * ddy + ddz * ddz < nearR2, li = fam === 'C17' && C17L[f.al] != null ? C17L[f.al] : (AIDX[f.al] || 0);
+        const ddx = f.x - cp.x, ddy = alt - cp.y, ddz = f.y - cp.z, near = ddx * ddx + ddy * ddy + ddz * ddz < nearR2; let li = fam === 'C17' && C17L[f.al] != null ? C17L[f.al] : (AIDX[f.al] || 0);
+        if (dead) li = -li - 1;
         if (near) { const idx = hiN[fam]++; M.hi.setMatrixAt(idx, _m); M.livH.array[idx] = li; M.gearA.array[idx] = st.gear > 0.01 ? sstep(clamp(st.gear, 0, 1)) : 0; }
         else { const idx = loN[fam]++; M.lo.setMatrixAt(idx, _m); M.livL.array[idx] = li; }
         const run = !OFF[s];
@@ -950,12 +984,12 @@ Z3MOD.aircraft = function (Z) {
         }
         // ---- lights ----
         const LP = P.LP;
-        if (run || NF > 0.35) {
+        if (!dead && (run || NF > 0.35)) {
           lw(LP.tipX, LP.tipY, -LP.tipZ); L(_v.x, _v.y, _v.z, 1.0 * nav, 0.07 * nav, 0.05 * nav, navS);
           lw(LP.tipX, LP.tipY, LP.tipZ); L(_v.x, _v.y, _v.z, 0.08 * nav, 1.0 * nav, 0.35 * nav, navS);
           lw(LP.tailX, LP.tailY, 0); L(_v.x, _v.y, _v.z, 0.85 * nav, 0.85 * nav, 0.85 * nav, navS * 0.85);
         }
-        if (run) {
+        if (run && !dead) {
           const ph = (now + st.ph) % 1, bi = ph < 0.16 ? 1 - ph / 0.16 : 0;
           if (bi > 0) { const bI = (3.2 + 1.6 * NF) * bi, bS = (1.3 + 2.6 * NF) * k; lw(LP.topX, LP.topY, 0); L(_v.x, _v.y, _v.z, bI, 0.1 * bI, 0.05 * bI, bS); }
           const ph3 = (now + st.ph + 0.5) % 1, bj = ph3 < 0.16 ? 1 - ph3 / 0.16 : 0;

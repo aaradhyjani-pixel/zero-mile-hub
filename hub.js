@@ -758,8 +758,11 @@ function audioSync(){const h=audioHold();if(h===AHELD)return;AHELD=h;
 document.addEventListener('visibilitychange',audioSync);
 function vqAdd(items){if(!items.length)return null;const g={on:false},p=items[0].pri,now=performance.now();
   for(const it of items){it.g=g;it.born=now;it.bornT=T;}
-  let i=0;while(i<VQ.length&&(VQ[i].g===vqG||VQ[i].pri>=p))i++;VQ.splice(i,0,...items);
+  // (a call already under way keeps its turn against equal or lower priority; a set piece's beat goes before its next line)
+  let i=0;while(i<VQ.length&&VQ[i].pri>=p)i++;VQ.splice(i,0,...items);
   while(VQ.length>VQ_MAX){let v=null;for(const it of VQ)if(it.g!==vqG&&it.pri<3&&(!v||it.pri<v.pri))v=it;if(!v)break;vqDrop(v.g);}
+  // a set piece's beat does not wait for radio chatter to finish: the chatter is cut
+  if(p>=3&&vqIt&&vqIt.pri<=1&&vqDone){if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}vqDone();}
   vqNext();return items;}
 function vqClear(maxPri){for(let i=VQ.length-1;i>=0;i--)if(VQ[i].pri<=maxPri&&VQ[i].g!==vqG)VQ.splice(i,1);}
 // a set piece takes the air: everything of priority maxPri or below goes, the line playing now included (stopped mid-word)
@@ -803,9 +806,10 @@ function vqNext(){if(vqOn||audioHold())return;const now=performance.now();let it
 function speak(lines,o){o=o||{};if(!SND.on||ended)return false;voicePreload(lines);vqAdd(lines.map((t,i)=>{const last=i===lines.length-1;return{text:t,lang:o.lang,valid:o.valid,pri:o.pri||2,hold:o.hold,gap:o.gaps&&o.gaps[i]!=null?o.gaps[i]:last?(o.endGap!=null?o.endGap:900):(o.gap!=null?o.gap:1200),onStart:o.onLine?()=>o.onLine(i):null,onEnd:last?o.onDone:null};}));return true;}
 // a radio call in a speaker's own voice: shows on the ticker, and plays its recorded clip (keyed by the exact text) if there
 // is one. o: {pri (1), valid, cut, hold, gap, vol, onStart, onEnd, ref (gets .it, the queued line)}
-// the same radio line is never voiced twice within 30 s (a set piece that re-sends a call each tick can't make it echo)
+// the same radio line is never voiced twice within 30 s (a set piece that re-sends a call each tick can't make it echo),
+// unless the repeat is the point (o.again: Russia Two's announcement is Russia One's, word for word)
 const VQ_SEEN=new Map();
-function say(src,text,o){o=o||{};radio(src,text);const now=performance.now(),seen=VQ_SEEN.get(text);if(SND.on&&!ended&&typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[text]&&!(seen&&now-seen<30000)){VQ_SEEN.set(text,now);voicePreload(text);const q=vqAdd([{text,radio:true,pri:o.pri||1,gap:o.gap!=null?o.gap:500,vol:o.vol,valid:o.valid,cut:o.cut,hold:o.hold,onStart:o.onStart,onEnd:o.onEnd}]);if(o.ref)o.ref.it=q[0];return true;}if(o.onEnd)o.onEnd();return false;}
+function say(src,text,o){o=o||{};radio(src,text);const now=performance.now(),seen=VQ_SEEN.get(text);if(SND.on&&!ended&&typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[text]&&!(seen&&now-seen<30000&&!o.again)){VQ_SEEN.set(text,now);voicePreload(text);const q=vqAdd([{text,radio:true,pri:o.pri||1,gap:o.gap!=null?o.gap:500,vol:o.vol,valid:o.valid,cut:o.cut,hold:o.hold,onStart:o.onStart,onEnd:o.onEnd}]);if(o.ref)o.ref.it=q[0];return true;}if(o.onEnd)o.onEnd();return false;}
 // silence: the queue, the line playing (its callbacks are dropped with it) and, unless keepMusic, the music
 function voiceReset(keepMusic){VQ.length=0;VQ_SEEN.clear();vqGen++;if(vqCur){try{vqCur.pause();}catch(e){}}vqCur=null;vqIt=null;vqDone=null;vqG=null;vqOn=false;VHOLD=null;if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}duck(false);
   if(!keepMusic){music(null,{now:true});const g=$('#guard');if(g)g.classList.remove('on');}}
@@ -919,7 +923,7 @@ function startSummit(){
 function vipAnn(f){const s=SUM,a={f,done:false,it:null,read:0};s.ann=a;f.annT=T;
   vipBanner(true,f.ban[0],f.ban[1],f.ban[2],f.ban[3]);
   if(f.mus==='rasputin')music('rasputin',{vol:0.5});else music(f.mus||null,{fadeOut:900});
-  logE(f.ann);if(!say(f.src,f.ann,{pri:3,gap:300,ref:a,valid:()=>f.landT==null,cut:()=>f.landT!=null,onEnd:()=>{a.done=true;}})){a.done=false;a.read=performance.now()+Math.max(1800,f.ann.length*60);}}
+  logE(f.ann);if(!say(f.src,f.ann,{pri:3,gap:300,ref:a,again:true,valid:()=>f.landT==null,cut:()=>f.landT!=null,onEnd:()=>{a.done=true;}})){a.done=false;a.read=performance.now()+Math.max(1800,f.ann.length*60);}}
 // real seconds until the announcement has been heard (or read)
 // (a line silenced without being heard, by a sound switch or a reset, counts as heard)
 function vipEta(a){if(a.read)return Math.max(0,(a.read-performance.now())/1000);if(a.done||!a.it)return 0;const e=vqEta(a.it);if(e==null){a.done=true;return 0;}return e;}
@@ -1803,7 +1807,7 @@ stop(c){const s=c.sc;if(!s||s.B.state!=='xroll'||s.B.rto||performance.now()>s.st
 end(c,how){const s=c.sc,{A,B}=s,r=c.r;stopUI(c,false);c.out=how;
   if(CINE&&CINE.o&&CINE.o.ms===60000)CINE.t0=performance.now()-CINE.o.ms+(how==='crash'?9000:3500);
   if(how==='near'){hitSafety(12,`Near collision on ${r.short} in fog: Orange City 1801 rolled without a clearance with Satpura 77 still on the runway. You stopped it.`);
-    B.state='taxi_out';B.rto=false;r.occ=null;assignDep(B,true);closeRw(r,900,'Runway incursion investigation');say('TWR',`Orange City 1801 stopped. Runway ${r.short} closed for the investigation.`);
+    B.state='taxi_out';B.rto=false;r.occ=null;assignDep(B,true);closeRw(r,900,'Runway incursion investigation');say('TWR',`Orange City 1801 stopped. Runway ${r.short} closed for the investigation.`,{pri:2});
     flashBanner(['NEAR MISS · '+r.short,'Orange City 1801 stopped about 400 m short of Satpura 77','You broke the chain',''],5000);
     setTimeout(()=>{if(STO.includes(c))voiced(['Orange City has stopped. Four hundred metres short.','Nobody moves on that runway until I can see it.'],WHO.sup);},2500);}
   else if(how==='crash'){A.state='wreck';B.state='wreck';A.v=0;B.v=0;r.occ=null;r.closedUntil=1e9;r.why='Accident site';S.crash={t:T,r:r.short};

@@ -1,0 +1,7 @@
+# Z.fx: spectacles the set pieces ask the 3D view to draw
+
+`Z.fx` is an array that hub.js rewrites as set pieces start and end. A module (3d/fx.js) reads it every frame and draws each item it knows; unknown kinds are ignored. Coordinates are the sim's 2D frame: world x = sim x, world z = sim y, y is up (metres, ground at 0). Times are sim seconds (`Z.T`); the sim runs about 20x real time at 1x speed, slower (0.5x) during cinematics.
+
+- `{kind:'flypast', id, t0, t1, cx, cy, r}`: the Surya Kiran aerobatic team (9 red-and-white Hawk jets in an arrowhead) displays over the field between t0 and t1 (about 240 s), centred on (cx, cy) within radius r: low passes along the runways, a loop, a split. Saffron, white and green smoke trails from the jets.
+- `{kind:'monkeys', id, t0, t1, pts:[[x,y],...], n, flee}`: a troop of n rhesus macaques on Pier F's airbridges and stands (pts are the stand/airbridge points) between t0 and t1: sitting, scratching, walking along the airbridge roofs, tails up, a baby on a back. `flee` is null or `{t0, t1, x0, y0, x1, y1}`: in that window they run in a stream from (x0,y0) to (x1,y1) (across a runway) and are gone after t1.
+- Aircraft type `GLF6` (Gulfstream G650: 30.4 m long, 30.4 m span, T-tail, two rear fuselage engines, oval windows) and airline `CHW` (the Chambani wedding: white, gold cheatline, marigold-orange garland on the nose, gold tail with a "C" monogram).

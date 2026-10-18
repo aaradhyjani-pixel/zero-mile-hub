@@ -317,7 +317,7 @@ Z3MOD.field = function (Z) {
 
   // ---------- pavement material: Standard + world-space PBR detail (asphalt aggregate, patches, tar snakes, slab joints, stains) ----------
   // kinds: 0 taxiway (vertex colours; light ones are concrete), 1 apron concrete, 2 runway (canvas map), 3 road (canvas map)
-  const PU = { tA: { value: asphTex }, tM: { value: macroTex }, tP: { value: paveTex }, apb: { value: APB } };
+  const PU = { tA: { value: asphTex }, tM: { value: macroTex }, tP: { value: paveTex }, apb: { value: APB }, wet: { value: 0 } };
   const PAVE = `
     float pd=length(vViewPosition);
     float fd=1.0-smoothstep(30.0,650.0,pd), fm=1.0-smoothstep(1500.0,12000.0,pd);
@@ -340,12 +340,13 @@ Z3MOD.field = function (Z) {
     float oil=PK==2?0.0:ps.r; alb*=1.0-0.6*oil; pr-=0.3*oil;
     if(PK>=2){float paint=smoothstep(0.1,0.32,lum0);float rub=1.0-smoothstep(0.012,0.03,lum0);
       alb=mix(alb,0.9+0.1*alb,paint);pr=mix(pr,0.6,paint)-0.22*rub;nq*=1.0-0.5*paint;}
-    diffuseColor.rgb*=alb; float pRgh=clamp(pr,0.3,1.0); vec3 pN=vec3(nq.x,1.0,nq.y);`;
+    alb*=1.0-0.22*wet; pr=mix(pr,0.35+0.25*(pr-0.86),wet); nq*=1.0-0.6*wet;   // the andhi's rain tail: darker, glossy pavement
+    diffuseColor.rgb*=alb; float pRgh=clamp(pr,0.18,1.0); vec3 pN=vec3(nq.x,1.0,nq.y);`;
   function paveMat(kind, opts) {
     const m = new THREE.MeshStandardMaterial(Object.assign({ roughness: 0.86, metalness: 0, envMapIntensity: 0.5 }, opts));
     m.onBeforeCompile = sh => { Object.assign(sh.uniforms, PU);
       sh.vertexShader = 'varying vec2 vWP;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvWP=(modelMatrix*vec4(transformed,1.0)).xz;');
-      sh.fragmentShader = `#define PK ${kind}\nuniform sampler2D tA;uniform sampler2D tM;uniform sampler2D tP;uniform vec4 apb;varying vec2 vWP;\n` + sh.fragmentShader
+      sh.fragmentShader = `#define PK ${kind}\nuniform sampler2D tA;uniform sampler2D tM;uniform sampler2D tP;uniform vec4 apb;uniform float wet;varying vec2 vWP;\n` + sh.fragmentShader
         .replace('#include <color_fragment>', '#include <color_fragment>\n' + PAVE)
         .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor=pRgh;')
         .replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\nnormal=normalize((viewMatrix*vec4(normalize(pN),0.0)).xyz);'); };
@@ -710,6 +711,7 @@ Z3MOD.field = function (Z) {
   return {
     update(dt, now) {
       const T = Z.T, LV = Z.LV, cd = Z.camDist || 9000;
+      { const w = Z.mods.weather, ws = w && w.state ? w.state() : null, tgt = ws ? Math.min(1, ws.tail * 1.2) : 0; PU.wet.value += (tgt - PU.wet.value) * Math.min(1, dt * 0.5); }
       const la = clamp(Math.max(Z.nightF * 1.15, Z.dustNow ? 0.85 : 0, LV && LV.light === 'dawn' ? 0.85 - T / 1800 : 0), 0, 1);
       const far = clamp((cd - 1500) / 8000, 0, 1), heat = LV && LV.light === 'heat' ? (Z.heatNow ? 1 : 0.65) * (1 - far) : 0;
       for (let i = 0; i < RW.length; i++) {

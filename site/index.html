@@ -5515,6 +5515,20 @@ Z3MOD.aircraft = function (Z) {
   }
 
   /* ---------------- motion helpers ---------------- */
+  // The strategic view draws aircraft up to 3.4x life size so traffic reads from 10 km. At a stand that ran the noses into
+  // the pier roof and crossed every wing over two neighbours (a tangle on each pier). On and near its stand an aircraft keeps
+  // at most KPARK (wingtips of neighbours on 46 m stands then just meet) and is drawn set back so its nose stays where a
+  // life-size one's would be, at the bridge (st.sw: 1 at the stand .. 0 away from it). It eases back to the full size over
+  // the first few hundred metres of taxiway, so nothing pops. The stand is remembered for a tow or pushback that let go of it.
+  const KPARK = 1.5, STANDST = { taxi_in: 1, dock: 1, at_gate: 1, parked: 1, push: 1, start: 1, taxi_out: 1, tow: 1 };
+  let gOX = 0, gOY = 0;   // this aircraft's set-back, for the support vehicles placed around it
+  function standK(f, s, st, k) {
+    st.sw = 0; if (k <= 1 || !STANDST[s]) return k;
+    const g = f.gate || f.res || f.gateRef;
+    if (g && g.x != null) { st.gx = g.x; st.gy = g.y; } else if (st.gx == null) return k;
+    st.sw = 1 - sstep(clamp((Math.hypot(f.x - st.gx, f.y - st.gy) - 70) / 260, 0, 1));
+    return k > KPARK ? k + (KPARK - k) * st.sw : k;
+  }
   function visAlt(f) { // the sim's glide path is a straight 3 degree line to the ground; draw a flare over the last 15 m
     const s = f.state;
     if (s === 'approach' && f.rwy && f.finalStart != null && f.pd >= f.finalStart) {
@@ -5545,7 +5559,7 @@ Z3MOD.aircraft = function (Z) {
     if (uIn <= 0 || uOut >= 1) return;
     const ei = 1 - sstep(uIn), eo = sstep(uOut), c = Math.cos(f.heading), sn = Math.sin(f.heading);
     const ox = lx * sx * k - (22 * ei + 30 * eo) * k, oz = lz * sz * k + (Math.sign(lz) || 1) * (38 * ei + 45 * eo) * k;
-    veh(kind, f.x + c * ox - sn * oz, f.y + sn * ox + c * oz, f.heading + relH + (ei - eo) * 0.9 * (Math.sign(lz) || 1), k, ph, lift);
+    veh(kind, f.x + gOX + c * ox - sn * oz, f.y + gOY + sn * ox + c * oz, f.heading + relH + (ei - eo) * 0.9 * (Math.sign(lz) || 1), k, ph, lift);
   }
   let SDT = 0, RDT = 0;
   const sm = (tS, tR) => 1 - Math.exp(-Math.min(SDT / tS, RDT / tR));
@@ -5559,7 +5573,7 @@ Z3MOD.aircraft = function (Z) {
   return {
     update(dt, now) {
       frame++; NOW = now; NF = Z.nightF || 0;
-      const T = Z.T, F = Z.flights(), k = Z.kEx, dust = !!Z.dustNow;
+      const T = Z.T, F = Z.flights(), k = Z.kEx, kG = k, dust = !!Z.dustNow;
       let dts = T - lastT, snap = false;
       if (lastT < 0 || dts < 0 || dts > 20) { snap = true; dts = 0; mem.clear(); }
       lastT = T; dts = Math.min(dts, 2);
@@ -5591,6 +5605,7 @@ Z3MOD.aircraft = function (Z) {
         let st = mem.get(f.id), fresh = false;
         if (!st) { st = { hd: f.heading, hr: 0, bank: 0, pitch: 0, gear: 1, prev: s, px: f.x, py: f.y, spd: 0, tdT: -1e9, smokeT: -1e9, smokeN: 0, ph: Math.random(), ph2: Math.random(), prop: Math.random() * 6, spool: 0, acc: 0, seen: 0, crab: 0 }; mem.set(f.id, st); fresh = true; }
         st.seen = frame;
+        const k = standK(f, s, st, kG);   // this aircraft's own exaggeration (less at its stand): shadows the view's k below
         const dead = s === 'wreck', alt = dead ? -0.55 * P.yb * k : visAlt(f);
         if (st.prev !== s) { if (s === 'rollout' && st.prev === 'approach' && !fresh) { st.tdT = T; st.smokeT = T; st.smokeN = 0; } st.prev = s; }
         if (fresh && s === 'rollout') st.tdT = T - 30;
@@ -5606,7 +5621,8 @@ Z3MOD.aircraft = function (Z) {
           const rate = Math.min((s === 'rollout' ? 2.6 : 3.2) * dts, 14 * rdt) * D2R; st.pitch += clamp(pt - st.pitch, -rate, rate);
           const gr = Math.min(dts / 7, rdt / 0.9); st.gear += clamp(gt - st.gear, -gr, gr);
         }
-        let X = f.x, Y = f.y;
+        let X = f.x, Y = f.y; gOX = 0; gOY = 0;
+        if (st.sw > 0 && k > 1) { const b = -(k - 1) * P.L / 2 * st.sw; gOX = Math.cos(f.heading) * b; gOY = Math.sin(f.heading) * b; X += gOX; Y += gOY; }
         if (dead) { st.pitch = -0.03; st.bank = st.ph > 0.5 ? 0.055 : -0.055; st.gear = 0; st.hr = 0;
           // two wrecks from one collision lie tangled but apart: each is pushed a quarter of the two spans from their midpoint, sideways
           // to its own axis and away from the other (the fire stays at the crash point)
@@ -5715,7 +5731,7 @@ Z3MOD.aircraft = function (Z) {
           let lx = nose, lz = 0, h = f.heading + Math.PI;
           if (s === 'tow' && f.pd >= 90) h = f.heading;
           if (s === 'start') { const u = clamp((T - f.startT - 8) / 24, 0, 1); lx = nose + 22 * u; lz = -26 * u * u; h = f.heading + Math.PI - u * 2.2; }
-          veh('tug', f.x + (hc * lx - hs * lz) * k, f.y + (hs * lx + hc * lz) * k, h, k, f.id, 0);
+          veh('tug', f.x + gOX + (hc * lx - hs * lz) * k, f.y + gOY + (hs * lx + hc * lz) * k, h, k, f.id, 0);
         }
       }
       // ---- airside ops vehicles ----
@@ -5810,6 +5826,7 @@ Z3MOD.field = function (Z) {
     const dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy) || 1, nx = -dy / L * hw, ny = dx / L * hw, W = u0 === undefined, ws = B.ws;
     const q = [[ax + nx, ay + ny, u0, 0], [bx + nx, by + ny, u1, 0], [bx - nx, by - ny, u1, 1], [ax - nx, ay - ny, u0, 1]];
     const id = q.map(o => vtx(B, o[0], o[1], h, col, W ? o[0] / ws : o[2], W ? o[1] / ws : o[3]));
+    if (B.sd) B.sd.push(nx, ny, nx, ny, -nx, -ny, -nx, -ny);   // each corner's offset from the centreline (markings only)
     tri(B, id[0], id[1], id[2]); tri(B, id[0], id[2], id[3]);
   }
   function disc(B, x, y, r, h, col, n, uv) {
@@ -5821,7 +5838,9 @@ Z3MOD.field = function (Z) {
   function geoOf(B) {
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(B.p, 3));
     const n = new Float32Array(B.p.length); for (let i = 1; i < n.length; i += 3) n[i] = 1; g.setAttribute('normal', new THREE.BufferAttribute(n, 3));
-    g.setAttribute('uv', new THREE.Float32BufferAttribute(B.u, 2)); g.setAttribute('color', new THREE.Float32BufferAttribute(B.c, 3)); g.setIndex(B.i); g.computeBoundingSphere(); return g;
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(B.u, 2)); g.setAttribute('color', new THREE.Float32BufferAttribute(B.c, 3));
+    if (B.sd && B.sd.length * 3 === B.p.length * 2) g.setAttribute('sd', new THREE.Float32BufferAttribute(B.sd, 2));
+    g.setIndex(B.i); g.computeBoundingSphere(); return g;
   }
   const simplify = pts => { if (pts.length < 3) return pts.slice(); const out = [pts[0]];
     for (let i = 1; i < pts.length - 1; i++) { const a = out[out.length - 1], b = pts[i], c = pts[i + 1]; const ux = b[0] - a[0], uy = b[1] - a[1], vx = c[0] - b[0], vy = c[1] - b[1];
@@ -6121,7 +6140,10 @@ Z3MOD.field = function (Z) {
       vec2 bid=floor(vWP/vec2(55.0,40.0));float hb=fract(sin(dot(bid,vec2(41.3,17.9)))*24634.63);
       alb*=mix(1.0,(1.0+(hb-0.5)*0.12)*(1.0+(hs-0.5)*0.1*(1.0-smoothstep(0.1,0.6,swm)))*(1.0-0.38*jt),cc);
       pr+=(0.08*jt-0.04)*cc; nq*=1.0-0.4*cc;}
-    float oil=PK==2?0.0:ps.r; alb*=1.0-0.6*oil; pr-=0.3*oil;
+    // from the strategic view: concrete a little deeper (the haze lifts it toward the white roof and aircraft, and the piers
+    // lose their edge) and the stand stains mostly gone (at 6 m a pixel they read as smudges beside every stand)
+    float ffar=smoothstep(2500.0,8000.0,pd); alb*=1.0-0.3*cc*ffar; diffuseColor.rgb=mix(diffuseColor.rgb,vec3(lum0),0.5*cc*ffar);
+    float oil=PK==2?0.0:ps.r*(1.0-0.7*ffar); alb*=1.0-0.6*oil; pr-=0.3*oil;
     if(PK>=2){float paint=smoothstep(0.1,0.32,lum0);float rub=1.0-smoothstep(0.012,0.03,lum0);
       alb=mix(alb,0.9+0.1*alb,paint);pr=mix(pr,0.6,paint)-0.22*rub;nq*=1.0-0.5*paint;}
     alb*=1.0-0.22*wet; pr=mix(pr,0.35+0.25*(pr-0.86),wet); nq*=1.0-0.6*wet;   // the andhi's rain tail: darker, glossy pavement
@@ -6157,7 +6179,7 @@ Z3MOD.field = function (Z) {
 
   // ---------- 4. taxiways, exits, shoulders, blast pads, perimeter and service roads, rail ----------
   const ASPH = lin('#4f5254'), LANE = lin('#aaa69c'), SHLD = lin('#6c6e6a'), PAD = lin('#5f605e'), PERIM = lin('#625f59'), RAIL = lin('#6e7480');
-  const LB = newB(1);  // markings (yellow/white lines), fades out with distance
+  const LB = newB(1); LB.sd = [];  // markings (yellow/red lines): at least ~1.3 px wide at any distance (see linesMat)
   const YEL = lin('#e5b52a'), RED = lin('#b8322a');
   const twB = newB(22);
   for (const t of tws) { const col = t.kind === 'taxilane' ? LANE : ASPH, p = simplify(t.pts);
@@ -6223,6 +6245,17 @@ Z3MOD.field = function (Z) {
     quad(LB, g.x - ca * 40 - sa * 26, g.y - sa * 40 + ca * 26, g.x + ca * 34 - sa * 26, g.y + sa * 34 + ca * 26, 0.25, 0.2, RED);
     quad(LB, g.x - ca * 40 + sa * 26, g.y - sa * 40 - ca * 26, g.x + ca * 34 + sa * 26, g.y + sa * 34 - ca * 26, 0.25, 0.2, RED); }
   const linesMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.62, metalness: 0, transparent: false, blending: THREE.CustomBlending, blendSrc: THREE.SrcAlphaFactor, blendDst: THREE.OneMinusSrcAlphaFactor, depthWrite: false, opacity: 1 });
+  // The lines are 0.25-0.6 m wide: a fraction of a pixel from the strategic view, where they used to be switched off (beyond
+  // 4 km), leaving the aprons blank. The vertex shader widens each quad along its own side vector to a minimum on-screen
+  // width and fades it by the square root of the real/drawn width, so far away they read as crisp hairlines (slightly
+  // stronger than true coverage) and close up nothing changes.
+  const LNU = { uPxK: { value: 0.0005 } };
+  linesMat.onBeforeCompile = sh => { sh.uniforms.uPxK = LNU.uPxK;
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec2 sd;\nuniform float uPxK;\nvarying float vLA;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvLA = 1.0; { float hw = length(sd); float want = uPxK * distance(cameraPosition, (modelMatrix * vec4(transformed, 1.0)).xyz);\n  if (hw > 1e-4 && want > hw) { transformed.xz += sd * (want / hw - 1.0); vLA = sqrt(hw / want); } }');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vLA;').replace('#include <color_fragment>', '#include <color_fragment>\nfloat rdl = step(vColor.g * 3.0, vColor.r) * (1.0 - vLA);\ndiffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.6), 0.55 * rdl); diffuseColor.a *= vLA * (1.0 - 0.4 * rdl);'); };
+  // (far away the red stand-safety lines turn a quieter grey: a red hairline on every side of every stand reads as pink noise)
+  linesMat.customProgramCacheKey = () => 'zmhLinesW';
   const linesMesh = flatLayer(new THREE.Mesh(geoOf(LB), linesMat), -35);
 
   // ---------- 7. runway mode wash ----------
@@ -6528,7 +6561,8 @@ Z3MOD.field = function (Z) {
       }
       poolMat.uniforms.uI.value = 0.5 * clamp((Math.max(Z.nightF, Z.dustNow ? 0.5 : 0) - 0.25) / 0.6, 0, 1); poolMesh.visible = poolMat.uniforms.uI.value > 0.01;
       if (groundMat.userData.sh) { const gu = groundMat.userData.sh.uniforms; gu.nglow.value = 0.05 * Z.nightF; gu.dry.value = LV && LV.light === 'heat' ? 1 : 0; }
-      linesMesh.visible = cd < 4000; linesMat.opacity = clamp((4000 - cd) / 1600, 0, 1) * 0.95;
+      { Z.renderer.getDrawingBufferSize(v2); LNU.uPxK.value = 0.65 * 2 * Math.tan(Z.camera.fov * Math.PI / 360) / Math.max(1, v2.y); }   // half of 1.3 px, in metres per metre of distance
+      linesMesh.visible = true; linesMat.opacity = 0.95 - 0.15 * clamp((cd - 2500) / 6000, 0, 1);
       FXU.uGlow.value = 0.25 + 2.6 * la; if (fixIM) fixIM.visible = cd < 2600; if (typeof signMat !== 'undefined') signMat.emissiveIntensity = 0.12 + 0.9 * la;
       // wind: trees, water ripples, windsocks
       windNow(wnd); const dx = Math.cos(wnd.dir), dy = Math.sin(wnd.dir), sp = wnd.speed, gu = wnd.gust;
@@ -10120,7 +10154,10 @@ Z3MOD.terminal = function (Z) {
       sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying float vPan;')
         .replace('#include <beginnormal_vertex>', '#include <beginnormal_vertex>\n#ifdef USE_INSTANCING\nvPan = float(gl_InstanceID) * 1.618 + dot(objectNormal, vec3(1.7, 3.1, 5.3));\n#else\nvPan = dot(objectNormal, vec3(1.7, 3.1, 5.3));\n#endif');
       sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vPan;')
-        .replace('#include <metalnessmap_fragment>', 'if (vSel > 0.5 && vSel < 1.5) { float panR = fract(sin(vPan * 12.9898) * 43758.5453); roughnessFactor = 0.03 + 0.18 * panR * panR; }\n#include <metalnessmap_fragment>'); };
+        .replace('#include <metalnessmap_fragment>', 'if (vSel > 0.5 && vSel < 1.5) { float panR = fract(sin(vPan * 12.9898) * 43758.5453); roughnessFactor = 0.03 + 0.18 * panR * panR; }\n#include <metalnessmap_fragment>')
+        // from the strategic view a coffer is two or three pixels: eight random lens colours there read as confetti on the
+        // roof, so far away the glass and lens settle to one sky-blue tone and the rows read as an ordered skylight pattern
+        .replace('#include <color_fragment>', '#include <color_fragment>\nif (vSel > 0.5) diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.16, 0.3, 0.4), 0.85 * smoothstep(2200.0, 6500.0, length(vViewPosition)));'); };
     return m;
   }
   // curtain-wall glass: a mullion grid, low-iron glass reflecting the sky, and behind it a lit interior faked by
@@ -10789,12 +10826,14 @@ vec3 gInterior() {
     for (let k = 0; k < dockF.length; k++) dockF[k] = null;
     const fl = Z.flights ? Z.flights() : [];
     for (let k = 0; k < fl.length; k++) { const f = fl[k]; if (f.state === 'dock' && f.res) { const i = gIdx.get(f.res); if (i !== undefined) dockF[i] = f; } }
-    const kE = Z.kEx || 1, ke = 1 - Math.exp(-(dt || 0.016) * 1.3);
+    // aircraft.js draws a parked aircraft at most 1.5x (KPARK), set back so its nose stays at the life-size spot: the door
+    // is then (0.5 - 0.15 k) of its length ahead of the stand point (0.35 at life size)
+    const kE = Math.min(Z.kEx || 1, 1.5), ke = 1 - Math.exp(-(dt || 0.016) * 1.3);
     for (let k = 0; k < BR.length; k++) {
       const b = BR[k], g = b.g, o = g.occ; let f = null;
       if (o && (o.state === 'at_gate' || o.state === 'parked')) f = o; else if (dockF[k]) f = dockF[k];
-      if (f && f.T) { const Ln = f.T.len * kE, ca = Math.cos(g.a), sa = Math.sin(g.a);
-        let dx = g.x + ca * 0.35 * Ln + b.lx * 2, dy = g.y + sa * 0.35 * Ln + b.ly * 2;
+      if (f && f.T) { const ca = Math.cos(g.a), sa = Math.sin(g.a);
+        const dr = (0.5 - 0.15 * kE) * f.T.len; let dx = g.x + ca * dr + b.lx * 2, dy = g.y + sa * dr + b.ly * 2;
         const pr = (dx - b.rx) * b.fs; if (pr < 6) dx += (6 - pr) * b.fs;
         b.dx = dx; b.dy = dy; }
       const tgt = f ? 1 : 0; if (b.e < 0) b.e = tgt; else b.e += (tgt - b.e) * ke;

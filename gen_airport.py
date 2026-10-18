@@ -273,7 +273,7 @@ def add_cl(id_, kind, pts, ws, hs):
 LOBE_NAMES = ['E', 'SE', 'S', 'WSW', 'WNW', 'N', 'NE']
 LOBE_ROLE = {'E': 'Mall root', 'SE': 'international departures processing', 'S': 'Bengaluru gateway',
              'WSW': 'Mumbai gateway', 'WNW': 'Ahmedabad gateway', 'N': 'arrivals hall and meeters\' garden',
-             'NE': 'domestic security and the transfer centre'}
+             'NE': 'domestic security'}
 lobes = []
 for k in range(7):
     t = 2 * PI * k / 7
@@ -394,6 +394,7 @@ dna = {
     ],
     'lobes': lobes,
     'concourses': DNA_C,
+    'transfer_centre': {'x': -320, 'y': 0, 'note': 'immigration and re-screening where the international piers meet the Mall (D/E junction)'},
     'note': 'Each gateway lobe points within 8 degrees of its city. The two western lobes frame the June and December sunset azimuths (295 and 245 degrees); the west valley between them faces the equinox sunset.',
 }
 phase2 = {

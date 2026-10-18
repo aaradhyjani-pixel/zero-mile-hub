@@ -507,8 +507,9 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
     shadow.visible = cumA > 0.01 || shU.uStormSh.value > 0.01;
 
     // ---- billows ----
-    billU.uWallA.value = wall * (1 - 0.6 * I); billU.uSkirtA.value = wall * 0.9;
-    billU.uCellA.value = wall * (1 - 0.7 * I);
+    // inside the storm the wall and the cells are lost in the dust anyway: stop drawing them (the 2 km wall is a lot of fill)
+    billU.uWallA.value = wall * (1 - 0.6 * I) * (1 - smooth(0.6, 0.95, I)); billU.uSkirtA.value = wall * 0.9 * (1 - smooth(0.6, 0.95, I));
+    billU.uCellA.value = wall * (1 - 0.7 * I) * (1 - smooth(0.6, 0.95, I));
     if (!fieldBox) { let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; const add = (x, y) => { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); };
       for (const r of Z.RW || []) { add(r.x0, r.y); add(r.x1, r.y); } for (const g of Z.GATES || []) add(g.x, g.y);
       fieldBox = x0 < x1 ? [(x0 + x1) / 2, (y0 + y1) / 2, (x1 - x0) / 2 + 500, (y1 - y0) / 2 + 500] : [0, 0, 4000, 3000]; billU.uField.value.set(...fieldBox); }

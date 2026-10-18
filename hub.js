@@ -109,7 +109,7 @@ const DIRSTACK={N:0,W:1,E:1,S:2};
 
 /* ============ levels ============ */
 const LEVELS=[
-  {n:1,name:'Opening day',sub:'Bengaluru moves in',from:'BLR',clock:'06:00',arr:42,dep:42,amp:0.9,rw:2,rwOpen:{R3:'ARR',R4:'DEP'},concs:'AB',intl:0.08,wide:0.06,a380:0,target:110,light:'day',
+  {n:1,name:'Opening day',sub:'Bengaluru moves in',from:'BLR',clock:'06:00',arr:42,dep:42,amp:0.9,starsAt:{otp2:82,cx2:85,otp3:86,cx3:90},rw:2,rwOpen:{R3:'ARR',R4:'DEP'},concs:'AB',intl:0.08,wide:0.06,a380:0,target:110,light:'day',
    blurb:'Kempegowda International closes at dawn and Bengaluru\'s airlines move in. Two runways, two concourses. Learn the bank chart and the runway desk.',
    last:{t:'Last flight out of Kempegowda',d:'<p>At 05:55, IndiGo 6E 6101 pushed back from Bengaluru\'s Kempegowda International: the last departure before it closed. Bengaluru\'s airlines now fly from here.</p><p>Look for its terminal-in-a-garden in ZMI: the gardens under the oculus, the planted valley where the Hall becomes the Mall, and a garden court at every pier root. And every stand built two ways, for one widebody or two narrowbodies, as at Bengaluru\'s T2.</p>'},
    script:[[300,'st_ribbon'],[900,'medical'],[2700,'st_tiger']],ops:[[700,'birds'],[2100,'fod']]},
@@ -647,10 +647,10 @@ STORY.ribbon={len:1500,start(c){const r=rwBy('dep')[0];if(!r)return false;c.r=r;
     if(f)cinema(f,['OPENING DAY',`The first departure rolls through the ribbon on ${r.short}`,'BAS PAANCH MINUTE 🙏',icos('🎀','✂️','🛫')],{ms:7000});};
   c.go=go;c.wait=T+240+Math.floor(SIMR()*240);
   const I=storyCard(c,{icon:{g:'🎀',c:'#ff9933'},x:r.x0+300,y:r.y,title:`A ribbon across ${r.short}`,
-    text:`The opening ceremony has tied a ribbon across ${r.short}, and the first departures are queuing behind it. Cut it yourselves and traffic flows now, but Protocol will re-stage the ceremony in about 15 minutes on the arrivals runway, for 3 minutes. Or wait: the Chief Guest is "five minutes away".`,
+    text:`The opening ceremony has tied a ribbon across ${r.short}, and the first departures are queuing behind it. Cut it yourselves and traffic flows now, but Protocol will re-stage the ceremony in about 15 minutes on the arrivals runway, for 2 minutes. Or wait: the Chief Guest is "five minutes away".`,
     def:1,defText:'you wait for the Chief Guest.',
     acts:[{l:'Cut it ourselves',pri:1,fn(){go();const ra=rwBy('arr').sort((a,b)=>b.tdList.length-a.tdList.length)[0];
-        c.cut=true;if(ra){takeRunways([ra],T+900,180,0,'Inauguration, take two','Inauguration, take two');c.lines.push([T-c.E+900,()=>{guard(['The Chief Guest has arrived. We will now inaugurate again.','Only four minutes. Your arrivals runway, please. 🎀'],WHO.protocol);
+        c.cut=true;if(ra){takeRunways([ra],T+900,120,0,'Inauguration, take two','Inauguration, take two');c.lines.push([T-c.E+900,()=>{guard(['The Chief Guest has arrived. We will now inaugurate again.','Only two minutes. Your arrivals runway, please. 🎀'],WHO.protocol);
           flashBanner(['OPENING DAY',`The ceremony is re-staged on ${ra.short}`,'INAUGURATED. AGAIN. 🎀',icos('🎀','📸','🎀')]);}]);}
         resolve(I,true,`${r.short}'s ribbon was cut by ops. Protocol will be back.`);}},
       {l:'Wait for the Chief Guest',fn(){resolve(I,true,'');}}]});c.I=I;
@@ -665,9 +665,9 @@ STORY.tiger={len:1500,start(c){const r=rwBy('dep')[0];if(!r)return false;c.r=r;c
   guard(['Sir, she is not a bird. You cannot sweep her.','She is the senior-most resident here. 🐅'],WHO.ranger);
   c.lines.push([0,'TWR',`All stations: a tigress is on ${r.short}. Nobody is to taxi towards her. That includes the follow-me car.`]);
   const I=storyCard(c,{icon:{g:'🐅',c:'#ff8c1a'},x:c.mark.x,y:r.y,title:`A tigress on ${r.short}`,
-    text:`A tigress from the Umred-Karhandla corridor has walked onto ${r.short}. Wait for the forest department's dart team and ${r.short} shuts for 5 to 8 minutes; nobody knows exactly. Or herd her off with sirens: ${r.short} stays open, but she is still out there.`,
+    text:`A tigress from the Umred-Karhandla corridor has walked onto ${r.short}. Wait for the forest department's dart team and ${r.short} shuts for 4 to 6 minutes; nobody knows exactly. Or herd her off with sirens: ${r.short} stays open, but she is still out there.`,
     def:0,defText:`${r.short} shuts until the dart team arrives.`,
-    acts:[{l:'Wait for the dart team',pri:1,fn(){const d=300+Math.floor(SIMR()*180);closeRw(r,d,'Tigress on the runway');c.mark.until=T+d;
+    acts:[{l:'Wait for the dart team',pri:1,fn(){const d=240+Math.floor(SIMR()*120);closeRw(r,d,'Tigress on the runway');c.mark.until=T+d;
         c.lines.push([T-c.E+d,'FOREST','She has been darted, weighed and named. She is called Runway. She is going home to Tadoba.']);resolve(I,true,`${r.short} shut for the tigress.`);}},
       {l:'Herd her off with sirens',fn(){c.mark.until=T+60;c.herd=true;resolve(I,true,'');
         if(c.ra){const ra=c.ra,at=T-c.E+900;c.lines.push([at-60,'FOREST',`Update: the tigress has been seen heading towards ${ra.short}. She did not like the sirens.`]);
@@ -1113,7 +1113,7 @@ function recordShift(){let hold=0,q=0,aDue=0,dDue=0;for(const f of flights){if(f
   const md={};for(const r of RW)if(!r.locked)md[r.short]=T<r.changeUntil?'CHG':r.mode;
   S.tl.push({t:T,hold,q,aDue,dDue,capA:Math.round(capNow('arr')),capD:Math.round(capNow('dep')),md,moves:S.moves});}
 // the expert autopilot's result on the same schedule (headless runs, run_all.py)
-const EXPERT={1:{st:3,moves:131,otp:97,cx:100},2:{st:3,moves:236,otp:95,cx:99},3:{st:3,moves:331,otp:87,cx:98},4:{st:3,moves:352,otp:92,cx:96}};
+const EXPERT={1:{st:3,moves:128,otp:88,cx:94},2:{st:3,moves:240,otp:93,cx:93},3:{st:3,moves:336,otp:89,cx:99},4:{st:3,moves:349,otp:91,cx:95}};
 const NEXT_TIP={1:'Level 2 opens with only one arrival runway and one MIX. The first purple wave arrives about 10 minutes in: have two runways on ARR before it.',
   2:'Level 3 is 46 °C: 777s and A380s can only take off from 27L, the 4,500 m runway. Keep 27L on DEP or MIX through the heat. And keep some slack in hand around 14:50: Nagpur has visitors today.',
   3:'Level 4 is all six runways at once, with a dust storm at 12:40 that widens the gaps between landings by 40%. Put an extra runway on ARR just before the storm, not during it.',
@@ -1191,7 +1191,7 @@ function finish(){
   $('#sheet').innerHTML=`<div class="band"><span>Level ${LV.n} · ${LV.name}</span><span>${clk(0)} to ${clk(LEN)}</span></div><div class="in">
    <div class="bigstars">${starStr(st)}</div><h1 style="margin-top:8px">${st?'Level complete':'Level failed'}</h1><p>${verdict}</p>
    <div class="score"><div><div class="k">Movements</div><div class="v">${S.moves}/${LV.target}</div></div><div><div class="k">On time</div><div class="v">${otp}%</div><div class="sub">arrivals ${otpA}% · departures ${otpD}%</div></div><div><div class="k">Connections</div><div class="v">${cx}%</div></div><div><div class="k">Safety</div><div class="v">${Math.round(S.safety)}</div></div><div><div class="k">Your calls</div><div class="v">${S.incOk}/${S.incOk+S.incDef}</div><div class="sub">${S.incDef?`${S.incDef} left to ops`:S.incOk?'all made by you':'no calls this shift'}</div></div><div><div class="k">Runway flips</div><div class="v">${S.flips}</div></div><div><div class="k">Best on-time run</div><div class="v">${S.bestCombo||0}</div></div></div>
-   <p class="src">${(k=>`Stars: one for keeping safety at 70 or above. Two for reaching the movement target with ${k.otp2}% on time and ${k.cx2}% of connections. Three for ${k.otp3}% on time, ${k.cx3}% of connections and safety 90.${LV.starsAt?' This level allows for the summit shutdown.':''}`)(starLines(LV))}</p>
+   <p class="src">${(k=>`Stars: one for keeping safety at 70 or above. Two for reaching the movement target with ${k.otp2}% on time and ${k.cx2}% of connections. Three for ${k.otp3}% on time, ${k.cx3}% of connections and safety 90.${LV.starsAt?(LV.n===3?' This level allows for the summit shutdown.':' This level allows for the opening-day surprises.'):''}`)(starLines(LV))}</p>
    ${(()=>{const D=debrief(otp,cx),E=EXPERT[LV.n];return `<h2>What to do better next time</h2>${D.lessons.length?`<ol class="lessons">${D.lessons.map(l=>`<li><b>${l.title}.</b> ${l.text}</li>`).join('')}</ol>`:'<p>A clean shift: nothing to fix. Chase a longer on-time run, or try the next level.</p>'}
      ${D.svg?`<div class="shift"><div class="lg2"><span style="color:#ff7a6b">━ holding stack</span><span style="color:#ffd27a">━ departure queue</span><span style="color:#a99cff">▮ arrivals due</span><span style="color:var(--ink-3)">ticks: your runway flips</span></div>${D.svg}</div>`:''}
      ${E?`<p class="bench">The expert autopilot on this schedule: <b>${'★'.repeat(E.st)}</b> · ${E.moves} movements · ${E.otp}% on time · ${E.cx}% connections.${S.moves>=E.moves&&otp>=E.otp?' You beat it.':''}</p>`:''}

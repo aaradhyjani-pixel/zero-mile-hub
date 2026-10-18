@@ -50,7 +50,9 @@ Shipped in this pass:
 - [ ] Bank chart "due now" labels overlap time labels; approach spaghetti at full zoom-out (known since build.md).
 - [ ] Screenshot set: every level x 3 zooms.
 - [ ] Phase 1+ (3D) per prompt.md.
-- [ ] Art-direction fixes from `art-review.md` (round-2 3D scored about 5/10). Do the top 4 first: remove the milky veil, runway readability, the runway-light halo bug, and the andhi interior draw order. Then do ground detail, the haboob wall scale, storm light and clouds.
+- [x] Art-direction fixes from `art-review.md`: all 8 items plus the skylights, done on branch `3d-polish` (9 commits) and merged.
+- [ ] Re-measure 3D fps on an idle machine; the AO pass redraws the whole scene (~463k extra tris), and the low storm camera is at 1.53M tris against a 1.2M budget.
+- [ ] Build more set pieces from `writers-room.md`. Top picks: Pier F macaques (L4), Nagpur is flat / GPS spoofing (L3), Surya Kiran flypast slot choice (L1), Hyderabad bank 20 late (L2), the rolling kites (L2).
 - Sensitivity note: AI171 (Air India 787, Ahmedabad, 12 Jun 2025) - never script an Ahmedabad departure accident or use an AI 787 for the AMD last-flight moment.
 
 ### 3D (started 06:45, user: "make it 3d, improve animations heavily")
@@ -74,3 +76,14 @@ Shipped in this pass:
 - [ ] Merger in the game: menu, "The airport" tab, level briefings, last-flight-out moments
 - [ ] Phase 0 items 1–6, 8–11
 - [ ] Final acceptance runs, screenshots, publish
+
+### Set pieces + clear view + 3D polish (evening, user: "clouds hide the field at the perfect zoom"; "more incidents like the summit in every level"; "remove all lag")
+- Clouds never sit between a high camera and the field. A high camera sees less day haze, the sky is clearer, and the grade is less milky (a80eee5, live).
+- Writers' room: 5 writers (viral, thriller, satire, systems, aviation insider), 40 pitches, all in `writers-room.md`. Seven are shipped as `STORY` set pieces: ribbon and tigress (L1), kites and last ball (L2), dabbawalas (L3), WhatsApp merge and trophy (L4).
+- Engine: `startStory` / `storyTick`, `cinema()` (a generic cinematic queue), `guard(lines, who)` with any character, `vipBanner(..., icons)`, `takeRunways`, `specialArr`, `storyCard`, and `MARKS` emoji on the 2D map and in the 3D overlay. Each story can add a debrief `lesson`.
+- Sim hooks: `FX` (slower changeovers, pushback freeze or slowdown), `r.sepK/sepUntil`, `r.kiteUntil`, and open-ended blocks (`open:true`).
+- The expert bot now treats closures on the bank chart as lost capacity. L1 has its own star lines (otp3 86, cx3 90) for the opening-day surprises.
+- 3D polish (branch 3d-polish, merged):
+  - shader prewarm (storm-onset hitch 617 ms to 183 ms or less) and earlier, smoother quality steps;
+  - a cheaper storm, runway readability, the halo fix and storm draw order;
+  - the haboob wall at 1.9 km, storm light, wet pavement, distant clouds for low cameras, ground detail and reflective skylights.

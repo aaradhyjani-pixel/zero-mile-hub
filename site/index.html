@@ -75,7 +75,7 @@ button:focus-visible,.term:focus-visible{outline:2px solid var(--sign);outline-o
 #combo b{font-size:17px}#combo.pop{animation:cpop .45s ease-out}
 @keyframes cpop{0%{transform:scale(1.35);background:rgba(58,208,127,.25)}100%{transform:scale(1);background:transparent}}
 #snd{font-family:var(--f-mono);font-size:12px;padding:5px 9px;border:1px solid var(--panel-edge);border-radius:4px;color:var(--ink-3)}#snd.on{color:var(--ink)}
-#vign{position:absolute;inset:0;pointer-events:none;z-index:4;opacity:0;transition:opacity .8s;background:radial-gradient(ellipse at center,rgba(255,40,30,0) 55%,rgba(255,40,30,.32) 100%)}
+#vign{--dust:0;position:absolute;inset:0;pointer-events:none;z-index:4;opacity:0;transition:opacity .8s;background:radial-gradient(ellipse at center,rgba(255,40,30,0) 55%,rgba(calc(255 - 105*var(--dust)),calc(40 + 40*var(--dust)),calc(30 + 20*var(--dust)),calc(.32 - .2*var(--dust))) 100%)}
 @media (prefers-reduced-motion:reduce){#combo.pop{animation:none}}
 #ticker{width:100%;font-family:var(--f-mono);font-size:11.5px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-top:1px solid var(--panel-edge);padding-top:5px}
 #ticker .src{color:var(--sign)}
@@ -1443,32 +1443,33 @@ const DIRSTACK={N:0,W:1,E:1,S:2};
 
 /* ============ levels ============ */
 const LEVELS=[
-  {n:1,name:'Opening day',sub:'Bengaluru moves in',from:'BLR',clock:'06:00',arr:42,dep:42,amp:0.9,rw:2,rwOpen:{R3:'ARR',R4:'DEP'},concs:'AB',intl:0.08,wide:0.06,a380:0,target:110,light:'day',
+  {n:1,name:'Opening day',sub:'Bengaluru moves in',from:'BLR',clock:'06:00',arr:42,dep:42,amp:0.9,starsAt:{otp2:82,cx2:85,otp3:86,cx3:90},rw:2,rwOpen:{R3:'ARR',R4:'DEP'},concs:'AB',intl:0.08,wide:0.06,a380:0,target:110,light:'day',
    blurb:'Kempegowda International closes at dawn and Bengaluru\'s airlines move in. Two runways, two concourses. Learn the bank chart and the runway desk.',
    last:{t:'Last flight out of Kempegowda',d:'<p>At 05:55, IndiGo 6E 6101 pushed back from Bengaluru\'s Kempegowda International: the last departure before it closed. Bengaluru\'s airlines now fly from here.</p><p>Look for its terminal-in-a-garden in ZMI: the gardens under the oculus, the planted valley where the Hall becomes the Mall, and a garden court at every pier root. And every stand built two ways, for one widebody or two narrowbodies, as at Bengaluru\'s T2.</p>'},
-   script:[[900,'medical']],ops:[[700,'birds'],[2100,'fod']]},
+   script:[[300,'st_ribbon'],[900,'medical'],[2700,'st_tiger']],ops:[[700,'birds'],[2100,'fod']]},
   {n:2,name:'Ahmedabad and Hyderabad',sub:'+ Ahmedabad, Hyderabad',from:'BLR+AMD+HYD',clock:'09:00',arr:76,dep:76,amp:0.9,rw:4,rwOpen:{R2:'ARR',R3:'DEP',R4:'DEP',R5:'MIX'},concs:'ABC',intl:0.12,wide:0.10,a380:0,target:205,light:'day',
    blurb:'Sardar Vallabhbhai Patel International closes and Ahmedabad\'s flights move in, with Hyderabad\'s hub traffic. Four runways, taller waves: flip runways as each bank comes through.',
    last:{t:'Last flight out of Sardar Vallabhbhai Patel',d:'<p>At 08:50, IndiGo 6E 6202 left Ahmedabad and SVPIA closed. Ahmedabad\'s flights and Hyderabad\'s connecting banks now run through ZMI.</p><p>Ahmedabad lives on in the building\'s edges: jaali screens shade every sun-facing glass wall, and the forecourt is a stepwell, terraces stepping down to shaded water. Sardar Patel brought more than 560 princely states into one India; the unity marker under the oculus remembers it.</p>'},
-   script:[[1500,'strike'],[3000,'medical']],ops:[[400,'birds'],[1200,'tug'],[2400,'fod'],[3800,'birds']]},
+   script:[[700,'st_kites'],[1500,'strike'],[3000,'medical'],[4000,'st_lastball']],ops:[[400,'birds'],[1200,'tug'],[2400,'fod'],[3800,'birds']]},
   {n:3,name:'Mumbai and the Gulf',sub:'+ Mumbai',from:'BLR+AMD+HYD+BOM',clock:'14:00',len:6600,arr:90,dep:90,amp:0.85,starsAt:{otp2:78,cx2:76,otp3:84,cx3:82},rw:5,rwOpen:{R1:'ARR',R2:'MIX',R3:'DEP',R4:'DEP',R5:'MIX'},concs:'ABCDE',intl:0.22,wide:0.18,a380:4,target:315,light:'heat',
    blurb:'Chhatrapati Shivaji Maharaj International closes: Mumbai\'s airlines and the Gulf wave arrive. 46 °C. Hot air is thin, so heavy jets need the long runway to get airborne.',
    last:{t:'Last flight out of Chhatrapati Shivaji Maharaj',d:'<p>At 13:50, Air India AI 629 left Mumbai\'s Terminal 2 and the airport closed. Mumbai\'s widebodies and the Gulf carriers now fly from here.</p><p>Mumbai holds up ZMI\'s roof: branching columns that flare into a field of coffers with coloured lenses, a 40 m cantilever over the kerb, and an art wall along the transfer route.</p>'},
-   script:[[3000,'summit'],[4800,'medical']],ops:[[600,'birds'],[1500,'fod'],[2300,'tug'],[3900,'birds']]},
+   script:[[1500,'st_dabba'],[3000,'summit'],[4800,'medical']],ops:[[600,'birds'],[1500,'fod'],[2300,'tug'],[3900,'birds']]},
   {n:4,name:'Delhi. Full hub.',sub:'+ Delhi',from:'ALL 5 CITIES',clock:'12:00',arr:116,dep:116,amp:0.75,rw:6,rwOpen:{R1:'ARR',R2:'ARR',R3:'DEP',R4:'DEP',R5:'DEP',R6:'MIX'},concs:'ABCDEF',intl:0.25,wide:0.20,a380:6,target:315,light:'day',dust:[2400,3300],
    blurb:'Delhi\'s hub banks move in: four airports\' worth of traffic at the peak, about 230 movements an hour with peaks well above. Then a pre-monsoon squall kicks up an andhi (dust storm).',
    last:{t:'Delhi\'s banks move in',d:'<p>Delhi\'s own airport stays open for its city, but from today its connecting banks run through ZMI. Four cities\' traffic, three cities\' building, at the old Zero Mile.</p><p>The north lobe of the Hall points almost exactly at Delhi.</p>'},
-   script:[[1000,'lights'],[1800,'lane'],[2550,'shear'],[3700,'medical']],ops:[[500,'birds'],[1400,'tug'],[3000,'fod'],[4400,'birds']]}
+   script:[[600,'st_whatsapp'],[1000,'lights'],[1800,'lane'],[2550,'shear'],[3700,'medical'],[4300,'st_trophy']],ops:[[500,'birds'],[1400,'tug'],[3000,'fod'],[4400,'birds']]}
 ];
 
 /* ============ state ============ */
 let flights=[],FID=0,S=null,incidents=[],INC=0,selected=null,hover=null,selRw=null;
 const puffs=[],moveLog=[];
 function resetState(){
-  SUM=null;flights=[];FID=0;incidents=[];INC=0;selected=null;hover=null;selRw=null;puffs.length=0;moveLog.length=0;ops.length=0;opsClock=0;lastCnx=-1e9;
+  SUM=null;STO=[];CINE=null;MARKS=[];cinema.q=[];specialArr.list=[];flights=[];FID=0;incidents=[];INC=0;selected=null;hover=null;selRw=null;puffs.length=0;moveLog.length=0;ops.length=0;opsClock=0;lastCnx=-1e9;
   S={tl:[],flipLog:[],tlNext:0,combo:0,bestCombo:0,moves:0,arr:0,dep:0,depOnTime:0,arrOnTime:0,cnxMade:0,cnxMiss:0,safety:100,incOk:0,incDef:0,incTypes:{},hits:[],holdMin:0,div:0,goArounds:0,log:[],delaySum:0,flips:0};
   GATES.forEach(g=>{g.occ=null;g.res=null;});
-  RW.forEach(r=>{r.tdList=[];r.lastSchedTd=-1e9;r.lastDep=-1e9;r.arrExit=-1e9;r.occ=null;r.changeUntil=-1;r.closedUntil=-1;r.why='';r.ops=0;r.flash=0;r.blocks=[];r.gapReq=false;r.degraded=false;r.strike=null;r.shear=false;});
+  RW.forEach(r=>{r.tdList=[];r.lastSchedTd=-1e9;r.lastDep=-1e9;r.arrExit=-1e9;r.occ=null;r.changeUntil=-1;r.closedUntil=-1;r.why='';r.ops=0;r.flash=0;r.blocks=[];r.gapReq=false;r.degraded=false;r.strike=null;r.shear=false;r.sepK=1;r.sepUntil=-1;r.kiteUntil=-1;});
+  Object.assign(FX,{chgK:1,chgUntil:-1,pushFreeze:-1,pushSlow:-1,pushSlowS:0});
   CONC.forEach(c=>{c.laneShut=-1;c.slowUntil=-1;});
   RC.clear();SIMR=mulberry(11);
 }
@@ -1570,6 +1571,8 @@ function placeToast(){const w=$('#wave').getBoundingClientRect(),app=$('#app').g
 
 /* ============ runway logic ============ */
 const D_APP=170,SEP_AA=88,SEP_DD=72,MIX_GAP=58,DEP_OCC=55,CHANGE=120;
+// set-piece effects: slower changeovers, a pushback freeze or slowdown (reset each level)
+const FX={chgK:1,chgUntil:-1,pushFreeze:-1,pushSlow:-1,pushSlowS:0};
 let dustNow=false,heatNow=false;
 const sepF=()=>dustNow?1.4:1;
 const canArr=r=>!r.locked&&(r.mode==='ARR'||r.mode==='MIX')&&T>=r.changeUntil&&T>=r.closedUntil&&!r.gapReq;
@@ -1578,7 +1581,7 @@ const canDep=r=>!r.locked&&(r.mode==='DEP'||r.mode==='MIX')&&T>=r.changeUntil&&T
 const depModeOk=r=>!r.locked&&(r.mode==='DEP'||r.mode==='MIX');
 const needsLong=f=>heatNow&&f.T.hot&&!f.offloaded;
 function setMode(r,m,silent){
-  if(r.locked||r.mode===m)return;const was=r.mode;r.mode=m;r.changeUntil=T+CHANGE;S.flips++;S.flipLog.push({t:T,r:r.short,from:was,to:m});
+  if(r.locked||r.mode===m)return;const was=r.mode;r.mode=m;r.changeUntil=T+CHANGE*(T<FX.chgUntil?FX.chgK:1);S.flips++;S.flipLog.push({t:T,r:r.short,from:was,to:m});
   if(r.degraded){r.degraded=false;r.changeUntil+=120;radio('OPS',`Electricians fixing ${r.short}'s edge lights during the changeover.`);logE(`Edge lights on ${r.short} repaired during a changeover.`);}
   if(r.strike){r.strike=null;logE(`${r.short} inspected for bird remains during the changeover.`);}
   if(m!=='ARR'&&m!=='MIX')for(const f of flights)if(f.state==='approach'&&f.rwy===r&&f.td-T>40)breakOff(f,r);
@@ -1588,7 +1591,7 @@ function setMode(r,m,silent){
 }
 function rk(f){return(f.mayday?0:f.prio?1:f.minFuel?2:3)*1e7+(f.state==='holding'?f.holdSince:f.eta);}
 function gateY(f){if(f.gate)return f.gate.y;if(f.res)return f.res.y;return procC.y;}
-function arrSep(r){return (SEP_AA*sepF()+(r.lastArrWake==='J'?55:r.lastArrWake==='H'?25:0))*(r.degraded?1.6:1);}
+function arrSep(r){return (SEP_AA*sepF()+(r.lastArrWake==='J'?55:r.lastArrWake==='H'?25:0))*(r.degraded?1.6:1)*(T<r.sepUntil?r.sepK:1);}
 function runways(){
   // arrivals
   const avail=RW.filter(r=>canArr(r)&&r.status!=='x');
@@ -1691,6 +1694,7 @@ function updateFlight(f,dt){
     if(f.pd>=f.finalStart){const k=(f.pd-f.finalStart)/f.finalLen;f.alt=Math.max(0,700*(1-k/0.96));}else f.alt=lerp(f.startAlt,700,clamp(f.pd/Math.max(1,f.finalStart),0,1));
     if(dustNow&&f.td-T<20&&f.td-T>10&&f.gaRoll<(f.rwy.shear?0.3:0.07)&&!f.gaDone){f.gaDone=true;goAround(f,'windshear in the dust');break;}
     if(f.birdHit&&f.td-T<20&&!f.gaDone){f.gaDone=true;goAround(f,'bird strike on short final');break;}
+    if(f.rwy.kiteUntil>T&&f.td-T<20&&f.td-T>10&&f.gaRoll<0.25&&!f.gaDone&&!f.vip){f.gaDone=true;goAround(f,'kite on short final. Yes, a kite');break;}
     if(T>=f.td)touchdown(f);break;}
   case 'rollout':{f.v=Math.max(14,f.v-1.15*dt);const done=advance(f,dt,f.v);if(f.rwy.occ===f&&f.pd>=f.exitAt){f.rwy.occ=null;f.rwy.arrExit=T;floater(f.x,f.y,0,'+1','#a99cff');}if(done){if(f.rwy.occ===f){f.rwy.occ=null;f.rwy.arrExit=T;}startTaxiIn(f);}break;}
   case 'nogate':{if(!f.res){const g=freeGate(f);if(g){g.res=f;f.res=g;}}if(f.res){const p=route(f.exitNode,f.res.lane);if(p){setPath(f,[{x:f.x,y:f.y}].concat(p),TAXI_R);f.state='taxi_in';closeIncFor(f,true);}}break;}
@@ -1701,7 +1705,7 @@ function updateFlight(f,dt){
   case 'at_gate':{
     if(f.std<=T&&f.links&&!f.cnxAsked&&!f.held){const late=f.links.filter(l=>l.arr.inBlock==null&&l.arr.state!=='diverted').reduce((s,l)=>s+l.n,0);if(late>=40&&T-lastCnx>400&&!incidents.some(i=>i.type==='connex')){f.cnxAsked=true;spawnInc('connex',f,{n:late});}}
     const go=Math.max(f.std,f.readyAt);
-    if(T>=go&&!f.held&&laneClear(f.gate)&&!laneShut(f.gate)){const pc=CONCI[f.gate.conc];f.pushExtra=pc&&pc.slowUntil>T?180:0;f.pushT=T;settleLinks(f);f.state='push';const g=f.gate;setPath(f,[{x:g.x,y:g.y},{x:G.get(g.lane).x,y:G.get(g.lane).y}]);g.occ=null;f.lastGate=g;f.gate=null;f.gateRef=g;}
+    if(T>=go&&!f.held&&T>=FX.pushFreeze&&laneClear(f.gate)&&!laneShut(f.gate)){const pc=CONCI[f.gate.conc];f.pushExtra=(pc&&pc.slowUntil>T?180:0)+(T<FX.pushSlow?FX.pushSlowS:0);f.pushT=T;settleLinks(f);f.state='push';const g=f.gate;setPath(f,[{x:g.x,y:g.y},{x:G.get(g.lane).x,y:G.get(g.lane).y}]);g.occ=null;f.lastGate=g;f.gate=null;f.gateRef=g;}
     break;}
   case 'push':if(advance(f,dt,3.5,true)){f.state='start';f.startT=T;}break;
   case 'start':if(T>=f.startT+45+(f.pushExtra||0)){f.gate={lane:f.gateRef.lane};const ok=assignDep(f,false);f.gate=null;if(!ok){f.state='start';f.startT=T-35;f.noRwy=true;}}break;
@@ -1769,7 +1773,8 @@ function opsTick(dt){
 // card is allowed; it just isn't always the best call.
 const ICON={medical:{g:'+',c:'#ff4d3f'},fuel:{g:'F',c:'#ffae3b'},heavy:{g:'H',c:'#ff7a3f'},nogate:{g:'G',c:'#6aa3ff'},connex:{g:'C',c:'#b48cff'},strike:{g:'B',c:'#ff7a3f'},vvip:{g:'V',c:'#f4c430'},summitOrder:{g:'V',c:'#ff9933'},lights:{g:'L',c:'#ffae3b'},lane:{g:'T',c:'#ffae3b'},shear:{g:'W',c:'#ff7a3f'}};
 const CFG=Object.assign({inc:'std'},store.get('zm_cfg')||{});
-const SCRIPTED=new Set(['medical','strike','vvip','lights','lane','shear','summit']);const MAXOPEN=3;let lastCnx=-1e9;
+const SCRIPTED=new Set(['medical','strike','vvip','lights','lane','shear','summit']);
+const STORY={};const MAXOPEN=3;let lastCnx=-1e9;
 function estWait(f){const cap=Math.max(1,capNow('arr'));const ahead=flights.filter(o=>o!==f&&(o.state==='approach'||((o.state==='holding'||o.state==='inbound')&&rk(o)<rk(f)))).length;return Math.max(3,Math.round(Math.max((f.eta-T)/60,ahead/cap*60)+2));}
 function priorityLand(f){
   const rs=RW.filter(r=>canArr(r)&&!r.blocks.some(b=>T+D_APP>=b.from-30&&T+D_APP<b.to));if(!rs.length){f.prio=true;return '';}
@@ -1781,7 +1786,8 @@ function priorityLand(f){
 }
 function sendLong(f){f.rwy=LONGEST;let best=null,bl=1e18,bp=null;for(const h of LONGEST.holds){const p=route(nearestNode(f.x,f.y).k,h);if(p&&pathLen(p)<bl){bl=pathLen(p);best=h;bp=p;}}if(bp){setPath(f,[{x:f.x,y:f.y}].concat(bp),TAXI_R);f.state='taxi_out';f.hold=best;}}
 function spawnInc(type,target,extra){
-  if(CFG.inc==='off'&&SCRIPTED.has(type))return true; // runways-only mode: the scripted calls never happen
+  if(CFG.inc==='off'&&(SCRIPTED.has(type)||type.startsWith('st_')))return true; // runways-only mode: the scripted calls never happen
+  if(type.startsWith('st_'))return startStory(type.slice(3));
   if(incidents.length>=MAXOPEN&&SCRIPTED.has(type))return false;
   if(['fuel','heavy','nogate','connex'].includes(type)&&!target)return false;
   const I={id:++INC,type,born:T,left:0,total:40,def:null,defText:''};let ok=true;
@@ -1845,11 +1851,12 @@ const FLAG_RU='<svg viewBox="0 0 90 60" class="flag"><rect width="90" height="20
 #vipBanner .flag:nth-child(2){animation-delay:.4s}@keyframes wave{0%,100%{transform:perspective(200px) rotateY(0) skewY(0)}50%{transform:perspective(200px) rotateY(-14deg) skewY(2deg)}}
 #vipBanner .k{font-family:var(--f-sign);font-weight:700;letter-spacing:.12em;font-size:12px;color:#f4c430}#vipBanner h3{margin:2px 0 2px;font-family:var(--f-sign);font-weight:700;font-size:30px;letter-spacing:.02em;color:#fff}
 #vipBanner .meme{font-family:var(--f-sign);font-weight:600;font-size:19px;color:#ffd27a;animation:pulse 1.2s ease-in-out infinite}@keyframes pulse{50%{transform:scale(1.05)}}
-@media (prefers-reduced-motion:reduce){#vipBanner .flag,#vipBanner .meme{animation:none}}`;document.head.appendChild(st);
+#vipBanner .ico{font-size:46px;line-height:48px;display:inline-block;animation:wave 1.6s ease-in-out infinite}#vipBanner .ico:nth-child(2){animation-delay:.4s}#vipBanner .ico:nth-child(3){animation-delay:.8s}
+@media (prefers-reduced-motion:reduce){#vipBanner .flag,#vipBanner .meme,#vipBanner .ico{animation:none}}`;document.head.appendChild(st);
   const b=document.createElement('div');b.id='vipBanner';b.setAttribute('aria-live','polite');$('#app').appendChild(b);})();
 // the bodyguard: dark suit, sunglasses, earpiece; slides in on the dashboard side and says his piece
 (function(){const st=document.createElement('style');st.textContent=`#guard{position:absolute;right:calc(var(--rail) + 30px);top:118px;z-index:13;display:flex;align-items:flex-start;gap:6px;pointer-events:none;transform:translateX(130%);opacity:0;transition:transform .55s cubic-bezier(.2,.9,.25,1.15),opacity .3s}
-#guard.on{transform:translateX(0);opacity:1}#guard svg{width:116px;height:150px;filter:drop-shadow(0 10px 18px rgba(0,0,0,.6));animation:gbob 2.4s ease-in-out infinite}
+#guard.on{transform:translateX(0);opacity:1}#vipBanner.on~#guard{top:350px}#guard{transition:transform .55s cubic-bezier(.2,.9,.25,1.15),opacity .3s,top .4s}#guard svg{width:116px;height:150px;filter:drop-shadow(0 10px 18px rgba(0,0,0,.6));animation:gbob 2.4s ease-in-out infinite}
 @keyframes gbob{50%{transform:translateY(-3px) rotate(-1deg)}}#guard .glint{animation:glint 2.2s ease-in-out infinite}@keyframes glint{0%,70%,100%{opacity:0}80%{opacity:1}}
 #guard .bub{order:-1;margin-top:18px;max-width:240px;background:#f4f1e8;color:#121212;font-family:var(--f-sign);font-weight:700;font-size:19px;line-height:1.15;padding:9px 12px;border-radius:10px;position:relative;box-shadow:0 8px 24px rgba(0,0,0,.5)}
 #guard .bub::after{content:'';position:absolute;right:-9px;top:18px;border:6px solid transparent;border-left:10px solid #f4f1e8}#guard .bub small{display:block;font-family:var(--f-mono);font-weight:500;font-size:10.5px;color:#6a6a6a;letter-spacing:.06em;margin-bottom:2px}
@@ -1862,9 +1869,13 @@ const FLAG_RU='<svg viewBox="0 0 90 60" class="flag"><rect width="90" height="20
 <rect class="glint" x="42" y="54" width="6" height="2" rx="1" fill="#fff"/><path d="M50 74 Q58 77 66 74" stroke="#7a4a36" stroke-width="2.2" fill="none" stroke-linecap="round"/>
 <path d="M80 58 C88 62 90 74 86 88 C84 96 82 100 80 104" stroke="#d8d8d8" stroke-width="1.6" fill="none"/><circle cx="80" cy="58" r="3" fill="#2a2a2a"/>
 <path d="M96 132 C100 116 96 100 86 92 C84 84 88 70 82 62 C78 58 74 62 76 68 C78 76 74 86 78 96" fill="#1a1d23"/><ellipse cx="80" cy="62" rx="5" ry="6" fill="#c89070"/></svg>`;$('#app').appendChild(g);})();
-function guard(lines){const g=$('#guard'),t=$('#guardTxt');if(!g)return;clearTimeout(guard.t1);clearTimeout(guard.t2);t.textContent=lines[0];g.classList.add('on');
+function guard(lines,who){const g=$('#guard'),t=$('#guardTxt');if(!g)return;clearTimeout(guard.t1);clearTimeout(guard.t2);
+  // the bodyguard by default; set pieces bring their own character (badge + 116x150 svg)
+  if(!guard.svg)guard.svg=g.querySelector('svg').outerHTML;g.querySelector('.bub small').textContent=who?who.badge:'SECURITY · SPG';
+  const sv=g.querySelector('svg'),want=who&&who.svg?who.svg:guard.svg;if(guard.cur!==want){sv.outerHTML=want;guard.cur=want;}
+  t.textContent=lines[0];g.classList.add('on');
   if(lines[1])guard.t1=setTimeout(()=>{t.textContent=lines[1];},2600);guard.t2=setTimeout(()=>g.classList.remove('on'),lines[1]?6200:4200);}
-function vipBanner(on,k,title,meme){const b=$('#vipBanner');if(!on){b.classList.remove('on');return;}const g=$('#guard');if(g)g.classList.remove('on');b.innerHTML=`<div class="flags">${FLAG_IN}${FLAG_RU}</div><div class="k">${k}</div><h3>${title}</h3><div class="meme">${meme}</div>`;b.classList.add('on');}
+function vipBanner(on,k,title,meme,icons){const b=$('#vipBanner');if(!on){b.classList.remove('on');return;}const g=$('#guard');if(g&&icons==null)g.classList.remove('on');b.innerHTML=`<div class="flags">${icons==null?FLAG_IN+FLAG_RU:icons}</div><div class="k">${k}</div><h3>${title}</h3><div class="meme">${meme}</div>`;b.classList.add('on');}
 function startSummit(){
   S.summitAt=T;const open=RW.filter(r=>!r.locked&&r.mode!=='OFF');if(open.length<2)return false;
   const E=T,order=open.slice().sort((a,b)=>b.len-a.len),reopen0=E+600;
@@ -1907,10 +1918,173 @@ function summitTick(){
   if(t>=600&&!SUM.guardBack){SUM.guardBack=true;guard(['Your runways. One at a time.','Have a nice day, sir.']);}
   if(T>SUM.reopen0+60*SUM.order.length+5&&!SUM.cine)SUM=null;
 }
+// ============ set pieces: the summit's siblings, one or two per level ============
+// Each is a story with a character on the dashboard, radio lines on a timeline, a disruption the sim really feels,
+// and often a cinematic cut with a banner. Defined in STORY; a level's script starts one like any incident ('st_<key>').
+let STO=[],CINE=null;
+const face=(e,bg)=>`<svg viewBox="0 0 116 150" aria-hidden="true"><circle cx="58" cy="82" r="50" fill="${bg||'#1d232b'}" stroke="#f4c430" stroke-width="3"/><text x="58" y="108" font-size="68" text-anchor="middle">${e}</text></svg>`;
+const icos=(...e)=>e.map(x=>`<span class="ico">${x}</span>`).join('');
+function startStory(k){const d=STORY[k];if(!d)return false;const c={k,E:T,said:new Set(),lines:[],len:d.len||900};if(d.start(c)===false)return false;
+  STO.push(c);(S.storyRec=S.storyRec||[]).push(c);renderRw();return true;}
+function storyTick(){
+  for(const c of STO.slice()){const t=T-c.E;
+    for(let i=0;i<c.lines.length;i++){const L=c.lines[i];if(t>=L[0]&&!c.said.has(i)){c.said.add(i);if(typeof L[1]==='function')L[1](c,t);else{radio(L[1],L[2]);logE(L[2]);}}}
+    const d=STORY[c.k];if(d.tick)d.tick(c,t);if(t>=c.len&&!(CINE&&CINE.c===c))STO.splice(STO.indexOf(c),1);}
+  cineTick();
+}
+// a cinematic cut on one aircraft: the sim slows to half speed, the camera follows it, a banner names the moment
+function cinema(f,ban,o){o=o||{};if(!f||['gone','diverted'].includes(f.state))return;if(CINE||(SUM&&SUM.cine)){(cinema.q=cinema.q||[]).push([f,ban,o]);return;}
+  CINE={f,ban,o,c:o.c,t0:performance.now(),prevSpeed:speed,prevCam:V3.on&&V3.ready?{t:Object.assign({},C3.t)}:null};speed=0.5;
+  vipBanner(true,ban[0],ban[1],ban[2],ban[3]==null?'':ban[3]);
+  if(V3.on&&V3.ready){V3.mode=f.state==='approach'?'approach':'follow';C3.follow=f;C3.fpos=null;C3.apT=-99;camLabel();}else centerOn(f.x,f.y);}
+function cineTick(){
+  if(!CINE){const q=cinema.q;if(q&&q.length&&!(SUM&&SUM.cine)){const [f,b,o]=q.shift();cinema(f,b,o);}return;}
+  const c=CINE,now=performance.now();if(!V3.on)centerOn(c.f.x,c.f.y);
+  if(c.o.landed&&c.f.landT!=null&&!c.landAt)c.landAt=now;
+  const over=['gone','diverted'].includes(c.f.state)||(c.landAt&&now-c.landAt>3500)||now-c.t0>(c.o.ms||(c.o.landed?20000:6500));
+  if(over){CINE=null;vipBanner(false);speed=c.prevSpeed;if(running)setSpeed(speed);if(V3.on&&V3.ready&&c.prevCam){setCam('map');Object.assign(C3.t,c.prevCam.t);}}
+}
+// a special arrival that appears 14 km out and lands on runway r at sim time td (holds a stand if one is given)
+function specialArr(o,r,td,stand){const f=mk(Object.assign({kind:'arr',state:'sched',intl:false,dir:'W',eta:td,endurance:180},o));Object.assign(f,{origEta:td,spawnT:1e12,spRw:r,spTd:td});if(stand){stand.res=f;f.res=stand;}
+  (specialArr.list=specialArr.list||[]).push(f);return f;}
+function specialTick(){const L=specialArr.list;if(!L)return;for(const f of L){if(f.state==='sched'&&T>=f.spTd-D_APP-10){const r=f.spRw;f.x=r.x1+14000;f.y=r.y+(r.y<0?-2600:2600);f.alt=2000;f.heading=Math.PI;f.state='inbound';beginApproach(f,r,Math.max(f.spTd,T+D_APP));}}
+  specialArr.list=L.filter(f=>f.state==='sched');}
+// runways a story takes: from 'from' for 'secs', reopening one by one 'step' apart (blocks are what the sim and forecast read)
+function takeRunways(rs,from,secs,step,why,desk){rs.forEach((r,i)=>{r.blocks.push({from,to:from+secs+(step||0)*i,why,desk:desk||why});r.blocks.sort((a,b)=>a.from-b.from);});
+  for(const f of flights)if(f.state==='approach'&&rs.includes(f.rwy)&&f.td-T>25&&f.td>=from-20&&f.td<from+secs)goAround(f,why.toLowerCase());renderRw();}
+// ---- the stories (pitched by the writers' room; jokes aim at systems and situations, never at real people) ----
+const OTPNOW=()=>S.dep+S.arr?Math.round((S.depOnTime+S.arrOnTime)/(S.dep+S.arr)*100):100;
+const rwBy=(k,not)=>RW.filter(r=>!r.locked&&r.mode!=='OFF'&&r!==not&&(k==='arr'?canArr(r):canDep(r)));
+const nextOn=r=>flights.filter(o=>o.state==='approach'&&o.rwy===r).sort((a,b)=>a.td-b.td)[0];
+// an incident card that belongs to a story (buttons are ordered best-first: the bots take the first)
+function storyCard(c,o){const I=Object.assign({id:++INC,type:'story',born:T,total:40,def:0,st:c},o);I.left=I.total;
+  S.incTypes['st_'+c.k]=(S.incTypes['st_'+c.k]||0)+1;incidents.push(I);renderInc();radio('AOCC',I.title+'.');return I;}
+function flashBanner(b,ms){if(CINE||(SUM&&SUM.cine))return;vipBanner(true,b[0],b[1],b[2],b[3]==null?'':b[3]);clearTimeout(flashBanner.t);
+  flashBanner.t=setTimeout(()=>{if(!CINE&&!(SUM&&SUM.cine))vipBanner(false);},ms||4500);}
+// emoji on the field (2D map and 3D overlay): {x,y,e,until,n,sp,alt,px}
+let MARKS=[];
+function drawMarks(g,toScr,now){for(const m of MARKS){if(T>m.until)continue;const n=m.n||1;
+  for(let i=0;i<n;i++){const x=m.x+(n>1?(((i*37)%7)-3)*m.sp/6+Math.sin(now*0.7+i)*m.sp*0.06:0),y=m.y+(n>1?(((i*53)%5)-2)*m.sp/10+Math.cos(now*0.9+i*2)*m.sp*0.04:0);
+    const p=toScr(x,y,m.alt||0);if(!p)continue;g.font=`${m.px||26}px serif`;g.textAlign='center';g.textBaseline='middle';g.fillText(m.e,p.X,p.Y+(n>1?Math.sin(now*2+i)*3:0));}}
+  g.textAlign='left';g.textBaseline='alphabetic';MARKS=MARKS.filter(m=>T<=m.until);}
+const WHO={protocol:{badge:'PROTOCOL · MINISTRY',svg:face('🙏','#3a2614')},ranger:{badge:'RANGE OFFICER · FOREST DEPT',svg:face('🐅','#1f3a14')},
+  kid:{badge:'ROOFTOP · AHMEDABAD',svg:face('🪁','#14304a')},ramp:{badge:'GROUND OPS SUPERVISOR',svg:face('🏏','#123a22')},tower:{badge:'TOWER',svg:face('📣','#123a22')},
+  dabba:{badge:'MUKADAM · DABBAWALAS',svg:face('🍱','#3a2a10')},admin:{badge:'GROUP ADMIN · OPS',svg:face('📱','#103a2a')},team:{badge:'TEAM MANAGER',svg:face('🏆','#123a5a')}};
+
+// L1 · the ribbon: the first departure can't go until the Chief Guest cuts it, and he is always five minutes away
+STORY.ribbon={len:1500,start(c){const r=rwBy('dep')[0];if(!r)return false;c.r=r;
+  c.blk={from:T,to:T+1e6,open:true,why:'Inauguration ribbon',desk:'Ribbon across it, until it is cut'};r.blocks.push(c.blk);r.blocks.sort((a,b)=>a.from-b.from);
+  c.mark={x:r.x0+300,y:r.y,e:'🎀',until:T+1e6,px:30};MARKS.push(c.mark);
+  guard(['Sir, no departures yet. The Chief Guest will cut the ribbon.','He is five minutes away. 🙏'],WHO.protocol);
+  c.lines.push([0,'PROTOCOL',`A ceremonial ribbon is tied across ${r.short}. No departures until the Chief Guest cuts it. He is five minutes away.`]);
+  const go=()=>{r.blocks=r.blocks.filter(b=>b!==c.blk);c.mark.until=T;renderRw();const f=flights.find(o=>o.rwy===r&&['lineup','hp'].includes(o.state))||flights.find(o=>o.rwy===r&&o.state==='taxi_out');
+    if(f)cinema(f,['OPENING DAY',`The first departure rolls through the ribbon on ${r.short}`,'BAS PAANCH MINUTE 🙏',icos('🎀','✂️','🛫')],{ms:7000});};
+  c.go=go;c.wait=T+240+Math.floor(SIMR()*240);
+  const I=storyCard(c,{icon:{g:'🎀',c:'#ff9933'},x:r.x0+300,y:r.y,title:`A ribbon across ${r.short}`,
+    text:`The opening ceremony has tied a ribbon across ${r.short}, and the first departures are queuing behind it. Cut it yourselves and traffic flows now, but Protocol will re-stage the ceremony in about 15 minutes on the arrivals runway, for 2 minutes. Or wait: the Chief Guest is "five minutes away".`,
+    def:1,defText:'you wait for the Chief Guest.',
+    acts:[{l:'Cut it ourselves',pri:1,fn(){go();const ra=rwBy('arr').sort((a,b)=>b.tdList.length-a.tdList.length)[0];
+        c.cut=true;if(ra){takeRunways([ra],T+900,120,0,'Inauguration, take two','Inauguration, take two');c.lines.push([T-c.E+900,()=>{guard(['The Chief Guest has arrived. We will now inaugurate again.','Only two minutes. Your arrivals runway, please. 🎀'],WHO.protocol);
+          flashBanner(['OPENING DAY',`The ceremony is re-staged on ${ra.short}`,'INAUGURATED. AGAIN. 🎀',icos('🎀','📸','🎀')]);}]);}
+        resolve(I,true,`${r.short}'s ribbon was cut by ops. Protocol will be back.`);}},
+      {l:'Wait for the Chief Guest',fn(){resolve(I,true,'');}}]});c.I=I;
+},tick(c,t){if(!c.cut&&!c.went){if(T>=c.wait){c.went=true;if(incidents.includes(c.I))resolve(c.I,true,'The Chief Guest arrived and cut the ribbon.');c.go();guard(['The Chief Guest has cut the ribbon.','He would like to do it again for the photographers. (No.)'],WHO.protocol);}
+    else if(T>=(c.nag||0)){if(c.nag)radio('PROTOCOL',['The Chief Guest is five minutes away.','Still five minutes, sir. Very consistent.','The convoy has been sighted. It was a different convoy.','Five minutes. Same five minutes.'][(c.nagN=(c.nagN||0)+1)%4]);c.nag=T+120;}}}};
+
+// L1 · the tigress: Nagpur is the tiger capital of India, and she has right of way
+STORY.tiger={len:1500,start(c){const r=rwBy('dep')[0];if(!r)return false;c.r=r;c.ra=rwBy('arr',r)[0]||null;
+  const f=flights.find(o=>o.rwy===r&&['hp','lineup'].includes(o.state))||flights.find(o=>o.rwy===r&&o.state==='taxi_out');
+  if(f)cinema(f,['TIGER CAPITAL OF INDIA',`A tigress is walking down ${r.short}`,'Shere Khan, you are not cleared to line up 🐅',icos('🐅','🛫','🌳')],{ms:6500});
+  c.mark={x:lerp(r.x0,r.x1,0.45),y:r.y,e:'🐅',until:T+1e6,px:34};MARKS.push(c.mark);
+  guard(['Sir, she is not a bird. You cannot sweep her.','She is the senior-most resident here. 🐅'],WHO.ranger);
+  c.lines.push([0,'TWR',`All stations: a tigress is on ${r.short}. Nobody is to taxi towards her. That includes the follow-me car.`]);
+  const I=storyCard(c,{icon:{g:'🐅',c:'#ff8c1a'},x:c.mark.x,y:r.y,title:`A tigress on ${r.short}`,
+    text:`A tigress from the Umred-Karhandla corridor has walked onto ${r.short}. Wait for the forest department's dart team and ${r.short} shuts for 4 to 6 minutes; nobody knows exactly. Or herd her off with sirens: ${r.short} stays open, but she is still out there.`,
+    def:0,defText:`${r.short} shuts until the dart team arrives.`,
+    acts:[{l:'Wait for the dart team',pri:1,fn(){const d=240+Math.floor(SIMR()*120);closeRw(r,d,'Tigress on the runway');c.mark.until=T+d;
+        c.lines.push([T-c.E+d,'FOREST','She has been darted, weighed and named. She is called Runway. She is going home to Tadoba.']);resolve(I,true,`${r.short} shut for the tigress.`);}},
+      {l:'Herd her off with sirens',fn(){c.mark.until=T+60;c.herd=true;resolve(I,true,'');
+        if(c.ra){const ra=c.ra,at=T-c.E+900;c.lines.push([at-60,'FOREST',`Update: the tigress has been seen heading towards ${ra.short}. She did not like the sirens.`]);
+          c.lines.push([at,()=>{closeRw(ra,240,'Tigress, again');MARKS.push({x:lerp(ra.x0,ra.x1,0.6),y:ra.y,e:'🐅',until:T+240,px:34});
+            guard(['She is back. On your arrivals runway.','Sirens only made her curious, sir. 🐅'],WHO.ranger);
+            const g=nextOn(ra);flashBanner(['SHE IS BACK',`The tigress is on ${ra.short}`,'Madam has right of way 🐅',icos('🐅','🐅')]);}]);}}}]});
+},lesson(c){return c.herd?{w:25,title:'The tigress came back',text:'Herding her off kept the departure runway open, but she walked onto the arrivals runway 15 minutes later, mid-wave. A cost you put off still has to be paid: when you choose the risky option, flip a second runway to MIX early so the bill lands softly.'}:null;}};
+
+// L2 · Uttarayan: Ahmedabad moved in, and so did its kites
+STORY.kites={len:1000,start(c){const ra=rwBy('arr').sort((a,b)=>b.tdList.length-a.tdList.length);const r=ra[0];if(!r)return false;c.r=r;r.kiteUntil=T+480;
+  c.nx=ra.find(o=>o!==r)||null;MARKS.push({x:r.x1+1600,y:r.y,e:'🪁',until:T+480,n:9,sp:2200,alt:160,px:24});
+  const f=nextOn(r);if(f)cinema(f,['UTTARAYAN · KITE FESTIVAL',`Ahmedabad moved in. So did its kites, over ${r.short}.`,'KAI PO CHE! 🪁 Kites 1, A321neo 0',icos('🪁','🪁','🪁')],{ms:6500});
+  guard(['Uncle, the whole city is on the roof.','We are not cutting your planes. We are cutting each other. 🪁'],WHO.kid);
+  c.lines.push([0,'TWR',`All aircraft for ${r.short}: kites reported on final, 300 to 800 feet. Yes, kites.`]);
+  const I=storyCard(c,{icon:{g:'🪁',c:'#3aa0ff'},x:r.x1+1200,y:r.y,title:`Kites over the approach to ${r.short}`,
+    text:`It's Uttarayan, and a cloud of kites is drifting across ${r.short}'s final approach for the next 8 minutes: about 1 landing in 4 there will go around. Switch ${r.short} to departures while they pass (ops switches it back when they move on), or keep landing through them. They are drifting south${c.nx?`, towards ${c.nx.short}`:''}.`,
+    def:1,defText:`${r.short} keeps landing through the kites.`,
+    acts:[{l:`${r.short} to DEP while they pass`,pri:1,fn(){c.back=r.mode;setMode(r,'DEP');resolve(I,true,`${r.short} switched to departures while the kites passed.`);}},{l:'Keep landing',fn(){resolve(I,true,'');}}]});
+  if(c.nx){const n=c.nx;c.lines.push([400,'WX',`The kites are drifting south. Expect them over ${n.short} in about a minute.`]);
+    c.lines.push([480,()=>{if(c.back&&r.mode==='DEP'&&!r.locked)setMode(r,c.back);n.kiteUntil=T+360;MARKS.push({x:n.x1+1600,y:n.y,e:'🪁',until:T+360,n:8,sp:2200,alt:160,px:24});radio('TWR',`Kites now on final for ${n.short}. ${r.short} is clear.`);guard(['Uncle, sorry. Wind changed.','Kai po che! 🪁'],WHO.kid);renderRw();}]);}
+  c.lines.push([860,'TWR','The kites have gone home for lunch. All finals clear.']);}};
+
+// L2 · the last ball of the World Cup final: the country stops, and so does the apron
+STORY.lastball={len:900,start(c){
+  guard(['Sir, India need six off the last ball.','Every tug driver is watching. Even the birds have stopped. 🏏'],WHO.ramp);
+  c.lines.push([0,'RAMP','Tug 14, report position. … Tug 14? … "Sorry sir, checking tyre pressure."']);
+  const I=storyCard(c,{icon:{g:'🏏',c:'#3ad07f'},x:CONC[0].lx,y:CONC[0].ly,title:'The last ball of the World Cup final',
+    text:'India need six off the last ball, and every crew on the apron is on their phone. Put it on the PA: all pushbacks stop for 3 minutes, and if India win the crews come back flying (turnarounds 4 minutes quicker). Or order everyone back to work: they watch anyway, under the wings, and pushbacks run slow for 6 minutes.',
+    def:1,defText:'crews watch on their phones: slow pushbacks for 6 minutes.',
+    acts:[{l:'Put it on the PA (3 min)',pri:1,fn(){FX.pushFreeze=T+180;c.pa=true;c.six=T+180;radio('PA','Ladies and gentlemen, the last ball. Nobody move.');resolve(I,true,'The last ball went on the PA: pushbacks paused for 3 minutes.');}},
+      {l:'Back to work',fn(){FX.pushSlow=T+360;FX.pushSlowS=150;c.six=T+180;resolve(I,true,'');}}]});
+  c.sixFn=(cc=>{radio('PA','SIX! INDIA WIN THE WORLD CUP!');logE('India won the World Cup off the last ball.');
+    if(cc.pa)for(const f of flights)if(f.state==='at_gate'&&f.readyAt>T)f.readyAt=Math.max(T,f.readyAt-240);
+    const f=flights.find(o=>o.state==='push')||flights.find(o=>o.state==='at_gate'&&o.kind==='dep');
+    const b=['LAST BALL · SIX TO WIN','SIX! India win the World Cup','IN-DI-A! IN-DI-A! 🏆',icos('🏏')+FLAG_IN+icos('🏆')];if(f)cinema(f,b,{ms:6500});else flashBanner(b);
+    guard([cc.pa?'The crews are back. They are running.':'They are back. Slowly. Smiling.','Who is honking? … Fine. Honk. 📣'],WHO.tower);});c.len=4000;
+},tick(c){if(c.six&&T>=c.six&&!c.sixed){c.sixed=true;c.sixFn(c);}}};
+
+// L3 · the dabbawalas: Mumbai's lunch network moved with the airport, and it is never late
+STORY.dabba={len:900,start(c){const ds=CONC.filter(o=>o.id[0]==='D');if(!ds.length)return false;
+  const f=flights.filter(o=>o.state==='at_gate'&&o.gate&&o.gate.conc[0]==='D').sort((a,b)=>b.T.span-a.T.span)[0];
+  guard(['Saheb, since 1890, never late.',`Your on-time is ${OTPNOW()}%. Ours is 100. Please hold the aeroplane. 🍱`],WHO.dabba);
+  if(f)cinema(f,['MUMBAI MOVED IN','120 dabbawalas crossing at Concourse D','A380 GIVES WAY TO TIFFIN 🍱',icos('🚲','🍱','🚲')],{ms:6500});
+  const I=storyCard(c,{icon:{g:'🍱',c:'#f4c430'},x:ds[0].lx,y:ds[0].ly,title:'Dabbawalas crossing at Concourse D',
+    text:"Mumbai's dabbawalas moved with the airport, and they feed the tower. 120 bicycles on the tiffin run need to cross Concourse D's apron road. Let them cross and nothing moves at D for 3 minutes. Hold them and the tower's lunch is late: every runway changeover takes 3 minutes instead of 2 for the next 15 minutes.",
+    def:0,defText:'they cross anyway: Concourse D stops for 3 minutes.',
+    acts:[{l:'Let them cross (3 min)',pri:1,fn(){for(const d of ds){d.laneShut=Math.max(d.laneShut,T+180);MARKS.push({x:d.lx,y:d.ly,e:'🚲',until:T+180,n:6,sp:500,px:20});}resolve(I,true,'The dabbawalas crossed Concourse D. On time, obviously.');}},
+      {l:'Hold the bicycles',fn(){FX.chgK=1.5;FX.chgUntil=T+900;c.hangry=true;renderRw();resolve(I,true,'');}}]});
+  c.lines.push([200,cc=>{if(cc.hangry){radio('TWR','The tower is hungry. Changeovers are taking longer. Nobody talk to the supervisor.');guard(['Lunch is late, saheb.','The tower is not happy. 🍱'],WHO.dabba);}
+    else radio('TWR','Lunch has arrived in the tower. Every dabba correct. Again.');}]);}};
+
+// L4 · Delhi moves in: five ops WhatsApp groups become one
+const WA=['Good afternoon to all 🌞🙏','Forwarded many times: NASA says Zero Mile is visible from space','R3 closed?? pls confirm urgent','Happy birthday to the Fire Chief\'s grandson 🎂🎂','Who has added me in this group','Pls do not send good morning msgs in official group',
+  'Good morning 🌞','Is canteen open','Sir my leave application pls see','Video: amazing A380 landing (not ours)','👍','👍👍','Sir which one is the Delhi bank? Pls share Excel','This message was deleted','Pls call','Ok'];
+STORY.whatsapp={len:720,start(c){
+  guard(['Dear all, the five ops groups are now one group.','1,400 members. Official purposes only. 🙏'],WHO.admin);
+  flashBanner(['DELHI MOVES IN','Five ops WhatsApp groups are now one','GOOD AFTERNOON TO ALL 🌞🙏',icos('📱','🌞','🙏')],5000);
+  for(let i=0;i<6;i++)c.lines.push([10+i*12,'OPS GROUP',WA[i]]);
+  const I=storyCard(c,{icon:{g:'📱',c:'#25d366'},x:CONC[0].lx,y:CONC[0].ly,title:'1,400 people in the ops WhatsApp group',
+    text:"Delhi's arrival merged five ops groups into one, and runway changeover confirmations are buried under good-morning messages: changeovers take 4 minutes instead of 2. Make the group admin-only and the hurt members start \"ZMI Ops (Real)\", where gate changes get lost: pushbacks take 90 seconds longer for 8 minutes. Or ride it out for 8 minutes.",
+    def:1,defText:'you ride it out: 4-minute changeovers for 8 minutes.',
+    acts:[{l:'Make it admin-only',pri:1,fn(){FX.pushSlow=T+480;FX.pushSlowS=90;c.quiet=true;radio('OPS GROUP','Only admins can send messages. 214 members have left. "ZMI Ops (Real)" has 213 members.');resolve(I,true,'The ops group went admin-only.');}},
+      {l:'Ride it out',fn(){FX.chgK=2;FX.chgUntil=T+480;renderRw();resolve(I,true,'');}}]});
+},tick(c,t){if(!c.quiet&&t>90&&t<600&&t>=(c.nm||90)){c.nm=t+30;radio('OPS GROUP',WA[6+Math.floor(Math.random()*(WA.length-6))]);}}};
+
+// L4 · the champions come home (the team from Level 2's last ball)
+STORY.trophy={len:900,start(c){const r=rwBy('arr').sort((a,b)=>a.y-b.y)[0];if(!r)return false;c.r=r;
+  const st=GATES.filter(g=>g.remote&&!g.occ&&!g.res&&!g.mars&&CR[g.code]>=CR.E).sort((a,b)=>b.x-a.x)[0]||null;const td=T+420;
+  c.f=specialArr({al:'AI',type:'A359',disp:'Trophy One',callsign:'TROPHY ONE',num:'1',from:'Melbourne',fromCode:'MEL',intl:true,vip:true},r,td,st);
+  guard(['Sir, the champions land in seven minutes.','The boys want the water salute. And a second bus. For the trophy. 🏆'],WHO.team);
+  const I=storyCard(c,{icon:{g:'🏆',c:'#f4c430'},x:r.x1+1500,y:r.y,title:'The World Cup is coming home',
+    text:`The team from the last ball lands on ${r.short} in about 7 minutes, and half of Nagpur is on the airport road. Give them the water salute and an apron parade: ${r.short} closes for 5 minutes after they land. Or send them straight to the motorcade: the crowd jams the forecourt, and pushbacks at Concourses A and B take 3 minutes longer for 10 minutes.`,
+    def:1,defText:'straight to the motorcade: slow pushbacks at A and B for 10 minutes.',
+    acts:[{l:'Water salute + parade',pri:1,fn(){takeRunways([r],td+40,300,0,'Victory parade','Victory parade');c.arch=true;resolve(I,true,`${r.short} closed for the champions' parade.`);}},
+      {l:'Straight to the motorcade',fn(){for(const o of CONC)if('AB'.includes(o.id[0]))o.slowUntil=Math.max(o.slowUntil,T+600);resolve(I,true,'');}}]});
+  c.lines.push([5,'APP','Trophy One, Nagpur Approach. Welcome home. Everybody on this frequency says congratulations.']);
+  c.lines.push([70,'FSO','There are 1,00,000 people on the airport road. 40,000 of them have a drum.']);
+},tick(c,t){const f=c.f;if(f&&f.state==='approach'&&!c.cine&&f.td-T<95){c.cine=true;
+  cinema(f,['THE CHAMPIONS ARE HOME',`Trophy One · Air India A350 on final for ${c.r.short}`,c.arch?'Water salute! IN-DI-A! 🏆':'IN-DI-A! IN-DI-A! 🏆',icos('🏆')+FLAG_IN+icos('🏏')],{landed:true});}}};
 const tleft=I=>I.simFuse?`MAYDAY in ${Math.max(0,Math.ceil(I.left/Math.max(1,speed)))} s`:`${Math.max(0,Math.ceil(I.left))} s`;
 function renderInc(){
   $('#incCount').textContent=incidents.length?`${incidents.length} open`:'all clear';
-  $('#incList').innerHTML=incidents.map(I=>{const ic=ICON[I.type];return `<div class="inc" data-id="${I.id}"><div class="ic" style="background:${ic.c}">${ic.g}</div><h4 data-find="${I.id}">${I.title}</h4><p>${I.text}</p><div class="acts">${I.acts.map((a,i)=>`<button data-i="${i}" class="${a.pri?'pri':''}" ${a.dis&&a.dis()?'disabled':''}>${a.l}</button>`).join('')}</div><div class="dflt">If you leave it: ${I.defText}</div><div class="tm"><span>${tleft(I)}</span><i style="width:${clamp(I.left/I.total*120,0,120)}px"></i></div></div>`;}).join('');
+  $('#incList').innerHTML=incidents.map(I=>{const ic=I.icon||ICON[I.type];return `<div class="inc" data-id="${I.id}"><div class="ic" style="background:${ic.c}">${ic.g}</div><h4 data-find="${I.id}">${I.title}</h4><p>${I.text}</p><div class="acts">${I.acts.map((a,i)=>`<button data-i="${i}" class="${a.pri?'pri':''}" ${a.dis&&a.dis()?'disabled':''}>${a.l}</button>`).join('')}</div><div class="dflt">If you leave it: ${I.defText}</div><div class="tm"><span>${tleft(I)}</span><i style="width:${clamp(I.left/I.total*120,0,120)}px"></i></div></div>`;}).join('');
 }
 $('#incList').addEventListener('click',e=>{const row=e.target.closest('.inc');if(!row)return;const I=incidents.find(i=>i.id===+row.dataset.id);if(!I)return;const b=e.target.closest('button[data-i]');if(b&&!b.disabled){I.acts[+b.dataset.i].fn();return;}if(e.target.closest('[data-find]')){const p=incPos(I);centerOn(p.x,p.y);}});
 function incTimers(){document.querySelectorAll('#incList .inc').forEach(row=>{const I=incidents.find(i=>i.id===+row.dataset.id);if(!I)return;row.querySelector('.tm span').textContent=tleft(I);row.querySelector('.tm i').style.width=clamp(I.left/I.total*120,0,120)+'px';row.querySelectorAll('button[data-i]').forEach(b=>{const a=I.acts[+b.dataset.i];b.disabled=!!(a.dis&&a.dis());});});}
@@ -1920,7 +2094,7 @@ let popInc=null,popRw=null,popF=null;
 function closePop(){$('#pop').hidden=true;popInc=null;popRw=null;popF=null;selRw=null;renderRw();}
 $('#popX').onclick=closePop;
 function placePop(sx,sy){const p=$('#pop');p.hidden=false;const w=272,h=p.offsetHeight||140;let x=sx+18,y=sy-20;const r=cam.region||{L:0,R:VW,Tp:0,B:VH};if(x+w>r.R)x=sx-w-18;if(y+h>r.B)y=r.B-h-4;if(y<r.Tp)y=r.Tp+4;p.style.left=x+'px';p.style.top=y+'px';}
-function openIncPop(I){popInc=I;popRw=null;popF=null;const ic=ICON[I.type];$('#popBody').innerHTML=`<h4><span style="color:${ic.c}">●</span> ${I.title}</h4><p>${I.text}</p><div class="acts">${I.acts.map((a,i)=>`<button data-i="${i}" class="${a.pri?'pri':''}" ${a.dis&&a.dis()?'disabled':''}>${a.l}</button>`).join('')}</div><p class="dflt" style="margin:6px 0 0;font-size:11.5px;color:var(--ink-3)">If you leave it: ${I.defText}</p>`;$('#popBody').querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>{I.acts[+b.dataset.i].fn();closePop();});const p=incPos(I);placePop(sx(p.x),sy(p.y));}
+function openIncPop(I){popInc=I;popRw=null;popF=null;const ic=I.icon||ICON[I.type];$('#popBody').innerHTML=`<h4><span style="color:${ic.c}">●</span> ${I.title}</h4><p>${I.text}</p><div class="acts">${I.acts.map((a,i)=>`<button data-i="${i}" class="${a.pri?'pri':''}" ${a.dis&&a.dis()?'disabled':''}>${a.l}</button>`).join('')}</div><p class="dflt" style="margin:6px 0 0;font-size:11.5px;color:var(--ink-3)">If you leave it: ${I.defText}</p>`;$('#popBody').querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>{I.acts[+b.dataset.i].fn();closePop();});const p=incPos(I);placePop(sx(p.x),sy(p.y));}
 function openRwPop(r,mx,my){popRw=r;popInc=null;popF=null;selRw=r;$('#popBody').innerHTML=`<h4>Runway ${r.name}</h4><p>${r.len.toLocaleString('en-IN')} m${r===LONGEST?' · the long runway':''}. What should it do? ${term('modes','Modes')}</p>${segHtml(r)}`;$('#popBody').querySelectorAll('.seg button').forEach(b=>{b.onclick=()=>{WAVEP=null;setMode(r,b.dataset.m);openRwPop(r,mx,my);};previewOn(b,r);});placePop(mx,my);renderRw();}
 function openFlightPop(f,mx,my){popF=f;popInc=null;popRw=null;selected=f;renderFlightPop();placePop(mx,my);}
 function renderFlightPop(){const f=popF;if(!f)return;const st=stateText(f);let dl=`<dt>Aircraft</dt><dd>${f.T.name}</dd><dt>Route</dt><dd>${f.kind==='dep'?`→ ${f.toCode} ${f.to}`:`${f.fromCode} ${f.from} →`}${f.intl?' · intl':''}</dd><dt>Status</dt><dd>${st}</dd>`;
@@ -2082,10 +2256,11 @@ function drawOps(now){
     else if(o.kind==='tug'){const f=o.f,a=f.heading,k=clamp((T-o.t0)/60,0,1),d=f.T.len*0.55*EXs/2.6;drawVeh(lerp(o.sx,f.x+Math.cos(a)*d,k),lerp(o.sy,f.y+Math.sin(a)*d,k),a,7,'#f4c430',now,true,'Tug');}
   }
   for(const c of CONC){if(c.laneShut>T||c.slowUntil>T)drawVeh(c.lx,c.ly,Math.PI/2,7,c.laneShut>T?'#ff4d3f':'#ffae3b',now,true,c.laneShut>T?'Recovery: lane shut':'Dead tug: slow pushbacks');}
+  drawMarks(ctx,(x,y)=>({X:sx(x),Y:sy(y)}),now);
 }
 const mmss=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');};
 let rwSigns=[];
-function rwSign(r){const bk=r.blocks[0];const lbl=(r.locked?'NOT YET OPEN':T<r.closedUntil?`CLOSED · ${r.why.toUpperCase()}`:blockAt(r,T)?`CLOSED · ${(r.blocks.find(b=>T>=b.from&&T<b.to)||bk).why.toUpperCase()} ${mmss((r.blocks.find(b=>T>=b.from&&T<b.to)||bk).to-T)}`:T<r.changeUntil?`CHANGEOVER → ${r.mode}`:r.mode==='ARR'?'ARRIVALS':r.mode==='DEP'?'DEPARTURES':r.mode==='MIX'?'MIXED':'CLOSED')+(r.locked?'':bk&&T<bk.from?` · VVIP IN ${mmss(bk.from-T)}`:r.degraded?' · LIGHTS OUT':r.gapReq?' · GAP FOR SWEEPER':'');const col=r.locked?'#6f7a80':T<r.closedUntil||blockAt(r,T)?'#ff4d3f':r.mode==='ARR'?'#8a7cff':r.mode==='DEP'?'#2fd3c6':r.mode==='MIX'?'#f4c430':'#a6afb4';return{lbl,col};}
+function rwSign(r){const bk=r.blocks[0];const lbl=(r.locked?'NOT YET OPEN':T<r.closedUntil?`CLOSED · ${r.why.toUpperCase()}`:blockAt(r,T)?(ab=>`CLOSED · ${ab.why.toUpperCase()}${ab.open?'':' '+mmss(ab.to-T)}`)(r.blocks.find(b=>T>=b.from&&T<b.to)||bk):T<r.changeUntil?`CHANGEOVER → ${r.mode}`:r.mode==='ARR'?'ARRIVALS':r.mode==='DEP'?'DEPARTURES':r.mode==='MIX'?'MIXED':'CLOSED')+(r.locked?'':bk&&T<bk.from?` · VVIP IN ${mmss(bk.from-T)}`:r.degraded?' · LIGHTS OUT':r.gapReq?' · GAP FOR SWEEPER':'');const col=r.locked?'#6f7a80':T<r.closedUntil||blockAt(r,T)?'#ff4d3f':r.mode==='ARR'?'#8a7cff':r.mode==='DEP'?'#2fd3c6':r.mode==='MIX'?'#f4c430':'#a6afb4';return{lbl,col};}
 const dustP=[];{const r=mulberry(3);for(let i=0;i<500;i++)dustP.push({x:r(),y:r(),v:.6+r()*.8,s:1+r()*3});}
 function draw(now){
   screenT();ctx.fillStyle='#6b5d47';ctx.fillRect(0,0,VW,VH);
@@ -2117,7 +2292,7 @@ function draw(now){
     const X=sx(r.x0+r.len*0.18),Y=sy(r.y)-Math.max(14,r.width*cam.s/2+12);const rect=signText(X,Y,`${r.short} · ${lbl}`,r.locked?.6:1,col);rect.r=r;rwSigns.push(rect);}
   
   // incident markers
-  for(const I of incidents){const p=incPos(I);const X=sx(p.x),Y=sy(p.y);const ic=ICON[I.type];const pulse=1+0.18*Math.sin(now*7);const R=13*pulse;
+  for(const I of incidents){const p=incPos(I);const X=sx(p.x),Y=sy(p.y);const ic=I.icon||ICON[I.type];const pulse=1+0.18*Math.sin(now*7);const R=13*pulse;
     ctx.fillStyle='rgba(0,0,0,.55)';ctx.beginPath();ctx.arc(X,Y,R+5,0,7);ctx.fill();ctx.strokeStyle=ic.c;ctx.lineWidth=3;ctx.beginPath();ctx.arc(X,Y,R+3,-Math.PI/2,-Math.PI/2+2*Math.PI*clamp(I.left/I.total,0,1));ctx.stroke();
     ctx.fillStyle=ic.c;ctx.beginPath();ctx.arc(X,Y,R-2,0,7);ctx.fill();ctx.fillStyle='#0b0b0b';ctx.font='700 15px Barlow Condensed, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(ic.g,X,Y+1);ctx.textAlign='left';ctx.textBaseline='alphabetic';I.sx=X;I.sy=Y;}
   // tags
@@ -2129,7 +2304,7 @@ function draw(now){
 }
 
 /* ============ bank chart ============ */
-function capNow(kind,ov,at){const tt=at==null?T:at;let c=0;for(const r of RW){const md=ov&&ov.r===r?ov.m:r.mode;if(r.locked||tt<r.closedUntil||blockAt(r,tt))continue;const dg=r.degraded?1.6:1;if(kind==='arr'){if(md==='ARR')c+=3600/(SEP_AA*sepF()*dg+6);else if(md==='MIX')c+=3600/(SEP_AA*sepF()*dg+MIX_GAP+6)*1;}else{if(md==='DEP')c+=3600/(SEP_DD*(dustNow?1.15:1)+4);else if(md==='MIX')c+=3600/(SEP_AA*sepF()+MIX_GAP+6);}}return c;}
+function capNow(kind,ov,at){const tt=at==null?T:at;let c=0;for(const r of RW){const md=ov&&ov.r===r?ov.m:r.mode;if(r.locked||tt<r.closedUntil||blockAt(r,tt))continue;const dg=(r.degraded?1.6:1)*(tt<r.sepUntil?r.sepK:1);if(kind==='arr'){if(md==='ARR')c+=3600/(SEP_AA*sepF()*dg+6);else if(md==='MIX')c+=3600/(SEP_AA*sepF()*dg+MIX_GAP+6)*1;}else{if(md==='DEP')c+=3600/(SEP_DD*(dustNow?1.15:1)+4);else if(md==='MIX')c+=3600/(SEP_AA*sepF()+MIX_GAP+6);}}return c;}
 // forecast: what the holding stack and the departure queue do from now if the setup stays (or with one runway flipped)
 let WAVEP=null,WBINS=null;
 function forecast(A,D,cur,nb,B,t0,ov){let b=flights.filter(f=>f.state==='holding').length,q=flights.filter(f=>f.state==='hp'||f.state==='taxi_out').length;const out=[];
@@ -2196,8 +2371,8 @@ function rwStatus(){
   let a=0,d=0,m=0;RW.forEach(r=>{if(r.locked)return;if(r.mode==='ARR')a++;if(r.mode==='DEP')d++;if(r.mode==='MIX')m++;});$('#rwSum').textContent=`ARR ${a} · DEP ${d}${m?` · MIX ${m}`:''}`;
   document.querySelectorAll('#rwRows .rw').forEach(row=>{const r=RW.find(x=>x.id===row.dataset.r);const st=row.querySelector('.st');if(r.locked){st.textContent='Opens in a later level';return;}
     const fin=flights.filter(f=>f.state==='approach'&&f.rwy===r).length,q=flights.filter(f=>(f.state==='hp')&&f.rwy===r).length;
-    let s='';const bk=r.blocks[0];if(T<r.closedUntil)s=`<span class="bad">closed ${Math.ceil((r.closedUntil-T)/60)} min · ${r.why}</span>`;else if(bk&&T>=bk.from)s=`<span class="bad">${bk.summit?'Taken by security':'VVIP closure'} · ${mmss(bk.to-T)}</span>`;else if(T<r.changeUntil)s=`<span class="hot">changeover ${Math.ceil((r.changeUntil-T)/60)} min</span>`;else s=`<b>${fin}</b> on final · <b class="${q>6?'hot':''}">${q}</b> queued · ${r.ops} ops`;
-    const tags=[];if(bk&&T<bk.from)tags.push(`<span class="bad">VVIP in ${mmss(bk.from-T)}</span>`);if(r.degraded)tags.push('<span class="hot">lights out: slower landings</span>');if(r.strike)tags.push('<span class="hot">bird remains: risk</span>');if(ops.some(o=>o.kind==='fod'&&o.r===r&&o.phase==='wait'))tags.push('<span class="hot">sweep pending</span>');if(r.shear)tags.push('<span class="hot">windshear</span>');st.innerHTML=s+(tags.length?' · '+tags.join(' · '):'');});
+    let s='';const bk=r.blocks[0];if(T<r.closedUntil)s=`<span class="bad">closed ${Math.ceil((r.closedUntil-T)/60)} min · ${r.why}</span>`;else if(bk&&T>=bk.from)s=`<span class="bad">${bk.summit?'Taken by security':(bk.desk||'VVIP closure')}${bk.open?'':' · '+mmss(bk.to-T)}</span>`;else if(T<r.changeUntil)s=`<span class="hot">changeover ${Math.ceil((r.changeUntil-T)/60)} min</span>`;else s=`<b>${fin}</b> on final · <b class="${q>6?'hot':''}">${q}</b> queued · ${r.ops} ops`;
+    const tags=[];if(bk&&T<bk.from)tags.push(`<span class="bad">VVIP in ${mmss(bk.from-T)}</span>`);if(r.degraded)tags.push('<span class="hot">lights out: slower landings</span>');if(T<r.sepUntil)tags.push(`<span class="hot">${r.sepWhy||'double spacing'}</span>`);if(r.kiteUntil>T)tags.push('<span class="hot">kites on final: go-arounds</span>');if(r.strike)tags.push('<span class="hot">bird remains: risk</span>');if(ops.some(o=>o.kind==='fod'&&o.r===r&&o.phase==='wait'))tags.push('<span class="hot">sweep pending</span>');if(r.shear)tags.push('<span class="hot">windshear</span>');st.innerHTML=s+(tags.length?' · '+tags.join(' · '):'');});
 }
 
 /* ============ HUD ============ */
@@ -2239,7 +2414,7 @@ function tick(dt){
   opsTick(dt);
   incSpawner(dt);
   if(T>=S.tlNext&&T>=0){S.tlNext=T+60;recordShift();}
-  summitTick();
+  summitTick();specialTick();storyTick();
   if(T>=LEN&&!ended)finish();
 }
 const onceSet=new Set();function once(k,fn){if(onceSet.has(k))return;onceSet.add(k);fn();}
@@ -2272,7 +2447,7 @@ function recordShift(){let hold=0,q=0,aDue=0,dDue=0;for(const f of flights){if(f
   const md={};for(const r of RW)if(!r.locked)md[r.short]=T<r.changeUntil?'CHG':r.mode;
   S.tl.push({t:T,hold,q,aDue,dDue,capA:Math.round(capNow('arr')),capD:Math.round(capNow('dep')),md,moves:S.moves});}
 // the expert autopilot's result on the same schedule (headless runs, run_all.py)
-const EXPERT={1:{st:3,moves:131,otp:97,cx:100},2:{st:3,moves:236,otp:95,cx:99},3:{st:3,moves:331,otp:87,cx:98},4:{st:3,moves:352,otp:92,cx:96}};
+const EXPERT={1:{st:3,moves:128,otp:88,cx:94},2:{st:3,moves:240,otp:93,cx:93},3:{st:3,moves:336,otp:89,cx:99},4:{st:3,moves:349,otp:91,cx:95}};
 const NEXT_TIP={1:'Level 2 opens with only one arrival runway and one MIX. The first purple wave arrives about 10 minutes in: have two runways on ARR before it.',
   2:'Level 3 is 46 °C: 777s and A380s can only take off from 27L, the 4,500 m runway. Keep 27L on DEP or MIX through the heat. And keep some slack in hand around 14:50: Nagpur has visitors today.',
   3:'Level 4 is all six runways at once, with a dust storm at 12:40 that widens the gaps between landings by 40%. Put an extra runway on ARR just before the storm, not during it.',
@@ -2302,6 +2477,7 @@ function debrief(otp,cx){
   if(cx<90)out.push({w:(90-cx)*3,title:`Connections ${cx}%`,text:'Transfer passengers miss their flights when their inbound sits in the stack. Keeping the stack short protects connections; for big groups, the "Hold 10 min" call trades a late departure for the passengers.'});
   if(S.summitAt!=null){const at=S.summitAt,w=tl.filter(s=>s.t>=at&&s.t<=at+1500),pk2=w.reduce((a,s)=>s.hold>a.hold?s:a,w[0]||{hold:0,t:at}),back=S.flipLog.filter(f=>f.t>=at+540&&f.t<=at+900&&(f.to==='ARR'||f.to==='MIX')).length;
     out.push({w:45,title:`The summit shut every runway at ${clk(at)}`,text:`The stack reached ${pk2.hold} by ${clk(pk2.t)}. You can't stop protocol, but you can recover faster: during the closure, line departures up at the holding points; as runways come back, put most of them on ARR first to drain the stack, then hand some back to departures.${back?'':' You made no ARR flips as the runways came back.'}`});}
+  for(const c of S.storyRec||[]){const d=STORY[c.k];const l=d&&d.lesson&&d.lesson(c,tl);if(l)out.push(l);}
   if(otp<87&&!out.length)out.push({w:10,title:`On time ${otp}%`,text:'Watch the forecast lines on the bank chart: red is the stack, amber the departure queue. When either starts to climb, flip a runway before it peaks.'});
   out.sort((a,b)=>b.w-a.w);
   // a compact chart of the shift: stack (red), departure queue (amber), arrivals due (purple) and the flips
@@ -2349,7 +2525,7 @@ function finish(){
   $('#sheet').innerHTML=`<div class="band"><span>Level ${LV.n} · ${LV.name}</span><span>${clk(0)} to ${clk(LEN)}</span></div><div class="in">
    <div class="bigstars">${starStr(st)}</div><h1 style="margin-top:8px">${st?'Level complete':'Level failed'}</h1><p>${verdict}</p>
    <div class="score"><div><div class="k">Movements</div><div class="v">${S.moves}/${LV.target}</div></div><div><div class="k">On time</div><div class="v">${otp}%</div><div class="sub">arrivals ${otpA}% · departures ${otpD}%</div></div><div><div class="k">Connections</div><div class="v">${cx}%</div></div><div><div class="k">Safety</div><div class="v">${Math.round(S.safety)}</div></div><div><div class="k">Your calls</div><div class="v">${S.incOk}/${S.incOk+S.incDef}</div><div class="sub">${S.incDef?`${S.incDef} left to ops`:S.incOk?'all made by you':'no calls this shift'}</div></div><div><div class="k">Runway flips</div><div class="v">${S.flips}</div></div><div><div class="k">Best on-time run</div><div class="v">${S.bestCombo||0}</div></div></div>
-   <p class="src">${(k=>`Stars: one for keeping safety at 70 or above. Two for reaching the movement target with ${k.otp2}% on time and ${k.cx2}% of connections. Three for ${k.otp3}% on time, ${k.cx3}% of connections and safety 90.${LV.starsAt?' This level allows for the summit shutdown.':''}`)(starLines(LV))}</p>
+   <p class="src">${(k=>`Stars: one for keeping safety at 70 or above. Two for reaching the movement target with ${k.otp2}% on time and ${k.cx2}% of connections. Three for ${k.otp3}% on time, ${k.cx3}% of connections and safety 90.${LV.starsAt?(LV.n===3?' This level allows for the summit shutdown.':' This level allows for the opening-day surprises.'):''}`)(starLines(LV))}</p>
    ${(()=>{const D=debrief(otp,cx),E=EXPERT[LV.n];return `<h2>What to do better next time</h2>${D.lessons.length?`<ol class="lessons">${D.lessons.map(l=>`<li><b>${l.title}.</b> ${l.text}</li>`).join('')}</ol>`:'<p>A clean shift: nothing to fix. Chase a longer on-time run, or try the next level.</p>'}
      ${D.svg?`<div class="shift"><div class="lg2"><span style="color:#ff7a6b">━ holding stack</span><span style="color:#ffd27a">━ departure queue</span><span style="color:#a99cff">▮ arrivals due</span><span style="color:var(--ink-3)">ticks: your runway flips</span></div>${D.svg}</div>`:''}
      ${E?`<p class="bench">The expert autopilot on this schedule: <b>${'★'.repeat(E.st)}</b> · ${E.moves} movements · ${E.otp}% on time · ${E.cx}% connections.${S.moves>=E.moves&&otp>=E.otp?' You beat it.':''}</p>`:''}
@@ -2412,7 +2588,7 @@ window.HUB={get T(){return T;},get S(){return S;},get LV(){return LV;},flights:(
 // Post chain: scene into a 4x MSAA half-float target -> GTAO (half res) -> bloom mips -> grade + tone map + sRGB.
 const Z3MOD={};
 const THREE_URL='https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
-const V3={ready:false,failed:false,loading:false,on:false,want:store.get('zm_view')!=='2d',mode:'map',waiters:[],fps:60,frames:0,fpsT:0,tier:0,tierMsg:0};
+const V3={ready:false,failed:false,loading:false,on:false,qn:0,warm:0,want:store.get('zm_view')!=='2d',mode:'map',waiters:[],fps:60,frames:0,fpsT:0,tier:0,tierMsg:0};
 const AIR_K=0.55;   // sim altitude units to metres: a 700-unit final over 7.45 km is a 3 degree glide path
 function altM(f){return f.alt>2?f.alt*AIR_K:0;}
 const Z={THREE:null,scene:null,camera:null,renderer:null,SPEC,mods:{},kEx:1,camDist:9000,quality:2,tier:'High',sunDir:null,addons:{},atmo:null,
@@ -2613,9 +2789,7 @@ void main(){
 
 function setTier(i,quiet,manual){
   V3.tier=clamp(i,0,TIERS.length-1);const t=TIERS[V3.tier];Z.tier=t.name;Z.quality=TIERS.length-1-V3.tier;
-  if(V3.ao)V3.ao.enabled=t.ao;if(V3.bloom)V3.bloom.enabled=t.bloom;if(V3.gradeU)V3.gradeU.bloomK.value=t.bloom&&V3.bloom?1:0;
-  const pr=Math.min(window.devicePixelRatio||1,V3.comp?t.pr:Math.min(1.75,t.pr+0.25));
-  if(Z.renderer.getPixelRatio()!==pr){Z.renderer.setPixelRatio(pr);resize3D();}
+  V3.ql=QTOP[V3.tier];V3.qSlow=0;V3.qFast=0;V3.qWait=20;qApply();
   if(manual)store.set('zm_q',t.name);
   if(!quiet){V3.tierMsg=performance.now()+2400;camLabel();}
 }
@@ -2709,6 +2883,14 @@ function atmoApply(now){
     if(V3.bloom){V3.bloom.strength=0.32*(a.bloom??1)*(1+lt);V3.bloom.threshold=1.0;}}
   const DB=Z.dbg;if(DB){   // dev hook for A/B shots: Z.dbg={fog:0,bloom:0,ao:0,env:0,exp:1.2,hemi:0.5}
     if(DB.fog!=null)fog.density*=DB.fog;if(DB.bloom!=null&&V3.bloom)V3.bloom.strength*=DB.bloom;if(DB.ao!=null&&V3.ao)V3.ao.enabled=!!DB.ao;if(DB.env===0)Z.scene.environment=null,V3.pmrem=null;if(DB.exp&&V3.gradeU)V3.gradeU.toneMappingExposure.value*=DB.exp;if(DB.hemi!=null)V3.hemi.intensity*=DB.hemi;}
+}
+// overlays that ignore fog (guide ribbons) fade with the dust for low cameras; the strategic view keeps them readable.
+// The red holding-stack vignette (#vign) is toned down and browned while the storm's own vignette is on.
+function overlayAtmo(){
+  const a=Z.atmo,hiK=clamp((Z.camera.position.y-1200)/3300,0,1),vk=clamp((a.visibility||50000)/5000,0.12,1);
+  V3.guides.material.opacity=0.9*(vk+(1-vk)*hiK);
+  const w=Z.mods.weather,ws=w&&w.state?w.state():null,dk=ws?clamp(Math.max(ws.I,ws.appr*ws.wall*0.6),0,1):(dustNow?1:0),q=Math.round(dk*20)/20;
+  if(q!==V3.vignK){V3.vignK=q;const v=$('#vign');if(v)v.style.setProperty('--dust',q);}
 }
 // re-render the environment map when the sun or the sky colour has moved enough to see (never every frame)
 function envUpdate(now){
@@ -2831,9 +3013,10 @@ function drawOverlay3D(now){
   for(const st of STACKS){const n=flights.filter(f=>f.state==='holding'&&f.stack===st);if(!n.length)continue;const p=proj(st.x,st.y,2600*AIR_K);if(p)signText(p.X,p.Y-40,`STACK ${st.id} · ${n.length}`,0.95,n.some(f=>f.minFuel)?'#ff4d3f':'#f4c430');}
   rwSigns=[];for(const r of RW){const p=proj(r.x0+r.len*0.18,r.y,0);if(!p)continue;const s=rwSign(r);const rect=signText(p.X,p.Y-16,`${r.short} · ${s.lbl}`,r.locked?.6:1,s.col);rect.r=r;rwSigns.push(rect);}
   for(const f of flights){if(!f.mayday||f.landT!=null||f.sx==null)continue;const X=f.sx,Y=f.sy,pp=(now*1.4)%1;ctx.strokeStyle=`rgba(255,77,63,${1-pp})`;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(X,Y,10+pp*28,0,7);ctx.stroke();signText(X,Y-30,`MAYDAY ${fl(f)}`,1,'#ff4d3f');}
-  for(const I of incidents){const q=incPos(I);const p=proj(q.x,q.y,I.f?altM(I.f):0);if(!p){I.sx=null;continue;}const X=p.X,Y=p.Y-(I.f?0:14);const ic=ICON[I.type];const pulse=1+0.18*Math.sin(now*7);const R=13*pulse;
+  for(const I of incidents){const q=incPos(I);const p=proj(q.x,q.y,I.f?altM(I.f):0);if(!p){I.sx=null;continue;}const X=p.X,Y=p.Y-(I.f?0:14);const ic=(I.icon||ICON[I.type]);const pulse=1+0.18*Math.sin(now*7);const R=13*pulse;
     ctx.fillStyle='rgba(0,0,0,.55)';ctx.beginPath();ctx.arc(X,Y,R+5,0,7);ctx.fill();ctx.strokeStyle=ic.c;ctx.lineWidth=3;ctx.beginPath();ctx.arc(X,Y,R+3,-Math.PI/2,-Math.PI/2+2*Math.PI*clamp(I.left/I.total,0,1));ctx.stroke();
     ctx.fillStyle=ic.c;ctx.beginPath();ctx.arc(X,Y,R-2,0,7);ctx.fill();ctx.fillStyle='#0b0b0b';ctx.font='700 15px Barlow Condensed, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(ic.g,X,Y+1);ctx.textAlign='left';ctx.textBaseline='alphabetic';I.sx=X;I.sy=Y;}
+  drawMarks(ctx,(x,y,a)=>proj(x,y,a*AIR_K),now);
   const tagged=new Set();if(selected)tagged.add(selected);if(hover)tagged.add(hover);
   if(V3.mode==='map'&&Z.camDist<2200){const cp=Z.camera.position,cand=[];for(const f of flights){if(f.sx!=null&&['approach','rollout','lineup','roll','nogate','climb','hp'].includes(f.state)&&f.sx>40&&f.sx<VW-40&&f.sy>40&&f.sy<VH-40)cand.push([Math.hypot(cp.x-f.x,cp.z-f.y),f]);}
     cand.sort((a,b)=>a[0]-b[0]);for(const c of cand.slice(0,6))tagged.add(c[1]);}
@@ -2857,29 +3040,59 @@ function guides3D(now){
     for(let u=0;u<=P0+1;u+=P0/48){const p=stackPos(st,u,0);const a=2100*AIR_K;if(prev&&((u/(P0/48))|0)%2===0)seg(prev.x,prev.y,a,p.x,p.y,a,0.95,0.78,0.2);prev=p;}}
   g.setDrawRange(0,n);g.attributes.position.needsUpdate=true;g.attributes.color.needsUpdate=true;
 }
-// quality: if the frame rate sags, step down a tier (AO, then bloom and pixel ratio), then drop shadows
-function quality3D(){if(!V3.qT)V3.qT=0;if(V3.fps<42&&++V3.qT>3){V3.qT=0;
-  if(V3.tier<TIERS.length-1)setTier(V3.tier+1,false);
-  else{const pr=Z.renderer.getPixelRatio();if(pr>1){Z.renderer.setPixelRatio(Math.max(1,pr-0.5));resize3D();}else if(Z.renderer.shadowMap.enabled){Z.renderer.shadowMap.enabled=false;Z.scene.traverse(o=>{if(o.material)o.material.needsUpdate=true;});}}}
-  else if(V3.fps>=42)V3.qT=0;}
+// adaptive quality: a ladder of small steps (pixel ratio first, then AO, then bloom) walked down EARLY, as soon as the
+// median frame time sags for a second, and back up only after a long steady stretch (with a growing back-off, so it
+// never oscillates). G picks the top rung (High 0, Medium 2, Low 4); hitches (>100 ms) never count as "slow".
+const QL=[{ao:true,bloom:true,pr:1.5},{ao:true,bloom:true,pr:1.25},{ao:false,bloom:true,pr:1.25},{ao:false,bloom:true,pr:1},{ao:false,bloom:false,pr:1},{ao:false,bloom:false,pr:0.85}];
+const QTOP=[0,2,4],QFT=new Float32Array(64);
+function qApply(){const q=QL[V3.ql],R=Z.renderer;if(V3.ao)V3.ao.enabled=q.ao;if(V3.bloom)V3.bloom.enabled=q.bloom;if(V3.gradeU)V3.gradeU.bloomK.value=q.bloom&&V3.bloom?1:0;
+  const pr=Math.min(window.devicePixelRatio||1,V3.comp?q.pr:Math.min(1.75,q.pr+0.25));if(R.getPixelRatio()!==pr){R.setPixelRatio(pr);resize3D();}}
+function quality3D(dtR){
+  if(navigator.webdriver&&!Z.adaptive)return;
+  const ms=dtR*1000;if(ms>100||ms<=0)return;QFT[V3.qn++&63]=ms;V3.qAcc=(V3.qAcc||0)+dtR;if(V3.qAcc<0.5)return;V3.qAcc=0;
+  const n=Math.min(V3.qn,64),a=Array.from(QFT.subarray(0,n)).sort((x,y)=>x-y),med=a[n>>1],p90=a[Math.floor(n*0.9)];V3.qn=0;
+  const top=QTOP[V3.tier];if(V3.ql==null||V3.ql<top)V3.ql=top;
+  // stutter counts as slow too: a fine median with 1 frame in 10 running double length is what players feel as lag
+  if(med>18.5||p90>26){V3.qSlow=(V3.qSlow||0)+1;V3.qFast=0;
+    if(V3.qSlow>=2&&V3.ql<QL.length-1){V3.qSlow=0;if(performance.now()-(V3.qUpT||0)<6000)V3.qWait=Math.min(240,(V3.qWait||20)*2);V3.ql++;qApply();}}
+  else if(med<17.2&&p90<19){V3.qSlow=0;V3.qFast=(V3.qFast||0)+1;
+    if(V3.ql>top&&V3.qFast*0.5>=(V3.qWait||20)){V3.qFast=0;V3.ql--;V3.qUpT=performance.now();qApply();}}
+  else{V3.qSlow=0;V3.qFast=0;}}
+// first-use hitches: compile every program once (in parallel where the browser can), then draw one hidden frame with
+// every object forced visible and unculled, so pipelines, buffers and textures are all created before the player
+// looks at them (the andhi, the night lights, aircraft types, AO). Runs once, behind the level menu.
+function prewarm3D(){
+  const R=Z.renderer;V3.warm=1;const rt=R.getRenderTarget();
+  try{R.setRenderTarget(V3.comp?V3.rtMS:null);const p=R.compileAsync?R.compileAsync(Z.scene,Z.camera):null;R.setRenderTarget(rt);
+    if(p&&p.then)p.then(()=>{V3.warm=2;},()=>{V3.warm=2;});else V3.warm=2;}
+  catch(err){R.setRenderTarget(rt);console.warn('3D: prewarm compile',err);V3.warm=2;}
+}
+function warmFrame(on){
+  if(on){const L=V3.warmL=[];Z.scene.traverse(o=>{L.push(o,o.visible,o.frustumCulled,o.isInstancedMesh?o.count:-1);o.visible=true;o.frustumCulled=false;if(o.isInstancedMesh&&!o.count)o.count=1;});
+    V3.warmAO=V3.ao?V3.ao.enabled:false;if(V3.ao)V3.ao.enabled=true;return;}
+  const L=V3.warmL;for(let i=0;i<L.length;i+=4){const o=L[i];o.visible=L[i+1];o.frustumCulled=L[i+2];if(L[i+3]>=0)o.count=L[i+3];}V3.warmL=null;if(V3.ao)V3.ao.enabled=V3.warmAO;
+}
 function draw3D(now,dtR){
   if(!Z.renderer)return;const t0=performance.now(),R=Z.renderer;
   if(R.domElement.width!==Math.round(VW*R.getPixelRatio()))resize3D();
   lightRig();camUpdate(dtR);
   for(const k in Z.mods){const m=Z.mods[k];if(m&&m.update){try{m.update(dtR,now);}catch(err){console.error('3D '+k,err);m.update=null;}}}
-  atmoApply(now);guides3D(now);
+  atmoApply(now);guides3D(now);overlayAtmo();
   try{envUpdate(now);}catch(err){console.warn('3D: environment map failed',err);V3.pmrem=null;}
   V3.sky.position.copy(Z.camera.position);
+  if(!V3.warm&&Z.scene.environment&&LV)prewarm3D();
+  if(V3.warm===2){V3.warm=3;try{warmFrame(true);R.shadowMap.needsUpdate=true;if(V3.comp){const c=V3.comp;c.readBuffer=V3.rtMS;c.writeBuffer=c.renderTarget1;c.render(dtR);}else R.render(Z.scene,Z.camera);}
+    catch(err){console.warn('3D: warm-up frame',err);}finally{warmFrame(false);}}
   R.info.reset();R.shadowMap.needsUpdate=true;V3.sceneCalls=-1;
   if(V3.comp){const c=V3.comp;c.readBuffer=V3.rtMS;c.writeBuffer=c.renderTarget1;
     if(V3.ao&&V3.ao.enabled){const r=clamp(Z.camDist*0.012,3.5,40);V3.ao.gtaoMaterial.uniforms.radius.value=r;V3.ao.gtaoMaterial.uniforms.thickness.value=r*2.5;}
     c.render(dtR);
     const i=R.info.render;if(V3.sceneCalls>=0){V3.postCalls=i.calls-V3.sceneCalls;V3.postTris=i.triangles-V3.sceneTris;i.calls=V3.sceneCalls;i.triangles=V3.sceneTris;}}
   else R.render(Z.scene,Z.camera);
-  Z.renderStats={tier:Z.tier,postCalls:V3.postCalls|0,postTris:V3.postTris|0,envRegens:V3.envN|0,pr:R.getPixelRatio()};
+  Z.renderStats={tier:Z.tier,ql:V3.ql,warm:V3.warm,postCalls:V3.postCalls|0,postTris:V3.postTris|0,envRegens:V3.envN|0,pr:R.getPixelRatio()};
   project3D();drawOverlay3D(now);V3.cpu=(V3.cpu||0)*0.9+(performance.now()-t0)*0.1;
   if(V3.tierMsg&&performance.now()>V3.tierMsg){V3.tierMsg=0;camLabel();}
-  V3.frames++;V3.fpsT+=dtR;if(V3.fpsT>1){V3.fps=V3.frames/V3.fpsT;V3.frames=0;V3.fpsT=0;if(!navigator.webdriver)quality3D();}
+  V3.frames++;V3.fpsT+=dtR;if(V3.fpsT>1){V3.fps=V3.frames/V3.fpsT;V3.frames=0;V3.fpsT=0;}quality3D(dtR);
 }
 
 /* ---- 3d/aircraft.js ---- */
@@ -4063,9 +4276,9 @@ Z3MOD.field = function (Z) {
   const groundMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, metalness: 0, envMapIntensity: 0.75 });
   groundMat.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, { farm: { value: farmTex }, dtl: { value: noiseTex }, grT: { value: grassTex }, aptT: { value: aptTex }, gcv: { value: new THREE.Vector4(GC.x0, GC.y0, GC.w, GC.h) }, apb: { value: APB },
-      baseCol: { value: lin('#477a26') }, rot: { value: new THREE.Vector3(Math.cos(ROT), Math.sin(ROT), 0) }, nglow: { value: 0 }, apt: { value: new THREE.Vector4(AX0, AY0, AX1, AY1) } });
+      baseCol: { value: lin('#477a26') }, rot: { value: new THREE.Vector3(Math.cos(ROT), Math.sin(ROT), 0) }, nglow: { value: 0 }, dry: { value: 0 }, apt: { value: new THREE.Vector4(AX0, AY0, AX1, AY1) } });
     sh.vertexShader = 'varying vec2 vWP;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvWP=(modelMatrix*vec4(transformed,1.0)).xz;');
-    sh.fragmentShader = 'uniform sampler2D farm;uniform sampler2D dtl;uniform sampler2D grT;uniform sampler2D aptT;uniform vec4 gcv;uniform vec4 apt;uniform vec4 apb;uniform vec3 baseCol;uniform vec3 rot;uniform float nglow;varying vec2 vWP;\n' + sh.fragmentShader
+    sh.fragmentShader = 'uniform sampler2D farm;uniform sampler2D dtl;uniform sampler2D grT;uniform sampler2D aptT;uniform vec4 gcv;uniform vec4 apt;uniform vec4 apb;uniform vec3 baseCol;uniform vec3 rot;uniform float nglow,dry;varying vec2 vWP;\n' + sh.fragmentShader
       .replace('#include <map_fragment>', `
       vec2 tuv=(vWP-gcv.xy)/gcv.zw;
       vec3 fcol=texture2D(farm,vec2(clamp(tuv.x,0.0004,0.9996),1.0-clamp(tuv.y,0.0004,0.9996))).rgb;
@@ -4092,7 +4305,14 @@ Z3MOD.field = function (Z) {
       float fg=1.0-smoothstep(25.0,650.0,gd);
       vec4 gt=texture2D(grT,vWP*0.23); vec4 gu=texture2D(grT,vWP*0.97+vec2(0.41,0.17));
       gc*=mix(1.0,(0.88+0.24*gt.r)*(0.9+0.2*gu.r),fg*fg);
-      float gRough=0.9+0.12*(gt.g-0.5)*fg;
+      // close-range detail: mowing rows in the runway strips (9 m passes along the runways), dry tufts at ~2 m,
+      // and a drier, straw-tinted field in the 46 C heat level (still green overall)
+      float mw=vWP.y/9.0,mwf=fwidth(mw);float mowK=inA*(1.0-ap.a)*(1.0-smoothstep(0.15,0.45,mwf))*(1.0-smoothstep(600.0,2200.0,gd));
+      gc*=1.0+mowK*0.055*(step(0.5,fract(mw))*2.0-1.0)*(0.7+0.3*n4.g);
+      vec3 n6=texture2D(dtl,vWP*0.47+0.53).rgb;float tuft=smoothstep(0.62-0.12*dry,0.8,n6.b*0.7+n5.g*0.3)*(1.0-smoothstep(40.0,420.0,gd));
+      gc=mix(gc,gc*vec3(1.32,1.16,0.68),tuft*(0.5+0.3*dry));
+      gc=mix(gc,gc*vec3(1.16,1.06,0.74),dry*(0.22+0.2*smoothstep(0.4,0.7,n3.r)));
+      float gRough=0.9+0.12*(gt.g-0.5)*fg+0.06*tuft;
       vec2 gq=(gt.ba*2.0-1.0)*0.6*fg+(gu.ba*2.0-1.0)*0.45*fg*fg;
       vec3 gN=vec3(gq.x,1.0,gq.y);
       diffuseColor.rgb*=gc;totalEmissiveRadiance+=gc*vec3(0.55,0.65,1.0)*nglow;`)
@@ -4122,7 +4342,7 @@ Z3MOD.field = function (Z) {
 
   // ---------- pavement material: Standard + world-space PBR detail (asphalt aggregate, patches, tar snakes, slab joints, stains) ----------
   // kinds: 0 taxiway (vertex colours; light ones are concrete), 1 apron concrete, 2 runway (canvas map), 3 road (canvas map)
-  const PU = { tA: { value: asphTex }, tM: { value: macroTex }, tP: { value: paveTex }, apb: { value: APB } };
+  const PU = { tA: { value: asphTex }, tM: { value: macroTex }, tP: { value: paveTex }, apb: { value: APB }, wet: { value: 0 } };
   const PAVE = `
     float pd=length(vViewPosition);
     float fd=1.0-smoothstep(30.0,650.0,pd), fm=1.0-smoothstep(1500.0,12000.0,pd);
@@ -4145,12 +4365,13 @@ Z3MOD.field = function (Z) {
     float oil=PK==2?0.0:ps.r; alb*=1.0-0.6*oil; pr-=0.3*oil;
     if(PK>=2){float paint=smoothstep(0.1,0.32,lum0);float rub=1.0-smoothstep(0.012,0.03,lum0);
       alb=mix(alb,0.9+0.1*alb,paint);pr=mix(pr,0.6,paint)-0.22*rub;nq*=1.0-0.5*paint;}
-    diffuseColor.rgb*=alb; float pRgh=clamp(pr,0.3,1.0); vec3 pN=vec3(nq.x,1.0,nq.y);`;
+    alb*=1.0-0.22*wet; pr=mix(pr,0.35+0.25*(pr-0.86),wet); nq*=1.0-0.6*wet;   // the andhi's rain tail: darker, glossy pavement
+    diffuseColor.rgb*=alb; float pRgh=clamp(pr,0.18,1.0); vec3 pN=vec3(nq.x,1.0,nq.y);`;
   function paveMat(kind, opts) {
     const m = new THREE.MeshStandardMaterial(Object.assign({ roughness: 0.86, metalness: 0, envMapIntensity: 0.5 }, opts));
     m.onBeforeCompile = sh => { Object.assign(sh.uniforms, PU);
       sh.vertexShader = 'varying vec2 vWP;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvWP=(modelMatrix*vec4(transformed,1.0)).xz;');
-      sh.fragmentShader = `#define PK ${kind}\nuniform sampler2D tA;uniform sampler2D tM;uniform sampler2D tP;uniform vec4 apb;varying vec2 vWP;\n` + sh.fragmentShader
+      sh.fragmentShader = `#define PK ${kind}\nuniform sampler2D tA;uniform sampler2D tM;uniform sampler2D tP;uniform vec4 apb;uniform float wet;varying vec2 vWP;\n` + sh.fragmentShader
         .replace('#include <color_fragment>', '#include <color_fragment>\n' + PAVE)
         .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor=pRgh;')
         .replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\nnormal=normalize((viewMatrix*vec4(normalize(pN),0.0)).xyz);'); };
@@ -4176,7 +4397,7 @@ Z3MOD.field = function (Z) {
     flatLayer(new THREE.Mesh(g, paveMat(1, { color: '#b1ada2', roughness: 0.82 })), -38); }
 
   // ---------- 4. taxiways, exits, shoulders, blast pads, perimeter and service roads, rail ----------
-  const ASPH = lin('#5a5d5f'), LANE = lin('#aaa69c'), SHLD = lin('#6c6e6a'), PAD = lin('#5f605e'), PERIM = lin('#625f59'), RAIL = lin('#6e7480');
+  const ASPH = lin('#4f5254'), LANE = lin('#aaa69c'), SHLD = lin('#6c6e6a'), PAD = lin('#5f605e'), PERIM = lin('#625f59'), RAIL = lin('#6e7480');
   const LB = newB(1);  // markings (yellow/white lines), fades out with distance
   const YEL = lin('#e5b52a'), RED = lin('#b8322a');
   const twB = newB(22);
@@ -4223,8 +4444,8 @@ Z3MOD.field = function (Z) {
     for (let k = 0; k < 2500; k++) { g.fillStyle = `rgba(56,58,59,${0.25 + R() * 0.4})`; const x = R() < 0.5 ? R() * 1000 : len - R() * 1000; g.fillRect(x, -30 + R() * 60, 0.3 + R() * 1.2, 0.2 + R() * 0.4); }
     // tyre rubber: heavy in the touchdown zone near x1, light near x0
     for (let k = 0; k < 2600; k++) { const d = 140 + Math.pow(R(), 1.7) * 1100, lx = len - d, gear = R() < .8; const ly = gear ? (R() < .5 ? -1 : 1) * (3 + R() * 9) : (R() - 0.5) * 4;
-      g.fillStyle = `rgba(10,10,10,${(0.06 + 0.1 * (1 - d / 1300)) * (gear ? 1 : 0.6)})`; g.beginPath(); g.ellipse(lx, ly, 8 + R() * 40, 0.6 + R() * 1.8, 0, 0, 7); g.fill(); }
-    for (let k = 0; k < 300; k++) { const d = 200 + R() * 500; g.fillStyle = 'rgba(14,14,14,.04)'; g.beginPath(); g.ellipse(d, (R() - 0.5) * 22, 10 + R() * 30, 0.6 + R() * 1.4, 0, 0, 7); g.fill(); }
+      g.fillStyle = `rgba(8,8,8,${(0.09 + 0.16 * (1 - d / 1300)) * (gear ? 1 : 0.6)})`; g.beginPath(); g.ellipse(lx, ly, 8 + R() * 40, 0.6 + R() * 1.8, 0, 0, 7); g.fill(); }
+    for (let k = 0; k < 900; k++) { const d = 150 + Math.pow(R(), 1.5) * 750; g.fillStyle = `rgba(10,10,10,${0.05 + 0.06 * (1 - d / 900)})`; g.beginPath(); g.ellipse(d, (R() - 0.5) * 22, 10 + R() * 30, 0.6 + R() * 1.4, 0, 0, 7); g.fill(); }
     g.restore();
     const TH = RWH * RW.length, u1 = W / RWW, vT = 1 - ri * H / TH, vB = 1 - (ri + 1) * H / TH;
     const a = vtx(rwB, r.x0, r.y - 38, 0.15, WHITE, 0, vT), b = vtx(rwB, r.x1, r.y - 38, 0.15, WHITE, u1, vT), cc = vtx(rwB, r.x1, r.y + 38, 0.15, WHITE, u1, vB), d = vtx(rwB, r.x0, r.y + 38, 0.15, WHITE, 0, vB);
@@ -4249,15 +4470,19 @@ Z3MOD.field = function (Z) {
   const washGeo = new THREE.PlaneGeometry(1, 1); washGeo.rotateX(-Math.PI / 2);
   const washes = RW.map((r, i) => {
     const m = new THREE.ShaderMaterial({ transparent: false, depthWrite: false, depthFunc: THREE.AlwaysDepth, blending: THREE.CustomBlending, blendSrc: THREE.SrcAlphaFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
-      uniforms: { cA: { value: new THREE.Vector3() }, cB: { value: new THREE.Vector3() }, p: { value: 2 }, al: { value: 0.3 }, chg: { value: -1 }, closed: { value: 0 }, t: { value: 0 }, heat: { value: 0 }, len: { value: r.len }, far: { value: 1 } },
+      uniforms: { cA: { value: new THREE.Vector3() }, cB: { value: new THREE.Vector3() }, p: { value: 2 }, al: { value: 0.3 }, chg: { value: -1 }, closed: { value: 0 }, t: { value: 0 }, heat: { value: 0 }, len: { value: r.len }, far: { value: 1 }, vis: { value: 50000 } },
       vertexShader: 'varying vec2 vUv;varying vec2 vW;void main(){vUv=uv;vec4 w=modelMatrix*vec4(position,1.0);vW=w.xz;gl_Position=projectionMatrix*viewMatrix*w;}',
-      fragmentShader: `uniform vec3 cA,cB;uniform float p,al,chg,closed,t,heat,len,far;varying vec2 vUv;varying vec2 vW;
+      fragmentShader: `uniform vec3 cA,cB;uniform float p,al,chg,closed,t,heat,len,far,vis;varying vec2 vUv;varying vec2 vW;
         void main(){float s=1.0-vUv.x;vec3 c=s<p?cB:cA;float a=al;float side=abs(vUv.y-0.5)*2.0;
-          a*=mix(0.42,0.72,far)+mix(0.58,0.28,far)*smoothstep(0.5,0.98,side);
+          // the full-surface tint is for the map view; close up only the edge band and the changeover markers stay (no teal asphalt)
+          float cdist=length(cameraPosition-vec3(vW.x,0.0,vW.y));float full=smoothstep(1500.0,5000.0,cdist);
+          a*=mix(0.42,0.72,far)*full+mix(0.58,0.28,far)*smoothstep(0.5,0.98,side)*mix(1.0,0.8,full);
           if(p<1.0){float e=exp(-abs(s-p)*len/22.0)*step(s,p+0.02);c=mix(c,vec3(1.0),e*0.55);a=max(a,e*0.85);}
           if(closed>0.5){float h=step(0.5,fract((vW.x-vW.y)/34.0-t*0.25));a*=0.55+0.75*h;}
           if(heat>0.0){float m=heat*smoothstep(0.62,1.0,0.5+0.5*sin(vW.x*0.031+t*1.1+2.2*sin(vW.y*0.21+t*2.7)));c=mix(c,vec3(0.86,0.9,0.96),m*0.6);a=max(a,m*0.2);}
           if(chg>=0.0&&side>0.8){a=mix(a*0.4,0.95,step(s,chg));c=mix(c*0.6,vec3(1.0,0.66,0.2),step(s,chg));}
+          // in dust a low camera loses the wash with the runway; the strategic (high) camera keeps it readable
+          a*=mix(clamp(1.35*exp(-cdist/max(vis,1.0)),0.0,1.0),1.0,smoothstep(1200.0,4500.0,cameraPosition.y));
           gl_FragColor=vec4(c,a);}` });
     const w = new THREE.Mesh(washGeo, m); w.position.set((r.x0 + r.x1) / 2, 0.3, r.y); w.scale.set(r.len, 1, 76); w.renderOrder = -34; w.frustumCulled = false; root.add(w);
     w.userData.st = { key: '' }; return w;
@@ -4313,12 +4538,14 @@ Z3MOD.field = function (Z) {
       void main(){float k=aP.y;float on=1.0;int ri=int(aP.z+0.5);
         if(aP.z>-0.5){on=(k>1.5)?uApp[ri]:uOn[ri];}
         if(k>2.5){float ph=fract(uT*2.0)/0.6;on*=smoothstep(0.07,0.0,abs(ph-aP.w))*1.5;}
-        vec4 mv=modelViewMatrix*vec4(position,1.0);float dist=max(1.0,-mv.z);mv.xyz*=0.997;gl_Position=projectionMatrix*mv;
-        float sz=aP.x*(1.0+uDust*(k>0.5&&k<1.5?1.6:0.8))*uPx/dist;gl_PointSize=clamp(sz,uMin,96.0);
+        vec4 mv=modelViewMatrix*vec4(position,1.0);float dist=max(1.0,-mv.z);
+        float sz=aP.x*(1.0+uDust*(k>0.5&&k<1.5?0.6:0.4))*uPx/dist;float ps=clamp(sz,uMin,40.0);gl_PointSize=ps;
+        // pull the sprite toward the camera by its own world radius, so the ground never clips it into a half-dome
+        mv.xyz-=normalize(mv.xyz)*min(0.5*ps*dist/uPx+0.5,dist*0.5);gl_Position=projectionMatrix*mv;
         float f=smoothstep(uFog.x,uFog.y*1.4,dist);
         vA=uLa*on*clamp(sz/uMin,0.6,1.0)*(1.0-0.7*f);vC=aCol;
         if(vA<0.003)gl_Position=vec4(2.0,2.0,2.0,1.0);}`,
-    fragmentShader: 'varying vec3 vC;varying float vA;void main(){vec2 q=gl_PointCoord*2.0-1.0;float d=dot(q,q);if(d>1.0)discard;float a=exp(-d*4.5)*0.75+exp(-d*26.0);gl_FragColor=vec4(mix(vC,vec3(1.0),exp(-d*40.0)*0.6),a*vA);}' });
+    fragmentShader: 'varying vec3 vC;varying float vA;void main(){vec2 q=gl_PointCoord*2.0-1.0;float d=dot(q,q);if(d>1.0)discard;float a=exp(-d*8.0)*0.9+exp(-d*2.2)*0.12;gl_FragColor=vec4(mix(vC,vec3(1.0),exp(-d*40.0)*0.6),a*vA);}' });
   const lightGeo = new THREE.BufferGeometry(); lightGeo.setAttribute('position', new THREE.Float32BufferAttribute(LP, 3)); lightGeo.setAttribute('aCol', new THREE.Float32BufferAttribute(LC, 3)); lightGeo.setAttribute('aP', new THREE.Float32BufferAttribute(LA, 4));
   const lightPts = new THREE.Points(lightGeo, lightMat); lightPts.frustumCulled = false; lightPts.renderOrder = 5; lightPts.visible = false; root.add(lightPts);
   // elevated light fixtures: frangible stem + coloured lens (lens takes the instance colour and glows a little)
@@ -4509,6 +4736,7 @@ Z3MOD.field = function (Z) {
   return {
     update(dt, now) {
       const T = Z.T, LV = Z.LV, cd = Z.camDist || 9000;
+      { const w = Z.mods.weather, ws = w && w.state ? w.state() : null, tgt = ws ? Math.min(1, ws.tail * 1.2) : 0; PU.wet.value += (tgt - PU.wet.value) * Math.min(1, dt * 0.5); }
       const la = clamp(Math.max(Z.nightF * 1.15, Z.dustNow ? 0.85 : 0, LV && LV.light === 'dawn' ? 0.85 - T / 1800 : 0), 0, 1);
       const far = clamp((cd - 1500) / 8000, 0, 1), heat = LV && LV.light === 'heat' ? (Z.heatNow ? 1 : 0.65) * (1 - far) : 0;
       for (let i = 0; i < RW.length; i++) {
@@ -4519,7 +4747,7 @@ Z3MOD.field = function (Z) {
         u.p.value = Math.min(1.05, (now - st.t0) / 1.2);
         u.al.value = (ALPHA[key] + far * 0.22) * (1 - 0.25 * Z.nightF);
         u.chg.value = T < r.changeUntil ? clamp((r.changeUntil - T) / (Z.CHANGE || 120), 0, 1) : -1;
-        u.far.value = far; u.closed.value = key === 'X' ? 1 : 0; u.t.value = now; u.heat.value = heat;
+        u.far.value = far; u.vis.value = Z.atmo && Z.atmo.visibility ? Z.atmo.visibility : 50000; u.closed.value = key === 'X' ? 1 : 0; u.t.value = now; u.heat.value = heat;
         w.scale.z = 76 + Math.max(0, cd - 2000) * 0.0065;
         const on = !r.locked && r.mode !== 'OFF' && !closed && !r.degraded;
         LU.uOn.value[i] = on ? 1 : 0; LU.uApp.value[i] = on && (r.mode === 'ARR' || r.mode === 'MIX') ? 1 : 0;
@@ -4531,7 +4759,7 @@ Z3MOD.field = function (Z) {
         LU.uDust.value = Z.dustNow ? 1 : 0; const fg = Z.scene.fog; if (fg && fg.near !== undefined) LU.uFog.value.set(fg.near, fg.far); else if (fg && fg.density) LU.uFog.value.set(0.4 / fg.density, 2.0 / fg.density);
       }
       poolMat.uniforms.uI.value = 0.5 * clamp((Math.max(Z.nightF, Z.dustNow ? 0.5 : 0) - 0.25) / 0.6, 0, 1); poolMesh.visible = poolMat.uniforms.uI.value > 0.01;
-      if (groundMat.userData.sh) groundMat.userData.sh.uniforms.nglow.value = 0.05 * Z.nightF;
+      if (groundMat.userData.sh) { const gu = groundMat.userData.sh.uniforms; gu.nglow.value = 0.05 * Z.nightF; gu.dry.value = LV && LV.light === 'heat' ? 1 : 0; }
       linesMesh.visible = cd < 4000; linesMat.opacity = clamp((4000 - cd) / 1600, 0, 1) * 0.95;
       FXU.uGlow.value = 0.25 + 2.6 * la; if (fixIM) fixIM.visible = cd < 2600; if (typeof signMat !== 'undefined') signMat.emissiveIntensity = 0.12 + 0.9 * la;
       // wind: trees, water ripples, windsocks
@@ -4747,6 +4975,17 @@ Z3MOD.terminal = function (Z) {
     };
     m.customProgramCacheKey = () => key; return m;
   }
+  // skylight glass: every pane gets its own roughness (0.03-0.21, by instance and facet), so the roof reads as a field of
+  // slightly different reflections of the sky rather than identical dark holes
+  function cofferGlass(m) {
+    const ob = m.onBeforeCompile;
+    m.onBeforeCompile = sh => { ob(sh);
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying float vPan;')
+        .replace('#include <beginnormal_vertex>', '#include <beginnormal_vertex>\n#ifdef USE_INSTANCING\nvPan = float(gl_InstanceID) * 1.618 + dot(objectNormal, vec3(1.7, 3.1, 5.3));\n#else\nvPan = dot(objectNormal, vec3(1.7, 3.1, 5.3));\n#endif');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vPan;')
+        .replace('#include <metalnessmap_fragment>', 'if (vSel > 0.5 && vSel < 1.5) { float panR = fract(sin(vPan * 12.9898) * 43758.5453); roughnessFactor = 0.03 + 0.18 * panR * panR; }\n#include <metalnessmap_fragment>'); };
+    return m;
+  }
   // curtain-wall glass: a mullion grid, low-iron glass reflecting the sky, and behind it a lit interior faked by
   // ray-casting a box room in the shader (mezzanine slab, polished floor with people and coloured coffer light,
   // bamboo soffit with peacock lenses, white tree columns, lit shopfronts and the art wall at the back)
@@ -4817,7 +5056,7 @@ vec3 gInterior() {
     jaali: new THREE.MeshStandardMaterial({ map: jaaliT, normalMap: jaaliT.userData.n, normalScale: new THREE.Vector2(1.2, 1.2), alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.82, metalness: 0, color: col('#fff4e2') }),
     tree: selInst(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, side: THREE.DoubleSide }), 'zmhPlant', [0.9, 0.9, 0.85], [0, 0, 0], 0),
     pool: new THREE.MeshStandardMaterial({ color: col('#0f3a3a'), roughness: 0.03, metalness: 0, normalMap: rippleN, normalScale: new THREE.Vector2(0.35, 0.35), envMapIntensity: 1.8, emissive: col('#39b3a6'), emissiveIntensity: 0 }),
-    coffer: selInst(new THREE.MeshStandardMaterial({ vertexColors: true, envMapIntensity: 1.4 }), 'zmhCoffer', [0.4, 0.03, 0.12], [0.1, 0, 0.3], 0.55),
+    coffer: cofferGlass(selInst(new THREE.MeshStandardMaterial({ vertexColors: true, envMapIntensity: 1.4 }), 'zmhCoffer2', [0.4, 0.03, 0.12], [0.1, 0.3, 0.3], 0.55)),
     inst: selInst(new THREE.MeshStandardMaterial({ vertexColors: true, envMapIntensity: 1.1 }), 'zmhInst', [0.6, 0.06, 0.32], [0.1, 0, 0.45], 0),
     bridge: selInst(new THREE.MeshStandardMaterial({ vertexColors: true, envMapIntensity: 1.1 }), 'zmhBridge', [0.38, 0.05, 0.4], [0.55, 0, 0.3], 0),
   };
@@ -5354,7 +5593,7 @@ vec3 gInterior() {
     const SK = (RF.skylights || []).filter(s => !isHole(s.x, s.y) && H(s.x, s.y) !== NEG); if (!SK.length) return;
     // a glazed coffer opening: a white upstand curb, a recessed well, a faceted low glass pyramid (catching the sun at
     // different angles) and a coloured lens at its crown. Unit footprint, scaled to l x w; heights in metres.
-    const A = Acc(), w = CL.white, gc = col('#1c2a33'), wl = col('#6b7378');
+    const A = Acc(), w = CL.white, gc = col('#4a6272'), wl = col('#6b7378');
     const NO = 8, oc = (k, r) => [Math.cos(TAU * (k + 0.5) / NO) * r, Math.sin(TAU * (k + 0.5) / NO) * r];
     for (let k = 0; k < NO; k++) {
       const a0 = oc(k, 0.5), a1 = oc(k + 1, 0.5), b0 = oc(k, 0.43), b1 = oc(k + 1, 0.43), c0 = oc(k, 0.12), c1 = oc(k + 1, 0.12), n = [a0[0] + a1[0], 0, a0[1] + a1[1]];
@@ -5533,9 +5772,8 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
       vec3 v=normalize(vDir);float up=max(v.y,0.);float hl=max(length(v.xz),1e-3);
       vec2 pc=v.xz/max(v.y,0.035)*1800.;
       vec4 n=texture2D(uNoise,(pc-uWD*uFlow*0.5)*0.00011+0.31);
-      vec4 n2=texture2D(uNoise,(pc-uWD*uFlow*0.9)*0.00042+n.ra*0.25);
       vec3 dust=mix(uHor,uZen,pow(up,0.55));
-      float tex=n.r*0.6+n2.g*0.4;dust*=0.8+0.38*tex*smoothstep(0.,0.25,up+0.05);
+      float tex=n.r*0.6+n.g*0.4;dust*=0.8+0.38*tex*smoothstep(0.,0.25,up+0.05);
       float s=max(dot(v,normalize(uSunD)),0.);
       dust+=uSunDisc*(smoothstep(0.99962,0.9998,s)*1.6+pow(s,90.)*0.45+pow(s,10.)*0.16);
       float fl=pow(max(dot(v,uFlashD),0.),5.);dust+=uFlash*vec3(0.75,0.7,0.85)*(0.18+1.6*fl)*(0.6+0.8*tex);
@@ -5595,29 +5833,36 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
     for (const c of CLU) { const n = Math.round(10 + c[2] / 60);
       for (let i = 0; i < n; i++) { const a = Rc() * 6.283, d = Math.sqrt(Rc()) * c[2] * 0.85, ox = Math.cos(a) * d, oz = Math.sin(a) * d * 0.8, dome = 1 - (d / c[2]) ** 2;
         const pr = (170 + Rc() * 200) * (0.7 + 0.5 * dome); push(ox, c[3] + pr * 0.55 + dome * c[4] * Rc(), oz, pr, Rc(), 0.004 + Rc() * 0.006, 4, c[0], c[1], c[3], c[4]); } } }
+  // more fair-weather clusters for the low cameras (tower, follow, approach): no ground shadow, never within ~9 km of
+  // the field, so they read as a band of cumulus on the horizon (they fade out for high cameras like the rest)
+  { const Rc = mulberry(57);
+    for (let k = 0; k < 60; k++) { const ang = Rc() * 6.283, dist = 13000 + Rc() * 17000, x = Math.cos(ang) * dist, z = Math.sin(ang) * dist;
+      const rad = 700 + Rc() * 900, base = 1500 + Rc() * 600, hgt = 250 + Rc() * 450, n = Math.round(8 + rad / 90);
+      for (let i = 0; i < n; i++) { const a = Rc() * 6.283, d = Math.sqrt(Rc()) * rad * 0.9, ox = Math.cos(a) * d, oz = Math.sin(a) * d * 0.7, dome = 1 - (d / rad) ** 2;
+        const pr = (200 + Rc() * 230) * (0.7 + 0.5 * dome); push(ox, base + pr * 0.5 + dome * hgt * Rc(), oz, pr, Rc(), 0.004 + Rc() * 0.006, 4.25, x, z, base, hgt); } } }
   const nCum = BL.length;
   // storm cells: the dark parent thunderstorm behind the wall
   for (let i = 0; i < 46; i++) { const z = (R() - 0.5) * 44000; push(-3500 - R() * 10000, 2800 + R() * 5000, z, 2400 + R() * 1800, R(), 0.004 + R() * 0.004, 3, 260 + R() * 300, 0, 0, 0.45 + R() * 0.25); }
   // the wall: columns along the front (denser near the airport); body behind, then the rolling face, then the base
   const cols = []; for (let z = -38000; z <= 38000;) { cols.push(z); z += 230 + 0.011 * Math.abs(z); }
-  const colTop = z => 820 + 420 * Math.sin(z * 0.00041 + 1.3) + 260 * Math.sin(z * 0.0013 + 0.4) + 140 * Math.sin(z * 0.0037);
-  cols.forEach((z, i) => { if (i % 2) return; const top = colTop(z); push(-900 - R() * 5200, 200 + R() * top * 0.85, z + (R() - 0.5) * 300, 800 + R() * 700, R(), 0.01 + R() * 0.01, 1, 90 + R() * 120, top, 0, 0.85); });
+  const colTop = z => 1900 + 360 * Math.sin(z * 0.00041 + 1.3) + 170 * Math.sin(z * 0.0013 + 0.4) + 80 * Math.sin(z * 0.0037);
+  cols.forEach((z, i) => { if (i % 2) return; const top = colTop(z); push(-1100 - R() * 5200, 300 + R() * top * 0.85, z + (R() - 0.5) * 300, 1200 + R() * 1050, R(), 0.01 + R() * 0.01, 1, 90 + R() * 120, top, 0, 0.85); });
   cols.forEach(z => { const top = colTop(z);
-    const nt = 1 + (R() < 0.5 ? 1 : 0); for (let k = 0; k < nt; k++) push(-420 - R() * 380, top - R() * 140, z + (R() - 0.5) * 200, 280 + R() * 230, R(), 0.016 + R() * 0.014, 0, 70 + R() * 90, top, 0, 1);
-    for (let y = top - 330; y > 250; y -= 250 + R() * 90) { const f = y / top; push(-60 - 330 * f * f - R() * 160, y, z + (R() - 0.5) * 220, 260 + R() * 200, R(), 0.018 + R() * 0.014, 0, 50 + R() * 80, top, 0, 1); } });
-  cols.forEach(z => { const top = colTop(z); push(-40 + R() * 90, 70 + R() * 70, z + (R() - 0.5) * 160, 300 + R() * 160, R(), 0.02 + R() * 0.02, 0, 40 + R() * 40, top, 0, 1); });
+    const nt = 1 + (R() < 0.5 ? 1 : 0); for (let k = 0; k < nt; k++) push(-520 - R() * 420, top - R() * 180, z + (R() - 0.5) * 200, 420 + R() * 345, R(), 0.016 + R() * 0.014, 0, 70 + R() * 90, top, 0, 1);
+    for (let y = top - 450; y > 300; y -= 380 + R() * 130) { const f = y / top; push(-80 - 420 * f * f - R() * 180, y, z + (R() - 0.5) * 220, 390 + R() * 300, R(), 0.018 + R() * 0.014, 0, 50 + R() * 80, top, 0, 1); } });
+  cols.forEach(z => { const top = colTop(z); push(-40 + R() * 90, 90 + R() * 260, z + (R() - 0.5) * 160, 380 + R() * 220, R(), 0.02 + R() * 0.02, 0, 40 + R() * 40, top, 0, 1); });
   // the gust front: low dust racing ahead of the wall near the airport
   for (let z = -16000; z <= 16000; z += 170) for (let k = 0; k < 2; k++) push(R() * 150, 6 + R() * 30, z + (R() - 0.5) * 160, 70 + R() * 90, R(), 0.03 + R() * 0.04, 2, 900 + R() * 1400, 25 + R() * 70, 2.8 + R() * 2.2, 0.55 + R() * 0.45);
   // drifting dust masses: big soft volumes that wrap around the view and stream with the wind (inside the storm)
   const nMass0 = BL.length;
-  for (let i = 0; i < 170; i++) push(R(), Math.pow(R(), 1.6), R(), 0.05 + R() * 0.07, R(), 0.006 + R() * 0.01, 5, 0.6 + R() * 0.8, R(), 0, 0.5 + R() * 0.5);
+  for (let i = 0; i < 110; i++) push(R(), Math.pow(R(), 1.6), R(), 0.05 + R() * 0.07, R(), 0.006 + R() * 0.01, 5, 0.6 + R() * 0.8, R(), 0, 0.6 + R() * 0.5);
   const NB = BL.length, bP = new Float32Array(NB * 4), bS = new Float32Array(NB * 4), bC = new Float32Array(NB * 4);
   BL.forEach((b, i) => { bP.set(b.slice(0, 4), i * 4); bS.set(b.slice(4, 8), i * 4); bC.set(b.slice(8, 12), i * 4); });
   const billU = Object.assign({}, U, { uWallA: { value: 0 }, uSkirtA: { value: 0 }, uCellA: { value: 0 }, uCumA: { value: 1 }, uDom: { value: 60000 }, uCumOff: { value: new THREE.Vector2() },
     uMassA: { value: 0 }, uMB: { value: new THREE.Vector4(0, 0, 0, 4000) }, uMV: { value: new THREE.Vector3() },
-    uDustLo: { value: lin('#38251a') }, uDustHi: { value: lin('#a97a47') }, uCellC: { value: lin('#584a3e') }, uCumC: { value: lin('#ffffff') }, uCumBase: { value: lin('#8d97a8') } });
+    uDustLo: { value: lin('#2e2017') }, uDustHi: { value: lin('#c89660') }, uField: { value: new THREE.Vector4(0, 0, 4000, 3000) }, uCellC: { value: lin('#584a3e') }, uCumC: { value: lin('#ffffff') }, uCumBase: { value: lin('#6f7a8c') } });
   const bill = mk(quadGeo(NB, { iP: bP, iS: bS, iC: bC }), mat({ uniforms: billU,
-    vertexShader: VHEAD + `attribute vec4 iP,iS,iC;uniform float uTime,uFrontX,uCurv,uWallA,uSkirtA,uCellA,uCumA,uDom,uMassA;uniform vec2 uCumOff;uniform vec4 uMB;uniform vec3 uMV;
+    vertexShader: VHEAD + `attribute vec4 iP,iS,iC;uniform float uTime,uFrontX,uCurv,uWallA,uSkirtA,uCellA,uCumA,uDom,uMassA;uniform vec2 uCumOff;uniform vec4 uMB,uField;uniform vec3 uMV;
     varying vec2 vUv;varying float vA,vD;varying vec3 vWP;varying vec4 vS;varying vec3 vInfo;
     void main(){
       float kind=iS.z;vec3 c=iP.xyz;float R=iP.w,a=1.;vec2 sc=vec2(1.);float hb=0.,ht=1500.;
@@ -5634,7 +5879,10 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
         a=uMassA*iC.w*smoothstep(fx+300.,fx-900.,c.x)*(1.-smoothstep(0.3,0.5,max(rel.x,rel.y)));hb=0.;ht=box.y+R;}
       else{vec2 cc=mod(iC.xy+uCumOff+uDom*0.5,uDom)-uDom*0.5;float e=max(abs(cc.x),abs(cc.y));c.xz+=cc;c.y+=sin(th)*15.;R*=0.96+0.06*sin(th*0.7);
         a=uCumA*smoothstep(uDom*0.5,uDom*0.5-6000.,e);hb=iC.z;ht=iC.z+iC.w+250.;
+        if(kind>4.1)a*=smoothstep(9000.,14000.,length(c.xz));
         a*=1.-smoothstep(hb-900.,hb-250.,cameraPosition.y);}  // never between a high (strategic) camera and the field
+      if(kind<3.5&&cameraPosition.y>c.y+50.){vec3 cp=cameraPosition;vec2 g=cp.xz+(c.xz-cp.xz)*(cp.y/(cp.y-c.y));   // where the puff sits on the ground, seen from the camera
+        vec2 ob=max(abs(g-uField.xy)-uField.zw,0.);a*=mix(1.,smoothstep(R*0.4,R*1.6+600.,length(ob)),smoothstep(1500.,4000.,cp.y));}
       vec4 mv=modelViewMatrix*vec4(c,1.);float d=length(mv.xyz);
       a*=smoothstep(R*0.3,R*1.5,d);
       if(a<0.003){gl_Position=vec4(0.,0.,-2.,1.);return;}
@@ -5665,16 +5913,18 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
       float crev=mix(0.5,1.08,smoothstep(0.15,0.85,cau));
       vec3 alb;vec3 col;
       if(kind<2.5||kind>4.5){alb=mix(uDustLo,uDustHi,smoothstep(0.02,0.9,h01));if(kind>4.5)alb=mix(uDustLo,uDustHi,0.35+0.4*h01)*mix(0.75,1.2,vS.x);
-        col=alb*(uSkyC*(0.35+0.65*h01)+uGndC*0.5+uSunC*lam*crev*mix(0.35,1.,h01));}
+        col=alb*(uSkyC*(0.35+0.65*h01)+uGndC*0.5+uSunC*lam*crev*mix(0.3,1.15,h01));
+        if(kind<1.5){float rim=pow(clamp(1.-N.z,0.,1.),2.5)*max(dot(normalize(N.xy+1e-4),normalize(uSunV.xy+1e-4)),0.);col+=uSunC*alb*rim*0.9*h01;}}
       else if(kind<3.5){alb=uCellC*mix(0.55,1.15,h01);col=alb*(uSkyC*0.8+uSunC*lam*crev*(0.25+0.75*h01))+uFlash*vec3(1.,0.95,1.1)*0.9*cau;}
-      else{float base=smoothstep(vInfo.x-40.,vInfo.x+220.,vWP.y);alb=mix(uCumBase,uCumC,base);
-        dens*=smoothstep(vInfo.x-70.,vInfo.x+25.,vWP.y);col=alb*(uSkyC*0.9+uGndC*0.4*(1.-base)+uSunC*lam*crev);}
+      else{float base=smoothstep(vInfo.x-20.,vInfo.x+300.,vWP.y);alb=mix(uCumBase,uCumC,base*base*(3.-2.*base));
+        dens*=smoothstep(vInfo.x-25.,vInfo.x+12.,vWP.y);col=alb*(uSkyC*0.9+uGndC*0.4*(1.-base)+uSunC*lam*crev);}
       float a=clamp(vA*dens,0.,1.);
       ${OUT('col', 'a', 'vWP-uCamPos', '(kind<1.5?0.38:(kind<3.5?0.5:(kind>4.5?0.8:1.)))')}
     }` }), -20);
 
   // ---------- 4. drifting dust sheets at several heights (the flowing veils seen from above and from inside) ----------
-  const LAY = [[3, 0.42, 700, 2.2], [40, 0.34, 1100, 1.8], [160, 0.3, 1700, 1.5], [450, 0.28, 2400, 1.3], [900, 0.26, 3400, 1.2]];
+  // three layers (each one is a full-screen transparent pass from inside the storm, so they are kept few and denser)
+  const LAY = [[3, 0.5, 800, 2.1], [110, 0.42, 1500, 1.6], [650, 0.36, 2900, 1.25]];
   const shtGeo = new THREE.BufferGeometry(); { const p = [], l = [], ix = []; LAY.forEach((L, i) => { p.push(-0.5, 0, -0.5, 0.5, 0, -0.5, 0.5, 0, 0.5, -0.5, 0, 0.5); for (let k = 0; k < 4; k++) l.push(...L); ix.push(i * 4, i * 4 + 2, i * 4 + 1, i * 4, i * 4 + 3, i * 4 + 2); });
     shtGeo.setAttribute('position', new THREE.Float32BufferAttribute(p, 3)); shtGeo.setAttribute('aL', new THREE.Float32BufferAttribute(l, 4)); shtGeo.setIndex(ix); }
   const shtU = Object.assign({}, U, { uCen: { value: new THREE.Vector3() }, uSize: { value: 30000 }, uSheetA: { value: 0 }, uLead: { value: 900 }, uDustA: { value: new THREE.Color() }, uDustB: { value: new THREE.Color() }, uFade: { value: 12000 } });
@@ -5690,7 +5940,8 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
       vec4 n1=texture2D(uNoise,uv);
       vec4 n2=texture2D(uNoise,uv*vec2(2.1,2.7)+(n1.ra-0.5)*0.3-vec2(fl*0.5/(S*an),0.));
       float n=n1.r*0.82+n2.g*0.18;
-      float dens=smoothstep(0.3-0.1*uGust,0.92,n);
+      float band=texture2D(uNoise,vec2(q.x-fl*1.15,q.y*0.6)*0.000055+vec2(0.13,0.71)).r;
+      float dens=smoothstep(0.3-0.1*uGust,0.92,n)*(0.35+1.15*smoothstep(0.28,0.78,band));
       float fx=uFrontX-uCurv*vWP.z*vWP.z;
       float m=smoothstep(fx+uLead,fx-250.,vWP.x+(n1.a-0.5)*500.);
       float a=dens*vL.y*m*uSheetA;
@@ -5698,15 +5949,18 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
       a*=smoothstep(vL.x*0.4+2.,vL.x*1.5+30.,d);
       a*=1.-smoothstep(uFade*0.55,uFade,d);
       if(a<0.004)discard;
-      vec3 col=mix(uDustA,uDustB,clamp(n2.b*0.8+0.4*(n1.a-0.5)+0.25*smoothstep(0.,700.,vWP.y),0.,1.))*(0.8+0.4*n1.g);
+      vec3 col=mix(uDustA,uDustB,clamp(n2.b*0.6+0.3*(n1.a-0.5)+0.55*smoothstep(0.,700.,vWP.y)-0.2*(1.-band),0.,1.))*(0.8+0.4*n1.g);
       ${OUT('col', 'a', 'V')}
-    }` }), -10);
+    }` }), 10);
 
   // ---------- 5. particles: near dust streaks, debris, field streaks, near rain, far rain (one draw call) ----------
   const NP = { dust: 10000, debris: 800, field: 1400, rain: 7000, farRain: 4500 };
   const NPT = NP.dust + NP.debris + NP.field + NP.rain + NP.farRain;
   const pR = new Float32Array(NPT * 4), pK = new Float32Array(NPT * 4);
-  { const Rp = mulberry(99); let i = 0; [[0, NP.dust], [1, NP.debris], [2, NP.field], [3, NP.rain], [4, NP.farRain]].forEach(([k, n]) => { for (let j = 0; j < n; j++, i++) { pR.set([Rp(), Rp(), Rp(), Rp()], i * 4); pK.set([k, Rp(), Rp(), Rp()], i * 4); } }); }
+  // interleaved by kind, so drawing only the first N instances (the quality tiers) thins every kind evenly
+  { const Rp = mulberry(99), KN = [NP.dust, NP.debris, NP.field, NP.rain, NP.farRain], acc = [0, 0, 0, 0, 0];
+    for (let i = 0; i < NPT; i++) { let k = 0, best = -1; for (let j = 0; j < 5; j++) { const lag = (i + 1) * KN[j] / NPT - acc[j]; if (lag > best) { best = lag; k = j; } } acc[k]++;
+      pR.set([Rp(), Rp(), Rp(), Rp()], i * 4); pK.set([k, Rp(), Rp(), Rp()], i * 4); } }
   const parU = Object.assign({}, U, { uBoxN: { value: 140 }, uBoxF: { value: 6000 }, uFieldH: { value: 60 }, uPxK: { value: 0.001 }, uWindV: { value: new THREE.Vector3(20, 0, 0) }, uFieldV: { value: new THREE.Vector3(60, 0, 0) },
     uFocus: { value: new THREE.Vector3() }, uAmt: { value: new THREE.Vector4() }, uFarRain: { value: 0 }, uLead: { value: 900 }, uDustP: { value: new THREE.Color() }, uDebC: { value: lin('#3a2c20') }, uRainC: { value: lin('#e4e8ee') } });
   const parts = mk(quadGeo(NPT, { iR: pR, iK: pK }), mat({ uniforms: parU,
@@ -5731,7 +5985,7 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
       }else if(k<3.5){float B=uBoxN*0.42;vec3 box=vec3(B,B*1.2,B);
         vec3 v=vec3(uWindV.x*0.35,-8.-3.*iK.z,uWindV.z*0.35);
         P=iR.xyz*box+v*uTime;P=uCamPos+mod(P-uCamPos+box*0.5,box)-box*0.5;vel=v;
-        rel=(P-uCamPos)/box;wid=(0.014+0.014*iK.y)*ks;blur=0.09*ks;a=uAmt.w*(0.5+0.5*iK.w);
+        rel=(P-uCamPos)/box;wid=(0.007+0.006*iK.y)*ks;blur=0.054*ks;a=uAmt.w*(0.25+0.25*iK.w);
       }else{float H=uBoxF*0.12+200.;vec3 v=vec3(uFieldV.x*0.12,-(9.+3.*iK.z)*max(1.,uBoxF/1200.),uFieldV.z*0.12);
         vec2 pp=iR.xz*uBoxF+v.xz*uTime;pp=uFocus.xz+mod(pp-uFocus.xz+uBoxF*0.5,uBoxF)-uBoxF*0.5;
         P=vec3(pp.x,mod(iR.y*H+v.y*uTime,H),pp.y);vel=v;rel=vec3((P.xz-uFocus.xz)/uBoxF,0.).xzy;
@@ -5795,13 +6049,14 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
   const tv = new THREE.Vector3(), tv2 = new THREE.Vector3(), camPos = new THREE.Vector3(), focus = new THREE.Vector3();
   const cA = new THREE.Color(), cB = new THREE.Color();
   const P = {
-    preFog: lin('#c9b28f'), inFog: lin('#8c5a30'), inFogDark: lin('#5f3b1f'), tailFog: lin('#7a6a5a'),
-    skyIn: lin('#9a6436'), zenIn: lin('#4e321d'), sunIn: lin('#ffb46e'), sunDisc: lin('#ffd9a6'), white: lin('#ffffff'),
+    preFog: lin('#c9b28f'), inFog: lin('#86593a'), inFogDark: lin('#5a3d26'), tailFog: lin('#7a6a5a'),
+    skyIn: lin('#9a6436'), zenIn: lin('#b48a5c'), sunIn: lin('#ffb46e'), sunDisc: lin('#ffd9a6'), white: lin('#ffffff'),
     dustP: lin('#c49566'), dustA: lin('#7d5636'), dustB: lin('#c7976a'), sunWarm: lin('#fff1dc'),
     skyClear: new THREE.Color(0.30, 0.36, 0.46), skyDust: new THREE.Color(0.26, 0.18, 0.11), gndClear: new THREE.Color(0.09, 0.11, 0.06), gndDust: new THREE.Color(0.12, 0.08, 0.05),
   };
   const t0 = performance.now() / 1000; let flow = 0, flowF = 0, massFlow = 0, cumX = 0, cumZ = 0, lastNow = 0;
   const L = { next: 0, t: -9, k: 0, x: 0, z: 0, idx: 0, dist: 0, force: false };
+  let fieldBox = null;
   const S = { front: -1e6, inside: 0, appr: 0, I: 0, tail: 0, rain: 0, wall: 0 };   // exposed for debugging
   const base = { fog: def.fogColor.clone(), den: def.fogDensity, haze: def.hazeHeight }, wrote = { den: -1 };
 
@@ -5871,15 +6126,15 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
     cB.copy(P.inFog).lerp(P.inFogDark, 0.45 * gust + 0.2 * (1 - tail)).lerp(P.tailFog, tail * 0.65);
     A.fogColor.copy(cA).lerp(cB, I).multiplyScalar(1 + fl * 1.6);
     // in the storm, visibility of ~1.5-2 km near the ground; from far out, enough to keep the field readable
-    const inDen = Math.min(0.0014, Math.max(0.00007, 0.95 / Math.max(cd, 500))) * (1 + 0.22 * gust) * mix(1, 0.5, tail);
+    const inDen = Math.min(0.0009, Math.max(0.00007, 0.95 / Math.max(cd, 500))) * (1 + 0.22 * gust) * mix(1, 0.5, tail);
     A.fogDensity = mix(base.den * (1 + 0.5 * appr), inDen, I); wrote.den = A.fogDensity;
     A.hazeHeight = mix(base.haze, 300, I);
     A.skyTint.copy(P.preFog).lerp(P.skyIn, I); A.skyTintK = Math.max(I * 0.92, appr * wall * 0.25);
-    A.sunDim = mix(1 - 0.15 * appr * wall, 0.28 + 0.14 * tail, I);
+    A.sunDim = mix(mix(1, 0.45, appr * wall), 0.28 + 0.14 * tail, I);
     A.sunTint.copy(P.white).lerp(P.sunIn, Math.max(I, appr * 0.25));
-    A.ambientK = mix(1 - 0.1 * appr * wall, 0.66 + 0.1 * tail, I);
+    A.ambientK = mix(1 - 0.4 * appr * wall, 0.6 + 0.1 * tail, I);
     const G = A.grade;
-    G.exposure = DG.exposure * mix(1, 1.05, I); G.contrast = DG.contrast * mix(1, 0.88, I); G.saturation = DG.saturation * mix(1 - 0.05 * appr, 0.9, I);
+    G.exposure = DG.exposure * mix(1, 1.05, I); G.contrast = DG.contrast * mix(1, 0.88, I); G.saturation = DG.saturation * mix(1 - 0.25 * appr * wall, 0.75 + 0.1 * tail, I);
     G.warmth = DG.warmth + mix(0.06 * appr, 0.3, I); G.vignette = DG.vignette + mix(0.05 * appr, 0.2, I); G.grain = DG.grain + mix(0, 0.045, I);
     A.bloom = mix(1, 1.35, I);
     A.visibility = 1.73 / Math.max(1e-6, A.fogDensity);
@@ -5920,7 +6175,7 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
     // ---- cloud shadows ----
     cumX += dt * Math.cos(0.32) * 6 * kv; cumZ += dt * Math.sin(0.32) * 6 * kv;
     const dom = 60000; billU.uCumOff.value.set(cumX % dom, cumZ % dom); shU.uCumOff.value.copy(billU.uCumOff.value);
-    const cumA = (heat ? 0.65 : 1) * (1 - Math.max(appr * wall, I)) * (1 - smooth(0.25, 0.9, I));
+    const cumA = (heat ? 0.65 : 1) * (1 - Math.max(appr, I)) * (1 - smooth(0.25, 0.9, I));
     billU.uCumA.value = cumA;
     const sy = Math.max(0.15, U.uSunD.value.y), offK = -1 / sy; shU.uSunOff.value.set(U.uSunD.value.x * offK * 1950, U.uSunD.value.z * offK * 1950);
     for (let i = 0; i < NCL; i++) { const c = CLU[i], v = clU[i]; if (!c) { v.w = 0; continue; }
@@ -5931,8 +6186,12 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
     shadow.visible = cumA > 0.01 || shU.uStormSh.value > 0.01;
 
     // ---- billows ----
-    billU.uWallA.value = wall * (1 - 0.6 * I); billU.uSkirtA.value = wall * 0.9;
-    billU.uCellA.value = wall * (1 - 0.7 * I);
+    // inside the storm the wall and the cells are lost in the dust anyway: stop drawing them (the 2 km wall is a lot of fill)
+    billU.uWallA.value = wall * (1 - 0.6 * I) * (1 - smooth(0.6, 0.95, I)); billU.uSkirtA.value = wall * 0.9 * (1 - smooth(0.6, 0.95, I));
+    billU.uCellA.value = wall * (1 - 0.7 * I) * (1 - smooth(0.6, 0.95, I));
+    if (!fieldBox) { let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; const add = (x, y) => { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); };
+      for (const r of Z.RW || []) { add(r.x0, r.y); add(r.x1, r.y); } for (const g of Z.GATES || []) add(g.x, g.y);
+      fieldBox = x0 < x1 ? [(x0 + x1) / 2, (y0 + y1) / 2, (x1 - x0) / 2 + 500, (y1 - y0) / 2 + 500] : [0, 0, 4000, 3000]; billU.uField.value.set(...fieldBox); }
 
 
     // ---- sheets ----
@@ -5955,6 +6214,8 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
     parU.uAmt.value.set(dustAmt * lowCam * (0.6 + 0.4 * gust) * 0.85, dustAmt * lowCam * gust, Math.max(I, frontNear) * env * (1 - 0.6 * tail) * 0.6 * smooth(250, 1500, camY), rain * lowCam);
     parU.uFarRain.value = rain * (1 - lowCam * 0.4) * 0.8;
     parU.uDustP.value.copy(P.dustP).multiplyScalar(0.95 + 0.7 * A.sunDim + fl);
+    const pq = Z.quality >= 2 ? 0.6 : Z.quality === 1 ? 0.42 : 0.28, pAk = 1 / Math.sqrt(pq);   // fewer streaks, each a little denser
+    parts.geometry.instanceCount = Math.round(NPT * pq); parU.uAmt.value.multiplyScalar(pAk); parU.uFarRain.value *= pAk;
     parts.visible = parU.uAmt.value.x + parU.uAmt.value.y + parU.uAmt.value.z + parU.uAmt.value.w + parU.uFarRain.value > 0.003;
     massFlow += dt * wSpd * kv * 1.1;
     billU.uMB.value.set(mix(camPos.x, focus.x, hi), 0, mix(camPos.z, focus.z, hi), Math.min(24000, Math.max(2600, cd * 2.2)));

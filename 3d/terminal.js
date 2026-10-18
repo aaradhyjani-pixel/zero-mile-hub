@@ -3,7 +3,7 @@ Z3MOD.terminal = function (Z) {
   // gardens, the stepwell forecourt, the other buildings and the aerobridges. World (x east, y south) -> (X, Y up, Z).
   const THREE = Z.THREE, SPEC = Z.SPEC, RF = SPEC.roof || {}, PI = Math.PI, TAU = 2 * PI;
   const group = new THREE.Group(); group.name = 'terminal'; Z.scene.add(group);
-  const NEG = -1e9, OV = 7, TH = 1.6;
+  const NEG = -1e9, OV = 7, TH = 2.6;
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
   const sstep = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
   let seed = 90210; const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
@@ -34,7 +34,7 @@ Z3MOD.terminal = function (Z) {
     const q = [[-hx, -hz], [hx, -hz], [hx, hz], [-hx, hz]];
     for (let k = 0; k < 4; k++) { const a = q[k], b = q[(k + 1) % 4]; const mx = (a[0] + b[0]) / 2, mz = (a[1] + b[1]) / 2; const w = P(mx, 0, mz); face(A, [P(a[0], 0, a[1]), P(b[0], 0, b[1]), P(b[0], sy, b[1]), P(a[0], sy, a[1])], c, null, gl, [w[0] - x, 0, w[2] - z]); }
     face(A, [P(-hx, sy, -hz), P(hx, sy, -hz), P(hx, sy, hz), P(-hx, sy, hz)], cTop || c, null, gl, [0, 1, 0]);
-    face(A, [P(-hx, 0, -hz), P(hx, 0, -hz), P(hx, 0, hz), P(-hx, 0, hz)], c, null, gl, [0, -1, 0]);
+    if (!box.noBottom) face(A, [P(-hx, 0, -hz), P(hx, 0, -hz), P(hx, 0, hz), P(-hx, 0, hz)], c, null, gl, [0, -1, 0]);
   }
   // vertical cylinder side (and optional caps): centre x,z, radii r0 (bottom) r1 (top)
   function cyl(A, x, z, y0, y1, r0, r1, n, c, gl, capTop, capBot, cTop) {
@@ -50,7 +50,8 @@ Z3MOD.terminal = function (Z) {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(A.p, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(A.n, 3));
     g.setAttribute('color', new THREE.Float32BufferAttribute(A.c, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(A.u, 2));
-    g.setAttribute('glow', new THREE.Float32BufferAttribute(A.g, 1)); g.setIndex(A.i); g.computeBoundingSphere(); return g;
+    g.setAttribute('glow', new THREE.Float32BufferAttribute(A.g, 1)); if (A.t && A.t.length === A.g.length * 4) g.setAttribute('tang', new THREE.Float32BufferAttribute(A.t, 4));
+    g.setIndex(A.i); g.computeBoundingSphere(); return g;
   }
   // SVG path (M L H V Q C Z, absolute) -> [[x,y],...]
   function pathPts(d) {
@@ -78,18 +79,66 @@ Z3MOD.terminal = function (Z) {
     g.addColorStop(0, '#3a6aa2'); g.addColorStop(0.42, '#b9d0e4'); g.addColorStop(0.5, '#e9e4d6'); g.addColorStop(0.53, '#9a8a70'); g.addColorStop(1, '#4a4032');
     x.fillStyle = g; x.fillRect(0, 0, 256, 128); const s = x.createRadialGradient(70, 40, 0, 70, 40, 30); s.addColorStop(0, 'rgba(255,248,230,1)'); s.addColorStop(1, 'rgba(255,248,230,0)'); x.fillStyle = s; x.fillRect(0, 0, 256, 128);
     const t = new THREE.CanvasTexture(c); t.mapping = THREE.EquirectangularReflectionMapping; t.colorSpace = THREE.SRGBColorSpace; return t; })();
-  // roof panels: white with faint seams (vertex colour tints it)
+  // cladding for the other buildings: white with faint seams and panel-to-panel tone (vertex colour tints it)
   const seamT = (() => { const [c, x] = canvas(256, 256); x.fillStyle = '#ffffff'; x.fillRect(0, 0, 256, 256);
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) { const v = 238 + rnd() * 17 | 0; x.fillStyle = `rgb(${v},${v},${v - 2})`; x.fillRect(i * 64, j * 128, 64, 128); }
     for (let k = 0; k < 900; k++) { x.fillStyle = `rgba(120,110,90,${0.02 + rnd() * 0.03})`; x.fillRect(rnd() * 256, rnd() * 256, 2, 2); }
-    x.fillStyle = 'rgba(105,95,78,0.42)'; x.fillRect(0, 0, 256, 3); x.fillRect(0, 0, 3, 256);
-    x.fillStyle = 'rgba(105,95,78,0.16)'; x.fillRect(0, 127, 256, 2); x.fillRect(127, 0, 2, 256);
+    x.fillStyle = 'rgba(95,90,82,0.5)'; x.fillRect(0, 0, 256, 3); x.fillRect(0, 0, 3, 256);
+    x.fillStyle = 'rgba(95,90,82,0.28)'; x.fillRect(0, 127, 256, 2); for (let i = 1; i < 4; i++) x.fillRect(i * 64, 0, 2, 256);
     return tex(c, true); })();
-  // curtain-wall panel (3 m x 4.5 m): blue-grey glass, mullions, transom; and its night emissive twin
-  const glassT = (() => { const [c, x] = canvas(64, 96); const g = x.createLinearGradient(0, 0, 0, 96); g.addColorStop(0, '#7f97a8'); g.addColorStop(1, '#4d6474');
-    x.fillStyle = g; x.fillRect(0, 0, 64, 96); x.fillStyle = 'rgba(255,255,255,0.10)'; x.beginPath(); x.moveTo(10, 0); x.lineTo(34, 0); x.lineTo(6, 96); x.lineTo(0, 96); x.lineTo(0, 30); x.fill();
-    x.fillStyle = '#c9cfd2'; x.fillRect(0, 0, 4, 96); x.fillRect(0, 92, 64, 4); return tex(c, true); })();
-  const glassE = (() => { const [c, x] = canvas(64, 96); const g = x.createLinearGradient(0, 0, 0, 96); g.addColorStop(0, '#6a4a28'); g.addColorStop(0.6, '#d29a58'); g.addColorStop(1, '#ffd29a');
-    x.fillStyle = g; x.fillRect(0, 0, 64, 96); x.fillStyle = '#000'; x.fillRect(0, 0, 4, 96); x.fillRect(0, 92, 64, 4); return tex(c, true); })();
+  // height canvas -> tangent-space normal map (linear)
+  function normalFrom(hc, k) {
+    const w = hc.width, h = hc.height, src = hc.getContext('2d').getImageData(0, 0, w, h).data;
+    const [c, x] = canvas(w, h), out = x.createImageData(w, h), d = out.data;
+    const Hh = (i, j) => src[((((j + h) % h) * w) + ((i + w) % w)) * 4] / 255;
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+      const dx = (Hh(i + 1, j) - Hh(i - 1, j)) * k, dy = (Hh(i, j + 1) - Hh(i, j - 1)) * k, L = Math.hypot(dx, dy, 1), o = (j * w + i) * 4;
+      d[o] = (-dx / L * 0.5 + 0.5) * 255; d[o + 1] = (dy / L * 0.5 + 0.5) * 255; d[o + 2] = (1 / L * 0.5 + 0.5) * 255; d[o + 3] = 255; }
+    x.putImageData(out, 0, 0); const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = aniso; return t;
+  }
+  // the roof: ceramic-white standing-seam panels. Strong seams run down the slope (texture u), staggered cross joints,
+  // a slight tone and roughness change panel to panel, faint brushing along the seams. Map + normal + roughness.
+  const roofT = (() => {
+    const S = 1024, NC = 8, NR = 4, cw = S / NC, rh = S / NR;
+    const [c, x] = canvas(S, S), [hc, hx] = canvas(S, S), [rc, rx] = canvas(S, S);
+    hx.fillStyle = '#808080'; hx.fillRect(0, 0, S, S);
+    for (let i = 0; i < NC; i++) {
+      const tones = [], rus = [], cb = i % 2 ? 0.9 : 1; for (let r = 0; r < NR; r++) { tones.push(cb * (0.93 + rnd() * 0.07)); rus.push((i % 2 ? 0.22 : 0.4) + rnd() * 0.14); }
+      for (let r = -1; r <= NR; r++) {
+        const rr = ((r % NR) + NR) % NR, y0 = r * rh + (i % 2) * rh / 2, x0 = i * cw, tn = tones[rr], wm = (rnd() - 0.5) * 0.025;
+        x.fillStyle = `rgb(${255 * tn * (1 + wm) | 0},${255 * tn | 0},${255 * tn * (1 - wm) | 0})`; x.fillRect(x0, y0, cw, rh);
+        rx.fillStyle = `rgb(0,${rus[rr] * 255 | 0},0)`; rx.fillRect(x0, y0, cw, rh);
+        // a very slight pillow in each panel
+        const g = hx.createLinearGradient(x0, 0, x0 + cw, 0); g.addColorStop(0, '#7a7a7a'); g.addColorStop(0.5, '#868686'); g.addColorStop(1, '#7a7a7a'); hx.fillStyle = g; hx.fillRect(x0, y0, cw, rh);
+        // cross joint
+        x.fillStyle = 'rgba(80,76,70,0.45)'; x.fillRect(x0, y0, cw, 2); hx.fillStyle = '#505050'; hx.fillRect(x0, y0, cw, 2); rx.fillStyle = 'rgb(0,170,0)'; rx.fillRect(x0, y0, cw, 2);
+      }
+      for (let k = 0; k < 70; k++) { const a = rnd() * 0.05; x.fillStyle = rnd() < 0.5 ? `rgba(255,255,255,${a})` : `rgba(90,85,80,${a})`; x.fillRect(i * cw + rnd() * cw, 0, 1 + rnd() * 2, S); }
+      // standing seam: a raised rib with a shadow line and a highlight
+      x.fillStyle = 'rgba(60,58,55,0.7)'; x.fillRect(i * cw, 0, 6, S); x.fillStyle = 'rgba(255,255,255,0.8)'; x.fillRect(i * cw + 6, 0, 3, S);
+      hx.fillStyle = '#e0e0e0'; hx.fillRect(i * cw - 1, 0, 10, S); rx.fillStyle = 'rgb(0,120,0)'; rx.fillRect(i * cw, 0, 9, S);
+    }
+    const m = tex(c, true), n = normalFrom(hc, 6), r = new THREE.CanvasTexture(rc); r.wrapS = r.wrapT = THREE.RepeatWrapping; r.anisotropy = aniso;
+    return { m, n, r };
+  })();
+  // the soffit: warm engineered-bamboo slats with nodes (Bengaluru's lattice ceiling)
+  const bambooT = (() => {
+    const S = 512, N = 16, sw = S / N, [c, x] = canvas(S, S), [hc, hx] = canvas(S, S);
+    x.fillStyle = '#2a1c10'; x.fillRect(0, 0, S, S); hx.fillStyle = '#000'; hx.fillRect(0, 0, S, S);
+    for (let k = 0; k < N; k++) {
+      const x0 = k * sw + 2, w = sw - 6, tn = 0.85 + rnd() * 0.25;
+      x.fillStyle = `rgb(${200 * tn | 0},${150 * tn | 0},${92 * tn | 0})`; x.fillRect(x0, 0, w, S);
+      for (let q = 0; q < 30; q++) { x.fillStyle = `rgba(${120 + rnd() * 60 | 0},${80 + rnd() * 40 | 0},40,${0.08 + rnd() * 0.1})`; x.fillRect(x0 + rnd() * w, 0, 1, S); }
+      for (let q = 0; q < 3; q++) { const y = rnd() * S; x.fillStyle = 'rgba(90,60,30,0.55)'; x.fillRect(x0, y, w, 3); }
+      const g = hx.createLinearGradient(x0, 0, x0 + w, 0); g.addColorStop(0, '#606060'); g.addColorStop(0.5, '#ffffff'); g.addColorStop(1, '#606060'); hx.fillStyle = g; hx.fillRect(x0, 0, w, S);
+    }
+    return { m: tex(c, true), n: normalFrom(hc, 4) };
+  })();
+  // ripples for the stepwell pool
+  const rippleN = (() => { const S = 256, [c, x] = canvas(S, S); x.fillStyle = '#808080'; x.fillRect(0, 0, S, S);
+    for (let k = 0; k < 260; k++) { const px = rnd() * S, py = rnd() * S, r = 6 + rnd() * 22, g = x.createRadialGradient(px, py, 0, px, py, r), v = rnd() < 0.5 ? 255 : 0;
+      g.addColorStop(0, `rgba(${v},${v},${v},0.16)`); g.addColorStop(1, `rgba(${v},${v},${v},0)`); for (const ox of [-S, 0, S]) for (const oy of [-S, 0, S]) { x.save(); x.translate(ox, oy); x.fillStyle = g; x.fillRect(px - r, py - r, 2 * r, 2 * r); x.restore(); } }
+    return normalFrom(c, 3); })();
   // jaali: an abstract branching lattice. Top half 'tree', bottom half the denser 'tree-of-life'. Alpha = stone.
   const jaaliT = (() => {
     const W = 512, [c, x] = canvas(W, 1024);
@@ -98,7 +147,7 @@ Z3MOD.terminal = function (Z) {
       x.globalCompositeOperation = 'source-over'; x.fillStyle = '#c9a77a'; x.fillRect(0, y0, W, 512);
       for (let k = 0; k < 1400; k++) { x.fillStyle = `rgba(${90 + rnd() * 60},${70 + rnd() * 40},40,${0.06 + rnd() * 0.08})`; x.fillRect(rnd() * W, y0 + rnd() * 512, 3, 3); }
       // perforation lattice (diamonds)
-      x.globalCompositeOperation = 'destination-out'; const P = dense ? 22 : 30, hs = dense ? 7.5 : 10.5;
+      x.globalCompositeOperation = 'destination-out'; x.fillStyle = '#000'; const P = dense ? 26 : 34, hs = dense ? 10.5 : 14;
       for (let j = 0; j * P < 512 + P; j++) for (let i = 0; i * P < W + P; i++) {
         const cx = i * P + (j % 2 ? P / 2 : 0), cy = y0 + j * P; x.beginPath(); x.moveTo(cx, cy - hs); x.lineTo(cx + hs, cy); x.lineTo(cx, cy + hs); x.lineTo(cx - hs, cy); x.fill(); }
       // the branching tree drawn back in stone
@@ -110,7 +159,7 @@ Z3MOD.terminal = function (Z) {
         x.stroke();
         const n = dense ? 3 : 2, spread = dense ? 0.62 : 0.5;
         for (let k = 0; k < n; k++) { const a = ang + (k - (n - 1) / 2) * spread * 1.4 + (rnd() - 0.5) * 0.2; br(ex, ey, a, len * (dense ? 0.7 : 0.72), w * 0.68, depth - 1); }
-        if (dense && depth < 3) { x.save(); x.globalCompositeOperation = 'destination-out'; x.beginPath(); x.ellipse(ex, ey, 5, 9, ang, 0, TAU); x.fill(); x.restore(); }
+        if (dense && depth < 3) { x.save(); x.globalCompositeOperation = 'destination-out'; x.fillStyle = '#000'; x.beginPath(); x.ellipse(ex, ey, 5, 9, ang, 0, TAU); x.fill(); x.restore(); }
       }
       br(W / 2, y0 + 500, -PI / 2, dense ? 120 : 140, dense ? 26 : 22, dense ? 6 : 5);
       if (dense) { br(W / 2, y0 + 500, -PI / 2 - 0.9, 90, 14, 4); br(W / 2, y0 + 500, -PI / 2 + 0.9, 90, 14, 4); }
@@ -119,7 +168,11 @@ Z3MOD.terminal = function (Z) {
       x.restore();
     }
     half(0, false); half(512, true);
-    const t = tex(c, false); t.wrapS = THREE.RepeatWrapping; return t;
+    const t = tex(c, false); t.wrapS = THREE.RepeatWrapping;
+    // carved relief: height from the stone's alpha, softened so the edges read as chamfers
+    const [hc, hx] = canvas(256, 512); hx.fillStyle = '#000'; hx.fillRect(0, 0, 256, 512); hx.filter = 'blur(1.5px)'; hx.drawImage(c, 0, 0, 256, 512);
+    const id = hx.getImageData(0, 0, 256, 512); for (let k = 0; k < id.data.length; k += 4) { const a = id.data[k + 3]; id.data[k] = id.data[k + 1] = id.data[k + 2] = a; id.data[k + 3] = 255; } hx.putImageData(id, 0, 0);
+    t.userData.n = normalFrom(hc, 5); t.userData.n.wrapT = THREE.ClampToEdgeWrapping; return t;
   })();
 
   // ------------------------------------------------------------ materials
@@ -130,23 +183,116 @@ Z3MOD.terminal = function (Z) {
     };
     m.customProgramCacheKey = () => key; return m;
   }
+  // selective instance colour + per-part roughness/metalness, keyed by the 'glow' attribute:
+  // 0 = body (R[0], Mt[0]), 1 = glass (R[1], Mt[1]), 2 = takes the instance colour (R[2], Mt[2], emissive E)
+  function selInst(m, key, R, Mt, E) {
+    const f = v => v.toFixed(3);
+    m.onBeforeCompile = sh => {
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float glow;\nvarying float vSel;')
+        .replace('#include <color_vertex>', 'vColor = vec3(1.0);\n#ifdef USE_COLOR\nvColor *= color;\n#endif\nvSel = glow;\n#ifdef USE_INSTANCING_COLOR\nif (glow > 1.5) vColor.xyz *= instanceColor.xyz;\n#endif');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vSel;')
+        .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>\nroughnessFactor = vSel < 0.5 ? ${f(R[0])} : (vSel < 1.5 ? ${f(R[1])} : ${f(R[2])});`)
+        .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>\nmetalnessFactor = vSel < 0.5 ? ${f(Mt[0])} : (vSel < 1.5 ? ${f(Mt[1])} : ${f(Mt[2])});`)
+        .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>\ntotalEmissiveRadiance += step(1.5, vSel) * diffuseColor.rgb * ${f(E || 0)};`);
+    };
+    m.customProgramCacheKey = () => key; return m;
+  }
+  // curtain-wall glass: a mullion grid, low-iron glass reflecting the sky, and behind it a lit interior faked by
+  // ray-casting a box room in the shader (mezzanine slab, polished floor with people and coloured coffer light,
+  // bamboo soffit with peacock lenses, white tree columns, lit shopfronts and the art wall at the back)
+  const glassU = { uGI: { value: 1 } };
+  const GLSL_INT = `
+uniform float uGI;
+varying vec3 vGW; varying vec3 vGN; varying vec4 vGT;
+float gh(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+vec3 pea(float h) { h = fract(h) * 6.0;
+  return h < 1.0 ? vec3(0.06, 0.5, 0.48) : h < 2.0 ? vec3(0.9, 0.62, 0.12) : h < 3.0 ? vec3(0.12, 0.3, 0.8) : h < 4.0 ? vec3(0.55, 0.18, 0.62) : h < 5.0 ? vec3(0.2, 0.62, 0.22) : vec3(0.88, 0.3, 0.16); }
+float gFrame() {
+  float u = vGT.y, y = vGW.y; vec2 fw = max(fwidth(vec2(u, y)), vec2(1e-4));
+  float dm = abs(fract(u / 3.0 + 0.5) - 0.5) * 3.0, dt = abs(fract((y - 0.2) / 4.5 + 0.5) - 0.5) * 4.5;
+  float m = 1.0 - smoothstep(0.075, 0.075 + fw.x, dm), t = 1.0 - smoothstep(0.1, 0.1 + fw.y, dt);
+  m = mix(m, 0.05, smoothstep(0.08, 0.5, fw.x)); t = mix(t, 0.045, smoothstep(0.1, 0.6, fw.y));
+  float sill = 1.0 - smoothstep(0.7, 0.7 + fw.y, y), head = smoothstep(vGT.w - 0.6 - fw.y, vGT.w - 0.6, y);
+  return clamp(max(max(m, t), max(sill, head)), 0.0, 1.0);
+}
+vec3 gInterior() {
+  vec3 V = normalize(vGW - cameraPosition), N = normalize(vGN), T = normalize(vec3(vGT.x, 0.0, vGT.z));
+  float rw = max(dot(V, -N), 0.03), ru = dot(V, T), ry = V.y, u0 = vGT.y, y0 = vGW.y, top = vGT.w;
+  const float SLAB = 7.0, EDGE = 6.0, BACK = 32.0, COLW = 13.0, COLS = 18.0;
+  float t = BACK / rw; int kind = 0;
+  if (ry < 0.0) { float tf = (0.0 - y0) / ry; if (tf < t) { t = tf; kind = 1; } }
+  if (y0 < SLAB - 0.6 && ry > 0.0) { float ts = (SLAB - 0.6 - y0) / ry; if (ts < t && rw * ts > EDGE) { t = ts; kind = 2; } }
+  if (y0 > SLAB && ry < 0.0) { float ts = (SLAB - y0) / ry; if (ts < t && rw * ts > EDGE) { t = ts; kind = 3; } }
+  float te = EDGE / rw, ye = y0 + ry * te; if (te < t && ye > SLAB - 0.8 && ye < SLAB + 1.1) { t = te; kind = 6; }
+  float den = ry - 0.16 * rw; if (den > 0.0) { float tc = (top + 1.5 - y0) / den; if (tc < t) { t = tc; kind = 4; } }
+  float tcol = COLW / rw, uc = u0 + ru * tcol, yc = y0 + ry * tcol, cu = (floor(uc / COLS) + 0.5) * COLS;
+  float hd = abs(uc - cu) * rw / max(length(vec2(ru, rw)), 1e-3), cr = 0.85 + 0.03 * pow(max(yc - SLAB - 2.0, 0.0), 2.0);
+  if (tcol < t && hd < cr && yc > 0.0) { t = tcol; kind = 5; }
+  vec3 P = vec3(u0 + ru * t, y0 + ry * t, rw * t);
+  vec3 c;
+  if (kind == 1 || kind == 3) {
+    c = kind == 1 ? vec3(0.34, 0.29, 0.23) : vec3(0.4, 0.33, 0.25);
+    vec2 l = P.xz / 7.0, lf = fract(l) - 0.5; float hl = gh(floor(l) + 3.1);
+    c += pea(hl) * 0.45 * (1.0 - smoothstep(0.08, 0.3, length(lf))) * step(0.35, hl);
+    vec2 g = P.xz / 1.6, gf = fract(g) - 0.5; float hp = gh(floor(g) + (kind == 3 ? 17.0 : 0.0));
+    if (hp < 0.2) c = mix(mix(vec3(0.03), pea(hp * 9.7) * 0.6, step(0.06, hp)), c, smoothstep(0.16, 0.24, length(gf)));
+  } else if (kind == 2) {
+    vec2 lf = fract(P.xz / 3.0) - 0.5;
+    c = vec3(0.32, 0.22, 0.13) * (0.85 + 0.15 * sin(P.x * 9.0)) + vec3(2.2, 1.8, 1.3) * (1.0 - smoothstep(0.04, 0.1, length(lf)));
+  } else if (kind == 4) {
+    c = vec3(0.46, 0.32, 0.17) * (0.8 + 0.2 * sin(P.x * 7.0));
+    vec2 l = P.xz / vec2(9.0, 8.0), lf = fract(l) - 0.5;
+    c = mix(c, pea(gh(floor(l))) * 1.8 + 0.25, 1.0 - smoothstep(0.13, 0.2, length(lf)));
+  } else if (kind == 5) {
+    float s = (uc - cu) / max(cr, 0.01);
+    c = vec3(0.86, 0.84, 0.8) * (0.45 + 0.55 * sqrt(max(1.0 - s * s, 0.0)));
+  } else if (kind == 6) {
+    c = P.y > SLAB ? vec3(0.25, 0.32, 0.33) : vec3(0.82, 0.8, 0.76);
+  } else {
+    float bf = fract(P.x / 9.0), hb = gh(vec2(floor(P.x / 9.0), 5.0));
+    if (P.y < 4.2) c = mix(vec3(1.0, 0.8, 0.55), vec3(0.62, 0.78, 0.9), step(0.72, hb)) * (bf < 0.07 ? 0.2 : 1.0);
+    else if (P.y < 5.4) c = pea(hb) * 1.1 + 0.08;
+    else if (P.y > SLAB && P.y < SLAB + 4.0) c = vec3(0.86, 0.68, 0.46) * (bf < 0.07 ? 0.25 : 1.0);
+    else { vec2 a = floor(vec2(P.x / 4.0, P.y / 3.0)); c = mix(vec3(0.5, 0.36, 0.24), pea(gh(a + 9.0)) * 0.7, 0.35 * step(0.55, gh(a))); }
+  }
+  float fres = 0.04 + 0.96 * pow(1.0 - clamp(rw, 0.0, 1.0), 5.0);
+  return c * (0.3 + 0.7 * exp(-t * 0.014)) * (1.0 - fres) * vec3(0.8, 0.88, 0.88) * uGI;
+}`;
   const M = {
-    solid: glowify(new THREE.MeshStandardMaterial({ vertexColors: true, map: seamT, roughness: 0.6, metalness: 0, envMap: envT, envMapIntensity: 0.45, emissive: col('#ffb56e'), emissiveIntensity: 0 }), 'zmhSolid'),
-    glass: new THREE.MeshStandardMaterial({ map: glassT, emissiveMap: glassE, emissive: col('#ffffff'), emissiveIntensity: 0, roughness: 0.12, metalness: 0.5, envMap: envT, envMapIntensity: 1.1, side: THREE.DoubleSide }),
-    tglass: new THREE.MeshStandardMaterial({ color: col('#a9cbd9'), transparent: true, opacity: 0.32, roughness: 0.05, metalness: 0.4, envMap: envT, envMapIntensity: 1.3, depthWrite: false, emissive: col('#ffd59a'), emissiveIntensity: 0 }),
-    jaali: new THREE.MeshStandardMaterial({ map: jaaliT, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.85, metalness: 0 }),
-    tree: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, flatShading: true }),
-    pool: new THREE.MeshStandardMaterial({ color: col('#2c6a66'), roughness: 0.06, metalness: 0.55, envMap: envT, envMapIntensity: 1.3, emissive: col('#39b3a6'), emissiveIntensity: 0 }),
-    coffer: new THREE.MeshStandardMaterial({ color: col('#6f8c99'), roughness: 0.14, metalness: 0.55, envMap: envT, envMapIntensity: 1.2, emissive: col('#ffc27a'), emissiveIntensity: 0 }),
-    lens: new THREE.MeshStandardMaterial({ color: col('#ffffff'), roughness: 0.25, metalness: 0.1, envMap: envT, envMapIntensity: 0.6, emissive: col('#ffffff'), emissiveIntensity: 0 }),
-    bridge: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, metalness: 0.35, envMap: envT, envMapIntensity: 0.7 }),
+    roof: glowify(new THREE.MeshStandardMaterial({ vertexColors: true, map: roofT.m, normalMap: roofT.n, normalScale: new THREE.Vector2(0.7, 0.7), roughnessMap: roofT.r, roughness: 1, metalness: 0.12, envMapIntensity: 0.9, emissive: col('#ffb56e'), emissiveIntensity: 0 }), 'zmhRoof'),
+    soffit: glowify(new THREE.MeshStandardMaterial({ vertexColors: true, map: bambooT.m, normalMap: bambooT.n, roughness: 0.62, metalness: 0, envMapIntensity: 0.5, emissive: col('#ffb56e'), emissiveIntensity: 0 }), 'zmhSoffit'),
+    solid: glowify(new THREE.MeshStandardMaterial({ vertexColors: true, map: seamT, roughness: 0.55, metalness: 0.08, envMapIntensity: 0.6, emissive: col('#ffb56e'), emissiveIntensity: 0 }), 'zmhSolid'),
+    glass: new THREE.MeshStandardMaterial({ color: col('#ffffff'), roughness: 0.04, metalness: 0, envMapIntensity: 1.6 }),
+    tglass: new THREE.MeshStandardMaterial({ color: col('#7fa3b0'), transparent: true, opacity: 0.42, roughness: 0.04, metalness: 0.6, envMapIntensity: 1.6, depthWrite: false, emissive: col('#ffd59a'), emissiveIntensity: 0 }),
+    jaali: new THREE.MeshStandardMaterial({ map: jaaliT, normalMap: jaaliT.userData.n, normalScale: new THREE.Vector2(1.2, 1.2), alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.82, metalness: 0, color: col('#fff4e2') }),
+    tree: selInst(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, side: THREE.DoubleSide }), 'zmhPlant', [0.9, 0.9, 0.85], [0, 0, 0], 0),
+    pool: new THREE.MeshStandardMaterial({ color: col('#0f3a3a'), roughness: 0.03, metalness: 0, normalMap: rippleN, normalScale: new THREE.Vector2(0.35, 0.35), envMapIntensity: 1.8, emissive: col('#39b3a6'), emissiveIntensity: 0 }),
+    coffer: selInst(new THREE.MeshStandardMaterial({ vertexColors: true, envMapIntensity: 1.4 }), 'zmhCoffer', [0.4, 0.03, 0.12], [0.1, 0, 0.3], 0.55),
+    inst: selInst(new THREE.MeshStandardMaterial({ vertexColors: true, envMapIntensity: 1.1 }), 'zmhInst', [0.6, 0.06, 0.32], [0.1, 0, 0.45], 0),
+    bridge: selInst(new THREE.MeshStandardMaterial({ vertexColors: true, envMapIntensity: 1.1 }), 'zmhBridge', [0.38, 0.05, 0.4], [0.55, 0, 0.3], 0),
   };
-  M.solid.shadowSide = THREE.DoubleSide;
-  M.lens.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n#ifdef USE_COLOR\ntotalEmissiveRadiance *= vColor.rgb * 1.6;\n#endif'); };
-  M.lens.customProgramCacheKey = () => 'zmhLens';
-  M.coffer.onBeforeCompile = M.lens.onBeforeCompile; M.coffer.customProgramCacheKey = () => 'zmhLens';
+  M.solid.shadowSide = THREE.DoubleSide; M.roof.shadowSide = THREE.DoubleSide;
+  M.glass.onBeforeCompile = sh => {
+    sh.uniforms.uGI = glassU.uGI;
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec4 tang;\nvarying vec3 vGW; varying vec3 vGN; varying vec4 vGT;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGW = (modelMatrix * vec4(transformed, 1.0)).xyz; vGN = normalize(mat3(modelMatrix) * normal); vGT = tang;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\n' + GLSL_INT)
+      .replace('#include <color_fragment>', '#include <color_fragment>\nfloat gF = gFrame(); diffuseColor.rgb = mix(vec3(0.01, 0.014, 0.016), vec3(0.6, 0.62, 0.64), gF);')
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(0.035, 0.38, gF);')
+      .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = mix(0.0, 0.8, gF);')
+      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += (1.0 - gF) * gInterior();');
+  };
+  M.glass.customProgramCacheKey = () => 'zmhGlassInt';
+  // jaali: a stable screen-space dither instead of a hard 0.5 cut, so the perforation survives mip-mapping at distance
+  M.jaali.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <alphatest_fragment>',
+    'float jd = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));\nfloat ja = clamp((diffuseColor.a - 0.5) / max(fwidth(diffuseColor.a), 1e-3) + 0.5, 0.0, 1.0);\nif (mix(diffuseColor.a, ja, 0.5) < mix(0.5, jd, 0.85)) discard;'); };
+  M.jaali.customProgramCacheKey = () => 'zmhJaali';
+  // the core's PMREM sky (scene.environment) when it exists; the canvas sky only as a fallback
+  const ENVM = [];
+  for (const k in M) { if (!Z.scene.environment) { M[k].envMap = envT; ENVM.push(M[k]); } }
+  for (const k in M) M[k].userData.env0 = M[k].envMapIntensity;
 
-  const CL = { roof: col('#efe8da'), roofEdge: col('#d9d0bf'), bamboo: col('#c39a63'), stone: col('#c9a77a'), stoneL: col('#dcc39b'), stoneD: col('#a5835a'),
+  const CL = { roof: col('#ebe8e1'), roofEdge: col('#b9bcbf'), bamboo: col('#c39a63'), stone: col('#c9a77a'), stoneL: col('#dcc39b'), stoneD: col('#a5835a'),
     terrace: col('#d2b98f'), green: col('#5f8f3e'), green2: col('#4f7d34'), green3: col('#76a04a'), conc: col('#d6d2c8'), conc2: col('#bdb8ad'), white: col('#f2f0ea'),
     dark: col('#3a3f44'), red: col('#b4382c'), steel: col('#9ea6ad'), solar: col('#283a5a'), gold: col('#d8b46a') };
 
@@ -222,12 +368,14 @@ Z3MOD.terminal = function (Z) {
   }
 
   // ------------------------------------------------------------ build: roof shell
-  const SA = Acc();          // solid, vertex-coloured: roof, buildings, forecourt, garden ground
-  const GA = Acc();          // opaque curtain-wall glass
+  const SA = Acc();          // solid, vertex-coloured: buildings, forecourt, garden ground
+  const RA = Acc();          // the roof's top skin and fascia
+  const OA = Acc();          // the bamboo soffit
+  const GA = Acc(); GA.t = [];   // curtain-wall glass (+ tangent, arc length, wall top for the interior shader)
   const TA = Acc();          // transparent glass (dome, tower cab)
   const JA = Acc();          // jaali
   const WA = Acc();          // water
-  function grid(ip, NI, NJ, periodic, XY, UVF, CF) {
+  function grid(ip, NI, NJ, periodic, XY, UVF, CF, SUV) {
     const nx = NI + 1, ny = NJ + 1, N = nx * ny;
     const X = new Float64Array(N), Y = new Float64Array(N), Hh = new Float64Array(N), NX = new Float32Array(N), NZ = new Float32Array(N);
     const raw = PCS[ip].raw;
@@ -253,18 +401,18 @@ Z3MOD.terminal = function (Z) {
     const near = new Uint8Array(NI * NJ);
     for (let i = 0; i < NI; i++) for (let j = 0; j < NJ; j++) { if (st[i * NJ + j] !== 0) continue; let f = 0; for (let di = -3; di <= 3 && !f; di++) for (let dj = -3; dj <= 3; dj++) if (S(i + di, j + dj) === 1) { f = 1; break; } near[i * NJ + j] = f; }
     // vertices: top and soffit
-    const tb = SA.p.length / 3; const tmpN = new THREE.Vector3();
-    for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) { const k = i * ny + j; tmpN.set(NX[k], 1, NZ[k]).normalize(); const uv = UVF ? UVF(i, j, X[k], Y[k]) : [X[k] / 18, Y[k] / 18]; V(SA, X[k], Hh[k], Y[k], tmpN.x, tmpN.y, tmpN.z, CF ? CF(X[k], Y[k]) : CL.roof, uv[0], uv[1], 0.025); }
-    const ub = SA.p.length / 3;
-    for (let k = 0; k < N; k++) { tmpN.set(NX[k], 1, NZ[k]).normalize(); V(SA, X[k], Hh[k] - TH, Y[k], -tmpN.x, -tmpN.y, -tmpN.z, CL.bamboo, X[k] / 3, Y[k] / 30, 0.55); }
+    const tb = RA.p.length / 3; const tmpN = new THREE.Vector3();
+    for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) { const k = i * ny + j; tmpN.set(NX[k], 1, NZ[k]).normalize(); const uv = UVF ? UVF(i, j, X[k], Y[k]) : [X[k] / 18, Y[k] / 18]; V(RA, X[k], Hh[k], Y[k], tmpN.x, tmpN.y, tmpN.z, CF ? CF(X[k], Y[k]) : CL.roof, uv[0], uv[1], 0.025); }
+    const ub = OA.p.length / 3;
+    for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) { const k = i * ny + j; tmpN.set(NX[k], 1, NZ[k]).normalize(); const uv = SUV ? SUV(i, j, X[k], Y[k]) : [X[k] / 8, Y[k] / 8]; V(OA, X[k], Hh[k] - TH, Y[k], -tmpN.x, -tmpN.y, -tmpN.z, CL.white, uv[0], uv[1], 0.55); }
     for (let i = 0; i < NI; i++) for (let j = 0; j < NJ; j++) {
       if (st[i * NJ + j] !== 0) continue;
       const a = node(i, j), b = node(i + 1, j), c = node(i + 1, j + 1), d = node(i, j + 1);
       // orientation: top must face up
       const ux = X[b] - X[a], uz = Y[b] - Y[a], vx = X[c] - X[a], vz = Y[c] - Y[a]; let up = (uz * vx - ux * vz) > 0;
       if (Math.abs(uz * vx - ux * vz) < 1e-9) { const wx = X[d] - X[a], wz = Y[d] - Y[a]; up = (vz * wx - vx * wz) > 0; }
-      if (up) { SA.i.push(tb + a, tb + b, tb + c, tb + a, tb + c, tb + d); if (near[i * NJ + j]) SA.i.push(ub + a, ub + c, ub + b, ub + a, ub + d, ub + c); }
-      else { SA.i.push(tb + a, tb + c, tb + b, tb + a, tb + d, tb + c); if (near[i * NJ + j]) SA.i.push(ub + a, ub + b, ub + c, ub + a, ub + c, ub + d); }
+      if (up) { RA.i.push(tb + a, tb + b, tb + c, tb + a, tb + c, tb + d); if (near[i * NJ + j]) OA.i.push(ub + a, ub + c, ub + b, ub + a, ub + d, ub + c); }
+      else { RA.i.push(tb + a, tb + c, tb + b, tb + a, tb + d, tb + c); if (near[i * NJ + j]) OA.i.push(ub + a, ub + b, ub + c, ub + a, ub + c, ub + d); }
       // fascia on edges facing a hole or the outside
       const cxm = (X[a] + X[b] + X[c] + X[d]) / 4, cym = (Y[a] + Y[b] + Y[c] + Y[d]) / 4;
       const edges = [[a, b, i, j - 1], [b, c, i + 1, j], [c, d, i, j + 1], [d, a, i - 1, j]];
@@ -272,7 +420,7 @@ Z3MOD.terminal = function (Z) {
         if (S(ni, nj) !== 1) continue;
         if (Math.hypot(X[q] - X[p], Y[q] - Y[p]) < 0.05) continue;
         const mx = (X[p] + X[q]) / 2, my = (Y[p] + Y[q]) / 2;
-        face(SA, [[X[p], Hh[p], Y[p]], [X[q], Hh[q], Y[q]], [X[q], Hh[q] - TH, Y[q]], [X[p], Hh[p] - TH, Y[p]]], CL.roofEdge, null, 0.7, [mx - cxm, 0, my - cym]);
+        face(RA, [[X[p], Hh[p] + 0.15, Y[p]], [X[q], Hh[q] + 0.15, Y[q]], [X[q], Hh[q] - TH, Y[q]], [X[p], Hh[p] - TH, Y[p]]], CL.roofEdge, null, 0.7, [mx - cxm, 0, my - cym]);
       }
     }
   }
@@ -281,8 +429,10 @@ Z3MOD.terminal = function (Z) {
     const NI = 252, NJ = 30;
     const cTmp = new THREE.Color(), cGut = col('#c9bca4');
     grid(0, NI, NJ, true, (i, j) => { const t = TAU * i / NI, Re = hallR(t) + hallOv(t), r = 48 + (Re - 48) * j / NJ; return [HCX + r * Math.cos(t), HCY + r * Math.sin(t)]; },
-      (i, j, x, y) => [i / NI * 84, Math.hypot(x - HCX, y - HCY) / 16],
-      (x, y) => { const t = Math.atan2(y - HCY, x - HCX), vl = (1 - Math.cos(7 * t)) / 2; return cTmp.copy(CL.roof).lerp(cGut, Math.pow(vl, 6) * 0.9); });
+      (i, j, x, y) => [i / NI * 42, Math.hypot(x - HCX, y - HCY) / 24],
+      (x, y) => { const t = Math.atan2(y - HCY, x - HCX), vl = (1 - Math.cos(7 * t)) / 2, sec = Math.floor(((t + TAU) % TAU) / TAU * 84);
+        return cTmp.copy(CL.roof).multiplyScalar(sec % 3 === 0 ? 0.965 : 1).lerp(cGut, Math.pow(vl, 6) * 0.9); },
+      (i, j, x, y) => [i / NI * 240, Math.hypot(x - HCX, y - HCY) / 8]);
     // Mall: x rows (exact rows at the garden valley's edges), vault across
     const xs = [MXS, (MXS + BELT.x0) / 2]; for (let k = 0; k <= 9; k++) xs.push(BELT.x0 + 7 * k); const n2 = 276; for (let k = 1; k <= n2; k++) xs.push(BELT.x1 + (MXE - BELT.x1) * k / n2);
     const NJm = 28;
@@ -290,7 +440,8 @@ Z3MOD.terminal = function (Z) {
     // piers
     piers.forEach((P, k) => {
       const d0 = 60, d1 = P.dEnd + OV, NIp = Math.ceil((d1 - d0) / 6), NJp = 16;
-      grid(2 + k, NIp, NJp, false, (i, j) => { const d = d0 + (d1 - d0) * Math.pow(i / NIp, 1), hw = pierRoofHW(P, d); return [P.cx + (-1 + 2 * j / NJp) * hw, P.sgn * d]; });
+      grid(2 + k, NIp, NJp, false, (i, j) => { const d = d0 + (d1 - d0) * Math.pow(i / NIp, 1), hw = pierRoofHW(P, d); return [P.cx + (-1 + 2 * j / NJp) * hw, P.sgn * d]; },
+        (i, j, x, y) => [y / 18, x / 18], null, (i, j, x, y) => [y / 8, x / 8]);
     });
   });
 
@@ -313,7 +464,7 @@ Z3MOD.terminal = function (Z) {
         const P = (tt, s) => [HCX + R2 * Math.sin(tt) * cs - s * sn * w, cy + R2 * Math.cos(tt), HCY + R2 * Math.sin(tt) * sn + s * cs * w];
         face(SA, [P(t1, -1), P(t1, 1), P(t0, 1), P(t0, -1)], CL.white, null, 0.2, [Math.sin(t0) * cs, Math.cos(t0), Math.sin(t0) * sn]); } }
     cyl(SA, HCX, HCY, rimMin - TH, base + 0.4, 48.6, 48.6, 48, CL.roofEdge, 0, false, false);
-    cyl(SA, HCX, HCY, rimMin - TH, base + 0.4, 47.8, 47.8, 48, CL.bamboo, 0.4, false, false);
+    cyl(OA, HCX, HCY, rimMin - TH, base + 0.4, 47.8, 47.8, 48, CL.white, 0.4, false, false);
     for (let k = 0; k < 48; k++) { const a0 = TAU * k / 48, a1 = TAU * (k + 1) / 48; face(SA, [[HCX + 47.8 * Math.cos(a0), base + 0.4, HCY + 47.8 * Math.sin(a0)], [HCX + 48.6 * Math.cos(a0), base + 0.4, HCY + 48.6 * Math.sin(a0)], [HCX + 48.6 * Math.cos(a1), base + 0.4, HCY + 48.6 * Math.sin(a1)], [HCX + 47.8 * Math.cos(a1), base + 0.4, HCY + 47.8 * Math.sin(a1)]], CL.white, null, 0, [0, 1, 0]); }
   });
 
@@ -326,7 +477,9 @@ Z3MOD.terminal = function (Z) {
       if (skip && skip(mx, my)) { s += len; continue; }
       const h0 = H(p0[0], p0[1]), h1 = H(p1[0], p1[1]); if (h0 === NEG || h1 === NEG) { s += len; continue; }
       const t0 = h0 - TH - 0.05, t1 = h1 - TH - 0.05, w = hint(mx, my);
+      const nb = GA.p.length / 3;
       face(GA, [[p0[0], 0.2, p0[1]], [p1[0], 0.2, p1[1]], [p1[0], t1, p1[1]], [p0[0], t0, p0[1]]], CL.white, [[s / 3, 0], [(s + len) / 3, 0], [(s + len) / 3, t1 / 4.5], [s / 3, t0 / 4.5]], 0, [w[0], 0, w[1]]);
+      if (GA.p.length / 3 > nb) { const tx = (p1[0] - p0[0]) / len, tz = (p1[1] - p0[1]) / len; GA.t.push(tx, s, tz, t0, tx, s + len, tz, t1, tx, s + len, tz, t1, tx, s, tz, t0); }
       s += len;
     }
   }
@@ -380,10 +533,10 @@ Z3MOD.terminal = function (Z) {
       for (let k = 0; k < pts.length - 1; k++) {
         const p0 = pts[k], p1 = pts[k + 1], len = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]); if (len < 0.01) continue;
         const mx = (p0[0] + p1[0]) / 2, my = (p0[1] + p1[1]) / 2;
-        let gap = false; for (const b of BR) if (Math.abs(b.ry - my) < 4.5 && Math.abs(b.rx - mx) < 9) { gap = true; break; }
+        let gap = (k % 5) === 4; for (const b of BR) if (Math.abs(b.ry - my) < 4.5 && Math.abs(b.rx - mx) < 9) { gap = true; break; }
         const h0 = H(p0[0], p0[1]), h1 = H(p1[0], p1[1]);
         if (gap || h0 === NEG || h1 === NEG) { s += len; continue; }
-        const t0 = Math.min(h0 - TH - 0.8, 20), t1 = Math.min(h1 - TH - 0.8, 20), hgt = (t0 + t1) / 2;
+        const t0 = Math.min(h0 - TH - 4.5, 18), t1 = Math.min(h1 - TH - 4.5, 18), hgt = (t0 + t1) / 2;
         face(JA, [[p0[0], 0.3, p0[1]], [p1[0], 0.3, p1[1]], [p1[0], t1, p1[1]], [p0[0], t0, p0[1]]], CL.white, [[s / hgt, v0], [(s + len) / hgt, v0], [(s + len) / hgt, v0 + 0.5], [s / hgt, v0 + 0.5]], 0, null);
         s += len;
       }
@@ -392,6 +545,10 @@ Z3MOD.terminal = function (Z) {
 
   // ------------------------------------------------------------ gardens (ground) and trees
   const TREES = [];   // [x, y, ground, scale, hue]
+  const PALMS = [], SHRUBS = [], PEOPLE = [], CARS = [], TCOL = [];   // [x, y, ground, scale, hue, (yaw)]
+  const addPalm = (x, y, h0, s) => PALMS.push([x, y, h0 || 0, s || (0.85 + rnd() * 0.35), rnd()]);
+  const addShrub = (x, y, h0, s) => SHRUBS.push([x, y, h0 || 0, s || (0.6 + rnd() * 0.8), rnd()]);
+  const addPerson = (x, y, h0) => PEOPLE.push([x, y, h0 || 0, 0.92 + rnd() * 0.16, rnd(), rnd() * TAU]);
   const addTree = (x, y, h0, s) => TREES.push([x, y, h0 || 0, s || (0.75 + rnd() * 0.6), rnd()]);
   function disc(A, x, y, r, h, c, n) { for (let k = 0; k < n; k++) { const a0 = TAU * k / n, a1 = TAU * (k + 1) / n; face(A, [[x, h, y], [x + r * Math.cos(a0), h, y + r * Math.sin(a0)], [x + r * Math.cos(a1), h, y + r * Math.sin(a1)]], c, null, 0, [0, 1, 0]); } }
   safe('gardens', () => {
@@ -437,6 +594,7 @@ Z3MOD.terminal = function (Z) {
         face(SA, [[cx + os[k][0], h0, cy + os[k][1]], [cx + os[k2][0], h0, cy + os[k2][1]], [cx + os[k2][0], h1, cy + os[k2][1]], [cx + os[k][0], h1, cy + os[k][1]]], c, null, gl || 0, inward === false ? [mx, 0, my] : [-mx, 0, -my]); } };
     let o = [HX, HY];
     riser(o, 0.25, -0.3, CL.stoneD, 0, true);
+    void 0;
     const NS = 8;
     for (let b = 0; b < nB; b++) {
       const top = lv[b], drop = lv[b] - lv[b + 1], inr = [o[0] - run, o[1] - run * 1.1];
@@ -448,15 +606,38 @@ Z3MOD.terminal = function (Z) {
       }
       const inner = b < nB - 1 ? [inr[0] - tx, inr[1] - ty] : [px, py];
       ring(inr, inner, lv[b + 1] - 0.3, b < nB - 1 ? CL.terrace : CL.stoneL, 0);
-      if (b < nB - 1) { for (const sx of [-1, 1]) for (let k = 0; k < 4; k++) { const yy = cy + (k - 1.5) * inr[1] * 0.45; addTree(cx + sx * (inr[0] - tx / 2), yy, lv[b + 1] - 0.3, 0.7 + rnd() * 0.3); } }
+      if (b < nB - 1) { for (const sx of [-1, 1]) for (let k = 0; k < 4; k++) { const yy = cy + (k - 1.5) * inr[1] * 0.45; addTree(cx + sx * (inr[0] - tx / 2), yy, lv[b + 1] - 0.3, 0.7 + rnd() * 0.3);
+          for (let q = 0; q < 5; q++) addShrub(cx + sx * (inr[0] - tx / 2) + (rnd() - 0.5) * tx * 0.8, yy + (rnd() - 0.5) * 16, lv[b + 1] - 0.3, 0.5 + rnd() * 0.5); }
+        for (let k = 0; k < 6; k++) { const xx = cx + (k - 2.5) * inr[0] * 0.33; for (const sy of [-1, 1]) { addPalm(xx, cy + sy * (inr[1] - ty / 2), lv[b + 1] - 0.3, 0.7 + rnd() * 0.25); addShrub(xx + 4, cy + sy * (inr[1] - ty / 2), lv[b + 1] - 0.3); } } }
+      // families on the terraces and steps, thicker near the water
+      { const n = b < nB - 1 ? 110 : 220; let cnt = 0; for (let q = 0; q < n * 4; q++) { const xx = (rnd() * 2 - 1) * inr[0], yy = (rnd() * 2 - 1) * inr[1]; if (Math.abs(xx) < inner[0] + 1.5 && Math.abs(yy) < inner[1] + 1.5) continue; addPerson(cx + xx, cy + yy, lv[b + 1] - 0.3); if (++cnt >= n) break; } }
       o = inner;
     }
     // the pool
     riser([px, py], lv[nB] - 0.3, lv[nB] - 1.0, CL.stoneD, 0.4, true);
     face(WA, [[cx - px, lv[nB] - 0.75, cy - py], [cx + px, lv[nB] - 0.75, cy - py], [cx + px, lv[nB] - 0.75, cy + py], [cx - px, lv[nB] - 0.75, cy + py]], CL.white, null, 0, [0, 1, 0]);
     // trees along the forecourt's rim (shade for the families waiting up top)
-    for (let k = 0; k < 9; k++) { addTree(F.x0 + 15 + k * (F.x1 - F.x0 - 30) / 8, F.y0 - 12, 0, 1.1); addTree(F.x0 + 15 + k * (F.x1 - F.x0 - 30) / 8, F.y1 + 12, 0, 1.1); }
-    for (let k = 0; k < 10; k++) addTree(F.x0 - 14, F.y0 + 20 + k * (F.y1 - F.y0 - 40) / 9, 0, 1.15);
+    for (let k = 0; k < 9; k++) { const xx = F.x0 + 15 + k * (F.x1 - F.x0 - 30) / 8; addTree(xx, F.y0 - 12, 0, 1.1); addTree(xx, F.y1 + 12, 0, 1.1); addPalm(xx + 13, F.y0 - 8, 0); addPalm(xx + 13, F.y1 + 8, 0); }
+    for (let k = 0; k < 10; k++) { addTree(F.x0 - 14, F.y0 + 20 + k * (F.y1 - F.y0 - 40) / 9, 0, 1.15); addPalm(F.x0 - 7, F.y0 + 36 + k * (F.y1 - F.y0 - 40) / 9, 0); }
+    for (let k = 0; k < 160; k++) { const a = rnd(); if (a < 0.5) addShrub(F.x0 + rnd() * (F.x1 - F.x0), (rnd() < 0.5 ? F.y0 - 4 - rnd() * 18 : F.y1 + 4 + rnd() * 18), 0); else addShrub(F.x0 - 4 - rnd() * 18, F.y0 + rnd() * (F.y1 - F.y0), 0); }
+    for (let k = 0; k < 500; k++) { const a = rnd(); if (a < 0.4) addPerson(F.x0 - 2 - rnd() * 24, F.y0 + rnd() * (F.y1 - F.y0), 0); else addPerson(F.x0 + rnd() * (F.x1 - F.x0), (rnd() < 0.5 ? F.y0 - 2 - rnd() * 22 : F.y1 + 2 + rnd() * 22), 0); }
+    { const NP = 520; for (let k = 0; k < NP; k++) { const t0 = TAU * k / NP, t1 = TAU * (k + 1) / NP, tm = (t0 + t1) / 2, ov = hallOv(tm), out = ov > 12 ? ov + 4 : 4.5;
+        const x0 = HCX + hallR(tm) * Math.cos(tm); if (x0 > -1990) continue;
+        const P = (t, r) => [HCX + r * Math.cos(t), 0.14, HCY + r * Math.sin(t)], ra0 = hallR(t0) - 0.5, ra1 = hallR(t1) - 0.5, rb0 = hallR(t0) + out, rb1 = hallR(t1) + out;
+        const xm = HCX + (hallR(tm) + out / 2) * Math.cos(tm), ym = HCY + (hallR(tm) + out / 2) * Math.sin(tm);
+        if (ov > 12 && xm < F.x1 + 2 && Math.abs(ym) < F.y1 + 2) continue;
+        face(SA, [P(t0, ra0), P(t1, ra1), P(t1, rb1), P(t0, rb0)], k % 2 ? CL.stoneL : col('#d8cdb8'), [[k, ra0 / 6], [k + 1, ra1 / 6], [k + 1, rb1 / 6], [k, rb0 / 6]], 0, [0, 1, 0]); } }
+    // the departures kerb under the 40 m cantilever: a crowd at the doors, tree columns holding the roof's edge
+    for (let k = 0; k < 900; k++) { const t = PI + (rnd() * 2 - 1) * 0.62, R = hallR(t), ov = hallOv(t), r = R + 1 + rnd() * (ov - 2) * (rnd() < 0.6 ? 0.35 : 1), x = HCX + r * Math.cos(t), y = HCY + r * Math.sin(t);
+      if (x < F.x1 + 1 && Math.abs(y) < F.y1 + 1) continue; addPerson(x, y, 0); }
+    for (let t = PI - 0.6; t <= PI + 0.6 + 1e-6; t += 0.06) { const R = hallR(t), ov = hallOv(t); if (ov < 22) continue; const r = R + ov * 0.5, x = HCX + r * Math.cos(t), y = HCY + r * Math.sin(t); TCOL.push([x, y, H(x, y) - TH, t]); }
+    // a planted strip all round the Hall's glass, beyond the overhang
+    for (let t = 0; t < TAU; t += 0.011) { const R = hallR(t), x = HCX + (R + hallOv(t) + 5) * Math.cos(t), y = HCY + (R + hallOv(t) + 5) * Math.sin(t);
+      if (x > -1985 || (x < F.x1 + 25 && Math.abs(y) < F.y1 + 25)) continue; addShrub(x, y, 0, 0.8 + rnd() * 0.7); if (rnd() < 0.18) addTree(x + (rnd() - 0.5) * 6, y + (rnd() - 0.5) * 6, 0, 0.8 + rnd() * 0.5); else if (rnd() < 0.1) addPalm(x, y, 0); }
+    // cars queueing on the kerb loops
+    for (const l of SPEC.landside || []) { if (l.label !== 'Kerb loop') continue; const P = l.pts;
+      for (let k = 0; k < P.length - 1; k++) { const a = P[k], b = P[k + 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]), ux = (b[0] - a[0]) / L, uy = (b[1] - a[1]) / L;
+        for (const lane of [-9, -5, 5, 9]) for (let d = rnd() * 10; d < L; d += 7 + rnd() * 18) { if (rnd() < 0.25) continue; CARS.push([a[0] + ux * d - uy * lane, a[1] + uy * d + ux * lane, 0, 1, rnd(), -Math.atan2(uy, ux) + (lane < 0 ? PI : 0)]); } } }
   });
 
   // ------------------------------------------------------------ other buildings
@@ -464,7 +645,11 @@ Z3MOD.terminal = function (Z) {
     const sgn = area2(pts) > 0 ? 1 : -1; let s = 0;
     for (let k = 0; k < pts.length; k++) { const a = pts[k], b = pts[(k + 1) % pts.length], L = Math.hypot(b[0] - a[0], b[1] - a[1]); if (L < 0.01) continue;
       const nx = (b[1] - a[1]) * sgn, ny = -(b[0] - a[0]) * sgn;
-      face(A, [[a[0], z0, a[1]], [b[0], z0, b[1]], [b[0], z1, b[1]], [a[0], z1, a[1]]], cw, [[s / 12, z0 / 12], [(s + L) / 12, z0 / 12], [(s + L) / 12, z1 / 12], [s / 12, z1 / 12]], gl || 0, [nx, 0, ny]); s += L; }
+      const nb = A.p.length / 3;
+      face(A, [[a[0], z0, a[1]], [b[0], z0, b[1]], [b[0], z1, b[1]], [a[0], z1, a[1]]], cw, [[s / 12, z0 / 12], [(s + L) / 12, z0 / 12], [(s + L) / 12, z1 / 12], [s / 12, z1 / 12]], gl || 0, [nx, 0, ny]);
+      if (A.t) { if (A.p.length / 3 > nb) { const tx = (b[0] - a[0]) / L, tz = (b[1] - a[1]) / L; A.t.push(tx, s, tz, z1, tx, s + L, tz, z1, tx, s + L, tz, z1, tx, s, tz, z1); } }
+      s += L; }
+    if (A.t && cr) cr = null;
     if (cr) { const tri = THREE.ShapeUtils.triangulateShape(pts.map(p => new THREE.Vector2(p[0], p[1])), []);
       for (const t of tri) { const P = t.map(k => [pts[k][0], z1, pts[k][1]]); face(A, P, cr, P.map(p => [p[0] / 24, p[2] / 24]), glr || 0, [0, 1, 0]); } }
   }
@@ -475,14 +660,30 @@ Z3MOD.terminal = function (Z) {
       if (['ZMH', 'MALL', 'FC'].includes(B.id) || B.kind === 'processor' || B.kind === 'court') continue;
       const pts = pathPts(B.outline); if (pts.length < 3) continue; const bb = bbox(pts);
       if (B.kind === 'tower') {
+        // the ATC tower as a landmark: a glazed podium, a twisting trefoil shaft (three fins winding a third of a turn)
+        // that flares into a cab deck, an outward-leaning glazed cab with mullions, a cantilevered roof and a radome
         const cx = (bb.x0 + bb.x1) / 2, cy = (bb.y0 + bb.y1) / 2;
-        extrude(SA, pts, 0, 14, CL.conc, CL.conc2, 0.25, 0);
-        cyl(SA, cx, cy, 14, 80, 8, 6.2, 16, CL.white, 0, false, false);
-        for (let k = 0; k < 4; k++) { const a = TAU * k / 4 + PI / 4; box(SA, cx + Math.cos(a) * 6.8, 14, cy + Math.sin(a) * 6.8, 1.2, 64, 1.2, CL.conc2, -a, 0); }
-        cyl(SA, cx, cy, 80, 86.2, 7, 13.5, 24, CL.conc, 0.4, false, false);
-        cyl(TA, cx, cy, 86.2, 95.5, 12.6, 14.2, 24, CL.white, 0, false, false);
-        cyl(SA, cx, cy, 95.5, 97.4, 15.5, 15, 24, CL.white, 0.2, true, false, CL.conc2);
-        cyl(SA, cx, cy, 97.4, 114, 0.6, 0.3, 6, CL.red, 0, false, false);
+        extrude(SA, pts, 0, 1.2, CL.conc2, CL.conc2, 0, 0);
+        const pr = Math.min(bb.x1 - bb.x0, bb.y1 - bb.y0) / 2 - 2, NP = 32, ring = [];
+        for (let k = 0; k < NP; k++) { const a = TAU * k / NP; ring.push([cx + pr * Math.cos(a), cy + pr * Math.sin(a)]); }
+        const rr = ring.slice().reverse(); extrude(GA, rr, 1.2, 11, CL.white, null, 0); extrude(SA, rr.map(p => [cx + (p[0] - cx) * 1.08, cy + (p[1] - cy) * 1.08]), 11, 13, CL.white, CL.conc, 0.1, 0);
+        const NY = 30, NA = 36, y0 = 13, y1 = 84;
+        const rad = (y, a) => { const u = (y - y0) / (y1 - y0), base = 7.6 - 2.2 * u + 6.5 * Math.pow(Math.max(0, (u - 0.82) / 0.18), 2.2), tw = u * TAU / 3;
+          return base * (1 + 0.26 * Math.max(0, Math.cos(3 * (a - tw))) ** 3); };
+        for (let j = 0; j < NY; j++) for (let k = 0; k < NA; k++) {
+          const ya = y0 + (y1 - y0) * j / NY, yb = y0 + (y1 - y0) * (j + 1) / NY, a0 = TAU * k / NA, a1 = TAU * (k + 1) / NA, am = (a0 + a1) / 2;
+          const P = (y, a) => { const r = rad(y, a); return [cx + r * Math.cos(a), y, cy + r * Math.sin(a)]; };
+          face(SA, [P(ya, a0), P(ya, a1), P(yb, a1), P(yb, a0)], k % 12 < 2 ? CL.conc : CL.white, null, 0, [Math.cos(am), 0, Math.sin(am)]);
+        }
+        cyl(SA, cx, cy, 84, 86.2, 14.0, 14.4, 36, CL.white, 0.3, true, false, CL.conc);                      // cab deck
+        cyl(TA, cx, cy, 86.2, 95.5, 12.6, 14.4, 36, CL.white, 0, false, false);                              // cab glass, leaning out
+        for (let k = 0; k < 18; k++) { const a = TAU * k / 18, ca = Math.cos(a), sa = Math.sin(a);
+          face(SA, [[cx + ca * 12.75 - sa * 0.14, 86.2, cy + sa * 12.75 + ca * 0.14], [cx + ca * 12.75 + sa * 0.14, 86.2, cy + sa * 12.75 - ca * 0.14], [cx + ca * 14.55 + sa * 0.14, 95.5, cy + sa * 14.55 - ca * 0.14], [cx + ca * 14.55 - sa * 0.14, 95.5, cy + sa * 14.55 + ca * 0.14]], CL.dark, null, 0, [ca, 0, sa]); }
+        cyl(SA, cx, cy, 95.5, 97.0, 16.8, 16.4, 36, CL.white, 0.2, true, false, CL.conc2);                     // cantilevered roof
+        cyl(SA, cx, cy, 97.0, 99.5, 6, 5, 18, CL.conc, 0, true, false);
+        blob(SA, cx + 2, 101.4, cy, 2.2, 2.2, 2.2, CL.white, 0, 1);                                           // radome
+        cyl(SA, cx - 2.5, cy, 99.5, 116, 0.5, 0.18, 6, CL.red, 0, false, false);
+        for (const yy of [104, 110]) box(SA, cx - 2.5, yy, cy, 2.4, 0.15, 0.15, CL.steel, 0, 0);
       } else if (B.kind === 'fire') {
         extrude(SA, pts, 0, 11, CL.conc, CL.conc2, 0.15, 0);
         extrude(SA, rectPts(bb.x0 - 0.4, bb.y0 - 0.4, bb.x1 + 0.4, bb.y1 + 0.4), 8.6, 10.2, CL.red, null, 0.1);
@@ -492,7 +693,10 @@ Z3MOD.terminal = function (Z) {
         const n = 3, gap = 24, w = (bb.x1 - bb.x0 - gap * (n - 1)) / n;
         for (let k = 0; k < n; k++) { const x0 = bb.x0 + k * (w + gap); extrude(SA, rectPts(x0, bb.y0, x0 + w, bb.y1), 0, 21, CL.conc, CL.steel, 0.12, 0);
           for (let m = 0; m < 6; m++) box(SA, x0 + w * (m + 0.5) / 6, 21, (bb.y0 + bb.y1) / 2, 6, 1.2, bb.y1 - bb.y0 - 40, CL.white, 0, 0.3);
-          for (let m = 0; m < 10; m++) box(SA, x0 + 12 + m * (w - 24) / 9, 0, bb.y1 + 0.4, 9, 6, 0.8, col('#3c6f9c'), 0, 0); }
+          for (let m = 0; m < 10; m++) box(SA, x0 + 12 + m * (w - 24) / 9, 0, bb.y1 + 0.4, 9, 6, 0.8, col('#3c6f9c'), 0, 0);
+          // rooftop plant: air handlers, a louvred plant screen, a brand band along the eaves
+          for (let m = 0; m < 9; m++) { const hx = x0 + 15 + rnd() * (w - 30), hz = bb.y0 + 18 + rnd() * (bb.y1 - bb.y0 - 36); box(SA, hx, 21, hz, 7, 2.6, 4, CL.steel, 0, 0, CL.conc2); cyl(SA, hx + 2, hz, 23.6, 24.4, 1.2, 1.2, 10, CL.dark, 0, true, false); }
+          extrude(SA, rectPts(x0 - 0.3, bb.y0 - 0.3, x0 + w + 0.3, bb.y1 + 0.3), 18.5, 20.2, col('#1f5a8a'), null, 0.1); }
       } else if (B.kind === 'mro') {
         const n = 3, gap = 30, w = (bb.x1 - bb.x0 - gap * (n - 1)) / n, eave = 22, crown = 40, NS = 18;
         for (let k = 0; k < n; k++) {
@@ -531,49 +735,99 @@ Z3MOD.terminal = function (Z) {
   safe('meshes', () => {
     const mk = (A, m, cast, recv, name) => { if (!A.i.length) return null; const me = new THREE.Mesh(toGeo(A), m); me.castShadow = !!cast; me.receiveShadow = !!recv; me.name = name; group.add(me); meshes[name] = me; return me; };
     mk(SA, M.solid, true, true, 'solid');
+    mk(RA, M.roof, true, true, 'roof');
+    mk(OA, M.soffit, false, true, 'soffit');
     mk(GA, M.glass, false, true, 'glass');
     mk(JA, M.jaali, true, true, 'jaali');
     mk(WA, M.pool, false, true, 'pool');
     const tg = mk(TA, M.tglass, false, false, 'tglass'); if (tg) tg.renderOrder = 2;
   });
 
-  // ------------------------------------------------------------ trees (instanced, one draw)
-  safe('trees', () => {
-    if (!TREES.length) return;
-    const A = Acc(), trunk = col('#6b4f33'), leaf = col('#ffffff');
-    cyl(A, 0, 0, 0, 4.2, 0.45, 0.3, 5, trunk, 0, false, false);
-    const ico = new THREE.IcosahedronGeometry(1, 0); const ip = ico.attributes.position;
-    for (let k = 0; k < ip.count; k += 3) { const P = [0, 1, 2].map(m => [ip.getX(k + m) * 4.2, 6.6 + ip.getY(k + m) * 3.4, ip.getZ(k + m) * 4.2]); face(A, P, leaf, null, 0, [(P[0][0] + P[1][0] + P[2][0]) / 3, (P[0][1] + P[1][1] + P[2][1]) / 3 - 6.6, (P[0][2] + P[1][2] + P[2][2]) / 3]); }
-    // the leaf colour comes from the instance colour; trunk vertices darken by being multiplied too
-    const g = toGeo(A); const im = new THREE.InstancedMesh(g, M.tree, TREES.length);
-    const o = new THREE.Object3D(), c = new THREE.Color(), greens = ['#4e7f35', '#5f8d3a', '#6c9a44', '#3f6f2f', '#7a9b3c', '#558a48'];
-    TREES.forEach((t, k) => { o.position.set(t[0], t[2], t[1]); o.rotation.set(0, t[4] * TAU, 0); o.scale.setScalar(t[3]); o.updateMatrix(); im.setMatrixAt(k, o.matrix); c.set(greens[Math.floor(t[4] * greens.length) % greens.length]); im.setColorAt(k, c); });
-    im.castShadow = true; im.receiveShadow = true; im.frustumCulled = false; group.add(im); meshes.trees = im;
+  // ------------------------------------------------------------ planting, people, cars, tree columns (instanced, one draw each)
+  // vertex 'glow' doubles as a part selector: 0 = own colour, 1 = glass, 2 = takes the instance colour
+  function inst(name, A, mat, list, colours, cast, place) {
+    if (!list.length) return null;
+    const im = new THREE.InstancedMesh(toGeo(A), mat, list.length), o = new THREE.Object3D(), c = new THREE.Color();
+    list.forEach((t, k) => { o.position.set(t[0], t[2], t[1]); o.rotation.set(0, t[5] !== undefined ? t[5] : t[4] * TAU, 0); o.scale.setScalar(t[3]); if (place) place(o, t); o.updateMatrix(); im.setMatrixAt(k, o.matrix);
+      c.set(colours[Math.floor(t[4] * 997) % colours.length]); im.setColorAt(k, c); });
+    im.castShadow = !!cast; im.receiveShadow = true; im.frustumCulled = false; group.add(im); meshes[name] = im; return im;
+  }
+  function blob(A, cx, cy, cz, sx, sy, sz, c, gl, det) {
+    const ico = new THREE.IcosahedronGeometry(1, det || 0), ip = ico.attributes.position;
+    for (let k = 0; k < ip.count; k += 3) { const b = A.p.length / 3;
+      for (let m = 0; m < 3; m++) { const x = ip.getX(k + m), y = ip.getY(k + m), z = ip.getZ(k + m), L = Math.hypot(x / sx, y / sy, z / sz) || 1; V(A, cx + x * sx, cy + y * sy, cz + z * sz, x / sx / L, y / sy / L, z / sz / L, c, 0.5, 0.5, gl); }
+      A.i.push(b, b + 1, b + 2); }
+    ico.dispose();
+  }
+  // a tube between two points
+  function strut(A, p0, p1, r0, r1, n, c, gl) {
+    const d = new THREE.Vector3(p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]).normalize(), a = Math.abs(d.y) < 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
+    const u = new THREE.Vector3().crossVectors(d, a).normalize(), v = new THREE.Vector3().crossVectors(d, u);
+    for (let k = 0; k < n; k++) { const a0 = TAU * k / n, a1 = TAU * (k + 1) / n, am = (a0 + a1) / 2, Q = (p, r, an) => [p[0] + r * (u.x * Math.cos(an) + v.x * Math.sin(an)), p[1] + r * (u.y * Math.cos(an) + v.y * Math.sin(an)), p[2] + r * (u.z * Math.cos(an) + v.z * Math.sin(an))];
+      face(A, [Q(p0, r0, a0), Q(p0, r0, a1), Q(p1, r1, a1), Q(p1, r1, a0)], c, null, gl, [u.x * Math.cos(am) + v.x * Math.sin(am), u.y * Math.cos(am) + v.y * Math.sin(am), u.z * Math.cos(am) + v.z * Math.sin(am)]); }
+  }
+  safe('planting', () => {
+    const trunk = col('#5e4630'), W = col('#ffffff');
+    // broadleaf: a trunk and a clustered canopy; ~1 in 5 flowering (gulmohar, amaltas, jacaranda)
+    const T = Acc(); cyl(T, 0, 0, 0, 4.6, 0.42, 0.26, 6, trunk, 0, false, false);
+    blob(T, 0, 7.0, 0, 3.6, 2.6, 3.6, W, 2, 0); blob(T, 1.9, 6.1, 0.8, 2.4, 1.9, 2.4, W, 2, 0); blob(T, -1.6, 6.3, -1.1, 2.5, 2.0, 2.5, W, 2, 0); blob(T, 0.2, 8.6, -0.6, 2.2, 1.6, 2.2, W, 2, 0);
+    inst('trees', T, M.tree, TREES, ['#4e7f35', '#5f8d3a', '#6c9a44', '#3f6f2f', '#7a9b3c', '#558a48', '#46783a', '#b8563c', '#4e7f35', '#5f8d3a', '#c9a640', '#4e7f35', '#3f6f2f', '#6c9a44', '#8f7fb0', '#558a48'], true);
+    // palms: a slender ringed trunk and drooping fronds
+    const Pm = Acc(); cyl(Pm, 0, 0, 0, 10, 0.32, 0.22, 6, col('#8a7a62'), 0, false, false);
+    for (let k = 0; k < 10; k++) { const a = TAU * k / 10 + (k % 2) * 0.2, ca = Math.cos(a), sa = Math.sin(a), pa = [-sa, ca], L = k % 2 ? 4.6 : 3.8;
+      const top = [0, 10, 0], mid = [ca * L * 0.5, 10.7, sa * L * 0.5], tip = [ca * L, 9.0 - (k % 2), sa * L], w = 0.7;
+      face(Pm, [top, [mid[0] + pa[0] * w, mid[1], mid[2] + pa[1] * w], [mid[0] - pa[0] * w, mid[1], mid[2] - pa[1] * w]], W, null, 2, [0, 1, 0]);
+      face(Pm, [[mid[0] + pa[0] * w, mid[1], mid[2] + pa[1] * w], tip, [mid[0] - pa[0] * w, mid[1], mid[2] - pa[1] * w]], W, null, 2, [0, 1, 0]); }
+    inst('palms', Pm, M.tree, PALMS, ['#4f8a3a', '#5c9640', '#46803a', '#62973f'], true);
+    // shrubs and flowering bushes (bougainvillea, lantana)
+    const Sh = Acc(); blob(Sh, 0, 0.7, 0, 1.7, 1.0, 1.7, W, 2, 0);
+    inst('shrubs', Sh, M.tree, SHRUBS, ['#3f6f2f', '#4e7f35', '#5a8a3a', '#3a6a35', '#a8466e', '#4e7f35', '#46743a', '#5a8a3a', '#b86a3a', '#6c9a44', '#3f6f2f', '#5a8a3a'], false);
+    // people: legs, a shirt / kurta / sari (instance colour), a head
+    box.noBottom = true;
+    const Pe = Acc(), skin = col('#7a5038'); box(Pe, 0, 0, 0, 0.34, 0.82, 0.22, col('#2c2c34'), 0, 0); box(Pe, 0, 0.82, 0, 0.46, 0.66, 0.28, W, 0, 2, skin);
+    inst('people', Pe, M.inst, PEOPLE, ['#f2efe6', '#e8a33a', '#c0392b', '#2e5fa8', '#f2efe6', '#7a2b5c', '#2e8b57', '#e7d3a8', '#1f3a5f', '#d4562a', '#f2efe6', '#e0c341'], false);
+    // cars: body (instance colour), glasshouse, a kaali-peeli taxi or two
+    const Ca = Acc(); box(Ca, 0, 0.28, 0, 4.4, 0.78, 1.8, W, 0, 2); box(Ca, -0.2, 1.06, 0, 2.5, 0.62, 1.62, col('#1a2026'), 0, 1);
+    box.noBottom = false;
+    inst('cars', Ca, M.inst, CARS, ['#f4f4f2', '#c9ccd0', '#1c1f24', '#f4f4f2', '#8a1f1f', '#2a4a7a', '#e8c21a', '#f4f4f2', '#6f757b', '#c9ccd0'], false);
+    // Mumbai's branching tree columns under the cantilever: a trunk that flares and splits into arms that open into the soffit
+    const TC = Acc(), wc = col('#f0eee8'), Hn = 20;
+    cyl(TC, 0, 0, 0, 7.5, 1.15, 0.95, 12, wc, 0, false, false); cyl(TC, 0, 0, 7.5, 9.2, 0.95, 1.6, 12, wc, 0, false, false);
+    for (let k = 0; k < 4; k++) { const a = TAU * k / 4 + PI / 4, ca = Math.cos(a), sa = Math.sin(a);
+      strut(TC, [ca * 0.8, 8.8, sa * 0.8], [ca * 7.5, Hn + 0.4, sa * 7.5], 0.62, 0.32, 8, wc, 0);
+      for (const dv of [-0.55, 0.55]) { const b2 = a + dv; strut(TC, [ca * 4.2, 14.5, sa * 4.2], [Math.cos(b2) * 10.5, Hn + 0.4, Math.sin(b2) * 10.5], 0.34, 0.2, 6, wc, 0); } }
+    inst('tcols', TC, M.inst, TCOL.map(t => [t[0], t[1], 0, 1, 0, -t[3]]), ['#ffffff'], true, (o, t) => { const src = TCOL.find(q => q[0] === t[0] && q[1] === t[1]); o.scale.set(1, Math.max(0.6, (src ? src[2] : Hn) / Hn), 1); });
   });
 
   // ------------------------------------------------------------ skylight coffers with coloured lenses (instanced)
   safe('skylights', () => {
     const SK = (RF.skylights || []).filter(s => !isHole(s.x, s.y) && H(s.x, s.y) !== NEG); if (!SK.length) return;
-    const A = Acc(), w = col('#ffffff');
-    // a low glazed lantern: octagonal footprint 1 x 1 (scaled to l x w), sloped glass sides up to a flat lens ring
-    const NO = 8, rb = 0.5, rt = 0.34, hgt = 0.55, oc = k => [Math.cos(TAU * (k + 0.5) / NO), Math.sin(TAU * (k + 0.5) / NO)];
-    for (let k = 0; k < NO; k++) { const a = oc(k), b = oc(k + 1); face(A, [[a[0] * rb, 0, a[1] * rb], [b[0] * rb, 0, b[1] * rb], [b[0] * rt, hgt, b[1] * rt], [a[0] * rt, hgt, a[1] * rt]], w, null, 0, [a[0] + b[0], 0.7, a[1] + b[1]]);
-      face(A, [[0, hgt, 0], [a[0] * rt, hgt, a[1] * rt], [b[0] * rt, hgt, b[1] * rt]], w, null, 0, [0, 1, 0]); }
-    const LA = Acc(); for (let k = 0; k < NO; k++) { const a = oc(k), b = oc(k + 1), r = 0.15; face(LA, [[0, hgt + 0.08, 0], [a[0] * r, hgt + 0.08, a[1] * r], [b[0] * r, hgt + 0.08, b[1] * r]], w, null, 0, [0, 1, 0]); }
-    const g1 = toGeo(A), g2 = toGeo(LA); g1.deleteAttribute('color'); g2.deleteAttribute('color');
-    const im = new THREE.InstancedMesh(g1, M.coffer, SK.length), il = new THREE.InstancedMesh(g2, M.lens, SK.length);
+    // a glazed coffer opening: a white upstand curb, a recessed well, a faceted low glass pyramid (catching the sun at
+    // different angles) and a coloured lens at its crown. Unit footprint, scaled to l x w; heights in metres.
+    const A = Acc(), w = CL.white, gc = col('#1c2a33'), wl = col('#6b7378');
+    const NO = 8, oc = (k, r) => [Math.cos(TAU * (k + 0.5) / NO) * r, Math.sin(TAU * (k + 0.5) / NO) * r];
+    for (let k = 0; k < NO; k++) {
+      const a0 = oc(k, 0.5), a1 = oc(k + 1, 0.5), b0 = oc(k, 0.43), b1 = oc(k + 1, 0.43), c0 = oc(k, 0.12), c1 = oc(k + 1, 0.12), n = [a0[0] + a1[0], 0, a0[1] + a1[1]];
+      face(A, [[a0[0], -0.5, a0[1]], [a1[0], -0.5, a1[1]], [a1[0], 0.7, a1[1]], [a0[0], 0.7, a0[1]]], w, null, 0, n);                     // curb outside
+      face(A, [[a0[0], 0.7, a0[1]], [a1[0], 0.7, a1[1]], [b1[0], 0.7, b1[1]], [b0[0], 0.7, b0[1]]], w, null, 0, [0, 1, 0]);             // curb cap
+      face(A, [[b0[0], 0.7, b0[1]], [b1[0], 0.7, b1[1]], [b1[0], 0.2, b1[1]], [b0[0], 0.2, b0[1]]], wl, null, 0, [-n[0], 0, -n[2]]);  // the well, in shade
+      face(A, [[b0[0], 0.2, b0[1]], [b1[0], 0.2, b1[1]], [c1[0], 0.95, c1[1]], [c0[0], 0.95, c0[1]]], gc, null, 1, [n[0], 1.2, n[2]]); // glass facet
+      face(A, [[0, 1.0, 0], [c0[0], 0.95, c0[1]], [c1[0], 0.95, c1[1]]], w, null, 2, [0, 1, 0]);                                       // the lens
+    }
+    const g1 = toGeo(A);
+    const im = new THREE.InstancedMesh(g1, M.coffer, SK.length);
     const m4 = new THREE.Matrix4(), X = new THREE.Vector3(), Y = new THREE.Vector3(), Zv = new THREE.Vector3(), S = new THREE.Vector3(), c = new THREE.Color();
-    const peacock = ['#1d8f8a', '#d9a531', '#2f62c0', '#8a3f9a', '#3c9a48', '#d0573b', '#1aa3c9', '#e0c04a'];
+    const peacock = ['#0f8f86', '#e0a020', '#2456c8', '#8a2fa0', '#2f9a3c', '#e0502c', '#10a8d0', '#e8c43a'];
     SK.forEach((s, k) => {
       const a = (s.a || 0) * PI / 180, h = H(s.x, s.y), e = 2;
       const hx = (H(s.x + e, s.y) - H(s.x - e, s.y)) / (2 * e), hz = (H(s.x, s.y + e) - H(s.x, s.y - e)) / (2 * e);
       Y.set(-hx, 1, -hz).normalize(); X.set(Math.cos(a), 0, Math.sin(a)); X.addScaledVector(Y, -X.dot(Y)).normalize(); Zv.crossVectors(X, Y).normalize();
-      m4.makeBasis(X, Y, Zv); S.set(s.l || 16, 2.2, s.w || 12); m4.scale(S); m4.setPosition(s.x, h + 0.05, s.y);
+      m4.makeBasis(X, Y, Zv); S.set(s.l || 16, 1, s.w || 12); m4.scale(S); m4.setPosition(s.x, h, s.y);
       im.setMatrixAt(k, m4);
-      S.set((s.l || 16) * 0.55, 2.2, (s.w || 12) * 0.55); m4.makeBasis(X, Y, Zv); m4.scale(S); m4.setPosition(s.x, h + 0.05, s.y); il.setMatrixAt(k, m4);
-      c.set(peacock[((k * 7 + Math.floor(Math.abs(s.x * 0.37 + s.y * 0.11))) % peacock.length)] || peacock[k % 8]); il.setColorAt(k, c); c.lerp(CL.white, 0.45); im.setColorAt(k, c);
+      c.set(peacock[((k * 7 + Math.floor(Math.abs(s.x * 0.37 + s.y * 0.11))) % peacock.length)] || peacock[k % 8]); im.setColorAt(k, c);
     });
-    im.frustumCulled = il.frustumCulled = false; im.receiveShadow = true; group.add(im); group.add(il); meshes.coffer = im; meshes.lens = il;
+    const il = null;
+    void il; im.frustumCulled = false; im.receiveShadow = true; im.castShadow = false; group.add(im); meshes.coffer = im;
   });
 
   // ------------------------------------------------------------ aerobridges (instanced: walkway, cab, leg)
@@ -582,8 +836,8 @@ Z3MOD.terminal = function (Z) {
     if (!BR.length) return;
     const body = col('#cfd3d6'), glassC = col('#45535c'), dark = col('#5a6066');
     const WK = Acc(); // walkway spans x 0..1
-    box(WK, 0.5, -1.6, 0, 1, 3.2, 3.8, body, 0, 0, body); box(WK, 0.5, -0.2, 0, 1.002, 1.0, 3.86, glassC, 0, 0, glassC);
-    const CB = Acc(); box(CB, 0, -1.8, 0, 4.4, 3.6, 5.0, body, 0, 0, body); box(CB, 1.6, -1.2, 0, 1.4, 2.4, 5.1, glassC, 0, 0, glassC);
+    box(WK, 0.5, -1.6, 0, 1, 3.2, 3.8, body, 0, 0, body); box(WK, 0.5, -0.2, 0, 1.002, 1.0, 3.86, glassC, 0, 1, glassC);
+    const CB = Acc(); box(CB, 0, -1.8, 0, 4.4, 3.6, 5.0, body, 0, 0, body); box(CB, 1.6, -1.2, 0, 1.4, 2.4, 5.1, glassC, 0, 1, glassC);
     const LG = Acc(); box(LG, 0, 0, 0, 0.9, 3.6, 0.9, dark, 0, 0); box(LG, 0, 0, 0, 2.2, 1.0, 3.4, dark, 0, 0);
     const mk = (A, n) => { const g = toGeo(A); const im = new THREE.InstancedMesh(g, M.bridge, BR.length); im.instanceMatrix.setUsage(THREE.DynamicDrawUsage); im.castShadow = true; im.receiveShadow = true; im.frustumCulled = false; group.add(im); BRM[n] = im; };
     mk(WK, 'walk'); mk(CB, 'cab'); mk(LG, 'leg');
@@ -601,9 +855,10 @@ Z3MOD.terminal = function (Z) {
   const warm = col('#ffb56e');
   function update(dt) {
     const nf = Z.nightF || 0, L = Math.max(nf, Z.dustNow ? 0.45 : 0, Z.LV && Z.LV.light === 'dawn' ? Math.max(0, 0.6 - (Z.T || 0) / 1500) : 0);
-    M.solid.emissiveIntensity = 0.9 * L; M.glass.emissiveIntensity = 1.5 * L; M.tglass.emissiveIntensity = 2.6 * L; M.tglass.opacity = 0.32 + 0.4 * L;
-    M.coffer.emissiveIntensity = 0.75 * L; M.lens.emissiveIntensity = 1.8 * L; M.pool.emissiveIntensity = 0.5 * L;
-    const env = 1 - 0.85 * nf; M.glass.envMapIntensity = 1.1 * env; M.solid.envMapIntensity = 0.45 * env; M.tglass.envMapIntensity = 1.3 * env; M.pool.envMapIntensity = 1.3 * env; M.coffer.envMapIntensity = 1.2 * env; M.bridge.envMapIntensity = 0.7 * env;
+    if (ENVM.length && Z.scene.environment) { for (const m of ENVM) { m.envMap = null; m.needsUpdate = true; } ENVM.length = 0; }
+    M.solid.emissiveIntensity = 0.9 * L; M.roof.emissiveIntensity = 0.9 * L; M.soffit.emissiveIntensity = 0.9 * L; M.tglass.emissiveIntensity = 2.6 * L; M.tglass.opacity = 0.42 + 0.3 * L;
+    M.pool.emissiveIntensity = 0.5 * L; glassU.uGI.value = 0.62 + 1.5 * L;
+    const env = 1 - 0.85 * nf; for (const k in M) M[k].envMapIntensity = M[k].userData.env0 * env;
     if (!BRM.walk) return;
     for (let k = 0; k < dockF.length; k++) dockF[k] = null;
     const fl = Z.flights ? Z.flights() : [];

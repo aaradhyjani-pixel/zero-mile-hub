@@ -8,79 +8,108 @@ Z3MOD.aircraft = function (Z) {
   const angD = (a, b) => { let d = (b - a) % (2 * Math.PI); if (d > Math.PI) d -= 2 * Math.PI; else if (d < -Math.PI) d += 2 * Math.PI; return d; };
   const sstep = u => u * u * (3 - 2 * u);
   const C = h => new THREE.Color(h);
-  const COL = { white: C('#ffffff'), wing: C('#c6cbd1'), wingB: C('#a7adb5'), stab: C('#dfe2e6'), pylon: C('#c9cdd2'), exh: C('#6a6f75'),
-    strut: C('#a0a6ad'), tyre: C('#232528'), prop: C('#26292d'), hub: C('#3a3e43') };
+  const COL = { white: C('#ffffff'), wing: C('#c3c8cf'), wingB: C('#a9b0b9'), stab: C('#d9dde2'), pylon: C('#c9cdd2'), exh: C('#8a8f96'),
+    strut: C('#c9ced4'), tyre: C('#1d1e20'), prop: C('#26292d'), hub: C('#8d939a'), lip: C('#d6dade'), glass: C('#0b1016'), fan: C('#16181b'),
+    blade: C('#5d636a'), spin: C('#2a2d31'), inner: C('#3a3f45'), door: C('#e9ebee'), cone: C('#9ca1a8') };
+  // per-vertex material: [roughness, metalness, clearcoat]; the 4th channel carries the gear pivot height (retracts in the shader)
+  const MAT = { paint: [0.34, 0, 1], wing: [0.46, 0.12, 0.45], wingB: [0.55, 0.1, 0.2], le: [0.2, 1, 0], glass: [0.04, 0.1, 1], tyre: [0.93, 0, 0],
+    strut: [0.25, 0.95, 0], hub: [0.42, 0.7, 0], fan: [0.45, 0.8, 0], blade: [0.3, 0.95, 0], exh: [0.42, 1, 0], inner: [0.7, 0.2, 0], door: [0.36, 0, 0.8] };
 
-  /* ---------------- livery atlas: one 64 px band per airline ---------------- */
-  // band layout (u across, v down within the band): fuselage unwrap x 0..1400 (u = t nose->tail, v = angle from the
-  // crown to the keel), fin x 1408..1888 (left = leading edge, top = tip), flat patches 1900..2040, window row at v .84-.92
-  const AW = 2048, AH = 1024, BH = 64, UF = 1400 / AW, UN0 = 1408 / AW, UN1 = 1888 / AW, VK = BH / AH;
-  const FA0 = 0.03, FAK = 0.69, WV0 = 0.765, WV1 = 0.835, TV0 = 0.87, TV1 = 0.965; // fuselage, window row, titles row (v within a band)
-  const PU = { white: [1912 / AW, 0.5], eng: [1940 / AW, 0.5], wlt: [1968 / AW, 0.5], dark: [1996 / AW, 0.5], grey: [2024 / AW, 0.5] };
+  /* ---------------- livery atlas: one 128 px band per airline (fuselage), plus a 384 px tile per airline (fin) ---------------- */
+  // 18 bands of 112 px, 18 fin tiles of 336 px (3 x 6). band layout (v within a band): fuselage unwrap x 0..2800 (u = t nose->tail, v = angle crown->keel) at v .02-.66,
+  // window row .68-.74, titles + registration row .76-.985; flat colour patches at x 3994..4094.
+  // fin tiles: 3 columns x 6 rows of 336 px at x 2832 (selected per instance in the vertex shader).
+  const AW = 4096, AH = 2048, BH = 112, FW = 2800, UF = FW / AW, VK = BH / AH, FT = 336, FX0 = 2832;
+  const FA0 = 0.02, FAK = 0.64, WV0 = 0.68, WV1 = 0.74, TV0 = 0.76, TV1 = 0.985, TA = 0.12, TB = 0.31, RA = 0.79, RB = 0.875;
+  const PU = { white: [4004 / AW, 0.5], eng: [4024 / AW, 0.5], wlt: [4044 / AW, 0.5], dark: [4064 / AW, 0.5], grey: [4084 / AW, 0.5] };
   const ALK = Object.keys(Z.AL), AIDX = {}; ALK.forEach((k, i) => { AIDX[k] = i; });
+  const SANS = '"Avenir Next", "Helvetica Neue", Helvetica, Arial, sans-serif', SERIF = 'Georgia, "Times New Roman", serif';
+  const REG = { '6E': 'VT-IFJ', AI: 'VT-AIX', IX: 'VT-EXB', QP: 'VT-YAE', SG: 'VT-SGQ', EK: 'A6-EVK', QR: 'A7-BHD', EY: 'A6-BLM', SQ: '9V-SMF',
+    LH: 'D-AIXP', BA: 'G-ZBKA', SV: 'HZ-ARF', TG: 'HS-TQD', FZ: 'A6-FMH', AF: 'F-HTYB', IN1: 'VT-AIO', RSD: 'RA-96100' };
   const atlas = document.createElement('canvas'); atlas.width = AW; atlas.height = AH;
-  const atlasE = document.createElement('canvas'); atlasE.width = AW; atlasE.height = AH;
   {
-    const c = atlas.getContext('2d'), e = atlasE.getContext('2d'); e.fillStyle = '#000'; e.fillRect(0, 0, AW, AH);
+    const c = atlas.getContext('2d'); c.fillStyle = '#eef0f2'; c.fillRect(0, 0, AW, AH);
     const fa = a => FA0 + FAK * a;
     for (let i = 0; i < ALK.length && i < AH / BH; i++) {
-      const y0 = i * BH, k = ALK[i];
-      const F = (t0, t1, a0, a1, col) => { c.fillStyle = col; c.fillRect(t0 * 1400, y0 + fa(a0) * BH, (t1 - t0) * 1400, (fa(a1) - fa(a0)) * BH + 0.5); };
-      const FP = (pts, col) => { c.fillStyle = col; c.beginPath(); pts.forEach((p, j) => (j ? c.lineTo : c.moveTo).call(c, p[0] * 1400, y0 + fa(p[1]) * BH)); c.closePath(); c.fill(); };
-      const fx = x => 1408 + x * 480, fy = y => y0 + (0.03 + 0.94 * y) * BH;
-      const N = (x0, x1, y0_, y1, col) => { c.fillStyle = col; c.fillRect(fx(x0), fy(y0_), (x1 - x0) * 480, (y1 - y0_) * 0.94 * BH + 0.5); };
-      const NP = (pts, col) => { c.fillStyle = col; c.beginPath(); pts.forEach((p, j) => (j ? c.lineTo : c.moveTo).call(c, fx(p[0]), fy(p[1]))); c.closePath(); c.fill(); };
-      const ND = (x, y, r, col) => { c.fillStyle = col; c.beginPath(); c.ellipse(fx(x), fy(y), r * 480, r * 0.94 * BH * 3.2, 0, 0, 7); c.fill(); };
-      let TT = null; const titles = (t0, a, col, n) => { TT = [t0, col, n || 9]; };
+      const y0 = i * BH, k = ALK[i], tx0 = FX0 + (i % 3) * FT, ty0 = Math.floor(i / 3) * FT;
+      const F = (t0, t1, a0, a1, col) => { c.fillStyle = col; c.fillRect(t0 * FW, y0 + fa(a0) * BH, (t1 - t0) * FW, (fa(a1) - fa(a0)) * BH + 0.5); };
+      const FP = (pts, col) => { c.fillStyle = col; c.beginPath(); pts.forEach((p, j) => (j ? c.lineTo : c.moveTo).call(c, p[0] * FW, y0 + fa(p[1]) * BH)); c.closePath(); c.fill(); };
+      const fx = x => tx0 + (0.02 + 0.96 * x) * FT, fy = y => ty0 + (0.02 + 0.96 * y) * FT;
+      const clipT = fn => { c.save(); c.beginPath(); c.rect(tx0, ty0, FT, FT); c.clip(); fn(); c.restore(); };
+      const N = (x0, x1, y0_, y1, col) => clipT(() => { c.fillStyle = col; c.fillRect(fx(x0), fy(y0_), (x1 - x0) * 0.96 * FT + 0.5, (y1 - y0_) * 0.96 * FT + 0.5); });
+      const NP = (pts, col) => clipT(() => { c.fillStyle = col; c.beginPath(); pts.forEach((p, j) => (j ? c.lineTo : c.moveTo).call(c, fx(p[0]), fy(p[1]))); c.closePath(); c.fill(); });
+      const ND = (x, y, r, col) => clipT(() => { c.fillStyle = col; c.beginPath(); c.ellipse(fx(x), fy(y), r * FT, r * FT * 0.78, 0, 0, 7); c.fill(); });
+      let WM = null; const titles = (t0, a, col, n) => { WM = WM || [Z.AL[k] ? Z.AL[k].name.toUpperCase() : k, col, 'bold {s}px ' + SANS, 0]; };
+      const word = (txt, col, font, sp) => { WM = [txt, col, font, sp || 0]; };
       let eng = '#d4d8dd', wlt = '#e6e8eb';
-      // base: white crown, light grey keel
-      F(0, 1, 0, 1, '#f3f4f6'); F(0, 1, 0.8, 1, '#c9cdd2'); N(0, 1, 0, 1, '#f3f4f6');
+      // base: off-white crown, grey-blue belly
+      F(0, 1, 0, 1, '#eef0f2'); F(0, 1, 0.78, 1, '#b7bec8'); F(0, 1, 0.765, 0.78, '#d3d8de');
+      N(-0.03, 1.03, -0.03, 1.03, '#eef0f2');
       switch (k) {
-        case '6E': { const ind = '#2a2f8f'; N(0, 1, 0, 1, ind); for (let gx = 0; gx < 9; gx++) for (let gy = 0; gy < 6; gy++) { const px = 0.42 + gx * 0.065, py = 0.08 + gy * 0.1; if (px < 1 && Math.hypot(gx - 7, gy - 1) < 6.5) ND(px, py, 0.012 * (1 - Math.hypot(gx - 7, gy - 1) / 8) + 0.004, '#ffffff'); }
-          FP([[0.86, 0], [1, 0], [1, 0.35]], ind); titles(0.17, 0.18, ind, 7); eng = ind; wlt = ind; break; }
+        case '6E': { const ind = '#262c86'; N(-0.03, 1.03, -0.03, 1.03, ind); for (let gx = 0; gx < 11; gx++) for (let gy = 0; gy < 9; gy++) { const px = 0.36 + gx * 0.06, py = 0.06 + gy * 0.09, d = Math.hypot(gx - 9, (gy - 1) * 0.9); if (px < 1 && d < 8) ND(px, py, 0.016 * (1 - d / 9.5) + 0.003, '#ffffff'); }
+          FP([[0.86, 0], [1, 0], [1, 0.35]], ind); word('IndiGo', ind, '600 {s}px ' + SANS); eng = ind; wlt = ind; break; }
         case 'AI': { const red = '#c8102e', aub = '#4a1d3f', gold = '#c9a14a'; F(0, 1, 0.62, 1, red); F(0, 1, 0.6, 0.62, gold);
-          N(0, 1, 0, 1, aub); NP([[0, 1], [0, 0.35], [0.6, 1]], red); c.strokeStyle = gold; c.lineWidth = 3; c.beginPath(); c.moveTo(fx(0.42), fy(0.88)); c.lineTo(fx(0.42), fy(0.45)); c.quadraticCurveTo(fx(0.62), fy(-0.1), fx(0.82), fy(0.45)); c.lineTo(fx(0.82), fy(0.88)); c.stroke();
-          FP([[0.82, 0], [1, 0], [1, 0.4]], aub); titles(0.15, 0.17, red, 8); eng = aub; wlt = red; break; }
-        case 'IX': { const or = '#e8452c'; N(0, 1, 0, 1, or); NP([[0.2, 1], [1, 0.2], [1, 0.5], [0.55, 1]], '#b9301c'); FP([[0.8, 0], [1, 0], [1, 0.5], [0.9, 0.3]], or); titles(0.16, 0.18, or, 8); eng = or; wlt = or; break; }
-        case 'QP': { const or = '#f26722'; N(0, 1, 0, 1, or); c.strokeStyle = '#ffa060'; c.lineWidth = 2; for (let j = 0; j < 4; j++) { c.beginPath(); c.ellipse(fx(0.6), fy(0.95), (0.14 + j * 0.1) * 480, (0.16 + j * 0.12) * BH, 0, Math.PI, 2 * Math.PI); c.stroke(); }
-          titles(0.17, 0.18, or, 6); eng = or; wlt = or; break; }
-        case 'SG': { const red = '#d71920'; FP([[0, 0.72], [0.7, 0.72], [0.9, 0.25], [1, 0.1], [1, 1], [0, 1]], red); N(0, 1, 0, 1, red); NP([[0.25, 0.95], [0.75, 0.2], [0.6, 0.65]], '#f04a3a'); NP([[0.45, 0.95], [0.9, 0.35], [0.8, 0.8]], '#ffffff'); titles(0.16, 0.18, red, 8); eng = red; wlt = red; break; }
-        case 'EK': { const red = '#d71920'; titles(0.13, 0.15, '#b8955a', 12); F(0.13, 0.43, 0.15, 0.26, '#b8955a'); N(0, 0.3, 0, 1, red); N(0.3, 1, 0, 0.33, '#00843d'); N(0.3, 1, 0.33, 0.66, '#ffffff'); N(0.3, 1, 0.66, 1, '#111111'); eng = '#e9eaec'; wlt = red; break; }
-        case 'QR': { const bu = '#5c0632'; F(0, 1, 0, 1, '#bdbec2'); F(0, 1, 0.82, 1, '#cdced1'); N(0, 1, 0, 1, bu); for (let j = 0; j < 7; j++) NP([[0.02 + j * 0.02, j / 7], [0.1 + j * 0.02, (j + 0.5) / 7], [0.02 + j * 0.02, (j + 1) / 7]], '#ffffff');
-          FP([[0.84, 0], [1, 0], [1, 0.45], [0.92, 0.1]], bu); titles(0.16, 0.17, bu, 8); eng = '#bdbec2'; wlt = bu; break; }
-        case 'EY': { const sand = '#e2d5bb', gold = '#b8925a'; F(0, 1, 0, 1, sand); F(0, 1, 0.75, 1, '#cfc0a0'); N(0, 1, 0, 1, sand); for (let j = 0; j < 6; j++) for (let m = 0; m < 4; m++) NP([[0.2 + j * 0.13, 0.15 + m * 0.22], [0.3 + j * 0.13, 0.15 + m * 0.22], [0.25 + j * 0.13, 0.33 + m * 0.22]], (j + m) % 2 ? gold : '#8c6c3f');
-          titles(0.15, 0.17, gold, 8); eng = '#d9c7a3'; wlt = gold; break; }
-        case 'SQ': { const bl = '#1c3f94'; F(0, 1, 0.42, 0.48, bl); F(0, 1, 0.48, 0.52, '#f0b323'); N(0, 1, 0, 1, bl); NP([[0.25, 0.85], [0.55, 0.15], [0.8, 0.3], [0.6, 0.45], [0.75, 0.7], [0.45, 0.6]], '#d9a441'); titles(0.15, 0.17, bl, 9); eng = '#e9eaec'; wlt = bl; break; }
-        case 'LH': { const bl = '#05164d'; N(0, 1, 0, 1, bl); ND(0.58, 0.45, 0.2, '#f9ba00'); ND(0.58, 0.45, 0.16, bl); NP([[0.5, 0.3], [0.68, 0.45], [0.5, 0.6]], '#f9ba00'); FP([[0.82, 0], [1, 0], [1, 0.45], [0.92, 0.12]], bl); F(0, 1, 0.8, 1, '#f3f4f6'); titles(0.15, 0.17, bl, 10); eng = bl; wlt = bl; break; }
-        case 'BA': { const bl = '#1c2f5e', red = '#d22630'; F(0, 1, 0.62, 1, bl); F(0, 1, 0.6, 0.625, red); N(0, 1, 0, 1, '#ffffff'); NP([[0, 0.35], [1, 0.05], [1, 0.35], [0, 0.65]], red); NP([[0, 0.65], [1, 0.35], [1, 1], [0, 1]], bl); NP([[0, 0.45], [1, 0.2], [1, 0.26], [0, 0.52]], '#ffffff');
-          titles(0.15, 0.17, bl, 10); eng = bl; wlt = bl; break; }
-        case 'SV': { const gr = '#0f7a5a', bl = '#2b5aa8'; F(0, 1, 0.55, 1, '#d8c69f'); N(0, 1, 0, 1, '#f3efe4'); NP([[0, 1], [0, 0.45], [0.7, 1]], gr); NP([[0.1, 1], [0.45, 0.1], [1, 0], [1, 1]], bl); NP([[0.2, 1], [0.6, 0.35], [1, 0.3], [1, 1]], '#d8c69f'); titles(0.16, 0.17, bl, 7); eng = '#d8c69f'; wlt = gr; break; }
-        case 'TG': { const pu = '#5b2a86'; N(0, 1, 0, 1, pu); NP([[0.3, 0.9], [0.5, 0.25], [0.75, 0.15], [0.62, 0.5], [0.8, 0.75]], '#c9a227'); NP([[0.38, 0.85], [0.55, 0.4], [0.68, 0.38], [0.6, 0.6]], '#c4307a'); FP([[0.78, 0], [1, 0], [1, 0.55], [0.9, 0.18]], pu); titles(0.15, 0.17, pu, 6); eng = pu; wlt = pu; break; }
-        case 'FZ': { const bl = '#1a4c86', or = '#f26b21'; FP([[0, 0.5], [0.75, 0.55], [1, 0.2], [1, 1], [0, 1]], bl); N(0, 1, 0, 1, or); N(0, 0.15, 0, 1, bl); titles(0.15, 0.17, bl, 8); eng = or; wlt = or; break; }
-        case 'AF': { const bl = '#002157', red = '#e4002b'; N(0, 1, 0, 1, '#ffffff'); for (let j = 0; j < 4; j++) NP([[0.05 + j * 0.13, 1], [0.2 + j * 0.13, 0], [0.27 + j * 0.13, 0], [0.12 + j * 0.13, 1]], j === 3 ? red : bl); titles(0.15, 0.17, bl, 9); eng = '#eef0f2'; wlt = bl; break; }
-        default: { const col = (Z.AL[k] && Z.AL[k].tail) || '#777'; N(0, 1, 0, 1, col); titles(0.16, 0.18, col, 7); eng = col; wlt = col; }
+          N(-0.03, 1.03, -0.03, 1.03, aub); NP([[0, 1], [0, 0.35], [0.6, 1]], red); c.strokeStyle = gold; c.lineWidth = 7; c.beginPath(); c.moveTo(fx(0.42), fy(0.88)); c.lineTo(fx(0.42), fy(0.45)); c.quadraticCurveTo(fx(0.62), fy(-0.1), fx(0.82), fy(0.45)); c.lineTo(fx(0.82), fy(0.88)); c.stroke();
+          FP([[0.82, 0], [1, 0], [1, 0.4]], aub); word('AIR INDIA', red, 'bold {s}px ' + SERIF, 2); eng = aub; wlt = red; break; }
+        case 'IX': { const or = '#e8452c'; N(-0.03, 1.03, -0.03, 1.03, or); NP([[0.2, 1], [1, 0.2], [1, 0.5], [0.55, 1]], '#b9301c'); FP([[0.8, 0], [1, 0], [1, 0.5], [0.9, 0.3]], or); word('air india express', or, 'bold italic {s}px ' + SANS); eng = or; wlt = or; break; }
+        case 'QP': { const or = '#f26722'; N(-0.03, 1.03, -0.03, 1.03, or); c.strokeStyle = '#ffa060'; c.lineWidth = 6; for (let j = 0; j < 4; j++) { c.beginPath(); c.ellipse(fx(0.6), fy(0.95), (0.14 + j * 0.1) * FT, (0.16 + j * 0.12) * FT, 0, Math.PI, 2 * Math.PI); c.stroke(); }
+          word('Akasa Air', or, '600 {s}px ' + SANS); eng = or; wlt = or; break; }
+        case 'SG': { const red = '#d71920'; FP([[0, 0.72], [0.7, 0.72], [0.9, 0.25], [1, 0.1], [1, 1], [0, 1]], red); N(-0.03, 1.03, -0.03, 1.03, red); NP([[0.25, 0.95], [0.75, 0.2], [0.6, 0.65]], '#f04a3a'); NP([[0.45, 0.95], [0.9, 0.35], [0.8, 0.8]], '#ffffff'); word('SpiceJet', red, 'bold italic {s}px ' + SANS); eng = red; wlt = red; break; }
+        case 'EK': { const red = '#d71920'; N(-0.03, 0.3, -0.03, 1.03, red); N(0.3, 1.03, -0.03, 0.33, '#00843d'); N(0.3, 1.03, 0.33, 0.66, '#ffffff'); N(0.3, 1.03, 0.66, 1.03, '#111111'); word('Emirates', '#a8854a', 'bold italic {s}px ' + SERIF, 1); eng = '#e9eaec'; wlt = red; break; }
+        case 'QR': { const bu = '#5c0632'; F(0, 1, 0, 1, '#bdbec2'); F(0, 1, 0.8, 1, '#a9abb0'); N(-0.03, 1.03, -0.03, 1.03, bu); for (let j = 0; j < 7; j++) NP([[0.02 + j * 0.02, j / 7], [0.1 + j * 0.02, (j + 0.5) / 7], [0.02 + j * 0.02, (j + 1) / 7]], '#ffffff');
+          FP([[0.84, 0], [1, 0], [1, 0.45], [0.92, 0.1]], bu); word('QATAR AIRWAYS', bu, 'bold {s}px ' + SANS, 2); eng = '#bdbec2'; wlt = bu; break; }
+        case 'EY': { const sand = '#e2d5bb', gold = '#b8925a'; F(0, 1, 0, 1, sand); F(0, 1, 0.75, 1, '#cfc0a0'); N(-0.03, 1.03, -0.03, 1.03, sand); for (let j = 0; j < 6; j++) for (let m = 0; m < 4; m++) NP([[0.2 + j * 0.13, 0.15 + m * 0.22], [0.3 + j * 0.13, 0.15 + m * 0.22], [0.25 + j * 0.13, 0.33 + m * 0.22]], (j + m) % 2 ? gold : '#8c6c3f');
+          word('ETIHAD', '#8c6c3f', '{s}px ' + SERIF, 6); eng = '#d9c7a3'; wlt = gold; break; }
+        case 'SQ': { const bl = '#1c3f94'; F(0, 1, 0.42, 0.48, bl); F(0, 1, 0.48, 0.52, '#f0b323'); N(-0.03, 1.03, -0.03, 1.03, bl); NP([[0.25, 0.85], [0.55, 0.15], [0.8, 0.3], [0.6, 0.45], [0.75, 0.7], [0.45, 0.6]], '#d9a441'); word('SINGAPORE AIRLINES', bl, 'bold {s}px ' + SERIF, 1); eng = '#e9eaec'; wlt = bl; break; }
+        case 'LH': { const bl = '#05164d'; N(-0.03, 1.03, -0.03, 1.03, bl); ND(0.58, 0.45, 0.2, '#f9ba00'); ND(0.58, 0.45, 0.16, bl); NP([[0.5, 0.3], [0.68, 0.45], [0.5, 0.6]], '#f9ba00'); FP([[0.82, 0], [1, 0], [1, 0.45], [0.92, 0.12]], bl); F(0, 1, 0.8, 1, '#eef0f2'); word('Lufthansa', bl, 'bold {s}px ' + SERIF); eng = bl; wlt = bl; break; }
+        case 'BA': { const bl = '#1c2f5e', red = '#d22630'; F(0, 1, 0.62, 1, bl); F(0, 1, 0.6, 0.625, red); N(-0.03, 1.03, -0.03, 1.03, '#ffffff'); NP([[0, 0.35], [1, 0.05], [1, 0.35], [0, 0.65]], red); NP([[0, 0.65], [1, 0.35], [1, 1.05], [0, 1.05]], bl); NP([[0, 0.45], [1, 0.2], [1, 0.26], [0, 0.52]], '#ffffff');
+          word('BRITISH AIRWAYS', bl, 'bold {s}px ' + SANS, 2); eng = bl; wlt = bl; break; }
+        case 'SV': { const gr = '#0f7a5a', bl = '#2b5aa8'; F(0, 1, 0.55, 1, '#d8c69f'); N(-0.03, 1.03, -0.03, 1.03, '#f3efe4'); NP([[0, 1.05], [0, 0.45], [0.7, 1.05]], gr); NP([[0.1, 1.05], [0.45, 0.1], [1, 0], [1, 1.05]], bl); NP([[0.2, 1.05], [0.6, 0.35], [1, 0.3], [1, 1.05]], '#d8c69f'); word('SAUDIA', gr, 'bold {s}px ' + SANS, 4); eng = '#d8c69f'; wlt = gr; break; }
+        case 'TG': { const pu = '#5b2a86'; N(-0.03, 1.03, -0.03, 1.03, pu); NP([[0.3, 0.9], [0.5, 0.25], [0.75, 0.15], [0.62, 0.5], [0.8, 0.75]], '#c9a227'); NP([[0.38, 0.85], [0.55, 0.4], [0.68, 0.38], [0.6, 0.6]], '#c4307a'); FP([[0.78, 0], [1, 0], [1, 0.55], [0.9, 0.18]], pu); word('THAI', pu, 'bold {s}px ' + SANS, 8); eng = pu; wlt = pu; break; }
+        case 'FZ': { const bl = '#1a4c86', or = '#f26b21'; FP([[0, 0.5], [0.75, 0.55], [1, 0.2], [1, 1], [0, 1]], bl); N(-0.03, 1.03, -0.03, 1.03, or); N(-0.03, 0.15, -0.03, 1.03, bl); word('flydubai', '#ffffff', 'bold {s}px ' + SANS); eng = or; wlt = or; break; }
+        case 'AF': { const bl = '#002157', red = '#e4002b'; N(-0.03, 1.03, -0.03, 1.03, '#ffffff'); for (let j = 0; j < 4; j++) NP([[0.05 + j * 0.13, 1.05], [0.2 + j * 0.13, -0.05], [0.27 + j * 0.13, -0.05], [0.12 + j * 0.13, 1.05]], j === 3 ? red : bl); word('AIRFRANCE', bl, 'bold italic {s}px ' + SANS, 3); eng = '#eef0f2'; wlt = bl; break; }
+        case 'IN1': { const sf = '#ff9933', gn = '#138808', nv = '#0b2a6f'; F(0, 1, 0.78, 1, '#e9ebee'); F(0, 1, 0.55, 0.6, sf); F(0, 1, 0.6, 0.645, '#ffffff'); F(0, 1, 0.645, 0.7, gn); F(0, 1, 0.535, 0.55, nv);
+          NP([[0, 0.55], [1, 0.12], [1, 0.42], [0, 0.85]], sf); NP([[0, 0.85], [1, 0.42], [1, 0.62], [0, 1.05]], '#ffffff'); NP([[0, 1.05], [1, 0.62], [1, 1.05]], gn); N(-0.03, 1.03, -0.03, 0.05, nv);
+          word('भारत · INDIA', nv, 'bold {s}px Georgia, "Kohinoor Devanagari", "Devanagari Sangam MN", "Noto Sans Devanagari", serif', 2); eng = '#1d3c8f'; wlt = sf; break; }
+        case 'RSD': { const bl = '#1c3f94', rd = '#d52b1e'; F(0, 1, 0.37, 0.47, bl); F(0, 1, 0.475, 0.495, rd); F(0, 1, 0.78, 1, '#d9dce0');
+          N(0.12, 0.92, 0.2, 0.36, '#ffffff'); N(0.12, 0.92, 0.36, 0.52, bl); N(0.12, 0.92, 0.52, 0.68, rd); N(0.1, 0.94, 0.19, 0.2, '#c9cdd2'); N(0.1, 0.94, 0.68, 0.69, '#c9cdd2'); N(-0.03, 1.03, 0.9, 1.03, bl);
+          word('RUSSIA', bl, 'bold {s}px ' + SANS, 10); eng = '#eef0f2'; wlt = bl; break; }
+        default: { const col = (Z.AL[k] && Z.AL[k].tail) || '#777'; N(-0.03, 1.03, -0.03, 1.03, col); titles(0.16, 0.18, col, 7); eng = col; wlt = col; }
       }
+      // fin: rudder hinge, a faint shadow under the tip cap and a lit leading edge
+      c.fillStyle = 'rgba(0,0,0,0.16)'; c.fillRect(fx(0.71), fy(0.04), 2, 0.92 * FT); c.fillRect(fx(0.71), fy(0.5), 0.27 * FT, 1.5);
+      c.fillStyle = 'rgba(255,255,255,0.1)'; c.fillRect(fx(0), fy(0), 0.03 * FT, 0.96 * FT);
+      // panel lines: frames every ~0.5 m on a single-aisle (lap joints along), very faint
+      c.fillStyle = 'rgba(20,30,40,0.07)';
+      for (let x = 0.15; x < 0.95; x += 0.033) c.fillRect(x * FW, y0 + fa(0) * BH, 1, (fa(0.95) - fa(0)) * BH);
+      for (const a of [0.12, 0.3, 0.56]) c.fillRect(0.06 * FW, y0 + fa(a) * BH, 0.88 * FW, 1);
       // patches
-      const P = (x, col) => { c.fillStyle = col; c.fillRect(x, y0, 28, BH); };
-      P(1900, '#ffffff'); P(1928, eng); P(1956, wlt); P(1984, '#121820'); P(2012, '#9aa0a6');
-      // window row: the crown colour at window height, with dark windows; emissive copy lights them at night
-      // titles row: the crown colour at title height, with letter blocks (a strip on each side of the fuselage samples it)
-      { const ty = Math.round(y0 + TV0 * BH), th = Math.round((TV1 - TV0) * BH); c.drawImage(atlas, 0, Math.round(y0 + fa(0.2) * BH), 1400, 1, 0, ty, 1400, th);
-        if (TT) { c.fillStyle = TT[1]; let x = TT[0] * 1400; for (let j = 0; j < TT[2]; j++) { const w = 7 + ((j * 37) % 9); c.fillRect(x, ty + 1, w, th - 2); x += w + 3 + (j % 4 === 3 ? 6 : 0); } } }
+      const P = (x, col) => { c.fillStyle = col; c.fillRect(x, y0, 20, BH); };
+      P(3994, '#ffffff'); P(4014, eng); P(4034, wlt); P(4054, '#0e1318'); P(4074, '#8d949c');
+      // titles row: the crown colour at title height with the airline's wordmark (a strip on each side of the fuselage samples it)
+      // and the registration near the tail
+      { const ty = Math.round(y0 + TV0 * BH), th = Math.round((TV1 - TV0) * BH); c.drawImage(atlas, 0, Math.round(y0 + fa(0.22) * BH), FW, 1, 0, ty, FW, th);
+        if (!WM) titles(0.16, 0.18, '#333', 8);
+        const [txt, col, font, sp] = WM, x0 = (TA + 0.018) * FW, x1 = (TB - 0.012) * FW, s = Math.round(th * 0.9), sx = 1.7;
+        c.save(); c.font = font.replace('{s}', s); if ('letterSpacing' in c) c.letterSpacing = sp + 'px';
+        const w = c.measureText(txt).width * sx, kx = Math.min(sx, sx * (x1 - x0) / Math.max(1, w));
+        c.fillStyle = col; c.textBaseline = 'middle'; c.translate(x0, ty + th * 0.54); c.scale(kx, 1); c.fillText(txt, 0, 0); c.restore();
+        c.save(); c.font = '600 ' + Math.round(th * 0.62) + 'px ' + SANS; if ('letterSpacing' in c) c.letterSpacing = '2px';
+        const rw = c.measureText(REG[k] || 'VT-ZMH').width * 1.6, rk = Math.min(1.6, 1.6 * (RB - RA - 0.02) * FW / rw);
+        c.fillStyle = 'rgba(30,34,40,0.85)'; c.textBaseline = 'middle'; c.translate((RA + 0.01) * FW, ty + th * 0.52); c.scale(rk, 1); c.fillText(REG[k] || 'VT-ZMH', 0, 0); c.restore(); }
+      // window row: the crown colour at window height with glossy dark windows (rounded, ~0.4 m pitch on a single-aisle)
       const wy = y0 + Math.round(WV0 * BH), wh = Math.round((WV1 - WV0) * BH);
-      c.drawImage(atlas, 0, Math.round(y0 + fa(0.35) * BH), 1400, 1, 0, wy, 1400, wh);
-      c.fillStyle = '#1b2430'; e.fillStyle = '#ffd08a';
-      for (let x = 2; x < 1400; x += 8) { c.fillRect(x, wy + 0.5, 4.5, wh - 1); e.fillRect(x, wy + 0.5, 4.5, wh - 1); }
-      // tail logo lights: a dim copy of the fin glows at night
-      e.globalAlpha = 0.28; e.drawImage(atlas, 1408, y0, 480, BH, 1408, y0, 480, BH); e.globalAlpha = 1;
+      c.drawImage(atlas, 0, Math.round(y0 + fa(0.33) * BH), FW, 1, 0, wy, FW, wh);
+      c.fillStyle = '#121a24';
+      for (let x = 4; x < FW; x += 30) { c.beginPath(); if (c.roundRect) c.roundRect(x, wy + 1, 12, wh - 2, 4); else c.rect(x, wy + 1, 12, wh - 2); c.fill(); }
     }
   }
-  const mkTex = cv => { const t = new THREE.CanvasTexture(cv); t.flipY = false; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.generateMipmaps = true; t.minFilter = THREE.LinearMipmapLinearFilter; return t; };
-  const texA = mkTex(atlas), texE = mkTex(atlasE);
+  const mkTex = cv => { const t = new THREE.CanvasTexture(cv); t.flipY = false; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = Math.min(8, Z.renderer.capabilities.getMaxAnisotropy()); t.generateMipmaps = true; t.minFilter = THREE.LinearMipmapLinearFilter; return t; };
+  const texA = mkTex(atlas);
 
   /* ---------------- geometry builder ---------------- */
-  const Geo = () => ({ p: [], n: [], c: [], uv: [], o: [0, 0, 0] });
-  function put(g, P, N, c, uv) { g.p.push(P[0], P[1], P[2]); g.n.push(N[0], N[1], N[2]); g.c.push(c.r, c.g, c.b); g.uv.push(uv[0], uv[1]); }
+  const Geo = () => ({ p: [], n: [], c: [], uv: [], m: [], o: [0, 0, 0], M: MAT.paint, G: 0 });
+  function put(g, P, N, c, uv) { g.p.push(P[0], P[1], P[2]); g.n.push(N[0], N[1], N[2]); g.c.push(c.r, c.g, c.b); g.uv.push(uv[0], uv[1]); g.m.push(g.M[0], g.M[1], g.M[2], g.G); }
   const one = x => x && x.r !== undefined || (x && typeof x[0] === 'number');
   function tri(g, A, B, Cc, col, nA, nB, nC, uv) {
     const ux = B[0] - A[0], uy = B[1] - A[1], uz = B[2] - A[2], vx = Cc[0] - A[0], vy = Cc[1] - A[1], vz = Cc[2] - A[2];
@@ -112,14 +141,14 @@ Z3MOD.aircraft = function (Z) {
     slab(g, [[cx + lx / 2, cy, cz - lz / 2], [cx - lx / 2, cy, cz - lz / 2], [cx - lx / 2, cy, cz + lz / 2], [cx + lx / 2, cy, cz + lz / 2]], [ly, ly, ly, ly], 1, col, null, uv);
   }
   // body of revolution along x: rings [x, r], N segments; flat < 1 squashes the lower half (737 nacelles); chev = chevron TE
-  function revX(g, rings, cy, cz, N, col, uv, capF, capB, flat, chev) {
-    const fl = flat || 1;
+  function revX(g, rings, cy, cz, N, col, uv, capF, capB, flat, chev, inv) {
+    const fl = flat || 1, sg = inv ? -1 : 1;
     const R = (i, j) => { const r = rings[i][1]; return chev && i === rings.length - 1 ? r * (1 + (j % 2 ? chev : -chev)) : r; };
     const P = (i, j) => { const a = j / N * 2 * Math.PI, ca = Math.cos(a), r = R(i, j % N); return [rings[i][0], cy + r * ca * (ca < 0 ? fl : 1), cz + r * Math.sin(a)]; };
     for (let i = 0; i < rings.length - 1; i++) {
       const sl = (rings[i][1] - rings[i + 1][1]) / Math.max(1e-6, rings[i][0] - rings[i + 1][0]);
       for (let j = 0; j < N; j++) {
-        const a0 = j / N * 2 * Math.PI, a1 = (j + 1) / N * 2 * Math.PI, n0 = [-sl, Math.cos(a0), Math.sin(a0)], n1 = [-sl, Math.cos(a1), Math.sin(a1)];
+        const a0 = j / N * 2 * Math.PI, a1 = (j + 1) / N * 2 * Math.PI, n0 = [-sl * sg, Math.cos(a0) * sg, Math.sin(a0) * sg], n1 = [-sl * sg, Math.cos(a1) * sg, Math.sin(a1) * sg];
         quad(g, P(i, j), P(i + 1, j), P(i + 1, j + 1), P(i, j + 1), col, n0, n0, n1, n1, uv);
       }
     }
@@ -138,20 +167,53 @@ Z3MOD.aircraft = function (Z) {
       tri(g, [cx, cy, cz + w / 2], [cx + r * c0, cy + r * s0, cz + w / 2], [cx + r * c1, cy + r * s1, cz + w / 2], col);
     }
   }
-  function toGeom(g, liv) {
+  // vertical cylinder (struts, oleos)
+  function cylY(g, cx, cz, y0, y1, r, N, col) {
+    for (let j = 0; j < N; j++) { const a0 = j / N * 2 * Math.PI, a1 = (j + 1) / N * 2 * Math.PI, c0 = Math.cos(a0), s0 = Math.sin(a0), c1 = Math.cos(a1), s1 = Math.sin(a1);
+      quad(g, [cx + r * c0, y0, cz + r * s0], [cx + r * c1, y0, cz + r * s1], [cx + r * c1, y1, cz + r * s1], [cx + r * c0, y1, cz + r * s0], col, [c0, 0, s0], [c1, 0, s1], [c1, 0, s1], [c0, 0, s0]); }
+  }
+  // smooth ellipsoidal body along x: rings [x, half-width]; height = width * ky; lower half squashed by kb
+  function ellX(g, rings, cy, ky, kb, N, col, uv, cz) {
+    cz = cz || 0; const P = (i, a) => { const r = rings[i][1], ca = Math.cos(a); return [rings[i][0], cy + r * ky * ca * (ca < 0 ? kb : 1), cz + r * Math.sin(a)]; };
+    const Nn = (i, a) => { const sl = i === 0 ? (rings[1][1] - rings[0][1]) / (rings[0][0] - rings[1][0]) : i === rings.length - 1 ? (rings[i][1] - rings[i - 1][1]) / (rings[i - 1][0] - rings[i][0]) : (rings[i + 1][1] - rings[i - 1][1]) / (rings[i - 1][0] - rings[i + 1][0]);
+      const ca = Math.cos(a); const v = [sl, ca / (ky * (ca < 0 ? kb : 1)), Math.sin(a)], l = Math.hypot(v[0], v[1], v[2]); return [v[0] / l, v[1] / l, v[2] / l]; };
+    for (let i = 0; i < rings.length - 1; i++) for (let j = 0; j < N; j++) { const a0 = j / N * 2 * Math.PI, a1 = (j + 1) / N * 2 * Math.PI;
+      quad(g, P(i, a0), P(i + 1, a0), P(i + 1, a1), P(i, a1), col, Nn(i, a0), Nn(i + 1, a0), Nn(i + 1, a1), Nn(i, a1), uv); }
+  }
+  // airfoil loft through spanwise stations {x: LE x, y, z, c: chord, t: thickness}; leading-edge band polished metal
+  const AF = [1, 0.85, 0.62, 0.4, 0.22, 0.1, 0.035, 0.008, 0], AFU = s => 0.62 * (2.97 * Math.sqrt(s) - 1.26 * s - 3.52 * s * s + 2.84 * s * s * s - 1.04 * s ** 4) / 1.0, AFL = s => -0.38 * (2.97 * Math.sqrt(s) - 1.26 * s - 3.52 * s * s + 2.84 * s * s * s - 1.04 * s ** 4);
+  function airfoil(g, st, colT, colB, matT, matB, cap) {
+    const prof = []; // [s, upper?]
+    for (const s of AF) prof.push([s, 1]); for (let i = AF.length - 2; i >= 0; i--) prof.push([AF[i], 0]);
+    const pt = (S, s, up) => { const h = (up ? AFU(s) : AFL(s)) * S.t; return [S.x - s * S.c, S.y + h, S.z]; };
+    const nr = (S, s, up) => { const e = 0.004, s0 = Math.max(0, s - e), s1 = Math.min(1, s + e), f = up ? AFU : AFL, dy = (f(s1) - f(s0)) * S.t, dx = -(s1 - s0) * S.c;
+      let nx = -dy, ny = dx; if (up) { nx = dy; ny = -dx; } if (s < 0.004) { nx = 1; ny = 0; } const l = Math.hypot(nx, ny) || 1; return [nx / l, ny / l, 0]; };
+    for (let i = 0; i < st.length - 1; i++) { const A = st[i], B = st[i + 1];
+      for (let j = 0; j < prof.length - 1; j++) { const [s0, u0] = prof[j], [s1, u1] = prof[j + 1], up = u0 && u1 ? 1 : (!u0 && !u1 ? 0 : (s0 + s1 < 0.01 ? 1 : u0));
+        const le = Math.max(s0, s1) <= (up ? 0.105 : 0.04); g.M = le ? MAT.le : up ? matT : matB;
+        const col = le ? COL.lip : up ? colT : colB;
+        quad(g, pt(A, s0, u0), pt(B, s0, u0), pt(B, s1, u1), pt(A, s1, u1), col, nr(A, s0, u0), nr(B, s0, u0), nr(B, s1, u1), nr(A, s1, u1)); } }
+    if (cap) { const S = st[st.length - 1]; g.M = matB; g.o = [S.x - S.c * 0.4, S.y, S.z - Math.sign(S.z) * 5];
+      for (let j = 0; j < prof.length - 1; j++) tri(g, pt(S, prof[j][0], prof[j][1]), pt(S, prof[j + 1][0], prof[j + 1][1]), [S.x - S.c * 0.35, S.y, S.z], colB); }
+    g.M = MAT.paint;
+  }
+  function toGeom(g, liv, extra) {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(g.p, 3));
     geo.setAttribute('normal', new THREE.Float32BufferAttribute(g.n, 3));
     geo.setAttribute('color', new THREE.Float32BufferAttribute(g.c, 3));
-    if (liv) { geo.setAttribute('uv', new THREE.Float32BufferAttribute(g.uv, 2)); geo.setAttribute('aLiv', liv); }
+    geo.setAttribute('aMat', new THREE.Float32BufferAttribute(g.m, 4));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(g.uv, 2));
+    if (liv) geo.setAttribute('aLiv', liv);
+    if (extra) for (const k in extra) geo.setAttribute(k, extra[k]);
     geo.computeBoundingSphere(); return geo;
   }
 
   /* ---------------- aircraft types (true dimensions, metres; nose +X, wheels at y = 0) ---------------- */
   const NOSE = { airbus: { qt: 0.5, qb: 0.5, qw: 0.5, drop: 0.36 }, boeing: { qt: 0.78, qb: 0.42, qw: 0.62, drop: 0.5 }, b787: { qt: 0.68, qb: 0.48, qw: 0.56, drop: 0.42 },
-    a380: { qt: 0.3, qb: 0.6, qw: 0.5, drop: 0.5 }, atr: { qt: 0.6, qb: 0.45, qw: 0.55, drop: 0.3 } };
+    a380: { qt: 0.3, qb: 0.6, qw: 0.5, drop: 0.5 }, il96: { qt: 0.42, qb: 0.4, qw: 0.42, drop: 0.3 }, an124: { qt: 0.22, qb: 0.62, qw: 0.42, drop: 0.38 }, atr: { qt: 0.6, qb: 0.45, qw: 0.55, drop: 0.3 } };
   const TAIL = { round: { eh: 0.15, ew: 0.15, drop: 0.22 }, max: { eh: 0.06, ew: 0.06, drop: 0.28 }, blade: { eh: 0.24, ew: 0.035, drop: 0.2 }, b787: { eh: 0.11, ew: 0.09, drop: 0.24 },
-    a380: { eh: 0.13, ew: 0.11, drop: 0.32 }, atr: { eh: 0.16, ew: 0.16, drop: 0.12 } };
+    a380: { eh: 0.13, ew: 0.11, drop: 0.32 }, atr: { eh: 0.16, ew: 0.16, drop: 0.12 }, an124: { eh: 0.13, ew: 0.17, drop: 0.07 } };
   const base = {
     nb: { W: 1.98, H: 2.03, yb: 1.6, tn: .14, tt: .7, deck: 1, nose: 'airbus', tail: 'round', win: [[59, 64]],
       wing: { x: 3.6, y: 0.5, cr: 7.0, ct: 1.55, sw: 26, dh: 5.5, t: 0.9, kink: .36, flex: 0, wl: 'sharklet', wlh: 2.4 },
@@ -176,7 +238,7 @@ Z3MOD.aircraft = function (Z) {
     B38M: merge(base.nb, { L: 39.5, S: 35.9, W: 1.88, H: 1.95, yb: 1.05, tn: .17, nose: 'boeing', tail: 'max', doors: [[0.12, 1], [0.45, 0], [0.485, 0], [0.86, 1]],
       wing: { x: 3.3, y: 0.42, cr: 7.3, ct: 1.3, sw: 25, dh: 6, wl: 'split', wlh: 2.0 }, eng: [{ z: 4.95, r: 1.02, len: 4.6, fwd: 3.6, drop: 0.55, flat: 0.8 }],
       hs: { half: 7.1, cr: 4.0 }, fin: { cr: 6.8, h: 6.4, sw: 38 }, gear: { nd: 4.6, mains: [{ dx: 3.6, z: 2.85, b: 1 }], r: 0.55, nr: 0.36 } }),
-    AT76: merge(base.tp, { L: 27.2, S: 27.1, ttl: [40, 55], doors: [[0.1, 1], [0.86, 1]] }),
+    AT76: merge(base.tp, { L: 27.2, S: 27.1, ttl: [36, 60], doors: [[0.1, 1], [0.86, 1]] }),
     A333: merge(base.wb, { L: 63.7, S: 60.3, W: 2.82, H: 2.86, eng: [{ z: 9.4, r: 1.4, len: 6.6, fwd: 3.6, drop: 1.5 }], doors: [[0.085, 1], [0.27, 1], [0.6, 1], [0.84, 1]],
       wing: { x: 6.0, cr: 12.0, wl: 'classic', wlh: 2.8 } }),
     A359: merge(base.wb, { L: 66.8, S: 64.75, mask: 1, eng: [{ z: 9.9, r: 1.68, len: 7.4, fwd: 4.0, drop: 1.6 }], doors: [[0.085, 1], [0.26, 1], [0.6, 1], [0.84, 1]],
@@ -190,12 +252,26 @@ Z3MOD.aircraft = function (Z) {
     B77W: merge(base.wb, { L: 73.9, S: 64.8, W: 3.1, H: 3.2, tn: .12, tt: .74, nose: 'b787', tail: 'blade', doors: [[0.075, 1], [0.23, 1], [0.5, 1], [0.69, 1], [0.86, 1]],
       wing: { x: 6.0, cr: 14.0, sw: 31.6, wl: 'raked', flex: 0.02 }, eng: [{ z: 9.7, r: 2.0, len: 7.8, fwd: 4.4, drop: 1.75 }],
       fin: { cr: 11.5, h: 10.2 }, gear: { nd: 6.6, mains: [{ dx: 8.0, z: 5.5, b: 3 }], r: 0.68 } }),
-    A388: { L: 72.7, S: 79.75, W: 3.57, H: 4.2, yb: 2.2, tn: .15, tt: .71, deck: 2, nose: 'a380', tail: 'a380', win: [[41, 48], [68, 75]], ttl: [22, 35],
+    A388: { L: 72.7, S: 79.75, W: 3.57, H: 4.2, yb: 2.2, tn: .15, tt: .71, deck: 2, nose: 'a380', tail: 'a380', win: [[41, 48], [68, 75]], ttl: [18, 38], reg: [52, 63],
       doors: [[0.1, 1], [0.25, 1], [0.45, 1], [0.62, 1], [0.8, 1]],
       wing: { x: 9.5, y: 0.7, cr: 17.5, ct: 4.0, sw: 33.5, dh: 5.6, t: 2.0, kink: .3, flex: 0.01, wl: 'fence', wlh: 1.5 },
       eng: [{ z: 14.5, r: 1.55, len: 7.0, fwd: 4.6, drop: 1.9 }, { z: 25.8, r: 1.5, len: 6.8, fwd: 4.0, drop: 1.6 }],
       hs: { half: 15.3, cr: 10.5, ct: 3.6, sw: 34, dh: 4, te: 1.8, y: 0.0 }, fin: { cr: 14.8, ct: 5.4, h: 13.4, sw: 41, te: 1.2 },
       gear: { nd: 6.4, mains: [{ dx: 10.5, z: 6.2, b: 2 }, { dx: 13.8, z: 2.3, b: 3 }], r: 0.7, nr: 0.6 } },
+    // Ilyushin Il-96-300PU: blunt rounded nose, big cockpit glazing, four slim PS-90A pods, upturned winglets, tall swept fin, centre gear
+    IL96: merge(base.wb, { L: 55.3, S: 57.7, W: 3.04, H: 3.04, tn: .135, tt: .7, nose: 'il96', cockW: 64, doors: [[0.09, 1], [0.3, 1], [0.56, 1], [0.83, 1]],
+      wing: { x: 5.2, cr: 11.4, ct: 2.5, sw: 30, dh: 5, t: 1.35, kink: .3, wl: 'classic', wlh: 3.0 },
+      eng: [{ z: 8.4, r: 1.12, len: 5.8, fwd: 3.4, drop: 1.35 }, { z: 16.0, r: 1.08, len: 5.6, fwd: 2.8, drop: 1.1 }],
+      hs: { half: 10.2, cr: 6.4, ct: 2.2, sw: 35 }, fin: { cr: 10.6, ct: 3.6, h: 9.8, sw: 43, te: 1.0 },
+      gear: { nd: 6.8, mains: [{ dx: 7.2, z: 5.0, b: 2 }, { dx: 7.9, z: 0, b: 2 }], r: 0.62, nr: 0.5 } }),
+    // Antonov An-124 Ruslan: fat freighter, cockpit hump over an upward-hinging nose visor, high anhedral wing, four big fans,
+    // upswept tail with a low-set tailplane and tall fin, ten twin-wheel main legs in long sponsons low on the fuselage
+    A124: { L: 68.96, S: 73.3, W: 3.65, H: 3.95, yb: 1.2, tn: .135, tt: .6, deck: 1, high: 1, nose: 'an124', tail: 'an124', win: [[24, 29]], winT: [0.15, 0.36], cockW: 48, visor: 1,
+      doors: [[0.17, 0]], ttl: [30, 52], reg: [36, 48], spH: 1.45,
+      wing: { x: 6.0, y: 0, cr: 13.5, ct: 3.6, sw: 32, dh: -3.5, t: 1.7, kink: .28, flex: 0, wl: '' },
+      eng: [{ z: 10.4, r: 1.5, len: 5.8, fwd: 3.2, drop: 2.15 }, { z: 19.2, r: 1.45, len: 5.6, fwd: 2.6, drop: 2.0 }],
+      hs: { half: 12.2, cr: 7.6, ct: 3.0, sw: 34, dh: 0, te: 1.0, y: 0.35 }, fin: { cr: 12.4, ct: 4.6, h: 9.8, sw: 40, te: 0.8 },
+      gear: { nd: 7.2, spon: 1, mains: [{ dx: 8.2, z: 3.0, b: 1 }, { dx: 10.0, z: 3.0, b: 1 }, { dx: 11.8, z: 3.0, b: 1 }, { dx: 13.6, z: 3.0, b: 1 }, { dx: 15.4, z: 3.0, b: 1 }], r: 0.64, nr: 0.56 } },
   };
   const TKEYS = Object.keys(TDEF);
 
@@ -235,15 +311,16 @@ Z3MOD.aircraft = function (Z) {
     return { zr, half, rootY, xLE, yAt, zk, chord };
   }
 
-  function buildType(P, hi, liv) {
-    const body = Geo(), gear = Geo(), prop = Geo(), N = hi ? (P.W > 2.5 ? 16 : 14) : 8;
+  function buildType(P, hi, liv, extra) {
+    const body = Geo(), prop = Geo(), N = hi ? (P.W > 2.5 ? 26 : 22) : 8;
     const WG = wingGeom(P); P.WG = WG; UVP = P;
     P.nx = P.L / 2 - P.gear.nd; P.mains = P.gear.mains.map(m => ({ x: P.wing.x - m.dx, z: m.z, b: m.b }));
-    // fuselage
+    P.gy = P.yb + 0.3 * P.H; P.pv = Math.min(...P.mains.map(m => m.x));
+    // fuselage (smooth: analytic normals from the section function)
     const ts = [];
-    for (const s of hi ? [0, .04, .1, .2, .33, .5, .7, .85, 1] : [0, .12, .4, 1]) ts.push(s * P.tn);
-    if (hi) ts.push(P.tn + (P.tt - P.tn) * 0.5);
-    for (const s of hi ? [0, .2, .4, .6, .75, .88, .96, 1] : [0, .4, .75, 1]) ts.push(P.tt + s * (1 - P.tt));
+    for (const s of hi ? [0, .03, .07, .12, .18, .26, .35, .45, .56, .68, .8, .9, 1] : [0, .12, .4, 1]) ts.push(s * P.tn);
+    if (hi) for (const s of [0.25, 0.5, 0.75]) ts.push(P.tn + (P.tt - P.tn) * s);
+    for (const s of hi ? [0, .12, .25, .38, .5, .62, .74, .85, .93, .98, 1] : [0, .4, .75, 1]) ts.push(P.tt + s * (1 - P.tt));
     const ring = (t, j) => surf(P, t, j / N * 2 * Math.PI, 0);
     for (let i = 0; i < ts.length - 1; i++) for (let j = 0; j < N; j++) {
       const A = ring(ts[i], j), B = ring(ts[i + 1], j), Cc = ring(ts[i + 1], j + 1), D = ring(ts[i], j + 1);
@@ -252,19 +329,23 @@ Z3MOD.aircraft = function (Z) {
     }
     { const r0 = ringAt(P, 0), r1 = ringAt(P, 1);
       for (let j = 0; j < N; j++) { const A = ring(0, j), D = ring(0, j + 1); body.o = [r0[0] - 5, r0[1], 0]; tri(body, A.p, D.p, [r0[0] + 0.1, r0[1], 0], COL.white, null, null, null, fusUV(0, 1.2));
-        const B = ring(1, j), Cc = ring(1, j + 1); body.o = [r1[0] + 5, r1[1], 0]; tri(body, B.p, Cc.p, [r1[0] - (P.tail === 'max' ? 0.9 : 0.3), r1[1], 0], COL.exh, null, null, null, PU.white); } }
-    // wing-body fairing / sponsons (painted like the keel)
-    const keel = fusUV(0.5, Math.PI);
-    if (P.gear.spon) box(body, P.mains[0].x - 0.3, P.yb + 0.35, 0, 4.6, 0.9, P.W * 2 + 0.7, COL.white, keel);
-    else box(body, P.wing.x - P.wing.cr * 0.45, P.yb + 0.3, 0, P.wing.cr * 1.2, 0.9, P.W * 1.5, COL.white, keel);
-    // wings: inboard (unswept trailing edge), outboard, with flex for the 787
+        body.M = MAT.exh; const B = ring(1, j), Cc = ring(1, j + 1); body.o = [r1[0] + 5, r1[1], 0]; tri(body, B.p, Cc.p, [r1[0] - (P.tail === 'max' ? 0.9 : 0.3), r1[1], 0], COL.exh, null, null, null, PU.white); body.M = MAT.paint; } }
+    // wing-to-body fairing (a smooth belly blister, painted like the keel) or the ATR's gear sponsons
+    const keel = fusUV(0.5, Math.PI), EN = hi ? 16 : 6;
+    if (P.gear.spon) { const xa = Math.max(...P.mains.map(m => m.x)), xb = Math.min(...P.mains.map(m => m.x)), w = P.W + (P.spH ? 0.55 : 0.32), hh = P.spH || 0.62;
+      ellX(body, [[xa + 2.6, w * 0.3], [xa + 1.5, w * 0.92], [(xa + xb) / 2, w], [xb - 1.7, w * 0.92], [xb - 3.0, w * 0.35]], P.yb + (P.spH ? 0.95 : 0.5), hh / w, 1, EN, COL.white, keel); }
+    else { const x0 = P.wing.x + (P.W > 2.5 ? 2.2 : 1.4), x1 = P.wing.x - P.wing.cr - (P.W > 2.5 ? 2.5 : 1.4), Wf = P.W * 1.06, rs = [];
+      for (const s of hi ? [0, 0.06, 0.16, 0.32, 0.5, 0.68, 0.84, 0.94, 1] : [0, 0.25, 0.75, 1]) rs.push([x0 + (x1 - x0) * s, Wf * Math.max(0.12, Math.pow(Math.sin(Math.PI * (0.06 + 0.88 * s)), 0.42))]);
+      ellX(body, rs, P.yb + 0.5 * P.H, 0.56 * P.H / Wf, 0.95, EN, COL.white, keel); }
+    // wings: airfoil sections (hi) with polished leading edges; flat slabs far away
     const { zr, half, xLE, yAt, zk, chord } = WG, wt = P.wing.t, wl = P.wing.wl;
-    const sta = [zr]; if (P.wing.kink) sta.push(zk); if (hi && P.wing.flex) { sta.push(zk + (half - zk) * 0.45, zk + (half - zk) * 0.75); } sta.push(half);
+    const sta = [zr]; if (P.wing.kink) sta.push(zk); if (hi) for (const u of [0.3, 0.55, 0.78]) sta.push(zk + (half - zk) * u); sta.push(half);
     const rake = wl === 'raked' ? (P.L > 70 ? 3.6 : 4.4) : 0;
     for (const sgn of [-1, 1]) {
       const pt = (z, le) => [le ? xLE(z) : xLE(z) - chord(z), yAt(z), sgn * z], th = z => wt * (1 - 0.72 * (z - zr) / (half - zr));
-      for (let i = 0; i < sta.length - 1; i++) { const za = sta[i], zb = sta[i + 1];
-        slab(body, [pt(za, 1), pt(za, 0), pt(zb, 0), pt(zb, 1)], [th(za), th(za) * 0.3, th(zb) * 0.3, th(zb)], 1, COL.wing, COL.wingB); }
+      if (hi) airfoil(body, sta.map(z => ({ x: xLE(z), y: yAt(z), z: sgn * z, c: chord(z), t: th(z) })), COL.wing, COL.wingB, MAT.wing, MAT.wingB, !rake);
+      else { body.M = MAT.wing; for (let i = 0; i < sta.length - 1; i++) { const za = sta[i], zb = sta[i + 1];
+        slab(body, [pt(za, 1), pt(za, 0), pt(zb, 0), pt(zb, 1)], [th(za), th(za) * 0.3, th(zb) * 0.3, th(zb)], 1, COL.wing, COL.wingB); } body.M = MAT.paint; }
       const tx = xLE(half), ty = yAt(half), ct = P.wing.ct, h = P.wing.wlh || 0, z0 = sgn * half;
       if (wl === 'sharklet') { // blended: a short curved root, then a tall swept blade
         slab(body, [[tx - 0.05, ty, z0], [tx - ct, ty, z0], [tx - ct - 0.2, ty + 0.45, z0 + sgn * 0.32], [tx - 0.35, ty + 0.45, z0 + sgn * 0.32]], [0.18, 0.08, 0.08, 0.14], 1, COL.white, null, PU.wlt);
@@ -275,17 +356,23 @@ Z3MOD.aircraft = function (Z) {
       } else if (wl === 'classic') {
         slab(body, [[tx - 0.05, ty, z0], [tx - ct * 0.95, ty, z0], [tx - h * 0.9 - 0.9, ty + h, z0 + sgn * 0.3], [tx - h * 0.9, ty + h, z0 + sgn * 0.3]], [0.16, 0.07, 0.05, 0.08], 2, COL.white, null, PU.wlt);
       } else if (wl === 'curve') { // A350: wingtip bending smoothly up and back
-        const seg = hi ? 3 : 1; let px = tx, py = ty, pz = half, pc = ct;
+        const seg = hi ? 4 : 1; let px = tx, py = ty, pz = half, pc = ct;
         for (let i = 1; i <= seg; i++) { const a = (i / seg) * 72 * D2R, sl = h / seg * 1.25, nx = px - sl * 0.75, ny = py + Math.sin(a) * sl, nz = pz + Math.cos(a) * sl * 0.6, nc = ct * (1 - 0.55 * i / seg);
           slab(body, [[px, py, sgn * pz], [px - pc, py, sgn * pz], [nx - nc, ny, sgn * nz], [nx, ny, sgn * nz]], [0.14, 0.06, 0.05, 0.1], i === seg ? 2 : 1, COL.white, null, PU.wlt); px = nx; py = ny; pz = nz; pc = nc; }
       } else if (wl === 'fence') {
         slab(body, [[tx + 0.3, ty - 0.7, z0], [tx - ct * 0.6, ty - 0.7, z0], [tx - ct * 0.75 - 0.4, ty + h, z0], [tx - ct * 0.25, ty + h, z0]], [0.12, 0.06, 0.05, 0.08], 2, COL.white, null, PU.wlt);
       } else if (wl === 'raked') { // 787 / 777: a highly swept tip panel, no winglet
-        slab(body, [[tx, ty, z0], [tx - ct, ty, z0], [tx - rake * 1.15 - 0.35, ty + rake * 0.12, z0 + sgn * rake], [tx - rake * 1.05, ty + rake * 0.12, z0 + sgn * rake]], [wt * 0.28, wt * 0.08, 0.06, 0.08], 1, COL.wing, COL.wingB);
+        if (hi) airfoil(body, [{ x: tx, y: ty, z: z0, c: ct, t: th(half) }, { x: tx - rake * 0.55, y: ty + rake * 0.06, z: sgn * (half + rake * 0.55), c: ct * 0.62, t: th(half) * 0.6 }, { x: tx - rake * 1.05, y: ty + rake * 0.12, z: sgn * (half + rake), c: 0.4, t: 0.07 }], COL.wing, COL.wingB, MAT.wing, MAT.wingB, true);
+        else { body.M = MAT.wing; slab(body, [[tx, ty, z0], [tx - ct, ty, z0], [tx - rake * 1.15 - 0.35, ty + rake * 0.12, z0 + sgn * rake], [tx - rake * 1.05, ty + rake * 0.12, z0 + sgn * rake]], [wt * 0.28, wt * 0.08, 0.06, 0.08], 1, COL.wing, COL.wingB); body.M = MAT.paint; }
       }
+      // flap-track fairings: canoes under the trailing edge
+      if (hi && !P.high) for (const fr of P.W > 2.5 ? [0.2, 0.42, 0.62, 0.8] : [0.24, 0.5, 0.74]) {
+        const z = zr + fr * (half - zr); if (P.eng.some(E => Math.abs(z - E.z) < E.r * 1.1)) continue;
+        const c = chord(z), xf = xLE(z) - 0.6 * c, Lc = 0.78 * c, R = Math.max(0.1, 0.05 * c), y = yAt(z) - th(z) * 0.3 - R * 0.55;
+        body.M = MAT.wingB; ellX(body, [[xf, R * 0.1], [xf - 0.2 * Lc, R * 0.42], [xf - 0.5 * Lc, R * 0.5], [xf - 0.8 * Lc, R * 0.3], [xf - Lc, R * 0.05]], y, 2.0, 1, 8, COL.wingB, PU.white, sgn * z); body.M = MAT.paint; }
       // engines + pylons
       for (const E of P.eng) {
-        const ez = sgn * E.z, x0 = xLE(E.z) + E.fwd, ey = yAt(E.z) - E.drop, r = E.r, len = E.len, NE = hi ? (P.W > 2.5 ? 12 : 10) : 6;
+        const ez = sgn * E.z, x0 = xLE(E.z) + E.fwd, ey = yAt(E.z) - E.drop, r = E.r, len = E.len, NE = hi ? (P.W > 2.5 ? 22 : 18) : 6, fl = E.flat || 1;
         if (E.prop) {
           revX(body, [[x0, r * 0.55], [x0 - 0.25 * len, r], [x0 - 0.75 * len, r * 0.9], [x0 - len, r * 0.35]], ey, ez, NE, COL.white, PU.eng, null, { k: 1, d: -0.3, c: COL.exh, uv: PU.white });
           revX(body, [[x0 + 0.7, 0.02], [x0 + 0.35, r * 0.4], [x0, r * 0.55]], ey, ez, NE, COL.white, PU.white);
@@ -293,21 +380,34 @@ Z3MOD.aircraft = function (Z) {
             const w0 = 0.16, w1 = 0.1; const P0 = [0.02, ca * 0.25 + pa * w0, sa * 0.25 + pb * w0], P1 = [0.02, ca * R + pa * w1, sa * R + pb * w1], P2 = [-0.02, ca * R - pa * w1, sa * R - pb * w1], P3 = [-0.02, ca * 0.25 - pa * w0, sa * 0.25 - pb * w0];
             prop.o = [-5, 0, 0]; quad(prop, P0, P1, P2, P3, COL.prop); }
           E.px = x0 + 0.3; E.py = ey;
+        } else if (hi) {
+          const xf = x0 - 0.16 * len;
+          body.M = MAT.le; revX(body, [[x0, r * 0.86], [x0 - 0.012 * len, r * 0.95], [x0 - 0.05 * len, r]], ey, ez, NE, COL.lip, PU.white, null, null, E.flat);
+          body.M = MAT.paint; revX(body, [[x0 - 0.05 * len, r], [x0 - 0.3 * len, r * 0.995], [x0 - 0.6 * len, r * 0.94], [x0 - 0.8 * len, r * 0.8], [x0 - len, r * 0.64]], ey, ez, NE, COL.white, PU.eng, null, null, E.flat, E.chev);
+          body.M = MAT.inner; revX(body, [[x0, r * 0.86], [xf, r * 0.8]], ey, ez, NE, COL.inner, PU.white, null, null, E.flat, 0, true);
+          revX(body, [[x0 - len + 0.55 * r, r * 0.55], [x0 - len, r * 0.64]], ey, ez, NE, COL.inner, PU.white, null, null, E.flat, 0, true);
+          // fan face: dark disc, 20 twisted blades, spinner
+          body.M = MAT.fan; const Q = (a, rr, x) => { const ca = Math.cos(a); return [x, ey + rr * ca * (ca < 0 ? fl : 1), ez + rr * Math.sin(a)]; };
+          body.o = [xf - 5, ey, ez]; for (let j = 0; j < NE; j++) tri(body, [xf, ey, ez], Q(j / NE * 2 * Math.PI, r * 0.8, xf), Q((j + 1) / NE * 2 * Math.PI, r * 0.8, xf), COL.fan);
+          body.M = MAT.blade; for (let b = 0; b < 20; b++) { const a = b / 20 * 2 * Math.PI, xb = xf + 0.05 * r;
+            body.o = [xb - 5, ey, ez]; quad(body, Q(a - 0.07, r * 0.3, xb + 0.05 * r), Q(a - 0.035, r * 0.79, xb + 0.09 * r), Q(a + 0.07, r * 0.79, xb - 0.05 * r), Q(a + 0.09, r * 0.3, xb - 0.03 * r), COL.blade); }
+          body.M = MAT.fan; revX(body, [[xf + 0.42 * r, 0.0], [xf + 0.3 * r, 0.14 * r], [xf + 0.14 * r, 0.25 * r], [xf + 0.02, 0.3 * r]], ey, ez, 12, COL.spin, PU.white);
+          // core nozzle and plug
+          body.M = MAT.exh; revX(body, [[x0 - len + 0.55 * r, 0.52 * r], [x0 - len - 0.2 * r, 0.47 * r], [x0 - len - 0.45 * r, 0.4 * r]], ey, ez, NE, COL.exh, PU.white, null, { k: 0.85, d: -0.6 * r, c: COL.cone, uv: PU.white });
+          body.M = MAT.paint;
         } else {
-          const rings = hi ? [[x0, r * 0.9], [x0 - 0.12 * len, r], [x0 - 0.45 * len, r * 0.98], [x0 - 0.8 * len, r * 0.8], [x0 - len, r * 0.62]] : [[x0, r * 0.92], [x0 - 0.4 * len, r], [x0 - len, r * 0.65]];
-          revX(body, rings, ey, ez, NE, COL.white, PU.eng, { k: 0.86, d: -0.45 * r, c: COL.white, uv: PU.dark }, { k: 1, d: -0.6 * r, c: COL.exh, uv: PU.white }, E.flat, hi ? E.chev : 0);
-          if (hi) revX(body, [[x0 + 0.02, r * 0.93], [x0 - 0.06 * len, r * 1.01]], ey, ez, NE, C('#e4e7ea'), PU.white, null, null, E.flat);
-          const wy = yAt(E.z), c = chord(E.z);
-          slab(body, [[x0 - 0.15 * len, ey + r * 0.6, ez], [x0 - 0.95 * len, ey + r * 0.6, ez], [xLE(E.z) - c * 0.7, wy - 0.05, ez], [xLE(E.z) + 0.3, wy - 0.05, ez]],
-            [r * 0.26, r * 0.2, r * 0.16, r * 0.18], 2, COL.pylon);
+          revX(body, [[x0, r * 0.92], [x0 - 0.4 * len, r], [x0 - len, r * 0.65]], ey, ez, NE, COL.white, PU.eng, { k: 0.86, d: -0.3 * r, c: COL.fan, uv: PU.white }, { k: 1, d: -0.6 * r, c: COL.exh, uv: PU.white }, E.flat);
         }
+        if (!E.prop) { const wy = yAt(E.z), c = chord(E.z); body.M = MAT.wing;
+          slab(body, [[x0 - 0.15 * len, ey + r * 0.6, ez], [x0 - 0.95 * len, ey + r * 0.6, ez], [xLE(E.z) - c * 0.7, wy - 0.05, ez], [xLE(E.z) + 0.3, wy - 0.05, ez]],
+            [r * 0.26, r * 0.2, r * 0.16, r * 0.18], 2, COL.pylon); body.M = MAT.paint; }
         E.x0 = x0; E.ey = ey;
       }
     }
-    // tailplane, fin (+ dorsal fillet)
+    // tailplane, fin (+ dorsal fillet); fin uv: u = 2 + chordwise (LE 0 .. TE 1), v = spanwise (tip 0 .. root 1): the shader maps it into the airline's tile
     const fin = P.fin, finTE = -P.L / 2 + fin.te, finLE = finTE + fin.cr, rmid = ringAt(P, tOfX(P, (finLE + finTE) / 2));
     const finY = rmid[1] + rmid[3] - 0.25, ftLE = finLE - Math.tan(fin.sw * D2R) * fin.h, finTop = finY + fin.h;
-    const fuv = (fx, fy) => [UN0 + fx * (UN1 - UN0), 0.03 + 0.94 * fy];
+    const fuv = (fx, fy) => [2 + fx, fy];
     slab(body, [[finLE, finY, 0], [finTE, finY, 0], [ftLE - fin.ct, finTop, 0], [ftLE, finTop, 0]], [fin.cr * 0.07, 0.12, 0.08, fin.ct * 0.08], 2, COL.white, null,
       [fuv(0, 1), fuv(1, 1), fuv(1, 0), fuv(0, 0)]);
     const dh = fin.h * 0.22, dLE = finLE - Math.tan(fin.sw * D2R) * dh;
@@ -318,59 +418,99 @@ Z3MOD.aircraft = function (Z) {
     if (hs.ttail) { hsY = finTop - 0.1; hsLE = ftLE + 0.2; hsTE = hsLE - hs.cr; }
     else { hsTE = -P.L / 2 + hs.te; hsLE = hsTE + hs.cr; const rr = ringAt(P, tOfX(P, (hsLE + hsTE) / 2)); hsY = rr[1] + hs.y * rr[3]; }
     for (const sgn of [-1, 1]) { const tLE = hsLE - Math.tan(hs.sw * D2R) * hs.half, ty = hsY + Math.tan(hs.dh * D2R) * hs.half;
-      slab(body, [[hsLE, hsY, 0], [hsTE, hsY, 0], [tLE - hs.ct, ty, sgn * hs.half], [tLE, ty, sgn * hs.half]], [hs.cr * 0.09, 0.08, 0.05, hs.ct * 0.08], 1, COL.stab, COL.wingB); }
+      if (hi) airfoil(body, [{ x: hsLE, y: hsY, z: 0, c: hs.cr, t: hs.cr * 0.09 }, { x: tLE, y: ty, z: sgn * hs.half, c: hs.ct, t: hs.ct * 0.08 }], COL.stab, COL.wingB, MAT.wing, MAT.wingB, true);
+      else slab(body, [[hsLE, hsY, 0], [hsTE, hsY, 0], [tLE - hs.ct, ty, sgn * hs.half], [tLE, ty, sgn * hs.half]], [hs.cr * 0.09, 0.08, 0.05, hs.ct * 0.08], 1, COL.stab, COL.wingB); }
     if (hi) {
-      // cockpit windows (dark), the A350's black mask, the 787's four panes
-      const c0 = P.tn * (P.mask ? 0.3 : 0.36), c1 = P.tn * (P.mask ? 0.6 : 0.54), ca = P.mask ? 78 : P.nose === 'boeing' ? 58 : 62;
+      // cockpit glass (dark, glossy: it mirrors the sky), the A350's black mask, the 787's four panes
+      const c0 = P.tn * (P.mask ? 0.3 : P.cockW ? 0.32 : 0.36), c1 = P.tn * (P.mask ? 0.6 : P.cockW ? 0.58 : 0.54), ca = P.mask ? 78 : P.cockW || (P.nose === 'boeing' ? 58 : 62);
+      body.M = MAT.glass;
       if (P.cock4) for (const [a, b] of [[-56, -31], [-27, -3], [3, 27], [31, 56]]) patch(body, P, c0, c1, 3, (t, u) => (a + (b - a) * u) * D2R, 2, 0.06, COL.white);
       else patch(body, P, c0, c1, P.mask ? 4 : 3, (t, u) => (-ca + 2 * ca * u) * D2R, P.mask ? 10 : 6, 0.06, COL.white);
-      // cabin window rows (each row is a strip textured with the airline's window row; it glows at night)
-      const w0 = P.tn * 1.08, w1 = P.tt + (1 - P.tt) * 0.2;
+      body.M = MAT.paint;
+      // cabin window rows (each row is a strip textured with the airline's window row)
+      const w0 = P.winT ? P.winT[0] : P.tn * 1.08, w1 = P.winT ? P.winT[1] : P.tt + (1 - P.tt) * 0.2;
       for (const sgn of [-1, 1]) for (const [a, b] of P.win)
-        patch(body, P, w0, w1, 3, (t, u) => sgn * (a + (b - a) * u) * D2R, 1, 0.04, COL.white, (t, u) => [t * UF, WV0 + 0.005 + (WV1 - WV0 - 0.01) * u]);
-      // titles: a strip per side; U runs backwards on the starboard side so the titles read nose-first on both sides
-      const TA = 0.12, TB = 0.31, tl = P.ttl || [32, 46];
-      for (const sgn of [-1, 1]) patch(body, P, TA, TB, 4, (t, u) => sgn * (tl[0] + (tl[1] - tl[0]) * u) * D2R, 1, 0.045, COL.white,
-        (t, u) => [(sgn < 0 ? t : TA + TB - t) * UF, TV0 + 0.005 + (TV1 - TV0 - 0.01) * u]);
+        patch(body, P, w0, w1, 6, (t, u) => sgn * (a - 1.5 + (b - a + 3) * u) * D2R, 1, 0.04, COL.white, (t, u) => [t * UF, WV0 + 0.004 + (WV1 - WV0 - 0.008) * u]);
+      // titles and registration: a strip per side; U runs backwards on the starboard side so they read nose-first on both sides
+      const tl = P.ttl || [19, 55], rg = P.reg || [44, 55];
+      for (const sgn of [-1, 1]) { patch(body, P, TA, TB, 8, (t, u) => sgn * (tl[0] + (tl[1] - tl[0]) * u) * D2R, 5, 0.04, COL.white,
+        (t, u) => [(sgn < 0 ? t : TA + TB - t) * UF, TV0 + 0.004 + (TV1 - TV0 - 0.008) * u]);
+        patch(body, P, RA, RB, 3, (t, u) => sgn * (rg[0] + (rg[1] - rg[0]) * u) * D2R, 2, 0.04, COL.white,
+          (t, u) => [(sgn < 0 ? t : RA + RB - t) * UF, TV0 + 0.004 + (TV1 - TV0 - 0.008) * u]); }
       // door outlines: two thin dark edges per door
       const wa = P.win[P.win.length - 1][0];
       for (const sgn of [-1, 1]) for (const [dt, big] of P.doors || []) {
         const dw = (big ? 1.0 : 0.55) / P.L, a0 = wa - 4, a1 = big ? wa + 24 : wa + 10;
-        for (const e of [-1, 1]) { const tc = dt + e * dw / 2; patch(body, P, tc - 0.06 / P.L, tc + 0.06 / P.L, 1, (t, u) => sgn * (a0 + (a1 - a0) * u) * D2R, 1, 0.035, COL.white, () => PU.grey); }
+        for (const e of [-1, 1]) { const tc = dt + e * dw / 2; patch(body, P, tc - 0.05 / P.L, tc + 0.05 / P.L, 1, (t, u) => sgn * (a0 + (a1 - a0) * u) * D2R, 1, 0.035, COL.white, () => PU.grey); }
+        for (const aa of [a0, a1]) patch(body, P, dt - dw / 2, dt + dw / 2, 1, (t, u) => sgn * (aa - 0.6 + 1.2 * u) * D2R, 1, 0.035, COL.white, () => PU.grey);
       }
+      if (P.visor) for (const sgn of [-1, 1]) { const tv = P.tn * 0.97, tc = P.tn * 0.62;
+        patch(body, P, tv - 0.05 / P.L, tv + 0.05 / P.L, 1, (t, u) => sgn * (66 + 114 * u) * D2R, 4, 0.035, COL.white, () => PU.grey);
+        patch(body, P, tc, tv, 3, (t, u) => sgn * (65.4 + 1.2 * u) * D2R, 1, 0.035, COL.white, () => PU.grey); }
       if (P.deck === 2) for (const sgn of [-1, 1]) for (const dt of [0.2, 0.45, 0.7]) for (const e of [-1, 1]) { const tc = dt + e * 0.5 / P.L;
-        patch(body, P, tc - 0.06 / P.L, tc + 0.06 / P.L, 1, (t, u) => sgn * (40 + 18 * u) * D2R, 1, 0.035, COL.white, () => PU.grey); }
+        patch(body, P, tc - 0.05 / P.L, tc + 0.05 / P.L, 1, (t, u) => sgn * (40 + 18 * u) * D2R, 1, 0.035, COL.white, () => PU.grey); }
+      // landing gear: in the body mesh, flagged with its pivot height so the shader can retract it
+      const G = P.gear, gTop = P.high ? P.yb + 0.3 : WG.rootY - 0.1, ws = 12, wb = P.W > 2.5;
+      const keelAt = x => { const r = ringAt(P, tOfX(P, x)); return r[1] - r[3]; };
+      body.G = P.gy;
+      { const nw = wb ? 0.42 : 0.3, nz = nw / 2 + 0.06, top = keelAt(P.nx) + 0.2;
+        body.M = MAT.strut; cylY(body, P.nx, 0, G.nr * 0.9, top, wb ? 0.14 : 0.1, 8, COL.strut); box(body, P.nx, G.nr, 0, 0.14, 0.14, nz * 2 + 0.1, COL.strut);
+        box(body, P.nx + 0.25, (G.nr + top) * 0.55, 0, 0.5, 0.08, 0.08, COL.strut);
+        for (const sg of [-1, 1]) { body.M = MAT.tyre; cylZ(body, P.nx, G.nr, sg * nz, G.nr, nw, ws, COL.tyre);
+          body.M = MAT.hub; cylZ(body, P.nx, G.nr, sg * (nz + nw / 2), G.nr * 0.5, 0.03, 10, COL.hub);
+          body.M = MAT.door; box(body, P.nx + 0.3, top - 0.42, sg * (wb ? 0.5 : 0.36), wb ? 1.3 : 1.0, 0.45, 0.03, COL.door, PU.white); } }
+      for (const M of P.mains) for (const sgn of M.z === 0 ? [1] : [-1, 1]) {
+        const z = sgn * M.z, top = M.z < P.W ? keelAt(M.x) + 0.3 : gTop, tw = wb ? 0.52 : 0.4, tz = tw / 2 + 0.12, sp = 1.45;
+        body.M = MAT.strut; cylY(body, M.x, z, G.r * 0.9, top, wb ? 0.2 : 0.15, 8, COL.strut);
+        box(body, M.x + 0.9, (G.r + top) * 0.62, z, 1.8, 0.1, 0.1, COL.strut);
+        const axles = M.b === 1 ? [0] : Array.from({ length: M.b }, (_, kk) => (kk - (M.b - 1) / 2) * sp);
+        if (M.b > 1) box(body, M.x, G.r + 0.05, z, sp * (M.b - 1) + 0.5, 0.22, 0.24, COL.strut);
+        for (const ax of axles) { body.M = MAT.strut; box(body, M.x + ax, G.r, z, 0.14, 0.14, tz * 2 + 0.1, COL.strut);
+          for (const sg of [-1, 1]) { body.M = MAT.tyre; cylZ(body, M.x + ax, G.r, z + sg * tz, G.r, tw, ws, COL.tyre);
+            body.M = MAT.hub; cylZ(body, M.x + ax, G.r, z + sg * (tz + tw / 2), G.r * 0.55, 0.03, 10, COL.hub); } }
+        if (M.z >= P.W) { body.M = MAT.door; const dl = top - G.r * 2 - 0.2; if (dl > 0.4) box(body, M.x + 0.1, G.r * 2 + 0.25 + dl / 2, z + sgn * 0.36, wb ? 1.9 : 1.4, dl, 0.05, COL.door, PU.white); }
+      }
+      body.G = 0; body.M = MAT.paint;
     }
-    // landing gear (separate mesh: it retracts)
-    const G = P.gear, gTop = P.high ? P.yb + 0.3 : WG.rootY - 0.1, ws = hi ? 8 : 5;
-    box(gear, P.nx, G.nr, 0, 0.22, P.yb + 0.25 - G.nr, 0.22, COL.strut);
-    cylZ(gear, P.nx, G.nr, 0, G.nr, 0.75, ws, COL.tyre);
-    for (const M of P.mains) for (const sgn of [-1, 1]) {
-      const z = sgn * M.z, top = M.z < P.W ? P.yb + 0.3 : gTop;
-      box(gear, M.x, G.r, z, 0.32, top - G.r, 0.32, COL.strut);
-      if (M.b === 1) cylZ(gear, M.x, G.r, z, G.r, 1.0, ws, COL.tyre);
-      else { const sp = 1.45; for (let kk = 0; kk < M.b; kk++) cylZ(gear, M.x + (kk - (M.b - 1) / 2) * sp, G.r, z, G.r, 1.3, ws, COL.tyre);
-        box(gear, M.x, G.r - 0.12, z, sp * (M.b - 1) + 0.4, 0.24, 0.3, COL.strut); }
-    }
-    P.pv = Math.min(...P.mains.map(m => m.x)); P.gy = P.yb + 0.3 * P.H;
     const tipX = xLE(half) - P.wing.ct * 0.15 - (rake ? rake * 1.05 : 0), tipY = yAt(half) + 0.05 + (rake ? rake * 0.12 : 0), rt = ringAt(P, 1);
     P.LP = { tipX, tipY, tipZ: half + rake + 0.05, tailX: rt[0] - 0.15, tailY: rt[1], topX: P.wing.x - P.wing.cr * 0.3, topY: P.yb + 2 * P.H + 0.12,
       botX: P.wing.x - P.wing.cr * 0.75, botY: P.yb - 0.05, noseX: P.nx + 0.4, noseY: P.yb * 0.8, rootX: P.wing.x + 0.2, rootY: WG.rootY, rootZ: P.W + 1.2 };
-    return { body: toGeom(body, liv), gear: hi ? toGeom(gear) : null, prop: prop.p.length ? toGeom(prop) : null };
+    return { body: toGeom(body, liv, extra), prop: prop.p.length ? toGeom(prop) : null };
   }
 
-  /* ---------------- meshes: per type a hi (near, casts shadows), a lo (far) and a gear mesh ---------------- */
+  /* ---------------- meshes: per type a hi (near, casts shadows, gear inside) and a lo (far) ---------------- */
   const root = new THREE.Group(); root.name = 'aircraft'; Z.scene.add(root);
-  const matBody = new THREE.MeshStandardMaterial({ vertexColors: true, map: texA, emissiveMap: texE, emissive: 0xffffff, emissiveIntensity: 0, roughness: 0.4, metalness: 0.12 });
+  // the core provides scene.environment (sky PMREM); until it does, a small gradient-sky PMREM of our own keeps the paint reflective
+  let ownEnv = null;
+  if (!Z.scene.environment) try {
+    const es = new THREE.Scene(), sm = new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false,
+      vertexShader: 'varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+      fragmentShader: 'varying vec3 vP;void main(){vec3 d=normalize(vP);float h=d.y;vec3 sky=mix(vec3(.82,.9,1.),vec3(.22,.42,.78),pow(max(h,0.),.45));vec3 gr=mix(vec3(.5,.5,.46),vec3(.24,.28,.2),min(1.,-h*4.));gl_FragColor=vec4(h>0.?sky:gr,1.);}' });
+    es.add(new THREE.Mesh(new THREE.SphereGeometry(100, 48, 24), sm));
+    const pm = new THREE.PMREMGenerator(Z.renderer); ownEnv = pm.fromScene(es, 0.01).texture; pm.dispose(); sm.dispose();
+  } catch (e) { ownEnv = null; }
+  // one physically based paint material for every type: per-vertex roughness / metalness / clear coat (paint, polished
+  // leading edges, glass, rubber, chrome), the airline picked per instance, the gear retracted per instance
+  const matBody = new THREE.MeshPhysicalMaterial({ vertexColors: true, map: texA, roughness: 0.35, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.06,
+    envMap: ownEnv, envMapIntensity: ownEnv ? 0.85 : 1 });
   const ambU = { value: 0 };
+  const GEARV = 'if (aMat.w > 0.0) transformed.y = aMat.w + (transformed.y - aMat.w) * iGear;';
   matBody.onBeforeCompile = sh => {
     sh.uniforms.uAmb = ambU;
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uAmb;')
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float aLiv;\nattribute vec4 aMat;\nattribute float iGear;\nvarying vec3 vMat;')
+      .replace('#include <uv_vertex>', '#include <uv_vertex>\n#ifdef USE_MAP\nif (uv.x > 1.5) { float fc = mod(aLiv, 3.), fr = floor(aLiv / 3. + 0.01); vMapUv = vec2((' + FX0.toFixed(1) + ' + (fc + 0.02 + 0.96 * (uv.x - 2.)) * ' + FT.toFixed(1) + ') / ' + AW.toFixed(1) + ', (fr + 0.02 + 0.96 * uv.y) * ' + (FT / AH).toFixed(6) + '); }\nelse vMapUv.y = (vMapUv.y + aLiv) * ' + VK.toFixed(6) + ';\n#endif')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvMat = aMat.xyz;\n' + GEARV);
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uAmb;\nvarying vec3 vMat;')
+      .replace('#include <color_fragment>', '#include <color_fragment>\nfloat lvSat = max(diffuseColor.r, max(diffuseColor.g, diffuseColor.b)) - min(diffuseColor.r, min(diffuseColor.g, diffuseColor.b));')
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = clamp(vMat.x + 0.12 * lvSat, 0.03, 1.0);')
+      .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = vMat.y;')
+      .replace('#include <lights_physical_fragment>', '#include <lights_physical_fragment>\n#ifdef USE_CLEARCOAT\nmaterial.clearcoat *= vMat.z;\n#endif')
       .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += diffuseColor.rgb * uAmb;');
-    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float aLiv;')
-      .replace('#include <uv_vertex>', '#include <uv_vertex>\n#ifdef USE_MAP\nvMapUv.y=(vMapUv.y+aLiv)*' + VK.toFixed(6) + ';\n#endif\n#ifdef USE_EMISSIVEMAP\nvEmissiveMapUv.y=(vEmissiveMapUv.y+aLiv)*' + VK.toFixed(6) + ';\n#endif');
   };
-  const matGear = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75, metalness: 0.2 });
+  matBody.customProgramCacheKey = () => 'zmh-air-body-2';
+  const matDepth = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking });
+  matDepth.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec4 aMat;\nattribute float iGear;').replace('#include <begin_vertex>', '#include <begin_vertex>\n' + GEARV); };
+  matDepth.customProgramCacheKey = () => 'zmh-air-depth-2';
   const matProp = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, side: THREE.DoubleSide });
   const matDisc = new THREE.MeshBasicMaterial({ color: 0x2a2d31, transparent: true, opacity: 0.26, depthWrite: false, side: THREE.DoubleSide });
   const IM = (geo, mat, cap, shadow) => { const m = new THREE.InstancedMesh(geo, mat, cap); m.frustumCulled = false; m.castShadow = !!shadow; m.receiveShadow = !!shadow; m.count = 0;
@@ -378,13 +518,13 @@ Z3MOD.aircraft = function (Z) {
   const MESH = {}, TRIS = {};
   let propG = null;
   for (const k of TKEYS) {
-    const P = TDEF[k];
-    const livH = new THREE.InstancedBufferAttribute(new Float32Array(CAP), 1).setUsage(THREE.DynamicDrawUsage), livL = new THREE.InstancedBufferAttribute(new Float32Array(CAP), 1).setUsage(THREE.DynamicDrawUsage);
-    const gl = buildType(P, false, livL), gh = buildType(P, true, livH);
+    const P = TDEF[k], IA = () => new THREE.InstancedBufferAttribute(new Float32Array(CAP), 1).setUsage(THREE.DynamicDrawUsage);
+    const livH = IA(), livL = IA(), gearA = IA();
+    const gl = buildType(P, false, livL), gh = buildType(P, true, livH, { iGear: gearA });
     if (gh.prop) propG = gh.prop;
-    MESH[k] = { hi: IM(gh.body, matBody, CAP, true), lo: IM(gl.body, matBody, CAP, false), gear: IM(gh.gear, matGear, CAP, false), livH, livL, P };
-    MESH[k].lo.receiveShadow = true;
-    TRIS[k] = [gh.body.attributes.position.count / 3, gl.body.attributes.position.count / 3, gh.gear.attributes.position.count / 3];
+    MESH[k] = { hi: IM(gh.body, matBody, CAP, true), lo: IM(gl.body, matBody, CAP, false), livH, livL, gearA, P };
+    MESH[k].hi.customDepthMaterial = matDepth; MESH[k].lo.receiveShadow = true;
+    TRIS[k] = [gh.body.attributes.position.count / 3, gl.body.attributes.position.count / 3];
   }
   const props = propG ? IM(propG, matProp, CAP * 2, true) : null;
   const discG = new THREE.CircleGeometry(1, 20); discG.rotateY(Math.PI / 2);
@@ -434,14 +574,68 @@ Z3MOD.aircraft = function (Z) {
     pr.r[i] = r; pr.g[i] = g; pr.b[i] = b; pr.drag[i] = drag;
   }
 
-  /* ---------------- ground vehicles: instanced boxes ---------------- */
-  const BCAP = 5000;
-  const boxGeo = new THREE.BoxGeometry(1, 1, 1); boxGeo.translate(0, 0.5, 0);
-  const boxes = new THREE.InstancedMesh(boxGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6, metalness: 0.1 }), BCAP);
-  for (let i = 0; i < BCAP; i++) boxes.setColorAt(i, WHITE);
-  boxes.frustumCulled = false; boxes.castShadow = true; boxes.receiveShadow = true; boxes.instanceMatrix.setUsage(THREE.DynamicDrawUsage); boxes.count = 0; root.add(boxes);
-  const VC = { yel: C('#f0bd1e'), yelD: C('#b58a12'), dark: C('#2a2e33'), glass: C('#34465a'), white: C('#eceef0'), tank: C('#d9dde2'), blue: C('#2d5fae'),
-    grey: C('#7c838b'), red: C('#c42a1f'), tug: C('#e8e2d4'), belt: C('#3b3e42'), green: C('#2f7d4a'), bird: C('#1d1915') };
+  /* ---------------- ground vehicles: every kind merged into one instanced mesh; each instance keeps only its own kind ---------------- */
+  // aMat.w = kind * 10 + part (0 fixed, 1 rides the catering lift, 2 conveyor pivots, 3 scissor stretches); pure-white vertices take the instance paint
+  const VK_ = { tug: 0, optug: 0, bowser: 1, cater: 2, belt: 3, bus: 4, jeep: 5, redjeep: 5, sweeper: 6 };
+  const VT = { tug: C('#e9e4d6'), optug: C('#f0bd1e'), bowser: C('#f2f3f4'), cater: C('#f2f3f4'), belt: C('#f0bd1e'), bus: C('#2d5fae'), jeep: C('#f0bd1e'), redjeep: C('#c42a1f'), sweeper: C('#f0bd1e') };
+  const VC = { dark: C('#2a2e33'), glass: C('#121820'), white: C('#f7f8f9'), tank: C('#d4d9de'), red: C('#c42a1f'), green: C('#2f7d4a'), blue: C('#2d5fae'), grey: C('#7c838b'), belt: C('#1f2124'), rail: C('#b9bec4'), yel: C('#f0bd1e') };
+  const VM = { body: [0.45, 0.1, 0], glass: [0.06, 0.4, 0], tyre: [0.92, 0, 0], metal: [0.32, 0.85, 0], plastic: [0.7, 0, 0], tank: [0.28, 0.75, 0] };
+  const BP = { x: -3.7, y: 1.05 }; // belt-loader conveyor pivot
+  const VG = Array.from({ length: 7 }, () => Geo());
+  { let g = VG[0]; const K = (kd, pt) => { g = VG[kd]; g.G = pt || 0; };
+    const B = (x, y, z, l, h, w, col, m) => { g.M = m || VM.body; box(g, x, y + h / 2, z, l, h, w, col); };
+    const wheel = (x, z, r, w) => { g.M = VM.tyre; cylZ(g, x, r, z, r, w, 8, COL.tyre); g.M = VM.metal; cylZ(g, x, r, z + Math.sign(z) * (w / 2 + 0.01), r * 0.5, 0.02, 6, COL.hub); };
+    const stripe = (x0, x1, y, h, z, n) => { g.M = VM.plastic; const dx = (x1 - x0) / n; for (const sz of [-1, 1]) for (let i = 0; i < n; i++) { const xa = x0 + i * dx, zz = sz * z;
+      g.o = [xa + dx / 2, y, 0]; quad(g, [xa, y, zz], [xa + dx, y, zz], [xa + dx, y + h, zz], [xa, y + h, zz], i % 2 ? VC.red : VC.white); } };
+    const glassCab = (x, y, z, l, h, w) => { B(x, y, z, l, h, w, VC.glass, VM.glass); B(x, y + h, z, l + 0.06, 0.08, w + 0.06, COL.white); B(x, y - 0.02, z, l + 0.04, 0.12, w + 0.04, COL.white); };
+    // 0 pushback tug: a low, heavy wedge with a side cab
+    K(0); B(0, 0.3, 0, 5.6, 0.75, 2.7, COL.white); B(0.4, 1.05, 0.3, 3.2, 0.12, 1.9, VC.dark); B(2.85, 0.25, 0, 0.25, 0.55, 2.8, VC.dark); B(-2.85, 0.25, 0, 0.25, 0.55, 2.8, VC.dark);
+    glassCab(-1.9, 1.05, -0.55, 1.4, 0.9, 1.4); stripe(-2.7, 2.7, 0.62, 0.14, 1.36, 8); for (const [x, z] of [[1.8, 1.2], [-1.8, 1.2], [1.8, -1.2], [-1.8, -1.2]]) wheel(x, z, 0.46, 0.42);
+    // 1 fuel bowser: cab, chassis, polished tank with a band, hose reel
+    K(1); B(0.3, 0.45, 0, 9.4, 0.35, 2.2, VC.dark); B(3.9, 0.55, 0, 1.9, 1.5, 2.4, COL.white); glassCab(4.5, 1.25, 0, 0.7, 0.75, 2.42);
+    g.M = VM.tank; revX(g, [[2.7, 0.85], [2.6, 1.08], [-4.0, 1.08], [-4.15, 0.85]], 1.95, 0, 12, VC.tank, PU.white, { k: 1, d: 0.12, c: VC.tank }, { k: 1, d: -0.12, c: VC.tank }, 0.85);
+    g.M = VM.body; revX(g, [[0.2, 1.1], [-0.6, 1.1]], 1.95, 0, 12, VC.green, PU.white, null, null, 0.85);
+    B(-4.4, 0.6, 0, 0.5, 1.0, 2.0, VC.grey); stripe(-4.2, 2.7, 0.62, 0.14, 1.12, 10);
+    for (const [x, z] of [[3.6, 1.05], [3.6, -1.05], [-1.8, 1.05], [-1.8, -1.05], [-3.0, 1.05], [-3.0, -1.05]]) wheel(x, z, 0.5, 0.42);
+    // 2 catering high-loader: cab, scissor lift, box body that rides up to the door
+    K(2); B(0, 0.45, 0, 7.8, 0.4, 2.3, VC.dark); B(3.1, 0.55, 0, 1.7, 1.55, 2.4, COL.white); glassCab(3.7, 1.3, 0, 0.55, 0.75, 2.42);
+    K(2, 3); g.M = VM.metal; for (const sz of [-0.9, 0.9]) { slab(g, [[-2.3, 0.9, sz], [-2.0, 0.9, sz], [0.4, 1.9, sz], [0.1, 1.9, sz]], [0.1, 0.1, 0.1, 0.1], 2, VC.grey); slab(g, [[0.1, 0.9, sz], [0.4, 0.9, sz], [-2.0, 1.9, sz], [-2.3, 1.9, sz]], [0.1, 0.1, 0.1, 0.1], 2, VC.grey); }
+    K(2, 1); B(-0.9, 0.95, 0, 5.2, 2.55, 2.45, COL.white); B(-0.9, 3.15, 0, 5.22, 0.3, 2.47, VC.blue); B(-3.6, 0.95, 0, 0.3, 0.12, 2.6, VC.grey); stripe(-3.5, 1.7, 1.05, 0.14, 1.235, 8);
+    K(2); for (const [x, z] of [[2.9, 1.1], [2.9, -1.1], [-2.4, 1.1], [-2.4, -1.1]]) wheel(x, z, 0.45, 0.4);
+    // 3 belt loader: chassis, side cab, conveyor (pivots up to the hold door) with rails
+    K(3); B(0, 0.35, 0, 6.8, 0.45, 1.9, COL.white); glassCab(-2.4, 0.8, -0.5, 1.2, 0.95, 0.85); B(1.6, 0.8, 0, 0.25, 0.5, 0.5, VC.grey); stripe(-3.3, 3.3, 0.45, 0.14, 0.96, 8);
+    K(3, 2); B(0.6, 0.95, 0.25, 8.6, 0.18, 0.9, VC.belt, VM.tyre); B(0.6, 1.08, -0.22, 8.6, 0.22, 0.06, VC.rail, VM.metal); B(0.6, 1.08, 0.72, 8.6, 0.22, 0.06, VC.rail, VM.metal);
+    K(3); for (const [x, z] of [[2.4, 0.95], [2.4, -0.95], [-2.2, 0.95], [-2.2, -0.95]]) wheel(x, z, 0.36, 0.3);
+    // 4 apron bus: low floor, glass band, white roof, three doors on the right
+    K(4); B(0, 0.3, 0, 13.2, 1.15, 2.75, COL.white); B(0, 1.45, 0, 13.0, 1.25, 2.78, VC.glass, VM.glass); B(0, 2.7, 0, 13.2, 0.45, 2.75, VC.white); B(0, 1.32, 0, 13.22, 0.12, 2.77, VC.white);
+    for (const x of [-4.2, 0, 4.2]) B(x, 0.35, 1.38, 1.3, 2.3, 0.04, VC.glass, VM.glass);
+    for (const [x, z] of [[4.6, 1.2], [4.6, -1.2], [-4.6, 1.2], [-4.6, -1.2]]) wheel(x, z, 0.5, 0.38);
+    // 5 follow-me / ops jeep: body, glasshouse, roof, light bar
+    K(5); B(0, 0.35, 0, 4.6, 0.75, 1.9, COL.white); glassCab(-0.4, 1.1, 0, 2.5, 0.75, 1.82); B(-0.4, 1.95, 0, 1.2, 0.12, 1.4, VC.dark); stripe(-2.2, 2.2, 0.75, 0.12, 0.96, 6);
+    for (const [x, z] of [[1.5, 0.85], [1.5, -0.85], [-1.5, 0.85], [-1.5, -0.85]]) wheel(x, z, 0.38, 0.3);
+    // 6 runway sweeper: boxy body, high cab, brush
+    K(6); B(0, 0.4, 0, 6.8, 2.1, 2.5, COL.white); glassCab(2.2, 2.5, 0, 2.0, 0.95, 2.2); B(-1.2, 2.5, 0, 3.6, 0.6, 2.3, VC.yel);
+    g.M = VM.plastic; cylZ(g, 3.9, 0.45, 0, 0.45, 2.9, 8, VC.dark); stripe(-3.3, 1.0, 0.5, 0.16, 1.26, 8);
+    for (const [x, z] of [[2.2, 1.15], [2.2, -1.15], [-2.2, 1.15], [-2.2, -1.15]]) wheel(x, z, 0.5, 0.36);
+  }
+  const VCAP = 700, VSH = 'float vpt = aMat.w;\nif (vpt > 0.5 && vpt < 1.5) transformed.y += iLift;\n' +
+    'else if (vpt > 1.5 && vpt < 2.5) { vec2 vd = transformed.xy - vec2(' + BP.x.toFixed(2) + ', ' + BP.y.toFixed(2) + '); float vc = cos(iLift), vs = sin(iLift); transformed.xy = vec2(' + BP.x.toFixed(2) + ', ' + BP.y.toFixed(2) + ') + vec2(vc * vd.x - vs * vd.y, vs * vd.x + vc * vd.y); }\n' +
+    'else if (vpt > 2.5) transformed.y = 0.9 + (transformed.y - 0.9) * max(iLift, 0.02);';
+  const matVeh = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.1, envMap: ownEnv, envMapIntensity: ownEnv ? 0.8 : 1 });
+  matVeh.onBeforeCompile = sh => {
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec4 aMat;\nattribute float iLift;\nattribute vec3 iTint;\nvarying vec2 vMat;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvMat = aMat.xy;\n' + VSH + '\n#ifdef USE_COLOR\nvColor.rgb = mix(vColor.rgb, iTint, step(2.995, vColor.r + vColor.g + vColor.b));\n#endif');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec2 vMat;')
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = vMat.x;').replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = vMat.y;');
+  };
+  matVeh.customProgramCacheKey = () => 'zmh-veh-3';
+  const matVehD = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking });
+  matVehD.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec4 aMat;\nattribute float iLift;').replace('#include <begin_vertex>', '#include <begin_vertex>\n' + VSH); };
+  matVehD.customProgramCacheKey = () => 'zmh-veh-d-3';
+  const VEH = VG.map(g => { const lift = new THREE.InstancedBufferAttribute(new Float32Array(VCAP), 1).setUsage(THREE.DynamicDrawUsage), tint = new THREE.InstancedBufferAttribute(new Float32Array(VCAP * 3), 3).setUsage(THREE.DynamicDrawUsage);
+    const m = new THREE.InstancedMesh(toGeom(g, null, { iLift: lift, iTint: tint }), matVeh, VCAP); m.customDepthMaterial = matVehD;
+    m.frustumCulled = false; m.castShadow = true; m.receiveShadow = true; m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.count = 0; root.add(m); return { m, lift, tint, n: 0 }; });
+  Z.vehicleTris = VEH.map(v => v.m.geometry.attributes.position.count / 3);
   // birds: one wing, mirrored by a negative z scale for the other side
   const birdG = new THREE.BufferGeometry(); birdG.setAttribute('position', new THREE.Float32BufferAttribute([0.35, 0, 0, -0.25, 0, 0, -0.15, 0, 1, 0.35, 0, 0, -0.15, 0, 1, 0.1, 0, 0.75], 3)); birdG.computeVertexNormals();
   const birds = new THREE.InstancedMesh(birdG, new THREE.MeshBasicMaterial({ color: 0x1d1915, side: THREE.DoubleSide }), 400);
@@ -461,35 +655,25 @@ Z3MOD.aircraft = function (Z) {
   const TAXI = { taxi_in: 1, taxi_out: 1, hp: 1, nogate: 1, stuck: 1 };
   const mem = new Map(); let frame = 0, lastT = -1, cleanT = 0;
   let nB = 0, nBird = 0;
-  function bx(vx, vz, h, k, cx, cy, cz, l, hh, w, col, pitch) {
-    if (nB >= BCAP) return; const c = Math.cos(h), s = Math.sin(h);
-    _p.set(vx + (c * cx - s * cz) * k, cy * k, vz + (s * cx + c * cz) * k);
-    _e.set(0, -h, pitch || 0); _q.setFromEuler(_e); _s.set(l * k, hh * k, w * k); _m.compose(_p, _q, _s);
-    boxes.setMatrixAt(nB, _m); boxes.setColorAt(nB, col); nB++;
+  function vput(kind, vx, vz, h, k, lift) {
+    const V = VEH[VK_[kind]], i = V.n; if (i >= VCAP) return; _p.set(vx, 0, vz); _e.set(0, -h, 0); _q.setFromEuler(_e); _s.set(k, k, k); _m.compose(_p, _q, _s);
+    V.m.setMatrixAt(i, _m); V.lift.array[i] = lift || 0; const t = VT[kind]; V.tint.array[i * 3] = t.r; V.tint.array[i * 3 + 1] = t.g; V.tint.array[i * 3 + 2] = t.b; V.n++;
   }
   let NOW = 0, NF = 0;
   function beacon(vx, vz, h, k, cx, cy, ph) { // amber rotating beacon
     if (Math.sin(NOW * 9 + ph) < 0.15) return; const c = Math.cos(h), s = Math.sin(h);
-    L(vx + c * cx * k, cy * k, vz + s * cx * k, 1.0, 0.55, 0.08, (0.9 + 1.6 * NF) * k);
+    L(vx + c * cx * k, cy * k, vz + s * cx * k, 3.0, 1.5, 0.2, (0.7 + 1.6 * NF) * k);
   }
   // vehicle kinds: draws boxes at (x, z) heading h, scale k
   function veh(kind, x, z, h, k, ph, lift) {
     switch (kind) {
-      case 'tug': bx(x, z, h, k, 0, 0, 0, 5.6, 1.15, 2.7, VC.tug); bx(x, z, h, k, -1.9, 1.15, 0, 1.3, 0.85, 1.7, VC.glass); bx(x, z, h, k, 2.6, 0.1, 0, 0.5, 0.6, 2.8, VC.dark); beacon(x, z, h, k, -1.9, 2.2, ph); break;
-      case 'optug': bx(x, z, h, k, 0, 0, 0, 5.6, 1.15, 2.7, VC.yel); bx(x, z, h, k, -1.9, 1.15, 0, 1.3, 0.85, 1.7, VC.glass); beacon(x, z, h, k, -1.9, 2.2, ph); break;
-      case 'bowser': bx(x, z, h, k, 0.3, 0.15, 0, 9.4, 0.65, 2.3, VC.dark); bx(x, z, h, k, 3.6, 0.6, 0, 2.0, 2.1, 2.4, VC.white); bx(x, z, h, k, 4.2, 1.6, 0, 0.9, 0.9, 2.42, VC.glass);
-        bx(x, z, h, k, -0.9, 0.8, 0, 6.6, 2.0, 2.35, VC.tank); bx(x, z, h, k, -0.9, 1.3, 0, 6.62, 0.35, 2.37, VC.green); beacon(x, z, h, k, 3.6, 2.8, ph); break;
-      case 'cater': bx(x, z, h, k, 0, 0.15, 0, 7.8, 0.75, 2.4, VC.dark); bx(x, z, h, k, 3.0, 0.6, 0, 1.8, 1.9, 2.4, VC.white); bx(x, z, h, k, 3.5, 1.4, 0, 0.8, 0.8, 2.42, VC.glass);
-        if (lift > 0.3) bx(x, z, h, k, -0.9, 0.9, 0, 2.6, lift, 1.6, VC.grey);
-        bx(x, z, h, k, -0.9, 0.9 + lift, 0, 5.2, 2.6, 2.45, VC.white); bx(x, z, h, k, -0.9, 0.9 + lift + 2.0, 0, 5.22, 0.3, 2.47, VC.blue); beacon(x, z, h, k, 3.0, 2.7, ph); break;
-      case 'belt': { bx(x, z, h, k, 0, 0.15, 0, 7.0, 0.8, 1.9, VC.yelD); bx(x, z, h, k, -2.4, 0.95, -0.55, 1.2, 1.1, 0.8, VC.glass);
-        const top = Math.max(1.3, lift), len = 8.6, pa = Math.asin(clamp((top - 0.9) / len, 0, 0.6));
-        bx(x, z, h, k, 0.5, (0.9 + top) / 2 - 0.2, 0.3, len, 0.3, 0.9, VC.belt, pa); beacon(x, z, h, k, -2.4, 2.2, ph); break; }
-      case 'bus': bx(x, z, h, k, 0, 0.3, 0, 13.2, 2.9, 2.7, VC.blue); bx(x, z, h, k, 0, 1.45, 0, 12.6, 1.05, 2.74, VC.glass); bx(x, z, h, k, 0, 3.15, 0, 12.8, 0.12, 2.6, VC.white); break;
-      case 'jeep': bx(x, z, h, k, 0, 0.3, 0, 4.6, 1.0, 1.9, VC.yel); bx(x, z, h, k, -0.5, 1.3, 0, 2.5, 0.85, 1.8, VC.glass); bx(x, z, h, k, -0.5, 2.1, 0, 2.5, 0.08, 1.82, VC.yel); beacon(x, z, h, k, -0.3, 2.35, ph); break;
-      case 'redjeep': bx(x, z, h, k, 0, 0.3, 0, 4.6, 1.0, 1.9, VC.red); bx(x, z, h, k, -0.5, 1.3, 0, 2.5, 0.85, 1.8, VC.glass); beacon(x, z, h, k, -0.3, 2.35, ph); break;
-      case 'sweeper': bx(x, z, h, k, 0, 0.3, 0, 6.8, 2.3, 2.5, VC.yel); bx(x, z, h, k, 2.2, 2.6, 0, 2.0, 1.0, 2.2, VC.glass); bx(x, z, h, k, 3.9, 0, 0, 1.0, 0.8, 2.9, VC.dark);
-        bx(x, z, h, k, -1.2, 2.6, 0, 3.6, 0.6, 2.3, VC.yelD); beacon(x, z, h, k, 2.2, 3.8, ph); break;
+      case 'tug': case 'optug': vput(kind, x, z, h, k, 0); beacon(x, z, h, k, -1.9, 2.15, ph); break;
+      case 'bowser': vput(kind, x, z, h, k, 0); beacon(x, z, h, k, 3.9, 2.2, ph); break;
+      case 'cater': vput(kind, x, z, h, k, lift); beacon(x, z, h, k, 3.1, 2.25, ph); break;
+      case 'belt': { const top = Math.max(1.3, lift || 0); vput(kind, x, z, h, k, Math.atan(clamp((top - BP.y) / 8.6, 0, 0.6))); beacon(x, z, h, k, -2.4, 1.95, ph); break; }
+      case 'bus': vput(kind, x, z, h, k, 0); break;
+      case 'jeep': case 'redjeep': vput(kind, x, z, h, k, 0); beacon(x, z, h, k, -0.4, 2.15, ph); break;
+      case 'sweeper': vput(kind, x, z, h, k, 0); beacon(x, z, h, k, 2.2, 3.6, ph); break;
     }
   }
 
@@ -544,20 +728,22 @@ Z3MOD.aircraft = function (Z) {
       const rdt = Math.min(dt, 0.1), pdt = dts > 0 ? rdt : 0; SDT = dts; RDT = rdt;
       const cam = Z.camera, pxs = Z.renderer.domElement.height / (2 * Math.tan(cam.fov * D2R / 2));
       lU.pxs.value = pxs; pU.pxs.value = pxs;
-      const fog = Z.scene.fog; if (fog) { lU.fogN.value = fog.near * 1.5; lU.fogF.value = fog.far * 1.6; }
+      const fog = Z.scene.fog, fN = fog ? (fog.isFogExp2 ? 0.3 / Math.max(1e-6, fog.density) : fog.near) : 1e6, fF = fog ? (fog.isFogExp2 ? 1.8 / Math.max(1e-6, fog.density) : fog.far) : 2e6;
+      lU.fogN.value = fN * 1.5; lU.fogF.value = fF * 1.6;
+      const WI = Z.atmo && Z.atmo.wind, wdir = WI ? WI.dir || 0 : 0, wspd = WI ? WI.speed || 0 : 0, wgust = WI ? WI.gust || 0 : 0;
       pU.lum.value = 0.28 + 0.72 * (1 - NF);
       for (let j = 0; j < TKEYS.length; j++) { const kk = TKEYS[j]; hiN[kk] = 0; loN[kk] = 0; gN[kk] = 0; }
       nL = 0; nB = 0; nBird = 0; nProp = 0; nDisc = 0; nBlob = 0;
-      const cp = cam.position, nearR = 1800 * k, nearR2 = nearR * nearR;
+      const cp = cam.position, nearR = 1250 * k, nearR2 = nearR * nearR;
       const sd = Z.sunDir || _pb.set(0, 1, 0), sdy = Math.max(0.3, sd.y), sunUp = clamp(sd.y * 4, 0, 1), blobLift = 0.15 + Math.min(3, (Z.camDist || 1000) * 0.0003);
-      if (fog) { bU.fogN.value = fog.near; bU.fogF.value = fog.far; }
-      const nav = 0.18 + 0.95 * NF, navS = (0.8 + 2.4 * NF) * k;
+      bU.fogN.value = fN; bU.fogF.value = fF;
+      const nav = 1.1 + 0.6 * NF, navS = (0.7 + 2.4 * NF) * k;
       for (let i = 0; i < F.length; i++) {
         const f = F[i], s = f.state; if (SKIP[s]) continue;
         const fam = MESH[f.type] ? f.type : 'A20N', M = MESH[fam], P = M.P;
         if (hiN[fam] + loN[fam] >= CAP) continue;
         let st = mem.get(f.id), fresh = false;
-        if (!st) { st = { hd: f.heading, hr: 0, bank: 0, pitch: 0, gear: 1, prev: s, px: f.x, py: f.y, spd: 0, tdT: -1e9, smokeT: -1e9, smokeN: 0, ph: Math.random(), ph2: Math.random(), prop: Math.random() * 6, spool: 0, acc: 0, seen: 0 }; mem.set(f.id, st); fresh = true; }
+        if (!st) { st = { hd: f.heading, hr: 0, bank: 0, pitch: 0, gear: 1, prev: s, px: f.x, py: f.y, spd: 0, tdT: -1e9, smokeT: -1e9, smokeN: 0, ph: Math.random(), ph2: Math.random(), prop: Math.random() * 6, spool: 0, acc: 0, seen: 0, crab: 0 }; mem.set(f.id, st); fresh = true; }
         st.seen = frame;
         const alt = visAlt(f);
         if (st.prev !== s) { if (s === 'rollout' && st.prev === 'approach' && !fresh) { st.tdT = T; st.smokeT = T; st.smokeN = 0; } st.prev = s; }
@@ -574,15 +760,23 @@ Z3MOD.aircraft = function (Z) {
           const rate = Math.min((s === 'rollout' ? 2.6 : 3.2) * dts, 14 * rdt) * D2R; st.pitch += clamp(pt - st.pitch, -rate, rate);
           const gr = Math.min(dts / 7, rdt / 0.9); st.gear += clamp(gt - st.gear, -gr, gr);
         }
+        // crab into the crosswind while airborne (de-crabbed in the flare), and buffeting in gusts / the andhi
+        let bf = 0, pf = 0;
+        { let ct = 0;
+          if (alt > 1.5 && AIR[s] && wspd > 0.5) { const va = Math.max(60, st.spd || 0), gx = Math.cos(f.heading) * va - Math.cos(wdir) * wspd, gy = Math.sin(f.heading) * va - Math.sin(wdir) * wspd;
+            ct = clamp(angD(f.heading, Math.atan2(gy, gx)), -0.26, 0.26) * clamp((alt - 1.5) / 12, 0, 1); }
+          st.crab += (ct - st.crab) * (fresh || snap ? 1 : 1 - Math.exp(-rdt / 1.2));
+          if (alt > 2) { const amp = (dust ? 0.7 + 0.9 * wgust : 0.12 + 0.35 * wgust) * clamp(alt / 25, 0, 1), q = now + st.ph * 40;
+            bf = amp * (Math.sin(q * 3.1) * 0.035 + Math.sin(q * 7.7 + 1.3) * 0.02 + Math.sin(q * 1.3 + 4.1) * 0.03);
+            pf = amp * (Math.sin(q * 4.3 + 2.2) * 0.012 + Math.sin(q * 9.1) * 0.006); } }
         // matrix: yaw, then pitch and bank about the main-gear contact point (rotation and flare pivot on the mains)
-        const sx = 1, sz = 1, sy = 1, yaw = -f.heading;
-        _e.set(st.bank, yaw, st.pitch); _q.setFromEuler(_e); _e.set(0, yaw, 0); _qy.setFromEuler(_e);
+        const sx = 1, sz = 1, sy = 1, yaw = -(f.heading + st.crab);
+        _e.set(st.bank + bf, yaw, st.pitch + pf); _q.setFromEuler(_e); _e.set(0, yaw, 0); _qy.setFromEuler(_e);
         _v1.set(P.pv * sx * k, 0, 0); _v2.copy(_v1).applyQuaternion(_q); _v1.applyQuaternion(_qy);
         _p.set(f.x + _v1.x - _v2.x, alt + _v1.y - _v2.y, f.y + _v1.z - _v2.z); _s.set(sx * k, sy * k, sz * k);
         _m.compose(_p, _q, _s);
         const ddx = f.x - cp.x, ddy = alt - cp.y, ddz = f.y - cp.z, near = ddx * ddx + ddy * ddy + ddz * ddz < nearR2, li = AIDX[f.al] || 0;
-        if (near) { const idx = hiN[fam]++; M.hi.setMatrixAt(idx, _m); M.livH.array[idx] = li;
-          if (st.gear > 0.01) { const g = sstep(clamp(st.gear, 0, 1)); _mr.makeScale(1, g, 1); _mr.elements[13] = P.gy * (1 - g); _mg.multiplyMatrices(_m, _mr); M.gear.setMatrixAt(gN[fam]++, _mg); } }
+        if (near) { const idx = hiN[fam]++; M.hi.setMatrixAt(idx, _m); M.livH.array[idx] = li; M.gearA.array[idx] = st.gear > 0.01 ? sstep(clamp(st.gear, 0, 1)) : 0; }
         else { const idx = loN[fam]++; M.lo.setMatrixAt(idx, _m); M.livL.array[idx] = li; }
         const run = !OFF[s];
         if (P.eng[0].prop) { // spool up in 'start'; blades turn slowly, then blur into a disc
@@ -607,19 +801,19 @@ Z3MOD.aircraft = function (Z) {
         }
         if (run) {
           const ph = (now + st.ph) % 1, bi = ph < 0.16 ? 1 - ph / 0.16 : 0;
-          if (bi > 0) { const bI = (0.9 + 1.6 * NF) * bi, bS = (1.4 + 2.6 * NF) * k; lw(LP.topX, LP.topY, 0); L(_v.x, _v.y, _v.z, bI, 0.1 * bI, 0.05 * bI, bS); }
+          if (bi > 0) { const bI = (3.2 + 1.6 * NF) * bi, bS = (1.3 + 2.6 * NF) * k; lw(LP.topX, LP.topY, 0); L(_v.x, _v.y, _v.z, bI, 0.1 * bI, 0.05 * bI, bS); }
           const ph3 = (now + st.ph + 0.5) % 1, bj = ph3 < 0.16 ? 1 - ph3 / 0.16 : 0;
-          if (bj > 0) { const bI = (0.9 + 1.6 * NF) * bj, bS = (1.4 + 2.6 * NF) * k; lw(LP.botX, LP.botY, 0); L(_v.x, _v.y, _v.z, bI, 0.1 * bI, 0.05 * bI, bS); }
+          if (bj > 0) { const bI = (3.2 + 1.6 * NF) * bj, bS = (1.3 + 2.6 * NF) * k; lw(LP.botX, LP.botY, 0); L(_v.x, _v.y, _v.z, bI, 0.1 * bI, 0.05 * bI, bS); }
         }
         if (STROBE[s]) {
           const t = (now / 1.2 + st.ph2) % 1;
-          if (t < 0.035 || (t > 0.11 && t < 0.145)) { const sS = (2.2 + 4.5 * NF) * k;
-            lw(LP.tipX, LP.tipY, -LP.tipZ); L(_v.x, _v.y, _v.z, 1.6, 1.6, 1.75, sS); lw(LP.tipX, LP.tipY, LP.tipZ); L(_v.x, _v.y, _v.z, 1.6, 1.6, 1.75, sS);
-            lw(LP.tailX, LP.tailY, 0); L(_v.x, _v.y, _v.z, 1.3, 1.3, 1.4, sS * 0.8); }
+          if (t < 0.035 || (t > 0.11 && t < 0.145)) { const sS = (1.8 + 4.5 * NF) * k;
+            lw(LP.tipX, LP.tipY, -LP.tipZ); L(_v.x, _v.y, _v.z, 6, 6, 6.5, sS); lw(LP.tipX, LP.tipY, LP.tipZ); L(_v.x, _v.y, _v.z, 6, 6, 6.5, sS);
+            lw(LP.tailX, LP.tailY, 0); L(_v.x, _v.y, _v.z, 4.5, 4.5, 5, sS * 0.8); }
         }
         if (LAND[s]) {
-          const I = 0.4 + 1.3 * NF; lw(LP.noseX, LP.noseY, 0); L(_v.x, _v.y, _v.z, I, 0.96 * I, 0.86 * I, (1.1 + 18 * NF) * k);
-          const I2 = 0.35 + 0.9 * NF, S2 = (1.2 + 6 * NF) * k; lw(LP.rootX, LP.rootY, -LP.rootZ); L(_v.x, _v.y, _v.z, I2, 0.95 * I2, 0.85 * I2, S2); lw(LP.rootX, LP.rootY, LP.rootZ); L(_v.x, _v.y, _v.z, I2, 0.95 * I2, 0.85 * I2, S2);
+          const I = 2.6 + 1.3 * NF; lw(LP.noseX, LP.noseY, 0); L(_v.x, _v.y, _v.z, I, 0.96 * I, 0.86 * I, (1.1 + 18 * NF) * k);
+          const I2 = 2.2 + 0.9 * NF, S2 = (1.2 + 6 * NF) * k; lw(LP.rootX, LP.rootY, -LP.rootZ); L(_v.x, _v.y, _v.z, I2, 0.95 * I2, 0.85 * I2, S2); lw(LP.rootX, LP.rootY, LP.rootZ); L(_v.x, _v.y, _v.z, I2, 0.95 * I2, 0.85 * I2, S2);
         } else if (TAXI[s] && NF > 0.15) { const I = 0.9 * NF; lw(LP.noseX, LP.noseY, 0); L(_v.x, _v.y, _v.z, I, 0.95 * I, 0.85 * I, (1 + 7 * NF) * k); }
         // ---- particles ----
         if (pdt > 0) {
@@ -706,16 +900,17 @@ Z3MOD.aircraft = function (Z) {
       lGeo.setDrawRange(0, nL); lights.visible = nL > 0; if (nL) { upd(lPA, nL); upd(lCA, nL); upd(lSA, nL); }
       // ---- instance counts ----
       for (let j = 0; j < TKEYS.length; j++) {
-        const kk = TKEYS[j], M = MESH[kk], h = hiN[kk], l = loN[kk], g = gN[kk];
-        M.hi.count = h; M.hi.visible = h > 0; if (h) { M.hi.instanceMatrix.needsUpdate = true; upd(M.livH, h); }
+        const kk = TKEYS[j], M = MESH[kk], h = hiN[kk], l = loN[kk];
+        M.hi.count = h; M.hi.visible = h > 0; if (h) { M.hi.instanceMatrix.needsUpdate = true; upd(M.livH, h); upd(M.gearA, h); }
         M.lo.count = l; M.lo.visible = l > 0; if (l) { M.lo.instanceMatrix.needsUpdate = true; upd(M.livL, l); }
-        M.gear.count = g; M.gear.visible = g > 0; if (g) M.gear.instanceMatrix.needsUpdate = true;
       }
       if (props) { props.count = nProp; props.visible = nProp > 0; if (nProp) props.instanceMatrix.needsUpdate = true; }
       discs.count = nDisc; discs.visible = nDisc > 0; if (nDisc) discs.instanceMatrix.needsUpdate = true;
       blobs.count = nBlob; blobs.visible = nBlob > 0; if (nBlob) { blobs.instanceMatrix.needsUpdate = true; blobs.instanceColor.needsUpdate = true; }
-      matBody.emissiveIntensity = NF * 0.95; ambU.value = 0.13 * Math.max(NF, Z.dustNow ? 0.5 : 0); matGear.emissiveIntensity = 0;
-      boxes.count = nB; boxes.visible = nB > 0; if (nB) { boxes.instanceMatrix.needsUpdate = true; boxes.instanceColor.needsUpdate = true; }
+      ambU.value = 0.1 * Math.max(NF, Z.dustNow ? 0.5 : 0);
+      if (ownEnv && Z.scene.environment) { matBody.envMap = null; matBody.envMapIntensity = 1; matBody.needsUpdate = true; ownEnv = null; }
+      for (let j = 0; j < VEH.length; j++) { const V = VEH[j], n = V.n; V.m.count = n; V.m.visible = n > 0; if (n) { V.m.instanceMatrix.needsUpdate = true; upd(V.lift, n); upd(V.tint, n); } V.n = 0; }
+      if (!ownEnv && matVeh.envMap) { matVeh.envMap = null; matVeh.needsUpdate = true; }
       birds.count = nBird; birds.visible = nBird > 0; if (nBird) birds.instanceMatrix.needsUpdate = true;
       if (now - cleanT > 2) { cleanT = now; mem.forEach(cleaner); }
     },

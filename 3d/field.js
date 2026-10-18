@@ -258,9 +258,9 @@ Z3MOD.field = function (Z) {
   const groundMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, metalness: 0, envMapIntensity: 0.75 });
   groundMat.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, { farm: { value: farmTex }, dtl: { value: noiseTex }, grT: { value: grassTex }, aptT: { value: aptTex }, gcv: { value: new THREE.Vector4(GC.x0, GC.y0, GC.w, GC.h) }, apb: { value: APB },
-      baseCol: { value: lin('#477a26') }, rot: { value: new THREE.Vector3(Math.cos(ROT), Math.sin(ROT), 0) }, nglow: { value: 0 }, apt: { value: new THREE.Vector4(AX0, AY0, AX1, AY1) } });
+      baseCol: { value: lin('#477a26') }, rot: { value: new THREE.Vector3(Math.cos(ROT), Math.sin(ROT), 0) }, nglow: { value: 0 }, dry: { value: 0 }, apt: { value: new THREE.Vector4(AX0, AY0, AX1, AY1) } });
     sh.vertexShader = 'varying vec2 vWP;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvWP=(modelMatrix*vec4(transformed,1.0)).xz;');
-    sh.fragmentShader = 'uniform sampler2D farm;uniform sampler2D dtl;uniform sampler2D grT;uniform sampler2D aptT;uniform vec4 gcv;uniform vec4 apt;uniform vec4 apb;uniform vec3 baseCol;uniform vec3 rot;uniform float nglow;varying vec2 vWP;\n' + sh.fragmentShader
+    sh.fragmentShader = 'uniform sampler2D farm;uniform sampler2D dtl;uniform sampler2D grT;uniform sampler2D aptT;uniform vec4 gcv;uniform vec4 apt;uniform vec4 apb;uniform vec3 baseCol;uniform vec3 rot;uniform float nglow,dry;varying vec2 vWP;\n' + sh.fragmentShader
       .replace('#include <map_fragment>', `
       vec2 tuv=(vWP-gcv.xy)/gcv.zw;
       vec3 fcol=texture2D(farm,vec2(clamp(tuv.x,0.0004,0.9996),1.0-clamp(tuv.y,0.0004,0.9996))).rgb;
@@ -287,7 +287,14 @@ Z3MOD.field = function (Z) {
       float fg=1.0-smoothstep(25.0,650.0,gd);
       vec4 gt=texture2D(grT,vWP*0.23); vec4 gu=texture2D(grT,vWP*0.97+vec2(0.41,0.17));
       gc*=mix(1.0,(0.88+0.24*gt.r)*(0.9+0.2*gu.r),fg*fg);
-      float gRough=0.9+0.12*(gt.g-0.5)*fg;
+      // close-range detail: mowing rows in the runway strips (9 m passes along the runways), dry tufts at ~2 m,
+      // and a drier, straw-tinted field in the 46 C heat level (still green overall)
+      float mw=vWP.y/9.0,mwf=fwidth(mw);float mowK=inA*(1.0-ap.a)*(1.0-smoothstep(0.15,0.45,mwf))*(1.0-smoothstep(600.0,2200.0,gd));
+      gc*=1.0+mowK*0.055*(step(0.5,fract(mw))*2.0-1.0)*(0.7+0.3*n4.g);
+      vec3 n6=texture2D(dtl,vWP*0.47+0.53).rgb;float tuft=smoothstep(0.62-0.12*dry,0.8,n6.b*0.7+n5.g*0.3)*(1.0-smoothstep(40.0,420.0,gd));
+      gc=mix(gc,gc*vec3(1.32,1.16,0.68),tuft*(0.5+0.3*dry));
+      gc=mix(gc,gc*vec3(1.16,1.06,0.74),dry*(0.22+0.2*smoothstep(0.4,0.7,n3.r)));
+      float gRough=0.9+0.12*(gt.g-0.5)*fg+0.06*tuft;
       vec2 gq=(gt.ba*2.0-1.0)*0.6*fg+(gu.ba*2.0-1.0)*0.45*fg*fg;
       vec3 gN=vec3(gq.x,1.0,gq.y);
       diffuseColor.rgb*=gc;totalEmissiveRadiance+=gc*vec3(0.55,0.65,1.0)*nglow;`)
@@ -734,7 +741,7 @@ Z3MOD.field = function (Z) {
         LU.uDust.value = Z.dustNow ? 1 : 0; const fg = Z.scene.fog; if (fg && fg.near !== undefined) LU.uFog.value.set(fg.near, fg.far); else if (fg && fg.density) LU.uFog.value.set(0.4 / fg.density, 2.0 / fg.density);
       }
       poolMat.uniforms.uI.value = 0.5 * clamp((Math.max(Z.nightF, Z.dustNow ? 0.5 : 0) - 0.25) / 0.6, 0, 1); poolMesh.visible = poolMat.uniforms.uI.value > 0.01;
-      if (groundMat.userData.sh) groundMat.userData.sh.uniforms.nglow.value = 0.05 * Z.nightF;
+      if (groundMat.userData.sh) { const gu = groundMat.userData.sh.uniforms; gu.nglow.value = 0.05 * Z.nightF; gu.dry.value = LV && LV.light === 'heat' ? 1 : 0; }
       linesMesh.visible = cd < 4000; linesMat.opacity = clamp((4000 - cd) / 1600, 0, 1) * 0.95;
       FXU.uGlow.value = 0.25 + 2.6 * la; if (fixIM) fixIM.visible = cd < 2600; if (typeof signMat !== 'undefined') signMat.emissiveIntensity = 0.12 + 0.9 * la;
       // wind: trees, water ripples, windsocks

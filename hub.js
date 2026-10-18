@@ -144,7 +144,7 @@ const LEVELS=[
 let flights=[],FID=0,S=null,incidents=[],INC=0,selected=null,hover=null,selRw=null;
 const puffs=[],moveLog=[];
 function resetState(){
-  SUM=null;STO=[];CINE=null;PACE=null;HOLDDEP=null;MARKS=[];FXV=[];voiceReset();if(typeof ltReset==="function")ltReset();{const kc=$('#kiteChip');if(kc)kc.hidden=true;const wc=$('#wedChip');if(wc)wc.hidden=true;const sb=$('#stopBtn');if(sb)sb.hidden=true;const ft=$('#fogTag');if(ft)ft.hidden=true;fogF=0;}cinema.q=[];specialArr.list=[];flights=[];FID=0;incidents=[];INC=0;selected=null;hover=null;selRw=null;puffs.length=0;moveLog.length=0;ops.length=0;opsClock=0;lastCnx=-1e9;
+  SUM=null;STO=[];CINE=null;PACE=null;endDue.cut=false;HOLDDEP=null;MARKS=[];FXV=[];voiceReset();if(typeof ltReset==="function")ltReset();{const kc=$('#kiteChip');if(kc)kc.hidden=true;const wc=$('#wedChip');if(wc)wc.hidden=true;const sb=$('#stopBtn');if(sb)sb.hidden=true;const ft=$('#fogTag');if(ft)ft.hidden=true;fogF=0;}cinema.q=[];specialArr.list=[];flights=[];FID=0;incidents=[];INC=0;selected=null;hover=null;selRw=null;puffs.length=0;moveLog.length=0;ops.length=0;opsClock=0;lastCnx=-1e9;
   S={tl:[],flipLog:[],tlNext:0,combo:0,bestCombo:0,moves:0,arr:0,dep:0,depOnTime:0,arrOnTime:0,cnxMade:0,cnxMiss:0,safety:100,incOk:0,incDef:0,incTypes:{},hits:[],holdMin:0,div:0,goArounds:0,log:[],delaySum:0,flips:0};
   GATES.forEach(g=>{g.occ=null;g.res=null;});
   RW.forEach(r=>{r.tdList=[];r.lastSchedTd=-1e9;r.lastDep=-1e9;r.arrExit=-1e9;r.occ=null;r.changeUntil=-1;r.closedUntil=-1;r.why='';r.ops=0;r.flash=0;r.blocks=[];r.gapReq=false;r.degraded=false;r.strike=null;r.shear=false;r.sepK=1;r.sepUntil=-1;r.kiteUntil=-1;r.kiteFrom=-1;r.kiteP=0.25;r.noArrUntil=-1;r.gpsUntil=-1;r.noDepUntil=-1;r.btUntil=-1;});
@@ -683,6 +683,15 @@ function pickVoice(vs,lang){const sc=v=>(/en[-_]IN/i.test(v.lang)?4:/en[-_]GB/i.
   if(lang){const L=lang.toLowerCase().replace('_','-'),m=vs.filter(v=>v.lang.toLowerCase().replace('_','-').startsWith(L.split('-')[0])&&(L.indexOf('-')<0||v.lang.toLowerCase().replace('_','-')===L||true));
     const q=v=>(v.lang.toLowerCase().replace('_','-')===L?2:0)+(/enhanced|premium|natural|neural|google/i.test(v.name)?1:0);return m.sort((a,b)=>q(b)-q(a))[0]||null;}
   return vs.slice().sort((a,b)=>sc(b)-sc(a))[0]||null;}
+// sound follows the game: paused, ended, on the menu or in a background tab, the voice and the music hold where they
+// are and carry on when play resumes; no new line starts while held
+const audioHold=()=>!running||paused||ended||document.hidden;let AHELD=false;
+function audioSync(){const h=audioHold();if(h===AHELD)return;AHELD=h;
+  try{if(vqCur){if(h)vqCur.pause();else{const p=vqCur.play();if(p&&p.catch)p.catch(()=>{});}}}catch(e){}
+  try{if(MUS&&MUS.el){if(h)MUS.el.pause();else{const p=MUS.el.play();if(p&&p.catch)p.catch(()=>{});}}}catch(e){}
+  try{if(window.speechSynthesis){if(h)speechSynthesis.pause();else speechSynthesis.resume();}}catch(e){}
+  if(!h)vqNext();}
+document.addEventListener('visibilitychange',audioSync);
 function vqAdd(items){if(!items.length)return null;const g={on:false},p=items[0].pri,now=performance.now();
   for(const it of items){it.g=g;it.born=now;it.bornT=T;}
   let i=0;while(i<VQ.length&&(VQ[i].g===vqG||VQ[i].pri>=p))i++;VQ.splice(i,0,...items);
@@ -699,27 +708,32 @@ const vqEst=it=>0.6+it.text.split(/\s+/).length/2.1;
 function vqEta(it){const now=performance.now();let s=0;
   if(vqIt){const a=vqCur,d=a&&isFinite(a.duration)&&a.duration>0?a.duration-a.currentTime:vqEst(vqIt)-(now-vqT0)/1000;s+=Math.max(0.1,d);if(vqIt===it)return s;s+=vqIt.gap/1000;}
   for(const x of VQ){s+=vqEst(x);if(x===it)return s;s+=x.gap/1000;}return null;}
-function vqNext(){if(vqOn||ended)return;const now=performance.now();let it;
+function vqNext(){if(vqOn||audioHold())return;const now=performance.now();let it;
   while((it=VQ[0])&&vqStale(it,now)){if(it.g.on){VQ.shift();if(it.onEnd)it.onEnd();}else vqDrop(it.g);if(vqOn)return;}
-  if(!it)return;VQ.shift();vqOn=true;vqG=it.g;it.g.on=true;vqIt=it;vqT0=now;const gen=vqGen;let fin=false,cutI=0;
+  if(!it)return;VQ.shift();vqOn=true;vqG=it.g;it.g.on=true;vqIt=it;vqT0=now;const gen=vqGen;let fin=false,cutI=0,wd=null;
   if(it.hold!=null)VHOLD=it.hold;vqDone=()=>done();
-  const done=()=>{if(fin)return;fin=true;clearInterval(cutI);if(gen!==vqGen)return;vqCur=null;vqIt=null;vqDone=null;if(VHOLD===it.hold)VHOLD=null;duck(false);if(it.onEnd)it.onEnd();setTimeout(()=>{if(gen!==vqGen)return;vqOn=false;vqNext();},it.gap);};
+  const done=()=>{if(fin)return;fin=true;clearInterval(cutI);clearTimeout(wd);if(gen!==vqGen)return;{const a=vqCur;if(a){try{a.onended=a.onerror=a.onplaying=null;a.pause();}catch(e){}}}vqCur=null;vqIt=null;vqDone=null;if(VHOLD===it.hold)VHOLD=null;duck(false);if(it.onEnd)it.onEnd();setTimeout(()=>{if(gen!==vqGen)return;vqOn=false;vqNext();},Math.max(500,it.gap||0));};   // at least half a second between any two voices
   if(it.cut)cutI=setInterval(()=>{if(gen!==vqGen){clearInterval(cutI);return;}if(!it.cut())return;if(vqCur)try{vqCur.pause();}catch(e){}if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}done();},200);
   if(it.onStart)it.onStart();const clip=typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[it.text];
   if(clip){const a=VPRE.get(clip)||new Audio(clip);VPRE.delete(clip);vqCur=a;a.volume=it.vol||0.95;a.onended=done;a.onerror=done;duck(true);const p=a.play();if(p&&p.catch)p.catch(done);
-    // a watchdog in case the clip never ends; once it is playing, it follows the clip's own length
-    let wd=setTimeout(done,2500+it.text.split(/\s+/).length*520);a.onplaying=()=>{if(isFinite(a.duration)&&a.duration>0){clearTimeout(wd);wd=setTimeout(done,(a.duration-a.currentTime)*1000+1500);}};return;}
+    // the watchdog starts when the sound actually starts and trusts the clip's real length; while the game is held it waits
+    const words=it.text.split(/\s+/).length,wdog=()=>{if(audioHold()){wd=setTimeout(wdog,500);return;}done();};
+    a.onplaying=()=>{clearTimeout(wd);const d=isFinite(a.duration)&&a.duration>0?a.duration*1000:2500+words*600;wd=setTimeout(wdog,d+1500);};
+    wd=setTimeout(wdog,9000+words*600);   // it never started playing at all (blocked or failed to load): move on
+    return;}
   if(!it.radio&&window.speechSynthesis&&window.SpeechSynthesisUtterance){try{const S2=window.speechSynthesis,v=pickVoice(S2.getVoices(),it.lang);if(it.lang&&!v)return done();const u=new SpeechSynthesisUtterance(it.text.replace(/[\u{1F000}-\u{1FAFF}☀-➿️]/gu,'').trim());
-    if(v){u.voice=v;u.lang=v.lang;}else u.lang='en-IN';u.rate=0.95;u.pitch=1;u.onend=done;u.onerror=done;duck(true);S2.speak(u);setTimeout(done,9000);return;}catch(e){}}
+    if(v){u.voice=v;u.lang=v.lang;}else u.lang='en-IN';u.rate=0.95;u.pitch=1;u.onend=done;u.onerror=done;duck(true);S2.speak(u);wd=setTimeout(done,9000);return;}catch(e){}}
   done();}
 // speak(lines,{onLine,onDone,gap,endGap,gaps,lang,pri,hold,valid}): lines one after another; the gap after each line is
 // gaps[i], else gap (1200 ms: the SPG takes his time), and endGap after the last line
 function speak(lines,o){o=o||{};if(!SND.on||ended)return false;voicePreload(lines);vqAdd(lines.map((t,i)=>{const last=i===lines.length-1;return{text:t,lang:o.lang,valid:o.valid,pri:o.pri||2,hold:o.hold,gap:o.gaps&&o.gaps[i]!=null?o.gaps[i]:last?(o.endGap!=null?o.endGap:900):(o.gap!=null?o.gap:1200),onStart:o.onLine?()=>o.onLine(i):null,onEnd:last?o.onDone:null};}));return true;}
 // a radio call in a speaker's own voice: shows on the ticker, and plays its recorded clip (keyed by the exact text) if there
 // is one. o: {pri (1), valid, cut, hold, gap, vol, onStart, onEnd, ref (gets .it, the queued line)}
-function say(src,text,o){o=o||{};radio(src,text);if(SND.on&&!ended&&typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[text]){voicePreload(text);const q=vqAdd([{text,radio:true,pri:o.pri||1,gap:o.gap!=null?o.gap:500,vol:o.vol,valid:o.valid,cut:o.cut,hold:o.hold,onStart:o.onStart,onEnd:o.onEnd}]);if(o.ref)o.ref.it=q[0];return true;}if(o.onEnd)o.onEnd();return false;}
+// the same radio line is never voiced twice within 30 s (a set piece that re-sends a call each tick can't make it echo)
+const VQ_SEEN=new Map();
+function say(src,text,o){o=o||{};radio(src,text);const now=performance.now(),seen=VQ_SEEN.get(text);if(SND.on&&!ended&&typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[text]&&!(seen&&now-seen<30000)){VQ_SEEN.set(text,now);voicePreload(text);const q=vqAdd([{text,radio:true,pri:o.pri||1,gap:o.gap!=null?o.gap:500,vol:o.vol,valid:o.valid,cut:o.cut,hold:o.hold,onStart:o.onStart,onEnd:o.onEnd}]);if(o.ref)o.ref.it=q[0];return true;}if(o.onEnd)o.onEnd();return false;}
 // silence: the queue, the line playing (its callbacks are dropped with it) and, unless keepMusic, the music
-function voiceReset(keepMusic){VQ.length=0;vqGen++;if(vqCur){try{vqCur.pause();}catch(e){}}vqCur=null;vqIt=null;vqDone=null;vqG=null;vqOn=false;VHOLD=null;if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}duck(false);
+function voiceReset(keepMusic){VQ.length=0;VQ_SEEN.clear();vqGen++;if(vqCur){try{vqCur.pause();}catch(e){}}vqCur=null;vqIt=null;vqDone=null;vqG=null;vqOn=false;VHOLD=null;if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}duck(false);
   if(!keepMusic){music(null,{now:true});const g=$('#guard');if(g)g.classList.remove('on');}}
 // music for set pieces: music('dj') plays music/dj.mp3 (looped unless {loop:false}), crossfading from whatever was playing;
 // music(null) fades it out. It ducks under voice lines. A missing file is simply silent, so tracks can be dropped in later.
@@ -728,9 +742,9 @@ function musFade(a,to,ms,cb){const from=a.volume,t0=performance.now();const st=(
 function music(name,o){o=o||{};if(!MUS)return;if(name&&MUS.name===name&&MUS.el)return;clearTimeout(MUS.tm);const old=MUS.el;MUS.el=null;MUS.name=null;
   if(old){if(o.now){old.pause();}else musFade(old,0,o.fadeOut||1500,()=>old.pause());}
   if(!name||!SND.on||ended)return;const src=(typeof MUSIC_SRC!=='undefined'&&MUSIC_SRC[name])||`music/${name}.mp3`;const a=new Audio(src);a.loop=o.loop!==false;a.volume=0;
-  MUS.el=a;MUS.name=name;MUS.vol=o.vol!=null?o.vol:0.4;a.onerror=()=>{if(MUS.el===a){MUS.el=null;MUS.name=null;}};const p=a.play();if(p&&p.catch)p.catch(()=>{});musFade(a,vqCur?MUS.vol*0.35:MUS.vol,o.fadeIn||1200);
+  MUS.el=a;MUS.name=name;MUS.vol=o.vol!=null?o.vol:0.4;a.onerror=()=>{if(MUS.el===a){MUS.el=null;MUS.name=null;}};const p=a.play();if(p&&p.catch)p.catch(()=>{});musFade(a,vqCur?MUS.vol*0.2:MUS.vol,o.fadeIn||1200);
   if(!a.loop)a.onended=()=>{if(MUS.el===a){MUS.el=null;MUS.name=null;}};if(o.ms)MUS.tm=setTimeout(()=>{if(MUS.el===a)music(null);},o.ms);}
-function duck(on){const a=MUS&&MUS.el;if(a)musFade(a,on?MUS.vol*0.35:MUS.vol,on?250:700);}
+function duck(on){const a=MUS&&MUS.el;if(a)musFade(a,on?MUS.vol*0.2:MUS.vol,on?250:700);}
 // after a summit the SPG hands the runways back one by one, then signs off
 function spgReturn(order){const n=order.length;guard(['Your runways shall now be cleared, in a staged manner.'].concat(order.map((r,i)=>i===0?`Runway ${r.short} shall be cleared first.`:i===n-1?`And finally, runway ${r.short}.`:`Then runway ${r.short}.`)));}
 function spgOpen(r){}
@@ -1203,11 +1217,11 @@ STORY.monkeys={len:900,start(c){const pc=CONCI.FN;if(!pc)return false;const gs=G
 STORY.gps={len:900,start(c){const gr=RW.filter(r=>!r.locked&&['R2','R5'].includes(r.id));if(!gr.length)return false;c.gr=gr;
   const nm=gr.map(r=>r.short).join(' and '),il=RW.filter(r=>!r.locked&&!gr.includes(r)).map(r=>r.short).join(', ');
   for(const r of gr)MARKS.push({x:r.x1+2400,y:r.y,e:'📡',until:T+600,px:24,k:'ghosts'});FXV.push({kind:'ghosts',id:'gps',pts:gr.map(r=>[r.x1+2600,r.y]),t0:T,t1:T+600});
-  guard(['GPS says Muscat. Radar says Butibori.','I believe my radar. 📡'],WHO.radar);
+  guard(['GPS says Khyber Pakhtunkhwa. Radar says Butibori.','I believe my radar. 📡'],WHO.radar);
   const f=gr.map(nextOn).filter(Boolean)[0];
   if(f)cinema(f,['GPS SPOOFING','"TERRAIN, PULL UP." There is no terrain.','Nagpur is flat. 🗺️',icos('🛰️','📡','🛰️')],{ms:6500});
   const I=storyCard(c,{icon:{g:'📡',c:'#7a5cff'},x:gr[0].x1+2000,y:gr[0].y,title:`GPS spoofing: false alarms on ${nm}`,
-    text:`Someone is broadcasting fake satellite signals, and aircraft GPS now thinks it is over Muscat. ${nm} have no ILS (the radio beam on the ground that guides a plane onto the runway), so landings there use GPS, and the fake signal sets off "TERRAIN, PULL UP" alarms: the jet goes around, though Nagpur is flat. For 10 minutes: land only on the ILS runways (${il}) and use ${nm} for take-offs, or keep landing everywhere and expect surprise go-arounds.`,
+    text:`Someone is broadcasting fake satellite signals, and aircraft GPS now thinks it is over Khyber Pakhtunkhwa. ${nm} have no ILS (the radio beam on the ground that guides a plane onto the runway), so landings there use GPS, and the fake signal sets off "TERRAIN, PULL UP" alarms: the jet goes around, though Nagpur is flat. For 10 minutes: land only on the ILS runways (${il}) and use ${nm} for take-offs, or keep landing everywhere and expect surprise go-arounds.`,
     def:0,defText:`ops stops landings on ${nm} for 10 minutes.`,
     acts:[{l:'ILS runways only (10 min)',pri:1,fn(){for(const r of gr)r.noArrUntil=T+600;renderRw();resolve(I,true,`Landings moved off the GPS runways ${nm} for 10 minutes.`);}},
       {l:'Keep landing on GPS',fn(){for(const r of gr)r.gpsUntil=T+600;renderRw();resolve(I,true,'');}}]});
@@ -1420,7 +1434,10 @@ function sumPlan(E,R3,trio){
     cn(){return rw=>{const d=DL.CN1,s=DL.CN2,ann=V('announcer','ANNOUNCER',`Ladies and gentlemen. The aircraft carrying the President of the People's Republic of China shall now be landing on runway ${rw[0].short}.`),
       call=V('cn',d.cs,fillC(d.call,d,rw[0])),twr=V('tower','TWR',`${d.nm}, runway ${rw[0].short}, cleared to land. The red carpet has been measured twice.`),tw=-2.4-twr.dur,cs=tw-0.4-call.dur,as=cs-0.6-ann.dur,ban=SBAN.CN1(rw);
       return{ac:[{d,off:0},{d:s,off:5,ri:1}],a0:as,a1:3.2,stop:[-90,90],beats:[[as,'ban',ban],[as,'lt',{ds:[d,s],q:ann.text,ann:true}],[as,'say',ann],[cs,'lt',{ds:[d,s],q:call.text}],[cs,'say',call],
-        [tw,'lt',{ds:[d,s],q:twr.text,twr:true}],[tw,'say',twr],[-9,'shot',{i:0,ban,until:3}]]};};},
+        [tw,'lt',{ds:[d,s],q:twr.text,twr:true}],[tw,'say',twr],
+        // the guqin (music/guqin.mp3, 18.9 s) plays over the whole landing shot, which is cut to its length: it opens 16.5 s out
+        // and holds 2.4 s past touchdown, so Air China One lands on the music's last phrase
+        [-16.5,'music','guqin'],[-16.5,'shot',{i:0,ban,until:2.4}],[2.6,'music',null]]};};},
     ru(){return rw=>{const d0=DL.RUCARGO,d1=DL.RU1,d2=DL.RU2,ann=V('ru_announcer','PROTOCOL','Attention, please. The delegation of the Russian Federation. First, the cars. Then two aircraft. They are identical.'),
       c0=V('ru',d0.cs,fillC(d0.call,d0,rw[1])),c1=V('ru',d1.cs,fillC(d1.call,d1,rw[0])),c2=V('ru',d2.cs,fillC(d2.call,d2,rw[1])),twr=V('tower','TWR','Russia, Russia Two, welcome to Zero Mile. We will not ask which one.'),
       as=-12.8-ann.dur,s2=2.2,tw=Math.max(5.9,s2+c2.dur+0.3),all=[d0,d1,d2];
@@ -1542,7 +1559,7 @@ tick(c,t){const pl=c.pl;
   // the beats, in order: lower-thirds, voices, banners, shots, music, the SPG
   if(c.beatsPl!==pl){c.beatsPl=pl;c.beats=pl.items.flatMap(it=>it.abs.map(b=>[b[0],b[1],b[2],it])).filter(b=>c.doneT==null||b[0]>c.doneT).sort((a,b)=>a[0]-b[0]);c.bi=0;}
   const beats=c.beats;
-  while(c.bi<beats.length&&T>=beats[c.bi][0]){const [at,ty,p,it]=beats[c.bi++];const late=at+3*SUMP;
+  while(c.bi<beats.length&&T>=beats[c.bi][0]){const [at,ty,p,it]=beats[c.bi++];const late=at+10*SUMP;   // a reply queued behind a pilot call still gets heard; later than this it would be out of step with the shot
     if(ty==='say')say(p.src,p.text,{pri:3,gap:150,valid:()=>T<=late});
     else if(ty==='lt')ltSet(Object.assign({fs:c.fs},p));
     else if(ty==='ban'){if(!CINE)vipBanner(true,p[0],p[1],p[2],p[3]);}
@@ -2029,11 +2046,15 @@ function tick(dt){
   if(!ended&&endDue())finish();
 }
 // the level ends at LEN; a level with windDown:true runs on (at most 30 minutes, LEN+WIND) until every departure there is
-// is airborne: on the bank chart, at a gate or on its way out, whenever it was due (the chip counts the same). None can be
+// is airborne (on the bank chart, at a gate or on its way out, whenever it was due: the chip counts the same) and every
+// arrival in the air is down. Arrivals not yet airborne at LEN are cancelled (the day is over). No departure can be
 // impossible: toDep cancels an onward flight that could not be ready in time.
 const WIND=1800,DEP_LEFT=new Set(['sched','at_gate','push','start','taxi_out','hp','lineup','stuck','roll','xhold','xroll']);
 const depLeft=()=>{let n=0;for(const f of flights)if(f.kind==='dep'&&!f.counted&&DEP_LEFT.has(f.state))n++;return n;};
-function endDue(){if(T<LEN)return false;if(!LV.windDown||T>=LEN+WIND)return true;return depLeft()===0;}
+const arrLeft=()=>flights.filter(f=>f.kind==='arr'&&['inbound','holding','approach','goaround','rollout'].includes(f.state)).length;
+function endDue(){if(T<LEN)return false;if(!LV.windDown||T>=LEN+WIND)return true;
+  if(!endDue.cut){endDue.cut=true;for(const f of flights)if(f.kind==='arr'&&f.state==='sched'&&!f.vip){f.state='cancelled';if(f.gate){f.gate.occ=null;f.gate=null;}if(f.res){f.res.res=null;f.res=null;}}}
+  return depLeft()===0&&arrLeft()===0;}
 const onceSet=new Set();function once(k,fn){if(onceSet.has(k))return;onceSet.add(k);fn();}
 
 /* ============ input ============ */
@@ -2216,7 +2237,7 @@ window.HUB={get T(){return T;},get S(){return S;},get LV(){return LV;},flights:(
 buildTerrain();resize();
 let last=performance.now(),hudT=0;
 function frame(ms){
-  requestAnimationFrame(frame);
+  requestAnimationFrame(frame);audioSync();
   if(cv.clientWidth&&(cv.clientWidth!==VW||cv.clientHeight!==VH))resize();
   const dtR=Math.min(0.1,(ms-last)/1000);last=ms;camEase(dtR);
   if(running&&!paused&&!ended){let d=dtR*BASE*Math.min(PACE!=null?PACE:speed,VHOLD!=null?VHOLD:99);try{while(d>0){const st=Math.min(1,d);tick(st);d-=st;}}catch(err){console.error(err);}incTick(dtR);if(toastTimer>0&&!frame.cine&&!toastFold){toastTimer-=dtR;if(toastTimer<=0&&!$('#toast').matches(':hover'))$('#toast').hidden=true;}}

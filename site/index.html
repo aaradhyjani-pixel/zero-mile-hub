@@ -2688,7 +2688,7 @@ tick(c,t){const pl=c.pl;
   c.doneT=T;if(T-(c.ltT||-9)>=1){c.ltT=T;ltRender(false);}
   // the SPG hands the runways back, one at a time, in step with his voice; then his thank-you, then the evening
   if(!c.ret0&&T>=pl.p1+30){c.ret0=true;LT.cur=null;ltRender(false);music(null,{fadeOut:800});
-    spgStaged(c.retOrder,{at:pl.p1+30,open:r=>{for(const x of RW)x.blocks=x.blocks.filter(b=>!(b.sumC===c&&x===r));renderRw();},done:()=>{c.fin=T;if(STORY.evening)startStory('evening');}});}},
+    spgStaged(c.retOrder,{at:pl.p1+30,open:r=>{for(const x of RW)x.blocks=x.blocks.filter(b=>!(b.sumC===c&&x===r));renderRw();},done:()=>{c.fin=T;if(STORY.eve4)startStory('eve4');}});}},
 lesson(c,tl){const at=c.E,end=c.ret?c.ret.open[2]:at+2700,w=tl.filter(s=>s.t>=at&&s.t<=end),pk=w.reduce((a,s)=>s.hold>a.hold?s:a,w[0]||{hold:0,t:at}),nd=S.notamDiv||0;
   return{w:45,title:`The Delhi summit took two runways from ${clk(at)} to ${clk(end)}`,text:`The stack peaked at ${pk.hold} around ${clk(pk.t)}.${nd?` ${nd} flight${nd>1?'s':''} ran down to their planned diversion fuel and went to Nagpur's old airport.`:''} With 27R and 27C gone for the whole summit, 27L for its last minutes and every runway stopped for the big three, the runways you keep have to do everything: lean them towards arrivals before the stops (the bank chart shows them), then hand departures back as each stop ends. Landing the big three together saves 6 minutes of runway time; it costs a 12-minute apron gridlock.`};}};
 
@@ -2701,7 +2701,7 @@ const EVE_SUP=[[240,'USAF','C17','REACH 1','US Air Force C-17, empty','Washingto
   [960,'SV','B77W','SAUDI 2','Saudi 777, empty','Riyadh','RUH',null],[1030,'SV','B789','SAUDI 3','Saudi 787, empty','Riyadh','RUH',['FSO','Saudi 3 follows them. Also empty. Also luggage, until today.']],
   [1300,'CCA','A333','AIR CHINA 2','Air China A330 (support)','Beijing','PEK',['FSO','Air China 2 is going to wait in Delhi. The President\'s aircraft stays here.']],
   [700,'6E','A21N','PRESS 1','The press charter','Delhi','DEL',null]];
-STORY.evening={len:4400,start(c){c.sup=EVE_SUP.map(x=>({x,done:false}));
+STORY.eve4={len:4400,start(c){c.sup=EVE_SUP.map(x=>({x,done:false}));
   const q=()=>flights.filter(f=>f.kind==='dep'&&!f.counted&&f.std<=T&&['at_gate','push','start','taxi_out','hp','lineup','stuck'].includes(f.state)).length;
   c.lines=[[120,'TWR','All stations: summit protocol cancelled. Normal operations. Well, normal for today.'],
     [150,cc=>{const n=q();radio('AOCC',`${n} departures want to go now: everything the summit held, and the evening bank behind it. Put runways on DEP.`);logE(`${n} departures queued after the summit.`);}],

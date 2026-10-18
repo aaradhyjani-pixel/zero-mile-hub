@@ -1595,7 +1595,7 @@ function renderInc(){
   $('#incList').innerHTML=incidents.map(I=>{const ic=I.icon||ICON[I.type];return `<div class="inc" data-id="${I.id}"><div class="ic" style="background:${ic.c}">${ic.g}</div><h4 data-find="${I.id}">${I.title}</h4><p>${I.text}</p><div class="acts">${I.acts.map((a,i)=>`<button data-i="${i}" class="${a.pri?'pri':''}" ${a.dis&&a.dis()?'disabled':''}>${a.l}</button>`).join('')}</div><div class="dflt">If you leave it: ${I.defText}</div><div class="tm"><span>${tleft(I)}</span><i style="width:${clamp(I.left/I.total*120,0,120)}px"></i></div></div>`;}).join('');
 }
 $('#incList').addEventListener('click',e=>{const row=e.target.closest('.inc');if(!row)return;const I=incidents.find(i=>i.id===+row.dataset.id);if(!I)return;const b=e.target.closest('button[data-i]');if(b&&!b.disabled){I.acts[+b.dataset.i].fn();return;}if(e.target.closest('[data-find]')){const p=incPos(I);centerOn(p.x,p.y);}});
-function incTimers(){document.querySelectorAll('#incList .inc').forEach(row=>{const I=incidents.find(i=>i.id===+row.dataset.id);if(!I)return;row.querySelector('.tm span').textContent=tleft(I);row.querySelector('.tm i').style.width=clamp(I.left/I.total*120,0,120)+'px';row.querySelectorAll('button[data-i]').forEach(b=>{const a=I.acts[+b.dataset.i];b.disabled=!!(a.dis&&a.dis());});});}
+function incTimers(){document.querySelectorAll('#incList .inc').forEach(row=>{const I=incidents.find(i=>i.id===+row.dataset.id);if(!I)return;setT(row.querySelector('.tm span'),tleft(I));const bar=row.querySelector('.tm i'),w=Math.round(clamp(I.left/I.total*120,0,120))+'px';if(bar._w!==w){bar.style.width=w;bar._w=w;}row.querySelectorAll('button[data-i]').forEach(b=>{const a=I.acts[+b.dataset.i],d=!!(a.dis&&a.dis());if(b.disabled!==d)b.disabled=d;});});}
 
 /* ============ popover ============ */
 let popInc=null,popRw=null,popF=null;
@@ -1856,7 +1856,7 @@ function drawWave(){
   if(LV&&T0C+LEN){const xe=X(LEN);if(xe<W){wctx.fillStyle='rgba(255,255,255,.06)';wctx.fillRect(xe,0,W-xe,H);wctx.fillStyle='#6f7a80';wctx.fillText('END',xe+3,10);}}
   wctx.fillStyle='#8a7cff';wctx.fillText('ARR',2,12);wctx.fillStyle='#2fd3c6';wctx.fillText('DEP',2,H-12);
   const hold=flights.filter(f=>f.state==='holding').length,q=flights.filter(f=>f.state==='hp').length,taxi=flights.filter(f=>f.state==='taxi_out').length;
-  $('#wCounts').innerHTML=`<span style="color:${hold>8?'var(--stop)':hold>3?'var(--warn)':'var(--ink-2)'}">${hold} holding</span> · <span style="color:${q>14?'var(--stop)':q>6?'var(--warn)':'var(--ink-2)'}">${q} queued to depart</span> · ${taxi} taxiing out · capacity ${Math.round(capNow('arr'))}↓ ${Math.round(capNow('dep'))}↑ per hr`;
+  setH($('#wCounts'),`<span style="color:${hold>8?'var(--stop)':hold>3?'var(--warn)':'var(--ink-2)'}">${hold} holding</span> · <span style="color:${q>14?'var(--stop)':q>6?'var(--warn)':'var(--ink-2)'}">${q} queued to depart</span> · ${taxi} taxiing out · capacity ${Math.round(capNow('arr'))}↓ ${Math.round(capNow('dep'))}↑ per hr`);
 }
 
 (function(){const tip=document.createElement('div');tip.id='wTip';tip.className='panel';tip.hidden=true;$('#wave').appendChild(tip);
@@ -1876,11 +1876,11 @@ function renderRw(){
   rwStatus();
 }
 function rwStatus(){
-  let a=0,d=0,m=0;RW.forEach(r=>{if(r.locked)return;if(r.mode==='ARR')a++;if(r.mode==='DEP')d++;if(r.mode==='MIX')m++;});$('#rwSum').textContent=`ARR ${a} · DEP ${d}${m?` · MIX ${m}`:''}`;
-  document.querySelectorAll('#rwRows .rw').forEach(row=>{const r=RW.find(x=>x.id===row.dataset.r);const st=row.querySelector('.st');if(r.locked){st.textContent='Opens in a later level';return;}
+  let a=0,d=0,m=0;RW.forEach(r=>{if(r.locked)return;if(r.mode==='ARR')a++;if(r.mode==='DEP')d++;if(r.mode==='MIX')m++;});setT($('#rwSum'),`ARR ${a} · DEP ${d}${m?` · MIX ${m}`:''}`);
+  document.querySelectorAll('#rwRows .rw').forEach(row=>{const r=RW.find(x=>x.id===row.dataset.r);const st=row.querySelector('.st');if(r.locked){setH(st,'Opens in a later level');return;}
     const fin=flights.filter(f=>f.state==='approach'&&f.rwy===r).length,q=flights.filter(f=>(f.state==='hp')&&f.rwy===r).length;
     let s='';const bk=r.blocks[0];if(T<r.closedUntil)s=r.closedUntil-T>43200?`<span class="bad">closed · ${r.why.toLowerCase()}</span>`:`<span class="bad">closed ${Math.ceil((r.closedUntil-T)/60)} min · ${r.why}</span>`;else if(bk&&T>=bk.from)s=`<span class="bad">${bk.summit?'Taken by security':(bk.desk||'VVIP closure')}${bk.open?'':' · '+mmss(bk.to-T)}</span>`;else if(T<r.changeUntil)s=`<span class="hot">changeover ${Math.ceil((r.changeUntil-T)/60)} min</span>`;else s=`<b>${fin}</b> on final · <b class="${q>6?'hot':''}">${q}</b> queued · ${r.ops} ops`;
-    const tags=[];if(bk&&T<bk.from)tags.push(`<span class="bad">VVIP in ${mmss(bk.from-T)}</span>`);if(r.degraded)tags.push('<span class="hot">lights out: slower landings</span>');if(T<r.sepUntil)tags.push(`<span class="hot">${r.sepWhy||'double spacing'}</span>`);if(T<r.noArrUntil)tags.push('<span class="hot">GPS spoofed: no landings</span>');if(T<r.noDepUntil)tags.push('<span class="hot">no departures: taxiway blocked</span>');if(T<r.btUntil)tags.push('<span class="bad">backtracking in fog</span>');if(r.gpsUntil>T)tags.push('<span class="hot">GPS spoofed: false PULL UPs</span>');if(r.kiteUntil>T&&T>=r.kiteFrom)tags.push('<span class="hot">🪁 NOW</span>');else if(r.kiteFrom>T&&r.kiteFrom-T<=180)tags.push(`<span class="hot">🪁 in ${mmss(r.kiteFrom-T)}</span>`);if(r.strike)tags.push('<span class="hot">bird remains: risk</span>');if(ops.some(o=>o.kind==='fod'&&o.r===r&&o.phase==='wait'))tags.push('<span class="hot">sweep pending</span>');if(r.shear)tags.push('<span class="hot">windshear</span>');st.innerHTML=s+(tags.length?' · '+tags.join(' · '):'');});
+    const tags=[];if(bk&&T<bk.from)tags.push(`<span class="bad">VVIP in ${mmss(bk.from-T)}</span>`);if(r.degraded)tags.push('<span class="hot">lights out: slower landings</span>');if(T<r.sepUntil)tags.push(`<span class="hot">${r.sepWhy||'double spacing'}</span>`);if(T<r.noArrUntil)tags.push('<span class="hot">GPS spoofed: no landings</span>');if(T<r.noDepUntil)tags.push('<span class="hot">no departures: taxiway blocked</span>');if(T<r.btUntil)tags.push('<span class="bad">backtracking in fog</span>');if(r.gpsUntil>T)tags.push('<span class="hot">GPS spoofed: false PULL UPs</span>');if(r.kiteUntil>T&&T>=r.kiteFrom)tags.push('<span class="hot">🪁 NOW</span>');else if(r.kiteFrom>T&&r.kiteFrom-T<=180)tags.push(`<span class="hot">🪁 in ${mmss(r.kiteFrom-T)}</span>`);if(r.strike)tags.push('<span class="hot">bird remains: risk</span>');if(ops.some(o=>o.kind==='fod'&&o.r===r&&o.phase==='wait'))tags.push('<span class="hot">sweep pending</span>');if(r.shear)tags.push('<span class="hot">windshear</span>');setH(st,s+(tags.length?' · '+tags.join(' · '):''));});
 }
 
 /* ============ HUD ============ */
@@ -1890,26 +1890,37 @@ function rwStatus(){
   const d=document.createElement('div');d.id='windChip';d.hidden=true;d.setAttribute('aria-live','polite');$('#app').appendChild(d);})();
 function windChip(){const d=$('#windChip');if(!d)return;const on=!!(LV&&LV.windDown&&!ended&&T>=LEN-900);if(d.hidden===on)d.hidden=!on;if(!on)return;const n=depLeft();
   const h=`🛫 Last departures: <b>${n}</b> to go<small>${T<LEN?`THE EVENING BANK · ${Math.ceil((LEN-T)/60)} MIN OF SCHEDULE LEFT`:'THE DAY ENDS WHEN THEY ARE AWAY'}</small>`;if(d.innerHTML!==h)d.innerHTML=h;}
-function kpi(id,txt,cls){const el=$(id);el.querySelector('.v').innerHTML=txt;el.className='kpi '+(cls||'');}
+// the HUD refreshes four times a second: write only what changed (every write, even of the same text, costs a style and layout
+// pass over the page and a repaint of its panel; Safari pays it on the main thread, between frames)
+const setH=(el,h)=>{if(el&&el._h!==h){el.innerHTML=h;el._h=h;}},setT=(el,t)=>{if(el&&el._t!==t){el.textContent=t;el._t=t;}};
+function kpi(id,txt,cls){const el=$(id);setH(el.querySelector('.v'),txt);const c='kpi '+(cls||'');if(el.className!==c)el.className=c;}
 const RATE={v:0};
 function hud(){
-  $('#clock').textContent=clk(T);$('#left').textContent=ended?'Level over':LV.windDown&&T>=LEN?`${depLeft()} to go`:`${Math.max(0,Math.ceil((LEN-T)/60))} min left`;windChip();
+  setT($('#clock'),clk(T));setT($('#left'),ended?'Level over':LV.windDown&&T>=LEN?`${depLeft()} to go`:`${Math.max(0,Math.ceil((LEN-T)/60))} min left`);windChip();
   while(moveLog.length&&moveLog[0]<T-1800)moveLog.shift();
   const rate=Math.round(moveLog.length*2);
   kpi('#kMov',`${S.moves}<small>/${LV.target}</small>`,S.moves>=LV.target?'good':'');
   RATE.v+=(rate-RATE.v)*0.35;if(Math.abs(rate-RATE.v)<0.6)RATE.v=rate;kpi('#kRate',`${Math.round(RATE.v)}`,RATE.v>=250?'gold':'');
-  const hold=flights.filter(f=>f.state==='holding').length;$('#vign').style.opacity=clamp((hold-6)/28,0,0.85).toFixed(2);
+  const hold=flights.filter(f=>f.state==='holding').length;{const v=$('#vign'),o=clamp((hold-6)/28,0,0.85).toFixed(2);if(v._o!==o){v.style.opacity=o;v._o=o;}}
   const otp=S.dep+S.arr?Math.round((S.depOnTime+S.arrOnTime)/(S.dep+S.arr)*100):null;kpi('#kOtp',otp==null?'—':otp+'%',otp==null?'':otp>=85?'good':otp>=65?'mid':'bad');
   const ct=S.cnxMade+S.cnxMiss;const cx=ct?Math.round(S.cnxMade/ct*100):null;kpi('#kCnx',cx==null?'—':cx+'%',cx==null?'':cx>=90?'good':cx>=78?'mid':'bad');
   kpi('#kSafe',Math.round(S.safety),S.safety>=90?'good':S.safety>=70?'mid':'bad');
   rwStatus();incTimers();renderLate();if(popF)renderFlightPop();
 }
-let lastLate='';
+let lastLate='';const LROW=[];
+// the board changes a row or two at a time (a departure's "+12m" ticks over): only the rows whose text changed are rewritten.
+// (Rebuilding the whole 40-row table four times a second was the HUD's biggest cost during the summit: 5-35 ms a time in WebKit.)
 function renderLate(){
   const rows=flights.filter(f=>(f.kind==='dep'&&['at_gate','taxi_out','hp','push','start','stuck'].includes(f.state)&&T>f.std-300)||(f.state==='holding'&&f.endurance<20)||f.state==='nogate').sort((a,b)=>(b.state==='holding'?1:0)-(a.state==='holding'?1:0)||(a.std||a.eta)-(b.std||b.eta)).slice(0,40);
-  const late=flights.filter(f=>f.kind==='dep'&&['at_gate','taxi_out','hp','push','start','stuck'].includes(f.state)&&T>f.std+900).length;$('#lateCount').textContent=late||'';
-  const h='<table class="board"><thead><tr><th>Flight</th><th>Time</th><th>Where</th><th>Status</th></tr></thead><tbody>'+rows.map(f=>{const late=f.kind==='dep'?mins(T-f.std):0;const c=f.state==='holding'||f.state==='nogate'?'#ffae3b':late>15?'#ff4d3f':late>0?'#ffae3b':'#3ad07f';return `<tr data-id="${f.id}"><td class="f">${fl(f)}<div class="sub">${f.type}</div></td><td class="f">${f.kind==='dep'?clk(f.std):clk(f.eta)}${late>0?`<div class="sub" style="color:var(--stop)">+${late}m</div>`:''}</td><td>${f.kind==='dep'?f.toCode:f.fromCode}</td><td><span class="pill" style="background:${c};color:#0b0b0b">${stateText(f)}</span></td></tr>`;}).join('')+'</tbody></table>';
-  if(h!==lastLate){$('#tabLate').innerHTML=rows.length?h:'<p style="padding:9px 10px;color:var(--ink-3);font-size:12.5px;margin:0">Nothing late or at risk.</p>';lastLate=h;}
+  const late=flights.filter(f=>f.kind==='dep'&&['at_gate','taxi_out','hp','push','start','stuck'].includes(f.state)&&T>f.std+900).length;setT($('#lateCount'),String(late||''));
+  const el=$('#tabLate');
+  if(!rows.length){if(lastLate!=='none'){el.innerHTML='<p style="padding:9px 10px;color:var(--ink-3);font-size:12.5px;margin:0">Nothing late or at risk.</p>';lastLate='none';LROW.length=0;}return;}
+  if(lastLate!=='table'){el.innerHTML='<table class="board"><thead><tr><th>Flight</th><th>Time</th><th>Where</th><th>Status</th></tr></thead><tbody></tbody></table>';lastLate='table';LROW.length=0;}
+  const tb=el.querySelector('tbody');
+  for(let i=0;i<rows.length;i++){const f=rows[i],late=f.kind==='dep'?mins(T-f.std):0;const c=f.state==='holding'||f.state==='nogate'?'#ffae3b':late>15?'#ff4d3f':late>0?'#ffae3b':'#3ad07f';
+    const h=`<td class="f">${fl(f)}<div class="sub">${f.type}</div></td><td class="f">${f.kind==='dep'?clk(f.std):clk(f.eta)}${late>0?`<div class="sub" style="color:var(--stop)">+${late}m</div>`:''}</td><td>${f.kind==='dep'?f.toCode:f.fromCode}</td><td><span class="pill" style="background:${c};color:#0b0b0b">${stateText(f)}</span></td>`;
+    const tr=tb.rows[i]||tb.insertRow();if(LROW[i]!==h){tr.innerHTML=h;LROW[i]=h;}if(tr._id!==f.id){tr.setAttribute('data-id',f.id);tr._id=f.id;}}
+  while(tb.rows.length>rows.length)tb.deleteRow(-1);LROW.length=rows.length;
 }
 $('#tabLate').addEventListener('pointerdown',e=>{const tr=e.target.closest('tr[data-id]');if(!tr)return;const f=flights.find(f=>f.id===+tr.dataset.id);if(f){centerOn(f.x,f.y);selected=f;}});
 document.querySelectorAll('.tabbar button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabbar button').forEach(x=>x.classList.toggle('on',x===b));$('#tabLate').hidden=b.dataset.tab!=='late';$('#tabCoach').hidden=b.dataset.tab!=='coach';$('#tabTerms').hidden=b.dataset.tab!=='terms';});
@@ -2069,6 +2080,7 @@ function menu(tab){
     <p>Ahmedabad (SVPIA), Mumbai (CSMIA) and Bengaluru (KIA) close and merge into one airport near Nagpur's Zero Mile, long held to mark the centre of India. You run it. It is sized for the combined traffic of Delhi, Mumbai, Bengaluru and Hyderabad: about 3,630 movements and 209 million passengers a year, 1.7 times Atlanta. The airlines move in one city at a time, and the waves get taller.</p>
     <div class="levels">${lv}</div>
     <div class="cfgrow"><b>Incidents</b><div class="seg2" role="group" aria-label="Incidents"><button data-inc="std" class="${CFG.inc!=='off'?'on':''}">Standard</button><button data-inc="off" class="${CFG.inc==='off'?'on':''}">Off: runways only</button></div><small>${CFG.inc==='off'?'Just you, the bank chart and the runways. Fuel emergencies still happen if the stack grows.':'A few real calls per level. The ops teams handle the routine.'}</small></div>
+    <div class="cfgrow"><b>Performance meter</b><div class="seg2" role="group" aria-label="Performance meter"><button data-perf="0" class="${PERFM.on?'':'on'}">Off</button><button data-perf="1" class="${PERFM.on?'on':''}">On</button></div><small>Frame rate and the slowest moments, with a report you can copy and send us. <span class="kbd">Shift</span> <span class="kbd">P</span> in game.</small></div>
     <h2>How to play</h2>
     <ul>
      <li><b>The bank chart</b> at the bottom is your radar for the next hour. Purple bars are arrivals due, teal bars are departures due, dashed lines are what your runways can handle. When the bars poke above the line, you are about to fall behind.</li>
@@ -2087,6 +2099,7 @@ function menu(tab){
   $('#sheet').querySelectorAll('.tabs2 button').forEach(b=>b.onclick=()=>menu(b.dataset.t));
   $('#sheet').querySelectorAll('.lc').forEach(b=>b.onclick=()=>startLevel(+b.dataset.n));
   $('#sheet').querySelectorAll('[data-inc]').forEach(b=>b.onclick=()=>{CFG.inc=b.dataset.inc;store.set('zm_cfg',CFG);menu('levels');});
+  $('#sheet').querySelectorAll('[data-perf]').forEach(b=>b.onclick=()=>{perfSet(b.dataset.perf==='1');menu('levels');});
 }
 window.HUB={get T(){return T;},get S(){return S;},get LV(){return LV;},flights:()=>flights,RW,incidents:()=>incidents,setMode:(id,m)=>{const r=RW.find(x=>x.id===id||x.short===id);if(r)setMode(r,m);},startLevel,capNow,forceIncursion:()=>{const c=STO.find(o=>o.k==='fog');if(c&&c.sc)c.sc.go=true;},resolveAll:()=>{for(const I of incidents.slice()){const a=I.botPick!=null?I.acts[I.botPick]:I.acts.find(a=>!(a.dis&&a.dis()));if(a)a.fn();}},speed:s=>setSpeed(s),ops:()=>ops,cfg:CFG,
   // test hooks: run the sim forward synchronously, and point the camera
@@ -2113,14 +2126,18 @@ window.HUB={get T(){return T;},get S(){return S;},get LV(){return LV;},flights:(
 buildTerrain();resize();
 let last=performance.now(),hudT=0;
 function frame(ms){
-  requestAnimationFrame(frame);
+  requestAnimationFrame(frame);const pf=PERFM.on?performance.now():0;   // the perf meter (hub3d.js), off by default
   if(cv.clientWidth&&(cv.clientWidth!==VW||cv.clientHeight!==VH))resize();
   const dtR=Math.min(0.1,(ms-last)/1000);last=ms;camEase(dtR);
   if(running&&!paused&&!ended){let d=dtR*BASE*(PACE!=null?PACE:speed);try{while(d>0){const st=Math.min(1,d);tick(st);d-=st;}}catch(err){console.error(err);}incTick(dtR);if(toastTimer>0&&!frame.cine&&!toastFold){toastTimer-=dtR;if(toastTimer<=0&&!$('#toast').matches(':hover'))$('#toast').hidden=true;}}
   // while a cinematic runs the coach card folds down to its title (#app.cine), and its timer waits until the shot is over
   {const on=!!(CINE||(SUM&&SUM.cine));if(on!==!!frame.cine){frame.cine=on;$('#app').classList.toggle('cine',on);toastRoom();}}
+  if(pf)PERFM.p1=performance.now();
   if(V3.on){try{draw3D(ms/1000,dtR);}catch(err){console.error(err);}}else{try{draw(ms/1000);}catch(err){console.error(err);}}
-  hudT+=dtR;if(hudT>0.25&&LV){hudT=0;try{hud();toastRoom();}catch(err){console.error(err);}try{drawWave();}catch(err){console.error(err);}}
+  if(pf)PERFM.p2=performance.now();
+  // (toastRoom reads layout, so it goes first, while the page is still laid out from the last frame; hud() then writes)
+  hudT+=dtR;if(hudT>0.25&&LV){hudT=0;try{toastRoom();hud();}catch(err){console.error(err);}try{drawWave();}catch(err){console.error(err);}}
+  if(pf)perfFrame(ms,pf);
 }
 // idle preview: show level 4's layout behind the menu
 LV=LEVELS[3];RW.forEach(r=>{r.locked=false;r.mode=r.role==='arr'?'ARR':r.role==='dep'?'DEP':'MIX';});resetState();

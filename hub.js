@@ -598,6 +598,20 @@ function spgReturn(order){const n=order.length;guard(['Your runways shall now be
 function spgOpen(r){}
 function spgFinale(){setTimeout(()=>guard(['Thank you, sir, for this.','And thank you for serving the nation.','Jai Hind.'],null,
   {extra:2500,onLine:i=>{if(i===0)vipBanner(true,'SECURITY · SPG','Thank you for serving the nation','Jai Hind 🇮🇳',FLAG_IN);},onDone:()=>setTimeout(()=>{if(!CINE)vipBanner(false);},1800)}),2500);}
+// the SPG hands the runways back one at a time, in step with his voice: he names a runway, it reopens about a minute later
+// (lead), and only then does he name the next one (step apart); then a pause and his sign-off. It runs in sim time, so bots
+// and fast-forward see the same schedule; while he speaks with sound on, the game is held at 1x so his voice keeps up.
+// spgStaged.times(t0,n,o) gives the reopen times, so a set piece can end its runway blocks to match.
+const STAGED=[];
+function spgStaged(rws,o){o=o||{};const t0=o.at!=null?o.at:T,n=rws.length,tm=spgStaged.times(t0,n,o),s={lv:LV,t0,ev:[],prev:null};
+  const line=i=>i===0?`Runway ${rws[0].short} shall be cleared first.`:i===n-1?`And finally, runway ${rws[i].short}.`:`Then runway ${rws[i].short}.`;
+  const hold=()=>{if(SND.on&&speed>1&&s.prev==null){s.prev=speed;speed=1;if(running)setSpeed(1);}};
+  s.ev.push([t0,()=>{hold();guard(['Your runways shall now be cleared, in a staged manner.']);}]);
+  rws.forEach((r,i)=>{s.ev.push([tm.say[i],()=>{hold();guard([line(i)]);}]);s.ev.push([tm.open[i],()=>{if(o.open)o.open(r,i);radio('TWR',`Runway ${r.short} is back in service.`);renderRw();}]);});
+  s.ev.push([tm.open[n-1]+1,()=>{if(s.prev!=null){speed=s.prev;if(running)setSpeed(speed);s.prev=null;}if(o.done)o.done();if(o.finale!==false)spgFinale();}]);
+  s.ev.sort((a,b)=>a[0]-b[0]);STAGED.push(s);return tm;}
+spgStaged.times=(t0,n,o)=>{o=o||{};const first=o.first||100,lead=o.lead||60,step=o.step||110,say=[],open=[];for(let i=0;i<n;i++){say.push(t0+first+step*i);open.push(t0+first+step*i+lead);}return{say,open};};
+function stagedTick(){for(const s of STAGED.slice()){if(s.lv!==LV||T<s.t0-5){STAGED.splice(STAGED.indexOf(s),1);continue;}while(s.ev.length&&T>=s.ev[0][0])s.ev.shift()[1]();if(!s.ev.length)STAGED.splice(STAGED.indexOf(s),1);}}
 function vipBanner(on,k,title,meme,icons){const b=$('#vipBanner');if(!on){b.classList.remove('on');return;}const g=$('#guard');if(g&&icons==null)g.classList.remove('on');b.innerHTML=`<div class="flags">${icons==null?FLAG_IN+FLAG_RU:icons}</div><div class="k">${k}</div><h3>${title}</h3><div class="meme">${meme}</div>`;b.classList.add('on');}
 function startSummit(){
   S.summitAt=T;const open=RW.filter(r=>!r.locked&&r.mode!=='OFF');if(open.length<2)return false;
@@ -660,7 +674,7 @@ function cinema(f,ban,o){o=o||{};if(f?['gone','diverted'].includes(f.state):!o.v
   CINE={f,ban,o,c:o.c,t0:performance.now(),prevSpeed:speed,prevCam:V3.on&&V3.ready?{t:Object.assign({},C3.t)}:null};speed=o.speed||0.5;
   vipBanner(true,ban[0],ban[1],ban[2],ban[3]==null?'':ban[3]);
   if(V3.on&&V3.ready){if(f){V3.mode=f.state==='approach'?'approach':'follow';C3.follow=f;C3.fpos=null;C3.apT=-99;camLabel();}else{setCam('map');Object.assign(C3.t,o.view);}}else if(f)centerOn(f.x,f.y);else if(o.at)centerOn(o.at[0],o.at[1]);}
-function cineTick(){
+function cineTick(){stagedTick();
   if(!CINE){const q=cinema.q;if(q&&q.length&&!(SUM&&SUM.cine)){const [f,b,o]=q.shift();cinema(f,b,o);}return;}
   const c=CINE,now=performance.now();if(!V3.on&&c.f)centerOn(c.f.x,c.f.y);
   if(c.o.landed&&c.f&&c.f.landT!=null&&!c.landAt)c.landAt=now;

@@ -154,6 +154,13 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
     for (const c of CLU) { const n = Math.round(10 + c[2] / 60);
       for (let i = 0; i < n; i++) { const a = Rc() * 6.283, d = Math.sqrt(Rc()) * c[2] * 0.85, ox = Math.cos(a) * d, oz = Math.sin(a) * d * 0.8, dome = 1 - (d / c[2]) ** 2;
         const pr = (170 + Rc() * 200) * (0.7 + 0.5 * dome); push(ox, c[3] + pr * 0.55 + dome * c[4] * Rc(), oz, pr, Rc(), 0.004 + Rc() * 0.006, 4, c[0], c[1], c[3], c[4]); } } }
+  // more fair-weather clusters for the low cameras (tower, follow, approach): no ground shadow, never within ~9 km of
+  // the field, so they read as a band of cumulus on the horizon (they fade out for high cameras like the rest)
+  { const Rc = mulberry(57);
+    for (let k = 0; k < 60; k++) { const ang = Rc() * 6.283, dist = 13000 + Rc() * 17000, x = Math.cos(ang) * dist, z = Math.sin(ang) * dist;
+      const rad = 700 + Rc() * 900, base = 1500 + Rc() * 600, hgt = 250 + Rc() * 450, n = Math.round(8 + rad / 90);
+      for (let i = 0; i < n; i++) { const a = Rc() * 6.283, d = Math.sqrt(Rc()) * rad * 0.9, ox = Math.cos(a) * d, oz = Math.sin(a) * d * 0.7, dome = 1 - (d / rad) ** 2;
+        const pr = (200 + Rc() * 230) * (0.7 + 0.5 * dome); push(ox, base + pr * 0.5 + dome * hgt * Rc(), oz, pr, Rc(), 0.004 + Rc() * 0.006, 4.25, x, z, base, hgt); } } }
   const nCum = BL.length;
   // storm cells: the dark parent thunderstorm behind the wall
   for (let i = 0; i < 46; i++) { const z = (R() - 0.5) * 44000; push(-3500 - R() * 10000, 2800 + R() * 5000, z, 2400 + R() * 1800, R(), 0.004 + R() * 0.004, 3, 260 + R() * 300, 0, 0, 0.45 + R() * 0.25); }
@@ -174,7 +181,7 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
   BL.forEach((b, i) => { bP.set(b.slice(0, 4), i * 4); bS.set(b.slice(4, 8), i * 4); bC.set(b.slice(8, 12), i * 4); });
   const billU = Object.assign({}, U, { uWallA: { value: 0 }, uSkirtA: { value: 0 }, uCellA: { value: 0 }, uCumA: { value: 1 }, uDom: { value: 60000 }, uCumOff: { value: new THREE.Vector2() },
     uMassA: { value: 0 }, uMB: { value: new THREE.Vector4(0, 0, 0, 4000) }, uMV: { value: new THREE.Vector3() },
-    uDustLo: { value: lin('#2e2017') }, uDustHi: { value: lin('#c89660') }, uField: { value: new THREE.Vector4(0, 0, 4000, 3000) }, uCellC: { value: lin('#584a3e') }, uCumC: { value: lin('#ffffff') }, uCumBase: { value: lin('#8d97a8') } });
+    uDustLo: { value: lin('#2e2017') }, uDustHi: { value: lin('#c89660') }, uField: { value: new THREE.Vector4(0, 0, 4000, 3000) }, uCellC: { value: lin('#584a3e') }, uCumC: { value: lin('#ffffff') }, uCumBase: { value: lin('#6f7a8c') } });
   const bill = mk(quadGeo(NB, { iP: bP, iS: bS, iC: bC }), mat({ uniforms: billU,
     vertexShader: VHEAD + `attribute vec4 iP,iS,iC;uniform float uTime,uFrontX,uCurv,uWallA,uSkirtA,uCellA,uCumA,uDom,uMassA;uniform vec2 uCumOff;uniform vec4 uMB,uField;uniform vec3 uMV;
     varying vec2 vUv;varying float vA,vD;varying vec3 vWP;varying vec4 vS;varying vec3 vInfo;
@@ -193,6 +200,7 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
         a=uMassA*iC.w*smoothstep(fx+300.,fx-900.,c.x)*(1.-smoothstep(0.3,0.5,max(rel.x,rel.y)));hb=0.;ht=box.y+R;}
       else{vec2 cc=mod(iC.xy+uCumOff+uDom*0.5,uDom)-uDom*0.5;float e=max(abs(cc.x),abs(cc.y));c.xz+=cc;c.y+=sin(th)*15.;R*=0.96+0.06*sin(th*0.7);
         a=uCumA*smoothstep(uDom*0.5,uDom*0.5-6000.,e);hb=iC.z;ht=iC.z+iC.w+250.;
+        if(kind>4.1)a*=smoothstep(9000.,14000.,length(c.xz));
         a*=1.-smoothstep(hb-900.,hb-250.,cameraPosition.y);}  // never between a high (strategic) camera and the field
       if(kind<3.5&&cameraPosition.y>c.y+50.){vec3 cp=cameraPosition;vec2 g=cp.xz+(c.xz-cp.xz)*(cp.y/(cp.y-c.y));   // where the puff sits on the ground, seen from the camera
         vec2 ob=max(abs(g-uField.xy)-uField.zw,0.);a*=mix(1.,smoothstep(R*0.4,R*1.6+600.,length(ob)),smoothstep(1500.,4000.,cp.y));}
@@ -229,8 +237,8 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
         col=alb*(uSkyC*(0.35+0.65*h01)+uGndC*0.5+uSunC*lam*crev*mix(0.3,1.15,h01));
         if(kind<1.5){float rim=pow(clamp(1.-N.z,0.,1.),2.5)*max(dot(normalize(N.xy+1e-4),normalize(uSunV.xy+1e-4)),0.);col+=uSunC*alb*rim*0.9*h01;}}
       else if(kind<3.5){alb=uCellC*mix(0.55,1.15,h01);col=alb*(uSkyC*0.8+uSunC*lam*crev*(0.25+0.75*h01))+uFlash*vec3(1.,0.95,1.1)*0.9*cau;}
-      else{float base=smoothstep(vInfo.x-40.,vInfo.x+220.,vWP.y);alb=mix(uCumBase,uCumC,base);
-        dens*=smoothstep(vInfo.x-70.,vInfo.x+25.,vWP.y);col=alb*(uSkyC*0.9+uGndC*0.4*(1.-base)+uSunC*lam*crev);}
+      else{float base=smoothstep(vInfo.x-20.,vInfo.x+300.,vWP.y);alb=mix(uCumBase,uCumC,base*base*(3.-2.*base));
+        dens*=smoothstep(vInfo.x-25.,vInfo.x+12.,vWP.y);col=alb*(uSkyC*0.9+uGndC*0.4*(1.-base)+uSunC*lam*crev);}
       float a=clamp(vA*dens,0.,1.);
       ${OUT('col', 'a', 'vWP-uCamPos', '(kind<1.5?0.38:(kind<3.5?0.5:(kind>4.5?0.8:1.)))')}
     }` }), -20);

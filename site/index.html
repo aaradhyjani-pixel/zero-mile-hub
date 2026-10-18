@@ -1488,7 +1488,7 @@ const LEVELS=[
 let flights=[],FID=0,S=null,incidents=[],INC=0,selected=null,hover=null,selRw=null;
 const puffs=[],moveLog=[];
 function resetState(){
-  SUM=null;STO=[];CINE=null;PACE=null;HOLDDEP=null;MARKS=[];FXV=[];voiceReset();if(typeof ltReset==="function")ltReset();{const kc=$('#kiteChip');if(kc)kc.hidden=true;const wc=$('#wedChip');if(wc)wc.hidden=true;const sb=$('#stopBtn');if(sb)sb.hidden=true;const ft=$('#fogTag');if(ft)ft.hidden=true;fogF=0;}cinema.q=[];specialArr.list=[];flights=[];FID=0;incidents=[];INC=0;selected=null;hover=null;selRw=null;puffs.length=0;moveLog.length=0;ops.length=0;opsClock=0;lastCnx=-1e9;
+  SUM=null;STO=[];CINE=null;PACE=null;endDue.cut=false;HOLDDEP=null;MARKS=[];FXV=[];voiceReset();if(typeof ltReset==="function")ltReset();{const kc=$('#kiteChip');if(kc)kc.hidden=true;const wc=$('#wedChip');if(wc)wc.hidden=true;const sb=$('#stopBtn');if(sb)sb.hidden=true;const ft=$('#fogTag');if(ft)ft.hidden=true;fogF=0;}cinema.q=[];specialArr.list=[];flights=[];FID=0;incidents=[];INC=0;selected=null;hover=null;selRw=null;puffs.length=0;moveLog.length=0;ops.length=0;opsClock=0;lastCnx=-1e9;
   S={tl:[],flipLog:[],tlNext:0,combo:0,bestCombo:0,moves:0,arr:0,dep:0,depOnTime:0,arrOnTime:0,cnxMade:0,cnxMiss:0,safety:100,incOk:0,incDef:0,incTypes:{},hits:[],holdMin:0,div:0,goArounds:0,log:[],delaySum:0,flips:0};
   GATES.forEach(g=>{g.occ=null;g.res=null;});
   RW.forEach(r=>{r.tdList=[];r.lastSchedTd=-1e9;r.lastDep=-1e9;r.arrExit=-1e9;r.occ=null;r.changeUntil=-1;r.closedUntil=-1;r.why='';r.ops=0;r.flash=0;r.blocks=[];r.gapReq=false;r.degraded=false;r.strike=null;r.shear=false;r.sepK=1;r.sepUntil=-1;r.kiteUntil=-1;r.kiteFrom=-1;r.kiteP=0.25;r.noArrUntil=-1;r.gpsUntil=-1;r.noDepUntil=-1;r.btUntil=-1;});
@@ -2268,9 +2268,9 @@ function musFade(a,to,ms,cb){const from=a.volume,t0=performance.now();const st=(
 function music(name,o){o=o||{};if(!MUS)return;if(name&&MUS.name===name&&MUS.el)return;clearTimeout(MUS.tm);const old=MUS.el;MUS.el=null;MUS.name=null;
   if(old){if(o.now){old.pause();}else musFade(old,0,o.fadeOut||1500,()=>old.pause());}
   if(!name||!SND.on)return;const src=(typeof MUSIC_SRC!=='undefined'&&MUSIC_SRC[name])||`music/${name}.mp3`;const a=new Audio(src);a.loop=o.loop!==false;a.volume=0;
-  MUS.el=a;MUS.name=name;MUS.vol=o.vol!=null?o.vol:0.4;a.onerror=()=>{if(MUS.el===a){MUS.el=null;MUS.name=null;}};const p=a.play();if(p&&p.catch)p.catch(()=>{});musFade(a,vqCur?MUS.vol*0.35:MUS.vol,o.fadeIn||1200);
+  MUS.el=a;MUS.name=name;MUS.vol=o.vol!=null?o.vol:0.4;a.onerror=()=>{if(MUS.el===a){MUS.el=null;MUS.name=null;}};const p=a.play();if(p&&p.catch)p.catch(()=>{});musFade(a,vqCur?MUS.vol*0.2:MUS.vol,o.fadeIn||1200);
   if(!a.loop)a.onended=()=>{if(MUS.el===a){MUS.el=null;MUS.name=null;}};if(o.ms)MUS.tm=setTimeout(()=>{if(MUS.el===a)music(null);},o.ms);}
-function duck(on){const a=MUS&&MUS.el;if(a)musFade(a,on?MUS.vol*0.35:MUS.vol,on?250:700);}
+function duck(on){const a=MUS&&MUS.el;if(a)musFade(a,on?MUS.vol*0.2:MUS.vol,on?250:700);}
 // after a summit the SPG hands the runways back one by one, then signs off
 function spgReturn(order){const n=order.length;guard(['Your runways shall now be cleared, in a staged manner.'].concat(order.map((r,i)=>i===0?`Runway ${r.short} shall be cleared first.`:i===n-1?`And finally, runway ${r.short}.`:`Then runway ${r.short}.`)));}
 function spgOpen(r){}
@@ -2908,7 +2908,10 @@ function sumPlan(E,R3,trio){
     cn(){return rw=>{const d=DL.CN1,s=DL.CN2,ann=V('announcer','ANNOUNCER',`Ladies and gentlemen. The aircraft carrying the President of the People's Republic of China shall now be landing on runway ${rw[0].short}.`),
       call=V('cn',d.cs,fillC(d.call,d,rw[0])),twr=V('tower','TWR',`${d.nm}, runway ${rw[0].short}, cleared to land. The red carpet has been measured twice.`),tw=-2.4-twr.dur,cs=tw-0.4-call.dur,as=cs-0.6-ann.dur,ban=SBAN.CN1(rw);
       return{ac:[{d,off:0},{d:s,off:5,ri:1}],a0:as,a1:3.2,stop:[-90,90],beats:[[as,'ban',ban],[as,'lt',{ds:[d,s],q:ann.text,ann:true}],[as,'say',ann],[cs,'lt',{ds:[d,s],q:call.text}],[cs,'say',call],
-        [tw,'lt',{ds:[d,s],q:twr.text,twr:true}],[tw,'say',twr],[-9,'shot',{i:0,ban,until:3}]]};};},
+        [tw,'lt',{ds:[d,s],q:twr.text,twr:true}],[tw,'say',twr],
+        // the guqin (music/guqin.mp3, 18.9 s) plays over the whole landing shot, which is cut to its length: it opens 16.5 s out
+        // and holds 2.4 s past touchdown, so Air China One lands on the music's last phrase
+        [-16.5,'music','guqin'],[-16.5,'shot',{i:0,ban,until:2.4}],[2.6,'music',null]]};};},
     ru(){return rw=>{const d0=DL.RUCARGO,d1=DL.RU1,d2=DL.RU2,ann=V('ru_announcer','PROTOCOL','Attention, please. The delegation of the Russian Federation. First, the cars. Then two aircraft. They are identical.'),
       c0=V('ru',d0.cs,fillC(d0.call,d0,rw[1])),c1=V('ru',d1.cs,fillC(d1.call,d1,rw[0])),c2=V('ru',d2.cs,fillC(d2.call,d2,rw[1])),twr=V('tower','TWR','Russia, Russia Two, welcome to Zero Mile. We will not ask which one.'),
       as=-12.8-ann.dur,s2=2.2,tw=Math.max(5.9,s2+c2.dur+0.3),all=[d0,d1,d2];
@@ -3514,7 +3517,11 @@ function tick(dt){
 }
 // the level ends at LEN; a level with windDown:true runs on (at most 30 minutes) until every departure due by LEN is airborne
 const depLeft=()=>flights.filter(f=>f.kind==='dep'&&!f.counted&&f.std<=LEN&&['sched','at_gate','push','start','taxi_out','hp','lineup','stuck','roll'].includes(f.state)).length;
-function endDue(){if(T<LEN)return false;if(!LV.windDown||T>=LEN+1800)return true;return depLeft()===0;}
+// arrivals still in the air (or rolling out) also hold the end; arrivals not yet airborne at LEN are cancelled (the day is over)
+const arrLeft=()=>flights.filter(f=>f.kind==='arr'&&['inbound','holding','approach','goaround','rollout'].includes(f.state)).length;
+function endDue(){if(T<LEN)return false;if(!LV.windDown||T>=LEN+1800)return true;
+  if(!endDue.cut){endDue.cut=true;for(const f of flights)if(f.kind==='arr'&&f.state==='sched'&&!f.vip){f.state='cancelled';if(f.gate){f.gate.occ=null;f.gate=null;}if(f.res){f.res.res=null;f.res=null;}}}
+  return depLeft()===0&&arrLeft()===0;}
 const onceSet=new Set();function once(k,fn){if(onceSet.has(k))return;onceSet.add(k);fn();}
 
 /* ============ input ============ */

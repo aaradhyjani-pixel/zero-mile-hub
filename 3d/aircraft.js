@@ -945,6 +945,20 @@ Z3MOD.aircraft = function (Z) {
   }
 
   /* ---------------- motion helpers ---------------- */
+  // The strategic view draws aircraft up to 3.4x life size so traffic reads from 10 km. At a stand that ran the noses into
+  // the pier roof and crossed every wing over two neighbours (a tangle on each pier). On and near its stand an aircraft keeps
+  // at most KPARK (wingtips of neighbours on 46 m stands then just meet) and is drawn set back so its nose stays where a
+  // life-size one's would be, at the bridge (st.sw: 1 at the stand .. 0 away from it). It eases back to the full size over
+  // the first few hundred metres of taxiway, so nothing pops. The stand is remembered for a tow or pushback that let go of it.
+  const KPARK = 1.5, STANDST = { taxi_in: 1, dock: 1, at_gate: 1, parked: 1, push: 1, start: 1, taxi_out: 1, tow: 1 };
+  let gOX = 0, gOY = 0;   // this aircraft's set-back, for the support vehicles placed around it
+  function standK(f, s, st, k) {
+    st.sw = 0; if (k <= 1 || !STANDST[s]) return k;
+    const g = f.gate || f.res || f.gateRef;
+    if (g && g.x != null) { st.gx = g.x; st.gy = g.y; } else if (st.gx == null) return k;
+    st.sw = 1 - sstep(clamp((Math.hypot(f.x - st.gx, f.y - st.gy) - 70) / 260, 0, 1));
+    return k > KPARK ? k + (KPARK - k) * st.sw : k;
+  }
   function visAlt(f) { // the sim's glide path is a straight 3 degree line to the ground; draw a flare over the last 15 m
     const s = f.state;
     if (s === 'approach' && f.rwy && f.finalStart != null && f.pd >= f.finalStart) {
@@ -975,7 +989,7 @@ Z3MOD.aircraft = function (Z) {
     if (uIn <= 0 || uOut >= 1) return;
     const ei = 1 - sstep(uIn), eo = sstep(uOut), c = Math.cos(f.heading), sn = Math.sin(f.heading);
     const ox = lx * sx * k - (22 * ei + 30 * eo) * k, oz = lz * sz * k + (Math.sign(lz) || 1) * (38 * ei + 45 * eo) * k;
-    veh(kind, f.x + c * ox - sn * oz, f.y + sn * ox + c * oz, f.heading + relH + (ei - eo) * 0.9 * (Math.sign(lz) || 1), k, ph, lift);
+    veh(kind, f.x + gOX + c * ox - sn * oz, f.y + gOY + sn * ox + c * oz, f.heading + relH + (ei - eo) * 0.9 * (Math.sign(lz) || 1), k, ph, lift);
   }
   let SDT = 0, RDT = 0;
   const sm = (tS, tR) => 1 - Math.exp(-Math.min(SDT / tS, RDT / tR));
@@ -989,7 +1003,7 @@ Z3MOD.aircraft = function (Z) {
   return {
     update(dt, now) {
       frame++; NOW = now; NF = Z.nightF || 0;
-      const T = Z.T, F = Z.flights(), k = Z.kEx, dust = !!Z.dustNow;
+      const T = Z.T, F = Z.flights(), k = Z.kEx, kG = k, dust = !!Z.dustNow;
       let dts = T - lastT, snap = false;
       if (lastT < 0 || dts < 0 || dts > 20) { snap = true; dts = 0; mem.clear(); }
       lastT = T; dts = Math.min(dts, 2);
@@ -1021,6 +1035,7 @@ Z3MOD.aircraft = function (Z) {
         let st = mem.get(f.id), fresh = false;
         if (!st) { st = { hd: f.heading, hr: 0, bank: 0, pitch: 0, gear: 1, prev: s, px: f.x, py: f.y, spd: 0, tdT: -1e9, smokeT: -1e9, smokeN: 0, ph: Math.random(), ph2: Math.random(), prop: Math.random() * 6, spool: 0, acc: 0, seen: 0, crab: 0 }; mem.set(f.id, st); fresh = true; }
         st.seen = frame;
+        const k = standK(f, s, st, kG);   // this aircraft's own exaggeration (less at its stand): shadows the view's k below
         const dead = s === 'wreck', alt = dead ? -0.55 * P.yb * k : visAlt(f);
         if (st.prev !== s) { if (s === 'rollout' && st.prev === 'approach' && !fresh) { st.tdT = T; st.smokeT = T; st.smokeN = 0; } st.prev = s; }
         if (fresh && s === 'rollout') st.tdT = T - 30;
@@ -1036,7 +1051,8 @@ Z3MOD.aircraft = function (Z) {
           const rate = Math.min((s === 'rollout' ? 2.6 : 3.2) * dts, 14 * rdt) * D2R; st.pitch += clamp(pt - st.pitch, -rate, rate);
           const gr = Math.min(dts / 7, rdt / 0.9); st.gear += clamp(gt - st.gear, -gr, gr);
         }
-        let X = f.x, Y = f.y;
+        let X = f.x, Y = f.y; gOX = 0; gOY = 0;
+        if (st.sw > 0 && k > 1) { const b = -(k - 1) * P.L / 2 * st.sw; gOX = Math.cos(f.heading) * b; gOY = Math.sin(f.heading) * b; X += gOX; Y += gOY; }
         if (dead) { st.pitch = -0.03; st.bank = st.ph > 0.5 ? 0.055 : -0.055; st.gear = 0; st.hr = 0;
           // two wrecks from one collision lie tangled but apart: each is pushed a quarter of the two spans from their midpoint, sideways
           // to its own axis and away from the other (the fire stays at the crash point)
@@ -1145,7 +1161,7 @@ Z3MOD.aircraft = function (Z) {
           let lx = nose, lz = 0, h = f.heading + Math.PI;
           if (s === 'tow' && f.pd >= 90) h = f.heading;
           if (s === 'start') { const u = clamp((T - f.startT - 8) / 24, 0, 1); lx = nose + 22 * u; lz = -26 * u * u; h = f.heading + Math.PI - u * 2.2; }
-          veh('tug', f.x + (hc * lx - hs * lz) * k, f.y + (hs * lx + hc * lz) * k, h, k, f.id, 0);
+          veh('tug', f.x + gOX + (hc * lx - hs * lz) * k, f.y + gOY + (hs * lx + hc * lz) * k, h, k, f.id, 0);
         }
       }
       // ---- airside ops vehicles ----

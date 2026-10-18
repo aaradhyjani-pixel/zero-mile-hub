@@ -33,6 +33,7 @@ Z3MOD.field = function (Z) {
     const dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy) || 1, nx = -dy / L * hw, ny = dx / L * hw, W = u0 === undefined, ws = B.ws;
     const q = [[ax + nx, ay + ny, u0, 0], [bx + nx, by + ny, u1, 0], [bx - nx, by - ny, u1, 1], [ax - nx, ay - ny, u0, 1]];
     const id = q.map(o => vtx(B, o[0], o[1], h, col, W ? o[0] / ws : o[2], W ? o[1] / ws : o[3]));
+    if (B.sd) B.sd.push(nx, ny, nx, ny, -nx, -ny, -nx, -ny);   // each corner's offset from the centreline (markings only)
     tri(B, id[0], id[1], id[2]); tri(B, id[0], id[2], id[3]);
   }
   function disc(B, x, y, r, h, col, n, uv) {
@@ -44,7 +45,9 @@ Z3MOD.field = function (Z) {
   function geoOf(B) {
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(B.p, 3));
     const n = new Float32Array(B.p.length); for (let i = 1; i < n.length; i += 3) n[i] = 1; g.setAttribute('normal', new THREE.BufferAttribute(n, 3));
-    g.setAttribute('uv', new THREE.Float32BufferAttribute(B.u, 2)); g.setAttribute('color', new THREE.Float32BufferAttribute(B.c, 3)); g.setIndex(B.i); g.computeBoundingSphere(); return g;
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(B.u, 2)); g.setAttribute('color', new THREE.Float32BufferAttribute(B.c, 3));
+    if (B.sd && B.sd.length * 3 === B.p.length * 2) g.setAttribute('sd', new THREE.Float32BufferAttribute(B.sd, 2));
+    g.setIndex(B.i); g.computeBoundingSphere(); return g;
   }
   const simplify = pts => { if (pts.length < 3) return pts.slice(); const out = [pts[0]];
     for (let i = 1; i < pts.length - 1; i++) { const a = out[out.length - 1], b = pts[i], c = pts[i + 1]; const ux = b[0] - a[0], uy = b[1] - a[1], vx = c[0] - b[0], vy = c[1] - b[1];
@@ -344,7 +347,10 @@ Z3MOD.field = function (Z) {
       vec2 bid=floor(vWP/vec2(55.0,40.0));float hb=fract(sin(dot(bid,vec2(41.3,17.9)))*24634.63);
       alb*=mix(1.0,(1.0+(hb-0.5)*0.12)*(1.0+(hs-0.5)*0.1*(1.0-smoothstep(0.1,0.6,swm)))*(1.0-0.38*jt),cc);
       pr+=(0.08*jt-0.04)*cc; nq*=1.0-0.4*cc;}
-    float oil=PK==2?0.0:ps.r; alb*=1.0-0.6*oil; pr-=0.3*oil;
+    // from the strategic view: concrete a little deeper (the haze lifts it toward the white roof and aircraft, and the piers
+    // lose their edge) and the stand stains mostly gone (at 6 m a pixel they read as smudges beside every stand)
+    float ffar=smoothstep(2500.0,8000.0,pd); alb*=1.0-0.3*cc*ffar; diffuseColor.rgb=mix(diffuseColor.rgb,vec3(lum0),0.5*cc*ffar);
+    float oil=PK==2?0.0:ps.r*(1.0-0.7*ffar); alb*=1.0-0.6*oil; pr-=0.3*oil;
     if(PK>=2){float paint=smoothstep(0.1,0.32,lum0);float rub=1.0-smoothstep(0.012,0.03,lum0);
       alb=mix(alb,0.9+0.1*alb,paint);pr=mix(pr,0.6,paint)-0.22*rub;nq*=1.0-0.5*paint;}
     alb*=1.0-0.22*wet; pr=mix(pr,0.35+0.25*(pr-0.86),wet); nq*=1.0-0.6*wet;   // the andhi's rain tail: darker, glossy pavement
@@ -380,7 +386,7 @@ Z3MOD.field = function (Z) {
 
   // ---------- 4. taxiways, exits, shoulders, blast pads, perimeter and service roads, rail ----------
   const ASPH = lin('#4f5254'), LANE = lin('#aaa69c'), SHLD = lin('#6c6e6a'), PAD = lin('#5f605e'), PERIM = lin('#625f59'), RAIL = lin('#6e7480');
-  const LB = newB(1);  // markings (yellow/white lines), fades out with distance
+  const LB = newB(1); LB.sd = [];  // markings (yellow/red lines): at least ~1.3 px wide at any distance (see linesMat)
   const YEL = lin('#e5b52a'), RED = lin('#b8322a');
   const twB = newB(22);
   for (const t of tws) { const col = t.kind === 'taxilane' ? LANE : ASPH, p = simplify(t.pts);
@@ -446,6 +452,17 @@ Z3MOD.field = function (Z) {
     quad(LB, g.x - ca * 40 - sa * 26, g.y - sa * 40 + ca * 26, g.x + ca * 34 - sa * 26, g.y + sa * 34 + ca * 26, 0.25, 0.2, RED);
     quad(LB, g.x - ca * 40 + sa * 26, g.y - sa * 40 - ca * 26, g.x + ca * 34 + sa * 26, g.y + sa * 34 - ca * 26, 0.25, 0.2, RED); }
   const linesMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.62, metalness: 0, transparent: false, blending: THREE.CustomBlending, blendSrc: THREE.SrcAlphaFactor, blendDst: THREE.OneMinusSrcAlphaFactor, depthWrite: false, opacity: 1 });
+  // The lines are 0.25-0.6 m wide: a fraction of a pixel from the strategic view, where they used to be switched off (beyond
+  // 4 km), leaving the aprons blank. The vertex shader widens each quad along its own side vector to a minimum on-screen
+  // width and fades it by the square root of the real/drawn width, so far away they read as crisp hairlines (slightly
+  // stronger than true coverage) and close up nothing changes.
+  const LNU = { uPxK: { value: 0.0005 } };
+  linesMat.onBeforeCompile = sh => { sh.uniforms.uPxK = LNU.uPxK;
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec2 sd;\nuniform float uPxK;\nvarying float vLA;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvLA = 1.0; { float hw = length(sd); float want = uPxK * distance(cameraPosition, (modelMatrix * vec4(transformed, 1.0)).xyz);\n  if (hw > 1e-4 && want > hw) { transformed.xz += sd * (want / hw - 1.0); vLA = sqrt(hw / want); } }');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vLA;').replace('#include <color_fragment>', '#include <color_fragment>\nfloat rdl = step(vColor.g * 3.0, vColor.r) * (1.0 - vLA);\ndiffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.6), 0.55 * rdl); diffuseColor.a *= vLA * (1.0 - 0.4 * rdl);'); };
+  // (far away the red stand-safety lines turn a quieter grey: a red hairline on every side of every stand reads as pink noise)
+  linesMat.customProgramCacheKey = () => 'zmhLinesW';
   const linesMesh = flatLayer(new THREE.Mesh(geoOf(LB), linesMat), -35);
 
   // ---------- 7. runway mode wash ----------
@@ -751,7 +768,8 @@ Z3MOD.field = function (Z) {
       }
       poolMat.uniforms.uI.value = 0.5 * clamp((Math.max(Z.nightF, Z.dustNow ? 0.5 : 0) - 0.25) / 0.6, 0, 1); poolMesh.visible = poolMat.uniforms.uI.value > 0.01;
       if (groundMat.userData.sh) { const gu = groundMat.userData.sh.uniforms; gu.nglow.value = 0.05 * Z.nightF; gu.dry.value = LV && LV.light === 'heat' ? 1 : 0; }
-      linesMesh.visible = cd < 4000; linesMat.opacity = clamp((4000 - cd) / 1600, 0, 1) * 0.95;
+      { Z.renderer.getDrawingBufferSize(v2); LNU.uPxK.value = 0.65 * 2 * Math.tan(Z.camera.fov * Math.PI / 360) / Math.max(1, v2.y); }   // half of 1.3 px, in metres per metre of distance
+      linesMesh.visible = true; linesMat.opacity = 0.95 - 0.15 * clamp((cd - 2500) / 6000, 0, 1);
       FXU.uGlow.value = 0.25 + 2.6 * la; if (fixIM) fixIM.visible = cd < 2600; if (typeof signMat !== 'undefined') signMat.emissiveIntensity = 0.12 + 0.9 * la;
       // wind: trees, water ripples, windsocks
       windNow(wnd); const dx = Math.cos(wnd.dir), dy = Math.sin(wnd.dir), sp = wnd.speed, gu = wnd.gust;

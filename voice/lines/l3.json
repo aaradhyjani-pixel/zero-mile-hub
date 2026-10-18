@@ -1,117 +1,573 @@
 [
-  {"key": "Can you have one runway back? No. We have chosen the runways. We choose the order. We are very fast at saying no.", "voice": "spg", "say": "Can you have one runway back? [[slnc 800]] No. [[slnc 800]] We have chosen the runways. [[slnc 500]] We choose the order. [[slnc 800]] We are very fast at saying no."},
-  {"key": "All stations, summit protocol: every runway at Zero Mile is closed. Everyone else, hold.", "voice": "tower", "say": "All stations, summit protocol: every runway at Zero Mile is closed. [[slnc 500]] Everyone else, hold."},
-  {"key": "All stations, summit protocol: every runway at Zero Mile is closed. 1 on final, go around. Everyone else, hold.", "voice": "tower", "say": "All stations, summit protocol: every runway at Zero Mile is closed. [[slnc 500]] One on final, go around. [[slnc 500]] Everyone else, hold."},
-  {"key": "All stations, summit protocol: every runway at Zero Mile is closed. 2 on final, go around. Everyone else, hold.", "voice": "tower", "say": "All stations, summit protocol: every runway at Zero Mile is closed. [[slnc 500]] Two on final, go around. [[slnc 500]] Everyone else, hold."},
-  {"key": "All stations, summit protocol: every runway at Zero Mile is closed. 3 on final, go around. Everyone else, hold.", "voice": "tower", "say": "All stations, summit protocol: every runway at Zero Mile is closed. [[slnc 500]] Three on final, go around. [[slnc 500]] Everyone else, hold."},
-  {"key": "Air India One, Nagpur Approach, radar contact. Expect runway 27L.", "voice": "tower", "say": "Air India One, Nagpur Approach, radar contact. [[slnc 500]] Expect runway two seven left."},
-  {"key": "Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 27L.", "voice": "announcer", "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft carrying the Honourable Prime Minister of India [[slnc 600]] shall now be landing [[slnc 600]] on runway two seven left."},
-  {"key": "Air India One, Nagpur Approach, radar contact. Expect runway 27R.", "voice": "tower", "say": "Air India One, Nagpur Approach, radar contact. [[slnc 500]] Expect runway two seven right."},
-  {"key": "Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 27R.", "voice": "announcer", "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft carrying the Honourable Prime Minister of India [[slnc 600]] shall now be landing [[slnc 600]] on runway two seven right."},
-  {"key": "Air India One, Nagpur Approach, radar contact. Expect runway 28R.", "voice": "tower", "say": "Air India One, Nagpur Approach, radar contact. [[slnc 500]] Expect runway two eight right."},
-  {"key": "Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 28R.", "voice": "announcer", "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft carrying the Honourable Prime Minister of India [[slnc 600]] shall now be landing [[slnc 600]] on runway two eight right."},
-  {"key": "Air India One, Nagpur Approach, radar contact. Expect runway 27C.", "voice": "tower", "say": "Air India One, Nagpur Approach, radar contact. [[slnc 500]] Expect runway two seven centre."},
-  {"key": "Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 27C.", "voice": "announcer", "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft carrying the Honourable Prime Minister of India [[slnc 600]] shall now be landing [[slnc 600]] on runway two seven centre."},
-  {"key": "Air India One, Nagpur Approach, radar contact. Expect runway 28C.", "voice": "tower", "say": "Air India One, Nagpur Approach, radar contact. [[slnc 500]] Expect runway two eight centre."},
-  {"key": "Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 28C.", "voice": "announcer", "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft carrying the Honourable Prime Minister of India [[slnc 600]] shall now be landing [[slnc 600]] on runway two eight centre."},
-  {"key": "Air India One, welcome to Zero Mile. Follow the car with the very large flag.", "voice": "tower", "say": "Air India One, welcome to Zero Mile. [[slnc 500]] Follow the car with the very large flag."},
-  {"key": "An Antonov An-124 is inbound for 27L with the Russian motorcade. The motorcade has its own aeroplane.", "voice": "tower", "say": "An Antonov, A N one twenty four, is inbound for two seven left with the Russian motorcade. [[slnc 800]] The motorcade has its own aeroplane."},
-  {"key": "Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 27L. By Antonov.", "voice": "ru_announcer", "say": "Ladies and gentlemen. [[slnc 1000]] The motorcade of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two seven left. [[slnc 1000]] By Antonov."},
-  {"key": "Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 27L.", "voice": "ru_announcer", "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two seven left."},
-  {"key": "An Antonov An-124 is inbound for 27R with the Russian motorcade. The motorcade has its own aeroplane.", "voice": "tower", "say": "An Antonov, A N one twenty four, is inbound for two seven right with the Russian motorcade. [[slnc 800]] The motorcade has its own aeroplane."},
-  {"key": "Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 27R. By Antonov.", "voice": "ru_announcer", "say": "Ladies and gentlemen. [[slnc 1000]] The motorcade of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two seven right. [[slnc 1000]] By Antonov."},
-  {"key": "Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 27R.", "voice": "ru_announcer", "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two seven right."},
-  {"key": "An Antonov An-124 is inbound for 28R with the Russian motorcade. The motorcade has its own aeroplane.", "voice": "tower", "say": "An Antonov, A N one twenty four, is inbound for two eight right with the Russian motorcade. [[slnc 800]] The motorcade has its own aeroplane."},
-  {"key": "Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 28R. By Antonov.", "voice": "ru_announcer", "say": "Ladies and gentlemen. [[slnc 1000]] The motorcade of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two eight right. [[slnc 1000]] By Antonov."},
-  {"key": "Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 28R.", "voice": "ru_announcer", "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two eight right."},
-  {"key": "An Antonov An-124 is inbound for 27C with the Russian motorcade. The motorcade has its own aeroplane.", "voice": "tower", "say": "An Antonov, A N one twenty four, is inbound for two seven centre with the Russian motorcade. [[slnc 800]] The motorcade has its own aeroplane."},
-  {"key": "Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 27C. By Antonov.", "voice": "ru_announcer", "say": "Ladies and gentlemen. [[slnc 1000]] The motorcade of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two seven centre. [[slnc 1000]] By Antonov."},
-  {"key": "Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 27C.", "voice": "ru_announcer", "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two seven centre."},
-  {"key": "An Antonov An-124 is inbound for 28C with the Russian motorcade. The motorcade has its own aeroplane.", "voice": "tower", "say": "An Antonov, A N one twenty four, is inbound for two eight centre with the Russian motorcade. [[slnc 800]] The motorcade has its own aeroplane."},
-  {"key": "Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 28C. By Antonov.", "voice": "ru_announcer", "say": "Ladies and gentlemen. [[slnc 1000]] The motorcade of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two eight centre. [[slnc 1000]] By Antonov."},
-  {"key": "Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 28C.", "voice": "ru_announcer", "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two eight centre."},
-  {"key": "Antonov, welcome to Zero Mile. Please do not park on the red carpet.", "voice": "tower", "say": "Antonov, welcome to Zero Mile. [[slnc 800]] Please do not park on the red carpet."},
-  {"key": "Russia One, welcome to Zero Mile. Your follow-me car is the other car with the very large flag.", "voice": "tower", "say": "Russia One, welcome to Zero Mile. [[slnc 500]] Your follow me car is the other car with the very large flag."},
-  {"key": "Russia Two, welcome. Yes, you look exactly like Russia One. Follow the third car with the very large flag.", "voice": "tower", "say": "Russia Two, welcome. [[slnc 800]] Yes, you look exactly like Russia One. [[slnc 800]] Follow the third car with the very large flag."},
-  {"key": "The Honourable Prime Minister is on the red carpet, to receive His Excellency the President of the Russian Federation.", "voice": "announcer", "say": "The Honourable Prime Minister is on the red carpet, [[slnc 600]] to receive His Excellency the President of the Russian Federation."},
-  {"key": "The motorcade is driving out of the Antonov. Ten cars. Nobody has asked where they will park.", "voice": "tower", "say": "The motorcade is driving out of the Antonov. [[slnc 500]] Ten cars. [[slnc 800]] Nobody has asked where they will park."},
-  {"key": "The Honourable Prime Minister has received His Excellency the President of the Russian Federation on the red carpet. Handshake: eleven seconds.", "voice": "announcer", "say": "The Honourable Prime Minister has received His Excellency the President of the Russian Federation [[slnc 600]] on the red carpet. [[slnc 1000]] Handshake: [[slnc 600]] eleven seconds."},
-  {"key": "The motorcade has left for Tadoba. Every road from here to the tigers is closed. The tigers have been informed.", "voice": "spg", "say": "The motorcade has left for Taa-doh-baa. [[slnc 800]] Every road from here to the tigers is closed. [[slnc 800]] The tigers have been informed."},
-  {"key": "Runway 27L is back in service.", "voice": "tower", "say": "Runway two seven left is back in service."},
-  {"key": "Runway 27R is back in service.", "voice": "tower", "say": "Runway two seven right is back in service."},
-  {"key": "Runway 28R is back in service.", "voice": "tower", "say": "Runway two eight right is back in service."},
-  {"key": "Runway 27C is back in service.", "voice": "tower", "say": "Runway two seven centre is back in service."},
-  {"key": "Runway 28C is back in service.", "voice": "tower", "say": "Runway two eight centre is back in service."},
-  {"key": "The summit stack is cleared. Normal service.", "voice": "tower", "say": "The summit stack is cleared. [[slnc 500]] Normal service."},
-  {"key": "The summit stack is cleared: 1 left holding. Normal service.", "voice": "tower", "say": "The summit stack is cleared: one left holding. [[slnc 500]] Normal service."},
-  {"key": "The summit stack is cleared: 2 left holding. Normal service.", "voice": "tower", "say": "The summit stack is cleared: two left holding. [[slnc 500]] Normal service."},
-  {"key": "The summit stack is cleared: 3 left holding. Normal service.", "voice": "tower", "say": "The summit stack is cleared: three left holding. [[slnc 500]] Normal service."},
-  {"key": "The summit stack is 22 aircraft. Give arrivals every runway you can.", "voice": "tower", "say": "The summit stack is 22 aircraft. [[slnc 500]] Give arrivals every runway you can."},
-  {"key": "The summit stack is 23 aircraft. Give arrivals every runway you can.", "voice": "tower", "say": "The summit stack is 23 aircraft. [[slnc 500]] Give arrivals every runway you can."},
-  {"key": "The summit stack is 24 aircraft. Give arrivals every runway you can.", "voice": "tower", "say": "The summit stack is 24 aircraft. [[slnc 500]] Give arrivals every runway you can."},
-  {"key": "The summit stack is 25 aircraft. Give arrivals every runway you can.", "voice": "tower", "say": "The summit stack is 25 aircraft. [[slnc 500]] Give arrivals every runway you can."},
-  {"key": "The summit stack is 26 aircraft. Give arrivals every runway you can.", "voice": "tower", "say": "The summit stack is 26 aircraft. [[slnc 500]] Give arrivals every runway you can."},
-  {"key": "The summit stack is 27 aircraft. Give arrivals every runway you can.", "voice": "tower", "say": "The summit stack is 27 aircraft. [[slnc 500]] Give arrivals every runway you can."},
-  {"key": "The summit stack is 28 aircraft. Give arrivals every runway you can.", "voice": "tower", "say": "The summit stack is 28 aircraft. [[slnc 500]] Give arrivals every runway you can."},
-  {"key": "The summit stack is 29 aircraft. Give arrivals every runway you can.", "voice": "tower", "say": "The summit stack is 29 aircraft. [[slnc 500]] Give arrivals every runway you can."},
-  {"key": "The summit stack is 30 aircraft. Give arrivals every runway you can.", "voice": "tower", "say": "The summit stack is 30 aircraft. [[slnc 500]] Give arrivals every runway you can."},
-  {"key": "The summit stack is 31 aircraft. Give arrivals every runway you can.", "voice": "tower", "say": "The summit stack is 31 aircraft. [[slnc 500]] Give arrivals every runway you can."},
-  {"key": "The summit stack is 32 aircraft. Give arrivals every runway you can.", "voice": "tower", "say": "The summit stack is 32 aircraft. [[slnc 500]] Give arrivals every runway you can."},
-  {"key": "Stack down to 9. Keep the arrival runways coming.", "voice": "tower", "say": "Stack down to 9. [[slnc 500]] Keep the arrival runways coming."},
-  {"key": "Stack down to 10. Keep the arrival runways coming.", "voice": "tower", "say": "Stack down to 10. [[slnc 500]] Keep the arrival runways coming."},
-  {"key": "Stack down to 11. Keep the arrival runways coming.", "voice": "tower", "say": "Stack down to 11. [[slnc 500]] Keep the arrival runways coming."},
-  {"key": "Stack down to 12. Keep the arrival runways coming.", "voice": "tower", "say": "Stack down to 12. [[slnc 500]] Keep the arrival runways coming."},
-  {"key": "Stack down to 13. Keep the arrival runways coming.", "voice": "tower", "say": "Stack down to 13. [[slnc 500]] Keep the arrival runways coming."},
-  {"key": "Stack down to 14. Keep the arrival runways coming.", "voice": "tower", "say": "Stack down to 14. [[slnc 500]] Keep the arrival runways coming."},
-  {"key": "Stack down to 15. Keep the arrival runways coming.", "voice": "tower", "say": "Stack down to 15. [[slnc 500]] Keep the arrival runways coming."},
-  {"key": "Stack down to 16. Keep the arrival runways coming.", "voice": "tower", "say": "Stack down to 16. [[slnc 500]] Keep the arrival runways coming."},
-  {"key": "Saheb, since 1890, never late.", "voice": "in", "say": "Saa-heb, since eighteen ninety, never late."},
-  {"key": "Lunch is late, saheb.", "voice": "in", "say": "Lunch is late, saa-heb."},
-  {"key": "The tower is not happy. 🍱", "voice": "in", "say": "The tower is not happy."},
-  {"key": "The tower is hungry. Changeovers are taking longer. Nobody talk to the supervisor.", "voice": "tower", "say": "The tower is hungry. [[slnc 500]] Changeovers are taking longer. [[slnc 800]] Nobody talk to the supervisor."},
-  {"key": "Lunch has arrived in the tower. Every dabba correct. Again.", "voice": "tower", "say": "Lunch has arrived in the tower. [[slnc 500]] Every dub-baa correct. [[slnc 800]] Again."},
-  {"key": "GPS says Muscat. Radar says Butibori.", "voice": "tower", "say": "G P S says Muscat. [[slnc 800]] Radar says Boo-tee-bo-ree."},
-  {"key": "I believe my radar. 📡", "voice": "tower", "say": "I believe my radar."},
-  {"key": "GPS spoofing has stopped. The aircraft are back over Nagpur, where they always were.", "voice": "tower", "say": "G P S spoofing has stopped. [[slnc 500]] The aircraft are back over Naag-pur, where they always were."},
-  {"key": "Sir, forty jets. One muhurat.", "voice": "in", "say": "Sir, forty jets. [[slnc 800]] One moo-hoo-rut."},
-  {"key": "Not one minute after. 💍", "voice": "in", "say": "Not one minute after."},
-  {"key": "Baraat 1, welcome to Zero Mile. Follow the car with the marigolds to the wedding apron.", "voice": "tower", "say": "Buh-raat one, welcome to Zero Mile. [[slnc 500]] Follow the car with the marigolds to the wedding apron."},
-  {"key": "One elephant is arriving by road. It has been cleared.", "voice": "tower", "say": "One elephant is arriving by road. [[slnc 800]] It has been cleared."},
-  {"key": "Ten down, thirty to go. The groom's side has asked for a water salute. The bride's side has asked for a bigger one.", "voice": "in", "say": "Ten down, thirty to go. [[slnc 500]] The groom's side has asked for a water salute. [[slnc 800]] The bride's side has asked for a bigger one."},
-  {"key": "Half the guest list is down. Baraat 21 is carrying only the lehengas. Baraat 22 is carrying the jewellery for Baraat 21.", "voice": "in", "say": "Half the guest list is down. [[slnc 500]] Buh-raat twenty one is carrying only the leh-hun-gaas. [[slnc 800]] Buh-raat twenty two is carrying the jewellery for Buh-raat twenty one."},
-  {"key": "The groom will now change to a horse. The horse is on Baraat 31.", "voice": "in", "say": "The groom will now change to a horse. [[slnc 800]] The horse is on Buh-raat thirty one."},
-  {"key": "All forty landed before the muhurat.", "voice": "in", "say": "All forty landed before the moo-hoo-rut."},
-  {"key": "Shubh vivah! 💐", "voice": "in", "say": "Shoobh vi-vaah!"},
-  {"key": "Return gift for the tower: one silver box of kaju katli. Each. We have accepted.", "voice": "tower", "say": "Return gift for the tower: one silver box of kaa-joo kut-lee. [[slnc 800]] Each. [[slnc 800]] We have accepted."},
-  {"key": "Sir, fog. In the afternoon. At 46 degrees.", "voice": "in", "say": "Sir, fog. [[slnc 800]] In the afternoon. [[slnc 800]] At forty six degrees."},
-  {"key": "We are as surprised as you are. 🌫️", "voice": "in", "say": "We are as surprised as you are."},
-  {"key": "Low visibility procedures in force. Runway visual range 350 metres. Increased spacing on all runways.", "voice": "tower", "say": "Low visibility procedures in force. [[slnc 500]] Runway visual range, three five zero metres. [[slnc 500]] Increased spacing on all runways."},
-  {"key": "Backtracking in this? I cannot see the runway from the cab.", "voice": "tower", "say": "Backtracking in this? [[slnc 800]] I cannot see the runway from the cab."},
-  {"key": "Every read-back in full. Nobody rushes.", "voice": "tower", "say": "Every read back in full. [[slnc 800]] Nobody rushes."},
-  {"key": "Satpura 77, backtrack runway 27L, vacate at the next exit, report runway vacated.", "voice": "tower", "say": "Saat-poo-raa seven seven, backtrack runway two seven left, vacate at the next exit, report runway vacated."},
-  {"key": "Orange City 1801, line up and wait, runway 27L.", "voice": "tower", "say": "Orange City one eight zero one, line up and wait, runway two seven left."},
-  {"key": "…we are now at take-off.", "voice": "in", "say": "we are now at take off."},
-  {"key": "OK… [squeal] …stand by for take-off, I will call you.", "voice": "tower", "say": "OK. [[slnc 700]] stand by for take off, I will call you."},
-  {"key": "We are still on the runway! Satpura 77 still on the runway!", "voice": "in", "say": "We are still on the runway! [[slnc 500]] Saat-poo-raa seven seven, still on the runway!"},
-  {"key": "ORANGE CITY 1801, STOP IMMEDIATELY! I say again, STOP IMMEDIATELY!", "voice": "tower", "say": "Orange City one eight zero one, stop immediately! [[slnc 500]] I say again, stop immediately!"},
-  {"key": "Orange City 1801 stopped. Runway 27L closed for the investigation.", "voice": "tower", "say": "Orange City one eight zero one stopped. [[slnc 500]] Runway two seven left closed for the investigation."},
-  {"key": "Orange City has stopped. Four hundred metres short.", "voice": "tower", "say": "Orange City has stopped. [[slnc 800]] Four hundred metres short."},
-  {"key": "Nobody moves on that runway until I can see it.", "voice": "tower"},
-  {"key": "ALL STATIONS, ALL STATIONS: aircraft accident on runway 27L. All runways closed. Fire services responding.", "voice": "tower", "say": "All stations, all stations: aircraft accident on runway two seven left. [[slnc 500]] All runways closed. [[slnc 500]] Fire services responding."},
-  {"key": "Crash tenders on scene. Foam going on now.", "voice": "in", "say": "Crash tenders on scene. [[slnc 500]] Foam going on now."},
-  {"key": "Both crews are out. The medics have them.", "voice": "in", "say": "Both crews are out. [[slnc 800]] The medics have them."},
-  {"key": "Arrivals: hold. Divert if your fuel requires.", "voice": "tower", "say": "Arrivals: hold. [[slnc 500]] Divert if your fuel requires."},
-  {"key": "27L is closed for the rest of the day.", "voice": "tower", "say": "Two seven left is closed for the rest of the day."},
-  {"key": "We will run on the other four. Arrivals first.", "voice": "tower", "say": "We will run on the other four. [[slnc 800]] Arrivals first."},
-  {"key": "Runways other than 27L reopening. 27L is closed for the rest of the day.", "voice": "tower", "say": "Runways other than two seven left reopening. [[slnc 500]] Two seven left is closed for the rest of the day."},
-  {"key": "Orange City 1801 airborne. That was too close.", "voice": "tower", "say": "Orange City one eight zero one airborne. [[slnc 800]] That was too close."},
-  {"key": "The fog has lifted. Normal spacing on the open runways.", "voice": "tower", "say": "The fog has lifted. [[slnc 500]] Normal spacing on the open runways."},
-  {"key": "The fog has lifted.", "voice": "in"},
-  {"key": "Fifteen minutes of fog at 46 degrees. We are writing a paper.", "voice": "in", "say": "Fifteen minutes of fog, at forty six degrees. [[slnc 800]] We are writing a paper."},
-  {"key": "The fire is out.", "voice": "in"},
-  {"key": "The foam stays down until the investigators have seen it.", "voice": "in"},
-  {"key": "Investigators from the Aircraft Accident Investigation Bureau are on site at 27L. It stays closed for the rest of the day.", "voice": "tower", "say": "Investigators from the Aircraft Accident Investigation Bureau are on site at two seven left. [[slnc 500]] It stays closed for the rest of the day."},
-  {"key": "Lost property from the summit: one fur hat, size large. At 46 degrees. It is being kept in the cold room.", "voice": "tower", "say": "Lost property from the summit: one fur hat, size large. [[slnc 800]] At forty six degrees. [[slnc 800]] It is being kept in the cold room."},
-  {"key": "The Chambanis thank the tower. The reception is tomorrow. Sixty jets.", "voice": "in", "say": "The Chum-baa-nees thank the tower. [[slnc 500]] The reception is tomorrow. [[slnc 800]] Sixty jets."},
-  {"key": "The evening shift takes over at 16:35. The last arrivals are on the bank chart: land them, clear the departure queue, and hand over.", "voice": "tower", "say": "The evening shift takes over at sixteen thirty five. [[slnc 500]] The last arrivals are on the bank chart: land them, clear the departure queue, and hand over."}
+ {
+  "key": "Can you have one runway back? No. We have chosen the runways. We choose the order. We are very fast at saying no.",
+  "voice": "spg",
+  "say": "Can you have one runway back? [[slnc 800]] No. [[slnc 800]] We have chosen the runways. [[slnc 500]] We choose the order. [[slnc 800]] We are very fast at saying no."
+ },
+ {
+  "key": "All stations, summit protocol: every runway at Zero Mile is closed. Everyone else, hold.",
+  "voice": "tower",
+  "say": "All stations, summit protocol: every runway at Zero Mile is closed. [[slnc 500]] Everyone else, hold."
+ },
+ {
+  "key": "All stations, summit protocol: every runway at Zero Mile is closed. 1 on final, go around. Everyone else, hold.",
+  "voice": "tower",
+  "say": "All stations, summit protocol: every runway at Zero Mile is closed. [[slnc 500]] One on final, go around. [[slnc 500]] Everyone else, hold."
+ },
+ {
+  "key": "All stations, summit protocol: every runway at Zero Mile is closed. 2 on final, go around. Everyone else, hold.",
+  "voice": "tower",
+  "say": "All stations, summit protocol: every runway at Zero Mile is closed. [[slnc 500]] Two on final, go around. [[slnc 500]] Everyone else, hold."
+ },
+ {
+  "key": "All stations, summit protocol: every runway at Zero Mile is closed. 3 on final, go around. Everyone else, hold.",
+  "voice": "tower",
+  "say": "All stations, summit protocol: every runway at Zero Mile is closed. [[slnc 500]] Three on final, go around. [[slnc 500]] Everyone else, hold."
+ },
+ {
+  "key": "Air India One, Nagpur Approach, radar contact. Expect runway 27L.",
+  "voice": "tower",
+  "say": "Air India One, Nagpur Approach, radar contact. [[slnc 500]] Expect runway two seven left."
+ },
+ {
+  "key": "Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 27L.",
+  "voice": "announcer",
+  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft carrying the Honourable Prime Minister of India [[slnc 600]] shall now be landing [[slnc 600]] on runway two seven left. [[slnc 500]]"
+ },
+ {
+  "key": "Air India One, Nagpur Approach, radar contact. Expect runway 27R.",
+  "voice": "tower",
+  "say": "Air India One, Nagpur Approach, radar contact. [[slnc 500]] Expect runway two seven right."
+ },
+ {
+  "key": "Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 27R.",
+  "voice": "announcer",
+  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft carrying the Honourable Prime Minister of India [[slnc 600]] shall now be landing [[slnc 600]] on runway two seven right. [[slnc 500]]"
+ },
+ {
+  "key": "Air India One, Nagpur Approach, radar contact. Expect runway 28R.",
+  "voice": "tower",
+  "say": "Air India One, Nagpur Approach, radar contact. [[slnc 500]] Expect runway two eight right."
+ },
+ {
+  "key": "Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 28R.",
+  "voice": "announcer",
+  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft carrying the Honourable Prime Minister of India [[slnc 600]] shall now be landing [[slnc 600]] on runway two eight right. [[slnc 500]]"
+ },
+ {
+  "key": "Air India One, Nagpur Approach, radar contact. Expect runway 27C.",
+  "voice": "tower",
+  "say": "Air India One, Nagpur Approach, radar contact. [[slnc 500]] Expect runway two seven centre."
+ },
+ {
+  "key": "Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 27C.",
+  "voice": "announcer",
+  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft carrying the Honourable Prime Minister of India [[slnc 600]] shall now be landing [[slnc 600]] on runway two seven centre. [[slnc 500]]"
+ },
+ {
+  "key": "Air India One, Nagpur Approach, radar contact. Expect runway 28C.",
+  "voice": "tower",
+  "say": "Air India One, Nagpur Approach, radar contact. [[slnc 500]] Expect runway two eight centre."
+ },
+ {
+  "key": "Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 28C.",
+  "voice": "announcer",
+  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft carrying the Honourable Prime Minister of India [[slnc 600]] shall now be landing [[slnc 600]] on runway two eight centre. [[slnc 500]]"
+ },
+ {
+  "key": "Air India One, welcome to Zero Mile. Follow the car with the very large flag.",
+  "voice": "tower",
+  "say": "Air India One, welcome to Zero Mile. [[slnc 500]] Follow the car with the very large flag."
+ },
+ {
+  "key": "An Antonov An-124 is inbound for 27L with the Russian motorcade. The motorcade has its own aeroplane.",
+  "voice": "tower",
+  "say": "An Antonov, A N one twenty four, is inbound for two seven left with the Russian motorcade. [[slnc 800]] The motorcade has its own aeroplane."
+ },
+ {
+  "key": "Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 27L. By Antonov.",
+  "voice": "ru_announcer",
+  "say": "Ladies and gentlemen. [[slnc 1000]] The motorcade of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two seven left. [[slnc 1000]] By Antonov. [[slnc 500]]"
+ },
+ {
+  "key": "Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 27L.",
+  "voice": "ru_announcer",
+  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two seven left. [[slnc 500]]"
+ },
+ {
+  "key": "An Antonov An-124 is inbound for 27R with the Russian motorcade. The motorcade has its own aeroplane.",
+  "voice": "tower",
+  "say": "An Antonov, A N one twenty four, is inbound for two seven right with the Russian motorcade. [[slnc 800]] The motorcade has its own aeroplane."
+ },
+ {
+  "key": "Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 27R. By Antonov.",
+  "voice": "ru_announcer",
+  "say": "Ladies and gentlemen. [[slnc 1000]] The motorcade of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two seven right. [[slnc 1000]] By Antonov. [[slnc 500]]"
+ },
+ {
+  "key": "Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 27R.",
+  "voice": "ru_announcer",
+  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two seven right. [[slnc 500]]"
+ },
+ {
+  "key": "An Antonov An-124 is inbound for 28R with the Russian motorcade. The motorcade has its own aeroplane.",
+  "voice": "tower",
+  "say": "An Antonov, A N one twenty four, is inbound for two eight right with the Russian motorcade. [[slnc 800]] The motorcade has its own aeroplane."
+ },
+ {
+  "key": "Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 28R. By Antonov.",
+  "voice": "ru_announcer",
+  "say": "Ladies and gentlemen. [[slnc 1000]] The motorcade of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two eight right. [[slnc 1000]] By Antonov. [[slnc 500]]"
+ },
+ {
+  "key": "Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 28R.",
+  "voice": "ru_announcer",
+  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two eight right. [[slnc 500]]"
+ },
+ {
+  "key": "An Antonov An-124 is inbound for 27C with the Russian motorcade. The motorcade has its own aeroplane.",
+  "voice": "tower",
+  "say": "An Antonov, A N one twenty four, is inbound for two seven centre with the Russian motorcade. [[slnc 800]] The motorcade has its own aeroplane."
+ },
+ {
+  "key": "Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 27C. By Antonov.",
+  "voice": "ru_announcer",
+  "say": "Ladies and gentlemen. [[slnc 1000]] The motorcade of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two seven centre. [[slnc 1000]] By Antonov. [[slnc 500]]"
+ },
+ {
+  "key": "Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 27C.",
+  "voice": "ru_announcer",
+  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two seven centre. [[slnc 500]]"
+ },
+ {
+  "key": "An Antonov An-124 is inbound for 28C with the Russian motorcade. The motorcade has its own aeroplane.",
+  "voice": "tower",
+  "say": "An Antonov, A N one twenty four, is inbound for two eight centre with the Russian motorcade. [[slnc 800]] The motorcade has its own aeroplane."
+ },
+ {
+  "key": "Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 28C. By Antonov.",
+  "voice": "ru_announcer",
+  "say": "Ladies and gentlemen. [[slnc 1000]] The motorcade of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two eight centre. [[slnc 1000]] By Antonov. [[slnc 500]]"
+ },
+ {
+  "key": "Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 28C.",
+  "voice": "ru_announcer",
+  "say": "Ladies and gentlemen. [[slnc 1000]] The aircraft of His Excellency the President of the Russian Federation [[slnc 600]] will now land [[slnc 600]] on runway two eight centre. [[slnc 500]]"
+ },
+ {
+  "key": "Antonov, welcome to Zero Mile. Please do not park on the red carpet.",
+  "voice": "tower",
+  "say": "Antonov, welcome to Zero Mile. [[slnc 800]] Please do not park on the red carpet."
+ },
+ {
+  "key": "Russia One, welcome to Zero Mile. Your follow-me car is the other car with the very large flag.",
+  "voice": "tower",
+  "say": "Russia One, welcome to Zero Mile. [[slnc 500]] Your follow me car is the other car with the very large flag."
+ },
+ {
+  "key": "Russia Two, welcome. Yes, you look exactly like Russia One. Follow the third car with the very large flag.",
+  "voice": "tower",
+  "say": "Russia Two, welcome. [[slnc 800]] Yes, you look exactly like Russia One. [[slnc 800]] Follow the third car with the very large flag."
+ },
+ {
+  "key": "The Honourable Prime Minister is on the red carpet, to receive His Excellency the President of the Russian Federation.",
+  "voice": "announcer",
+  "say": "The Honourable Prime Minister is on the red carpet, [[slnc 600]] to receive His Excellency the President of the Russian Federation. [[slnc 500]]"
+ },
+ {
+  "key": "The motorcade is driving out of the Antonov. Ten cars. Nobody has asked where they will park.",
+  "voice": "tower",
+  "say": "The motorcade is driving out of the Antonov. [[slnc 500]] Ten cars. [[slnc 800]] Nobody has asked where they will park."
+ },
+ {
+  "key": "The Honourable Prime Minister has received His Excellency the President of the Russian Federation on the red carpet. Handshake: eleven seconds.",
+  "voice": "announcer",
+  "say": "The Honourable Prime Minister has received His Excellency the President of the Russian Federation [[slnc 600]] on the red carpet. [[slnc 1000]] Handshake: [[slnc 600]] eleven seconds. [[slnc 500]]"
+ },
+ {
+  "key": "The motorcade has left for Tadoba. Every road from here to the tigers is closed. The tigers have been informed.",
+  "voice": "spg",
+  "say": "The motorcade has left for Taa-doh-baa. [[slnc 800]] Every road from here to the tigers is closed. [[slnc 800]] The tigers have been informed."
+ },
+ {
+  "key": "Runway 27L is back in service.",
+  "voice": "tower",
+  "say": "Runway two seven left is back in service."
+ },
+ {
+  "key": "Runway 27R is back in service.",
+  "voice": "tower",
+  "say": "Runway two seven right is back in service."
+ },
+ {
+  "key": "Runway 28R is back in service.",
+  "voice": "tower",
+  "say": "Runway two eight right is back in service."
+ },
+ {
+  "key": "Runway 27C is back in service.",
+  "voice": "tower",
+  "say": "Runway two seven centre is back in service."
+ },
+ {
+  "key": "Runway 28C is back in service.",
+  "voice": "tower",
+  "say": "Runway two eight centre is back in service."
+ },
+ {
+  "key": "The summit stack is cleared. Normal service.",
+  "voice": "tower",
+  "say": "The summit stack is cleared. [[slnc 500]] Normal service."
+ },
+ {
+  "key": "The summit stack is cleared: 1 left holding. Normal service.",
+  "voice": "tower",
+  "say": "The summit stack is cleared: one left holding. [[slnc 500]] Normal service."
+ },
+ {
+  "key": "The summit stack is cleared: 2 left holding. Normal service.",
+  "voice": "tower",
+  "say": "The summit stack is cleared: two left holding. [[slnc 500]] Normal service."
+ },
+ {
+  "key": "The summit stack is cleared: 3 left holding. Normal service.",
+  "voice": "tower",
+  "say": "The summit stack is cleared: three left holding. [[slnc 500]] Normal service."
+ },
+ {
+  "key": "The summit stack is 22 aircraft. Give arrivals every runway you can.",
+  "voice": "tower",
+  "say": "The summit stack is 22 aircraft. [[slnc 500]] Give arrivals every runway you can."
+ },
+ {
+  "key": "The summit stack is 23 aircraft. Give arrivals every runway you can.",
+  "voice": "tower",
+  "say": "The summit stack is 23 aircraft. [[slnc 500]] Give arrivals every runway you can."
+ },
+ {
+  "key": "The summit stack is 24 aircraft. Give arrivals every runway you can.",
+  "voice": "tower",
+  "say": "The summit stack is 24 aircraft. [[slnc 500]] Give arrivals every runway you can."
+ },
+ {
+  "key": "The summit stack is 25 aircraft. Give arrivals every runway you can.",
+  "voice": "tower",
+  "say": "The summit stack is 25 aircraft. [[slnc 500]] Give arrivals every runway you can."
+ },
+ {
+  "key": "The summit stack is 26 aircraft. Give arrivals every runway you can.",
+  "voice": "tower",
+  "say": "The summit stack is 26 aircraft. [[slnc 500]] Give arrivals every runway you can."
+ },
+ {
+  "key": "The summit stack is 27 aircraft. Give arrivals every runway you can.",
+  "voice": "tower",
+  "say": "The summit stack is 27 aircraft. [[slnc 500]] Give arrivals every runway you can."
+ },
+ {
+  "key": "The summit stack is 28 aircraft. Give arrivals every runway you can.",
+  "voice": "tower",
+  "say": "The summit stack is 28 aircraft. [[slnc 500]] Give arrivals every runway you can."
+ },
+ {
+  "key": "The summit stack is 29 aircraft. Give arrivals every runway you can.",
+  "voice": "tower",
+  "say": "The summit stack is 29 aircraft. [[slnc 500]] Give arrivals every runway you can."
+ },
+ {
+  "key": "The summit stack is 30 aircraft. Give arrivals every runway you can.",
+  "voice": "tower",
+  "say": "The summit stack is 30 aircraft. [[slnc 500]] Give arrivals every runway you can."
+ },
+ {
+  "key": "The summit stack is 31 aircraft. Give arrivals every runway you can.",
+  "voice": "tower",
+  "say": "The summit stack is 31 aircraft. [[slnc 500]] Give arrivals every runway you can."
+ },
+ {
+  "key": "The summit stack is 32 aircraft. Give arrivals every runway you can.",
+  "voice": "tower",
+  "say": "The summit stack is 32 aircraft. [[slnc 500]] Give arrivals every runway you can."
+ },
+ {
+  "key": "Stack down to 9. Keep the arrival runways coming.",
+  "voice": "tower",
+  "say": "Stack down to 9. [[slnc 500]] Keep the arrival runways coming."
+ },
+ {
+  "key": "Stack down to 10. Keep the arrival runways coming.",
+  "voice": "tower",
+  "say": "Stack down to 10. [[slnc 500]] Keep the arrival runways coming."
+ },
+ {
+  "key": "Stack down to 11. Keep the arrival runways coming.",
+  "voice": "tower",
+  "say": "Stack down to 11. [[slnc 500]] Keep the arrival runways coming."
+ },
+ {
+  "key": "Stack down to 12. Keep the arrival runways coming.",
+  "voice": "tower",
+  "say": "Stack down to 12. [[slnc 500]] Keep the arrival runways coming."
+ },
+ {
+  "key": "Stack down to 13. Keep the arrival runways coming.",
+  "voice": "tower",
+  "say": "Stack down to 13. [[slnc 500]] Keep the arrival runways coming."
+ },
+ {
+  "key": "Stack down to 14. Keep the arrival runways coming.",
+  "voice": "tower",
+  "say": "Stack down to 14. [[slnc 500]] Keep the arrival runways coming."
+ },
+ {
+  "key": "Stack down to 15. Keep the arrival runways coming.",
+  "voice": "tower",
+  "say": "Stack down to 15. [[slnc 500]] Keep the arrival runways coming."
+ },
+ {
+  "key": "Stack down to 16. Keep the arrival runways coming.",
+  "voice": "tower",
+  "say": "Stack down to 16. [[slnc 500]] Keep the arrival runways coming."
+ },
+ {
+  "key": "Saheb, since 1890, never late.",
+  "voice": "in",
+  "say": "Saa-heb, since eighteen ninety, never late."
+ },
+ {
+  "key": "Lunch is late, saheb.",
+  "voice": "in",
+  "say": "Lunch is late, saa-heb."
+ },
+ {
+  "key": "The tower is not happy. 🍱",
+  "voice": "in",
+  "say": "The tower is not happy."
+ },
+ {
+  "key": "The tower is hungry. Changeovers are taking longer. Nobody talk to the supervisor.",
+  "voice": "tower",
+  "say": "The tower is hungry. [[slnc 500]] Changeovers are taking longer. [[slnc 800]] Nobody talk to the supervisor."
+ },
+ {
+  "key": "Lunch has arrived in the tower. Every dabba correct. Again.",
+  "voice": "tower",
+  "say": "Lunch has arrived in the tower. [[slnc 500]] Every dub-baa correct. [[slnc 800]] Again."
+ },
+ {
+  "key": "GPS says Khyber Pakhtunkhwa. Radar says Butibori.",
+  "voice": "tower",
+  "say": "G P S says Khyber Pukh-toon-khwa. [[slnc 800]] Radar says Booti Bori."
+ },
+ {
+  "key": "I believe my radar. 📡",
+  "voice": "tower",
+  "say": "I believe my radar."
+ },
+ {
+  "key": "GPS spoofing has stopped. The aircraft are back over Nagpur, where they always were.",
+  "voice": "tower",
+  "say": "G P S spoofing has stopped. [[slnc 500]] The aircraft are back over Naag-pur, where they always were."
+ },
+ {
+  "key": "Sir, forty jets. One muhurat.",
+  "voice": "in",
+  "say": "Sir, forty jets. [[slnc 800]] One moo-hoo-rut."
+ },
+ {
+  "key": "Not one minute after. 💍",
+  "voice": "in",
+  "say": "Not one minute after."
+ },
+ {
+  "key": "Baraat 1, welcome to Zero Mile. Follow the car with the marigolds to the wedding apron.",
+  "voice": "tower",
+  "say": "Buh-raat one, welcome to Zero Mile. [[slnc 500]] Follow the car with the marigolds to the wedding apron."
+ },
+ {
+  "key": "One elephant is arriving by road. It has been cleared.",
+  "voice": "tower",
+  "say": "One elephant is arriving by road. [[slnc 800]] It has been cleared."
+ },
+ {
+  "key": "Ten down, thirty to go. The groom's side has asked for a water salute. The bride's side has asked for a bigger one.",
+  "voice": "in",
+  "say": "Ten down, thirty to go. [[slnc 500]] The groom's side has asked for a water salute. [[slnc 800]] The bride's side has asked for a bigger one."
+ },
+ {
+  "key": "Half the guest list is down. Baraat 21 is carrying only the lehengas. Baraat 22 is carrying the jewellery for Baraat 21.",
+  "voice": "in",
+  "say": "Half the guest list is down. [[slnc 500]] Buh-raat twenty one is carrying only the leh-hun-gaas. [[slnc 800]] Buh-raat twenty two is carrying the jewellery for Buh-raat twenty one."
+ },
+ {
+  "key": "The groom will now change to a horse. The horse is on Baraat 31.",
+  "voice": "in",
+  "say": "The groom will now change to a horse. [[slnc 800]] The horse is on Buh-raat thirty one."
+ },
+ {
+  "key": "All forty landed before the muhurat.",
+  "voice": "in",
+  "say": "All forty landed before the moo-hoo-rut."
+ },
+ {
+  "key": "Shubh vivah! 💐",
+  "voice": "in",
+  "say": "Shoobh vi-vaah!"
+ },
+ {
+  "key": "Return gift for the tower: one silver box of kaju katli. Each. We have accepted.",
+  "voice": "tower",
+  "say": "Return gift for the tower: one silver box of kaa-joo kut-lee. [[slnc 800]] Each. [[slnc 800]] We have accepted."
+ },
+ {
+  "key": "Sir, fog. In the afternoon. At 46 degrees.",
+  "voice": "in",
+  "say": "Sir, fog. [[slnc 800]] In the afternoon. [[slnc 800]] At forty six degrees."
+ },
+ {
+  "key": "We are as surprised as you are. 🌫️",
+  "voice": "in",
+  "say": "We are as surprised as you are."
+ },
+ {
+  "key": "Low visibility procedures in force. Runway visual range 350 metres. Increased spacing on all runways.",
+  "voice": "tower",
+  "say": "Low visibility procedures in force. [[slnc 500]] Runway visual range, three five zero metres. [[slnc 500]] Increased spacing on all runways."
+ },
+ {
+  "key": "Backtracking in this? I cannot see the runway from the cab.",
+  "voice": "tower",
+  "say": "Backtracking in this? [[slnc 800]] I cannot see the runway from the cab."
+ },
+ {
+  "key": "Every read-back in full. Nobody rushes.",
+  "voice": "tower",
+  "say": "Every read back in full. [[slnc 800]] Nobody rushes."
+ },
+ {
+  "key": "Satpura 77, backtrack runway 27L, vacate at the next exit, report runway vacated.",
+  "voice": "tower",
+  "say": "Saat-poo-raa seven seven, backtrack runway two seven left, vacate at the next exit, report runway vacated."
+ },
+ {
+  "key": "Orange City 1801, line up and wait, runway 27L.",
+  "voice": "tower",
+  "say": "Orange City one eight zero one, line up and wait, runway two seven left."
+ },
+ {
+  "key": "…we are now at take-off.",
+  "voice": "in",
+  "say": "we are now at take off."
+ },
+ {
+  "key": "OK… [squeal] …stand by for take-off, I will call you.",
+  "voice": "tower",
+  "say": "OK. [[slnc 700]] stand by for take off, I will call you."
+ },
+ {
+  "key": "We are still on the runway! Satpura 77 still on the runway!",
+  "voice": "in",
+  "say": "We are still on the runway! [[slnc 500]] Saat-poo-raa seven seven, still on the runway!"
+ },
+ {
+  "key": "ORANGE CITY 1801, STOP IMMEDIATELY! I say again, STOP IMMEDIATELY!",
+  "voice": "tower",
+  "say": "Orange City one eight zero one, stop immediately! [[slnc 500]] I say again, stop immediately!"
+ },
+ {
+  "key": "Orange City 1801 stopped. Runway 27L closed for the investigation.",
+  "voice": "tower",
+  "say": "Orange City one eight zero one stopped. [[slnc 500]] Runway two seven left closed for the investigation."
+ },
+ {
+  "key": "Orange City has stopped. Four hundred metres short.",
+  "voice": "tower",
+  "say": "Orange City has stopped. [[slnc 800]] Four hundred metres short."
+ },
+ {
+  "key": "Nobody moves on that runway until I can see it.",
+  "voice": "tower"
+ },
+ {
+  "key": "ALL STATIONS, ALL STATIONS: aircraft accident on runway 27L. All runways closed. Fire services responding.",
+  "voice": "tower",
+  "say": "All stations, all stations: aircraft accident on runway two seven left. [[slnc 500]] All runways closed. [[slnc 500]] Fire services responding."
+ },
+ {
+  "key": "Crash tenders on scene. Foam going on now.",
+  "voice": "in",
+  "say": "Crash tenders on scene. [[slnc 500]] Foam going on now."
+ },
+ {
+  "key": "Both crews are out. The medics have them.",
+  "voice": "in",
+  "say": "Both crews are out. [[slnc 800]] The medics have them."
+ },
+ {
+  "key": "Arrivals: hold. Divert if your fuel requires.",
+  "voice": "tower",
+  "say": "Arrivals: hold. [[slnc 500]] Divert if your fuel requires."
+ },
+ {
+  "key": "27L is closed for the rest of the day.",
+  "voice": "tower",
+  "say": "Two seven left is closed for the rest of the day."
+ },
+ {
+  "key": "We will run on the other four. Arrivals first.",
+  "voice": "tower",
+  "say": "We will run on the other four. [[slnc 800]] Arrivals first."
+ },
+ {
+  "key": "Runways other than 27L reopening. 27L is closed for the rest of the day.",
+  "voice": "tower",
+  "say": "Runways other than two seven left reopening. [[slnc 500]] Two seven left is closed for the rest of the day."
+ },
+ {
+  "key": "Orange City 1801 airborne. That was too close.",
+  "voice": "tower",
+  "say": "Orange City one eight zero one airborne. [[slnc 800]] That was too close."
+ },
+ {
+  "key": "The fog has lifted. Normal spacing on the open runways.",
+  "voice": "tower",
+  "say": "The fog has lifted. [[slnc 500]] Normal spacing on the open runways."
+ },
+ {
+  "key": "The fog has lifted.",
+  "voice": "in"
+ },
+ {
+  "key": "Fifteen minutes of fog at 46 degrees. We are writing a paper.",
+  "voice": "in",
+  "say": "Fifteen minutes of fog, at forty six degrees. [[slnc 800]] We are writing a paper."
+ },
+ {
+  "key": "The fire is out.",
+  "voice": "in"
+ },
+ {
+  "key": "The foam stays down until the investigators have seen it.",
+  "voice": "in"
+ },
+ {
+  "key": "Investigators from the Aircraft Accident Investigation Bureau are on site at 27L. It stays closed for the rest of the day.",
+  "voice": "tower",
+  "say": "Investigators from the Aircraft Accident Investigation Bureau are on site at two seven left. [[slnc 500]] It stays closed for the rest of the day."
+ },
+ {
+  "key": "Lost property from the summit: one fur hat, size large. At 46 degrees. It is being kept in the cold room.",
+  "voice": "tower",
+  "say": "Lost property from the summit: one fur hat, size large. [[slnc 800]] At forty six degrees. [[slnc 800]] It is being kept in the cold room."
+ },
+ {
+  "key": "The Chambanis thank the tower. The reception is tomorrow. Sixty jets.",
+  "voice": "in",
+  "say": "The Chum-baa-nees thank the tower. [[slnc 500]] The reception is tomorrow. [[slnc 800]] Sixty jets."
+ },
+ {
+  "key": "The evening shift takes over at 16:35. The last arrivals are on the bank chart: land them, clear the departure queue, and hand over.",
+  "voice": "tower",
+  "say": "The evening shift takes over at sixteen thirty five. [[slnc 500]] The last arrivals are on the bank chart: land them, clear the departure queue, and hand over."
+ }
 ]

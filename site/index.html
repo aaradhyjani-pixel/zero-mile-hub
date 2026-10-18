@@ -1488,7 +1488,7 @@ const LEVELS=[
 let flights=[],FID=0,S=null,incidents=[],INC=0,selected=null,hover=null,selRw=null;
 const puffs=[],moveLog=[];
 function resetState(){
-  SUM=null;STO=[];CINE=null;PACE=null;HOLDDEP=null;MARKS=[];FXV=[];voiceReset();if(typeof ltReset==="function")ltReset();{const kc=$('#kiteChip');if(kc)kc.hidden=true;const wc=$('#wedChip');if(wc)wc.hidden=true;const sb=$('#stopBtn');if(sb)sb.hidden=true;const ft=$('#fogTag');if(ft)ft.hidden=true;fogF=0;}cinema.q=[];specialArr.list=[];flights=[];FID=0;incidents=[];INC=0;selected=null;hover=null;selRw=null;puffs.length=0;moveLog.length=0;ops.length=0;opsClock=0;lastCnx=-1e9;
+  SUM=null;STO=[];CINE=null;PACE=null;endDue.cut=false;HOLDDEP=null;MARKS=[];FXV=[];voiceReset();if(typeof ltReset==="function")ltReset();{const kc=$('#kiteChip');if(kc)kc.hidden=true;const wc=$('#wedChip');if(wc)wc.hidden=true;const sb=$('#stopBtn');if(sb)sb.hidden=true;const ft=$('#fogTag');if(ft)ft.hidden=true;fogF=0;}cinema.q=[];specialArr.list=[];flights=[];FID=0;incidents=[];INC=0;selected=null;hover=null;selRw=null;puffs.length=0;moveLog.length=0;ops.length=0;opsClock=0;lastCnx=-1e9;
   S={tl:[],flipLog:[],tlNext:0,combo:0,bestCombo:0,moves:0,arr:0,dep:0,depOnTime:0,arrOnTime:0,cnxMade:0,cnxMiss:0,safety:100,incOk:0,incDef:0,incTypes:{},hits:[],holdMin:0,div:0,goArounds:0,log:[],delaySum:0,flips:0};
   GATES.forEach(g=>{g.occ=null;g.res=null;});
   RW.forEach(r=>{r.tdList=[];r.lastSchedTd=-1e9;r.lastDep=-1e9;r.arrExit=-1e9;r.occ=null;r.changeUntil=-1;r.closedUntil=-1;r.why='';r.ops=0;r.flash=0;r.blocks=[];r.gapReq=false;r.degraded=false;r.strike=null;r.shear=false;r.sepK=1;r.sepUntil=-1;r.kiteUntil=-1;r.kiteFrom=-1;r.kiteP=0.25;r.noArrUntil=-1;r.gpsUntil=-1;r.noDepUntil=-1;r.btUntil=-1;});
@@ -2039,37 +2039,37 @@ const SPG_AUDIO={
 "All stations, summit protocol: every runway at Zero Mile is closed. 2 on final, go around. Everyone else, hold.": "voice/clips/88282935247c.mp3",
 "All stations, summit protocol: every runway at Zero Mile is closed. 3 on final, go around. Everyone else, hold.": "voice/clips/81df7463099e.mp3",
 "Air India One, Nagpur Approach, radar contact. Expect runway 27L.": "voice/clips/5e26b712a959.mp3",
-"Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 27L.": "voice/clips/31067160b193.mp3",
+"Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 27L.": "voice/clips/a32f257033e6.mp3",
 "Air India One, Nagpur Approach, radar contact. Expect runway 27R.": "voice/clips/73eaaed503c8.mp3",
-"Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 27R.": "voice/clips/dafe595b934d.mp3",
+"Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 27R.": "voice/clips/cc4190936a5a.mp3",
 "Air India One, Nagpur Approach, radar contact. Expect runway 28R.": "voice/clips/22c328069eb2.mp3",
-"Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 28R.": "voice/clips/382575a32d5d.mp3",
+"Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 28R.": "voice/clips/04b12ede4623.mp3",
 "Air India One, Nagpur Approach, radar contact. Expect runway 27C.": "voice/clips/59bba212216a.mp3",
-"Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 27C.": "voice/clips/9b8b5bc84bef.mp3",
+"Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 27C.": "voice/clips/ac7812de3e9a.mp3",
 "Air India One, Nagpur Approach, radar contact. Expect runway 28C.": "voice/clips/eb1b347eca22.mp3",
-"Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 28C.": "voice/clips/77d6de4b8e61.mp3",
+"Ladies and gentlemen. The aircraft carrying the Honourable Prime Minister of India shall now be landing on runway 28C.": "voice/clips/2b4a25f3d848.mp3",
 "Air India One, welcome to Zero Mile. Follow the car with the very large flag.": "voice/clips/bc3a74b988ee.mp3",
 "An Antonov An-124 is inbound for 27L with the Russian motorcade. The motorcade has its own aeroplane.": "voice/clips/d5c4dde6a139.mp3",
-"Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 27L. By Antonov.": "voice/clips/eb9329db249b.mp3",
-"Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 27L.": "voice/clips/94883ff6c404.mp3",
+"Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 27L. By Antonov.": "voice/clips/46746ef75bd7.mp3",
+"Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 27L.": "voice/clips/4966cc60c177.mp3",
 "An Antonov An-124 is inbound for 27R with the Russian motorcade. The motorcade has its own aeroplane.": "voice/clips/7a1a2a448636.mp3",
-"Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 27R. By Antonov.": "voice/clips/186c16f674e5.mp3",
-"Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 27R.": "voice/clips/6a687537dbed.mp3",
+"Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 27R. By Antonov.": "voice/clips/a6f7cf2a2b56.mp3",
+"Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 27R.": "voice/clips/bd6afa2193c3.mp3",
 "An Antonov An-124 is inbound for 28R with the Russian motorcade. The motorcade has its own aeroplane.": "voice/clips/a3143e7e4a97.mp3",
-"Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 28R. By Antonov.": "voice/clips/9bb7e1e1ccfb.mp3",
-"Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 28R.": "voice/clips/1540c4f68e47.mp3",
+"Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 28R. By Antonov.": "voice/clips/4b8168298cf5.mp3",
+"Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 28R.": "voice/clips/63881977940b.mp3",
 "An Antonov An-124 is inbound for 27C with the Russian motorcade. The motorcade has its own aeroplane.": "voice/clips/7415e7eea3a2.mp3",
-"Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 27C. By Antonov.": "voice/clips/22bd49d9b80d.mp3",
-"Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 27C.": "voice/clips/89d69e147ecf.mp3",
+"Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 27C. By Antonov.": "voice/clips/54c0c28108f5.mp3",
+"Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 27C.": "voice/clips/54191780e276.mp3",
 "An Antonov An-124 is inbound for 28C with the Russian motorcade. The motorcade has its own aeroplane.": "voice/clips/91f449a27559.mp3",
-"Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 28C. By Antonov.": "voice/clips/7eed3cbb17cc.mp3",
-"Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 28C.": "voice/clips/14d03ee23b49.mp3",
+"Ladies and gentlemen. The motorcade of His Excellency the President of the Russian Federation will now land on runway 28C. By Antonov.": "voice/clips/0607e6d60cc2.mp3",
+"Ladies and gentlemen. The aircraft of His Excellency the President of the Russian Federation will now land on runway 28C.": "voice/clips/904f17656ec5.mp3",
 "Antonov, welcome to Zero Mile. Please do not park on the red carpet.": "voice/clips/e61006247dd1.mp3",
 "Russia One, welcome to Zero Mile. Your follow-me car is the other car with the very large flag.": "voice/clips/411ccf1cbcea.mp3",
 "Russia Two, welcome. Yes, you look exactly like Russia One. Follow the third car with the very large flag.": "voice/clips/0eb522f18e93.mp3",
-"The Honourable Prime Minister is on the red carpet, to receive His Excellency the President of the Russian Federation.": "voice/clips/5631daf1e9df.mp3",
+"The Honourable Prime Minister is on the red carpet, to receive His Excellency the President of the Russian Federation.": "voice/clips/64f2521bcaf1.mp3",
 "The motorcade is driving out of the Antonov. Ten cars. Nobody has asked where they will park.": "voice/clips/fd2e19bc831a.mp3",
-"The Honourable Prime Minister has received His Excellency the President of the Russian Federation on the red carpet. Handshake: eleven seconds.": "voice/clips/c6f401ffa320.mp3",
+"The Honourable Prime Minister has received His Excellency the President of the Russian Federation on the red carpet. Handshake: eleven seconds.": "voice/clips/caa22cb2865c.mp3",
 "The motorcade has left for Tadoba. Every road from here to the tigers is closed. The tigers have been informed.": "voice/clips/323fc320bcef.mp3",
 "Runway 27L is back in service.": "voice/clips/08cb874fdd32.mp3",
 "Runway 27R is back in service.": "voice/clips/1fd84476d2ff.mp3",
@@ -2104,7 +2104,7 @@ const SPG_AUDIO={
 "The tower is not happy. 🍱": "voice/clips/351e335a76f3.mp3",
 "The tower is hungry. Changeovers are taking longer. Nobody talk to the supervisor.": "voice/clips/20cf36d4bcfb.mp3",
 "Lunch has arrived in the tower. Every dabba correct. Again.": "voice/clips/9b370797a9c5.mp3",
-"GPS says Muscat. Radar says Butibori.": "voice/clips/123e7f334eb8.mp3",
+"GPS says Khyber Pakhtunkhwa. Radar says Butibori.": "voice/clips/08fcdbc32a4a.mp3",
 "I believe my radar. 📡": "voice/clips/ea6eda1d5c21.mp3",
 "GPS spoofing has stopped. The aircraft are back over Nagpur, where they always were.": "voice/clips/aea1c1068825.mp3",
 "Sir, forty jets. One muhurat.": "voice/clips/a6be806c9e16.mp3",
@@ -2148,35 +2148,35 @@ const SPG_AUDIO={
 "Lost property from the summit: one fur hat, size large. At 46 degrees. It is being kept in the cold room.": "voice/clips/7a33ad1c6cdd.mp3",
 "The Chambanis thank the tower. The reception is tomorrow. Sixty jets.": "voice/clips/40a64910ad0f.mp3",
 "The evening shift takes over at 16:35. The last arrivals are on the bank chart: land them, clear the departure queue, and hand over.": "voice/clips/60aedb956d38.mp3",
-"Ladies and gentlemen, the motorcade of the President of the United States.": "voice/clips/35e8edba26e7.mp3",
+"Ladies and gentlemen, the motorcade of the President of the United States.": "voice/clips/53fb32fa2706.mp3",
 "Zero Mile Tower, Reach One, heavy, 27R. We have the cars. All of them.": "voice/clips/80ee2654ad93.mp3",
 "Bhutan One, 27R. Smallest delegation. Happiest delegation.": "voice/clips/679125830b77.mp3",
 "Netherlands One, 27C. We brought our own bicycles.": "voice/clips/90a8e2e14abc.mp3",
 "Kenya One, 27R. Jambo, Nagpur.": "voice/clips/c300c70f62cf.mp3",
 "Italian Air Force, 27C. We are on time. Please write it down.": "voice/clips/52fd37ffdb5d.mp3",
-"Ladies and gentlemen: the United Arab Emirates.": "voice/clips/dd046352088c.mp3",
+"Ladies and gentlemen: the United Arab Emirates.": "voice/clips/78f662567125.mp3",
 "Zero Mile Tower, Emirates One, super, 27R. One delegation, two decks.": "voice/clips/ad2f964bc6e1.mp3",
 "Thai One, 27R. Sawasdee, Nagpur.": "voice/clips/04a1a11199a9.mp3",
 "Malaysian One, 27C. We were told to land after Thailand. We did.": "voice/clips/9dc12636729a.mp3",
 "Canforce 001, 27R. Sorry, are we early? Sorry.": "voice/clips/5509437e4aab.mp3",
 "Portuguese Air Force One, 27C. Obrigado for the slot. Lovely stack.": "voice/clips/6e0c0e48d481.mp3",
-"Ladies and gentlemen: Japan.": "voice/clips/cf77455803ad.mp3",
+"Ladies and gentlemen: Japan.": "voice/clips/d598cdd557c8.mp3",
 "Zero Mile Tower, Japanese Air Force One, 27R. On time.": "voice/clips/e3894bd717b4.mp3",
 "Zero Mile Tower, Japanese Air Force Two. The backup. Also on time.": "voice/clips/717c41412aaa.mp3",
 "Sri Lanka One, 27R. We have brought tea for the holding stack.": "voice/clips/a917698cf5c6.mp3",
 "Belgian Air Force, 27C. Chocolates for the tower are on board.": "voice/clips/85469835b72a.mp3",
 "Singapore One, 27R. Touchdown planned at zero seconds past the minute.": "voice/clips/5159b2c15d1e.mp3",
-"Ladies and gentlemen. The aircraft carrying the President of the People's Republic of China shall now be landing on runway 27R.": "voice/clips/f0dd4089109b.mp3",
+"Ladies and gentlemen. The aircraft carrying the President of the People's Republic of China shall now be landing on runway 27R.": "voice/clips/44be7055af49.mp3",
 "Zero Mile Tower, Air China One, established on the localiser, runway 27R.": "voice/clips/96a6c033de03.mp3",
 "Air China One, runway 27R, cleared to land. The red carpet has been measured twice.": "voice/clips/9ce8211a55bf.mp3",
 "Aussie One, 27R. G'day. Long way for a photo.": "voice/clips/8cc4e5144b8c.mp3",
 "Kiwi One, 27C. Kia ora. We are not Australia.": "voice/clips/a1f3e41cd5cd.mp3",
 "Irish One, 27R. Grand day for it.": "voice/clips/70b70b78d911.mp3",
-"Ladies and gentlemen: the Federal Republic of Germany.": "voice/clips/88789aa7b5e1.mp3",
+"Ladies and gentlemen: the Federal Republic of Germany.": "voice/clips/9fa0bf43834e.mp3",
 "Zero Mile Tower, German Air Force One, 27R. We are four seconds early. We apologise.": "voice/clips/7be2cc113239.mp3",
 "Swedish Air Force One, 27R. Our red carpet is flat-packed. Assembly takes ten minutes.": "voice/clips/05e4005ce0ad.mp3",
 "Polish Air Force 001, 27C. Dzień dobry. Who do we follow?": "voice/clips/1bdf1d3efd0f.mp3",
-"Attention, please. The delegation of the Russian Federation. First, the cars. Then two aircraft. They are identical.": "voice/clips/d84b8a6b9189.mp3",
+"Attention, please. The delegation of the Russian Federation. First, the cars. Then two aircraft. They are identical.": "voice/clips/dd0070fb2b67.mp3",
 "Russia Cargo, Antonov, heavy, 27C. The cars are on board.": "voice/clips/5fa79b7b37d1.mp3",
 "Zero Mile Tower, Russia, Ilyushin, established, runway 27R.": "voice/clips/08486ae656df.mp3",
 "Russia Two, also Ilyushin, also established, 27C.": "voice/clips/eeb30a3faa7d.mp3",
@@ -2185,39 +2185,39 @@ const SPG_AUDIO={
 "Tango 01, 27C. Longest flight of the day. Do we win something?": "voice/clips/8ec9d87e5d5d.mp3",
 "Zero Mile Approach, Aeromexico 92, still holding. Mexico flew commercial.": "voice/clips/bf5e62cf7231.mp3",
 "Zero Mile Tower, Aeromexico 92, on the ground. Mexico flew commercial.": "voice/clips/6a64bf85ef07.mp3",
-"Ladies and gentlemen: the United Kingdom.": "voice/clips/2f3f5c9df400.mp3",
+"Ladies and gentlemen: the United Kingdom.": "voice/clips/157b063275be.mp3",
 "Zero Mile Tower, Ascot One, 27R. Lovely holding stack. Very orderly queue.": "voice/clips/3d443da9096b.mp3",
 "Indonesia One, heavy, 27C. Selamat siang, Nagpur.": "voice/clips/098a01c46001.mp3",
 "Vietnam One, 27R. Xin chào. Ready for the red carpet.": "voice/clips/9ea6a8305177.mp3",
 "South African One, 27R. Howzit, Nagpur.": "voice/clips/c83ddab08dbd.mp3",
-"Ladies and gentlemen: the Kingdom of Saudi Arabia.": "voice/clips/b2bc9365f029.mp3",
+"Ladies and gentlemen: the Kingdom of Saudi Arabia.": "voice/clips/8ab649e49578.mp3",
 "Zero Mile Tower, Saudi One, heavy, 27R. Two more aircraft behind us. Luggage.": "voice/clips/c4775f63221d.mp3",
 "Amiri One, heavy, 27C. The gifts are in the forward hold.": "voice/clips/e5e1d5a7ac75.mp3",
 "Turkish Government, 27R. We heard about the carpet. We have brought a carpet.": "voice/clips/1f12afd54591.mp3",
-"Ladies and gentlemen: the French Republic.": "voice/clips/6b91e11b8852.mp3",
+"Ladies and gentlemen: the French Republic.": "voice/clips/afdd4a5b5779.mp3",
 "Zero Mile Tower, Cotam 001, 27R. The press is in the second aircraft. They are already writing.": "voice/clips/c77e3b410c82.mp3",
 "Spanish Air Force, 27R. Buenas tardes, Nagpur.": "voice/clips/df6cf3fbee3c.mp3",
 "Nigerian One, heavy, 27C. Our delegation is bigger than our aircraft.": "voice/clips/be1d061831d1.mp3",
-"Ladies and gentlemen: the Republic of Korea.": "voice/clips/ffd7a43023ec.mp3",
+"Ladies and gentlemen: the Republic of Korea.": "voice/clips/1273ee1f17aa.mp3",
 "Zero Mile Tower, Korean Air Force One, 27R. Code One, on the glide path. Exactly on it.": "voice/clips/d40f4cc45a9b.mp3",
 "Kazakh One, 27R. Long way from Astana. Short way to the carpet.": "voice/clips/100d8eea3655.mp3",
 "Bangladesh One, 27C. Short flight. Long holding.": "voice/clips/5cefc428d285.mp3",
 "EU 01, 27R. Twenty-seven countries, one aircraft.": "voice/clips/fd34288e65ff.mp3",
-"Ladies and gentlemen. The aircraft carrying the President of the United States shall now be landing on runway 27R.": "voice/clips/1f0727eec378.mp3",
+"Ladies and gentlemen. The aircraft carrying the President of the United States shall now be landing on runway 27R.": "voice/clips/58657dcb02fc.mp3",
 "Zero Mile Tower, Air Force One, established on the localiser, runway 27R.": "voice/clips/46a445f213ee.mp3",
 "Air Force One, Zero Mile Tower, runway 27R, cleared to land. Welcome to India.": "voice/clips/8fc8d2ea5cdc.mp3",
 "SAM 29000, the spare, runway 27C, cleared to land.": "voice/clips/aa6625b585bb.mp3",
 "We now take 27L as well.": "voice/clips/edc9145e582f.mp3",
 "The spare aircraft needs a spare runway.": "voice/clips/2c85657dd48f.mp3",
-"Ladies and gentlemen. Three Presidents shall now be landing at the same time, on three runways. Nobody will be first.": "voice/clips/d431f671ccb8.mp3",
+"Ladies and gentlemen. Three Presidents shall now be landing at the same time, on three runways. Nobody will be first.": "voice/clips/86d4e8df6714.mp3",
 "Air China One, runway 27R.": "voice/clips/2c038d472922.mp3",
 "Russia, runway 27C.": "voice/clips/b37826269b75.mp3",
 "Air Force One, runway 27L.": "voice/clips/06bcd01e21bb.mp3",
 "Air China One, Russia, Air Force One: all three cleared to land. Together.": "voice/clips/a204ad144528.mp3",
 "Aussie One, 27C. G'day. Long way for a photo.": "voice/clips/99da1101dbcf.mp3",
-"Attention, please. The cars of the Russian Federation. Then the second aircraft. Also identical.": "voice/clips/cf8cdd0902b6.mp3",
+"Attention, please. The cars of the Russian Federation. Then the second aircraft. Also identical.": "voice/clips/f6999368e4c4.mp3",
 "Russia Two, also Ilyushin, also established, 27R.": "voice/clips/25bf68b204d5.mp3",
-"Ladies and gentlemen. The spare aircraft of the President of the United States.": "voice/clips/e4787ee6b004.mp3",
+"Ladies and gentlemen. The spare aircraft of the President of the United States.": "voice/clips/3f90410ed105.mp3",
 "Zero Mile Tower, SAM 29000, the spare, runway 27R. Nobody on board.": "voice/clips/67498f443b35.mp3"
 };
 const VOICE_LANG={"spg": "en-IN", "announcer": "en-IN", "tower": "en-IN", "in": "en-IN", "ru": "ru-RU", "ru_announcer": "ru-RU", "kz": "ru-RU", "cn": "zh-CN", "us": "en-US", "jp": "ja-JP", "kr": "ko-KR", "ae": "ar-AE", "de": "de-DE", "fr": "fr-FR", "ca": "fr-CA", "it": "it-IT", "es": "es-ES", "mx": "es-MX", "br": "pt-BR", "pt": "pt-PT", "nl": "nl-NL", "be": "nl-BE", "eu": "nl-BE", "tr": "tr-TR", "my": "ms-MY", "sg": "en-SG", "id": "id-ID", "th": "th-TH", "vn": "vi-VN", "pl": "pl-PL", "se": "sv-SE", "gb": "en-GB", "au": "en-AU", "ie": "en-IE", "za": "en-ZA", "ng": "en-NG"};
@@ -2234,18 +2234,43 @@ function pickVoice(vs,lang){const sc=v=>(/en[-_]IN/i.test(v.lang)?4:/en[-_]GB/i.
   if(lang){const L=lang.toLowerCase().replace('_','-'),m=vs.filter(v=>v.lang.toLowerCase().replace('_','-').startsWith(L.split('-')[0])&&(L.indexOf('-')<0||v.lang.toLowerCase().replace('_','-')===L||true));
     const q=v=>(v.lang.toLowerCase().replace('_','-')===L?2:0)+(/enhanced|premium|natural|neural|google/i.test(v.name)?1:0);return m.sort((a,b)=>q(b)-q(a))[0]||null;}
   return vs.slice().sort((a,b)=>sc(b)-sc(a))[0]||null;}
-function vqNext(){if(vqOn)return;const it=VQ.shift();if(!it)return;if(it.valid&&!it.valid()){if(it.onEnd)it.onEnd();return vqNext();}vqOn=true;let fin=false;const done=()=>{if(fin)return;fin=true;vqCur=null;duck(false);if(it.onEnd)it.onEnd();setTimeout(()=>{vqOn=false;vqNext();},it.gap);};
+// one voice at a time, never two: a clip's watchdog starts when its sound actually starts and trusts the clip's real
+// length (a slow network load can't make the next line start on top of it), and moving on always stops the old clip.
+// Radio chatter (say) that has waited too long in the queue is dropped rather than played late; announcements and the
+// SPG (speak) are never dropped for age, only when their moment has passed (valid).
+// sound follows the game: paused, ended, on the menu or in a background tab, the voice and the music hold where they
+// are and carry on when play resumes; no new line starts while held
+const audioHold=()=>!running||paused||ended||document.hidden;let AHELD=false;
+function audioSync(){const h=audioHold();if(h===AHELD)return;AHELD=h;
+  try{if(vqCur){if(h)vqCur.pause();else{const p=vqCur.play();if(p&&p.catch)p.catch(()=>{});}}}catch(e){}
+  try{if(MUS&&MUS.el){if(h)MUS.el.pause();else{const p=MUS.el.play();if(p&&p.catch)p.catch(()=>{});}}}catch(e){}
+  try{if(window.speechSynthesis){if(h)speechSynthesis.pause();else speechSynthesis.resume();}}catch(e){}
+  if(!h)vqNext();}
+document.addEventListener('visibilitychange',audioSync);
+const VQ_TTL=10000;   // a line that carries its own valid() test (L4's pilot calls) is judged by that instead
+function vqNext(){if(vqOn||audioHold())return;let it=VQ.shift();
+  while(it&&((it.valid&&!it.valid())||(it.radio&&!it.valid&&it.ttl!==0&&performance.now()-it.qt>(it.ttl||VQ_TTL)))){if(it.onEnd)it.onEnd();it=VQ.shift();}
+  if(!it)return;vqOn=true;let fin=false,wd=null;
+  const done=()=>{if(fin)return;fin=true;clearTimeout(wd);const a=vqCur;vqCur=null;if(a){try{a.onended=a.onerror=a.onplaying=null;a.pause();}catch(e){}}duck(false);if(it.onEnd)it.onEnd();setTimeout(()=>{vqOn=false;vqNext();},Math.max(500,it.gap||0));};   // at least half a second between any two voices
   if(it.onStart)it.onStart();const clip=typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[it.text];
-  if(clip){const a=VPRE.get(clip)||new Audio(clip);VPRE.delete(clip);vqCur=a;a.volume=it.vol||0.95;a.onended=done;a.onerror=done;duck(true);const p=a.play();if(p&&p.catch)p.catch(done);setTimeout(done,2500+it.text.split(/\s+/).length*520);return;}
+  if(clip){const a=VPRE.get(clip)||new Audio(clip);VPRE.delete(clip);vqCur=a;a.volume=it.vol||0.95;a.onended=done;a.onerror=done;
+    const words=it.text.split(/\s+/).length;
+    const wdog=()=>{if(audioHold()){wd=setTimeout(wdog,500);return;}done();};
+    a.onplaying=()=>{clearTimeout(wd);const d=isFinite(a.duration)&&a.duration>0?a.duration*1000:2500+words*600;wd=setTimeout(wdog,d+1500);};
+    wd=setTimeout(wdog,9000+words*600);   // it never started playing at all (blocked or failed to load): move on
+    duck(true);const p=a.play();if(p&&p.catch)p.catch(done);return;}
   if(!it.radio&&window.speechSynthesis&&window.SpeechSynthesisUtterance){try{const S2=window.speechSynthesis,v=pickVoice(S2.getVoices(),it.lang);if(it.lang&&!v)return done();const u=new SpeechSynthesisUtterance(it.text.replace(/[\u{1F000}-\u{1FAFF}☀-➿️]/gu,'').trim());
-    if(v){u.voice=v;u.lang=v.lang;}else u.lang='en-IN';u.rate=0.95;u.pitch=1;u.onend=done;u.onerror=done;duck(true);S2.speak(u);setTimeout(done,9000);return;}catch(e){}}
+    if(v){u.voice=v;u.lang=v.lang;}else u.lang='en-IN';u.rate=0.95;u.pitch=1;u.onend=done;u.onerror=done;duck(true);S2.speak(u);wd=setTimeout(done,9000);return;}catch(e){}}
   done();}
 // speak(lines,{onLine,onDone,gap,endGap,gaps,lang}): lines one after another; the gap after each line is gaps[i], else gap
 // (1200 ms: the SPG takes his time), and endGap after the last line
-function speak(lines,o){o=o||{};if(!SND.on)return false;voicePreload(lines);lines.forEach((t,i)=>{const last=i===lines.length-1;VQ.push({text:t,lang:o.lang,valid:o.valid,gap:o.gaps&&o.gaps[i]!=null?o.gaps[i]:last?(o.endGap!=null?o.endGap:900):(o.gap!=null?o.gap:1200),onStart:o.onLine?()=>o.onLine(i):null,onEnd:last?o.onDone:null});});vqNext();return true;}
+function speak(lines,o){o=o||{};if(!SND.on)return false;voicePreload(lines);lines.forEach((t,i)=>{const last=i===lines.length-1;VQ.push({text:t,qt:performance.now(),lang:o.lang,valid:o.valid,gap:o.gaps&&o.gaps[i]!=null?o.gaps[i]:last?(o.endGap!=null?o.endGap:900):(o.gap!=null?o.gap:1200),onStart:o.onLine?()=>o.onLine(i):null,onEnd:last?o.onDone:null});});vqNext();return true;}
 // a radio call in a speaker's own voice: shows on the ticker, and plays its recorded clip (keyed by the exact text) if there is one
-function say(src,text,o){o=o||{};radio(src,text);if(SND.on&&typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[text]){voicePreload(text);VQ.push({text,radio:true,gap:o.gap!=null?o.gap:500,vol:o.vol,valid:o.valid,onStart:o.onStart,onEnd:o.onEnd});vqNext();return true;}if(o.onEnd)o.onEnd();return false;}
-function voiceReset(){VQ.length=0;if(vqCur){try{vqCur.pause();}catch(e){}}vqCur=null;vqOn=false;if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}music(null,{now:true});}
+// the same radio line is never voiced twice within 30 s (a set piece that re-sends a call each tick can't make it echo)
+const VQ_SEEN=new Map();
+function say(src,text,o){o=o||{};radio(src,text);const now=performance.now(),seen=VQ_SEEN.get(text);
+  if(SND.on&&typeof SPG_AUDIO!=='undefined'&&SPG_AUDIO[text]&&!(seen&&now-seen<30000)){VQ_SEEN.set(text,now);voicePreload(text);VQ.push({text,qt:now,ttl:o.ttl,radio:true,gap:o.gap!=null?o.gap:700,vol:o.vol,valid:o.valid,onStart:o.onStart,onEnd:o.onEnd});vqNext();return true;}if(o.onEnd)o.onEnd();return false;}
+function voiceReset(){VQ.length=0;VQ_SEEN.clear();if(vqCur){try{vqCur.pause();}catch(e){}}vqCur=null;vqOn=false;if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}music(null,{now:true});}
 // music for set pieces: music('dj') plays music/dj.mp3 (looped unless {loop:false}), crossfading from whatever was playing;
 // music(null) fades it out. It ducks under voice lines. A missing file is simply silent, so tracks can be dropped in later.
 var MUS={el:null,name:null,vol:0.4,tm:null,fi:null};
@@ -2253,9 +2278,9 @@ function musFade(a,to,ms,cb){const from=a.volume,t0=performance.now();const st=(
 function music(name,o){o=o||{};if(!MUS)return;if(name&&MUS.name===name&&MUS.el)return;clearTimeout(MUS.tm);const old=MUS.el;MUS.el=null;MUS.name=null;
   if(old){if(o.now){old.pause();}else musFade(old,0,o.fadeOut||1500,()=>old.pause());}
   if(!name||!SND.on)return;const src=(typeof MUSIC_SRC!=='undefined'&&MUSIC_SRC[name])||`music/${name}.mp3`;const a=new Audio(src);a.loop=o.loop!==false;a.volume=0;
-  MUS.el=a;MUS.name=name;MUS.vol=o.vol!=null?o.vol:0.4;a.onerror=()=>{if(MUS.el===a){MUS.el=null;MUS.name=null;}};const p=a.play();if(p&&p.catch)p.catch(()=>{});musFade(a,vqCur?MUS.vol*0.35:MUS.vol,o.fadeIn||1200);
+  MUS.el=a;MUS.name=name;MUS.vol=o.vol!=null?o.vol:0.4;a.onerror=()=>{if(MUS.el===a){MUS.el=null;MUS.name=null;}};const p=a.play();if(p&&p.catch)p.catch(()=>{});musFade(a,vqCur?MUS.vol*0.2:MUS.vol,o.fadeIn||1200);
   if(!a.loop)a.onended=()=>{if(MUS.el===a){MUS.el=null;MUS.name=null;}};if(o.ms)MUS.tm=setTimeout(()=>{if(MUS.el===a)music(null);},o.ms);}
-function duck(on){const a=MUS&&MUS.el;if(a)musFade(a,on?MUS.vol*0.35:MUS.vol,on?250:700);}
+function duck(on){const a=MUS&&MUS.el;if(a)musFade(a,on?MUS.vol*0.2:MUS.vol,on?250:700);}
 // after a summit the SPG hands the runways back one by one, then signs off
 function spgReturn(order){const n=order.length;guard(['Your runways shall now be cleared, in a staged manner.'].concat(order.map((r,i)=>i===0?`Runway ${r.short} shall be cleared first.`:i===n-1?`And finally, runway ${r.short}.`:`Then runway ${r.short}.`)));}
 function spgOpen(r){}
@@ -2681,11 +2706,11 @@ STORY.monkeys={len:900,start(c){const pc=CONCI.FN;if(!pc)return false;const gs=G
 STORY.gps={len:900,start(c){const gr=RW.filter(r=>!r.locked&&['R2','R5'].includes(r.id));if(!gr.length)return false;c.gr=gr;
   const nm=gr.map(r=>r.short).join(' and '),il=RW.filter(r=>!r.locked&&!gr.includes(r)).map(r=>r.short).join(', ');
   for(const r of gr)MARKS.push({x:r.x1+2400,y:r.y,e:'📡',until:T+600,px:24,k:'ghosts'});FXV.push({kind:'ghosts',id:'gps',pts:gr.map(r=>[r.x1+2600,r.y]),t0:T,t1:T+600});
-  guard(['GPS says Muscat. Radar says Butibori.','I believe my radar. 📡'],WHO.radar);
+  guard(['GPS says Khyber Pakhtunkhwa. Radar says Butibori.','I believe my radar. 📡'],WHO.radar);
   const f=gr.map(nextOn).filter(Boolean)[0];
   if(f)cinema(f,['GPS SPOOFING','"TERRAIN, PULL UP." There is no terrain.','Nagpur is flat. 🗺️',icos('🛰️','📡','🛰️')],{ms:6500});
   const I=storyCard(c,{icon:{g:'📡',c:'#7a5cff'},x:gr[0].x1+2000,y:gr[0].y,title:`GPS spoofing: false alarms on ${nm}`,
-    text:`Someone is broadcasting fake satellite signals, and aircraft GPS now thinks it is over Muscat. ${nm} have no ILS (the radio beam on the ground that guides a plane onto the runway), so landings there use GPS, and the fake signal sets off "TERRAIN, PULL UP" alarms: the jet goes around, though Nagpur is flat. For 10 minutes: land only on the ILS runways (${il}) and use ${nm} for take-offs, or keep landing everywhere and expect surprise go-arounds.`,
+    text:`Someone is broadcasting fake satellite signals, and aircraft GPS now thinks it is over Khyber Pakhtunkhwa. ${nm} have no ILS (the radio beam on the ground that guides a plane onto the runway), so landings there use GPS, and the fake signal sets off "TERRAIN, PULL UP" alarms: the jet goes around, though Nagpur is flat. For 10 minutes: land only on the ILS runways (${il}) and use ${nm} for take-offs, or keep landing everywhere and expect surprise go-arounds.`,
     def:0,defText:`ops stops landings on ${nm} for 10 minutes.`,
     acts:[{l:'ILS runways only (10 min)',pri:1,fn(){for(const r of gr)r.noArrUntil=T+600;renderRw();resolve(I,true,`Landings moved off the GPS runways ${nm} for 10 minutes.`);}},
       {l:'Keep landing on GPS',fn(){for(const r of gr)r.gpsUntil=T+600;renderRw();resolve(I,true,'');}}]});
@@ -2893,7 +2918,10 @@ function sumPlan(E,R3,trio){
     cn(){return rw=>{const d=DL.CN1,s=DL.CN2,ann=V('announcer','ANNOUNCER',`Ladies and gentlemen. The aircraft carrying the President of the People's Republic of China shall now be landing on runway ${rw[0].short}.`),
       call=V('cn',d.cs,fillC(d.call,d,rw[0])),twr=V('tower','TWR',`${d.nm}, runway ${rw[0].short}, cleared to land. The red carpet has been measured twice.`),tw=-2.4-twr.dur,cs=tw-0.4-call.dur,as=cs-0.6-ann.dur,ban=SBAN.CN1(rw);
       return{ac:[{d,off:0},{d:s,off:5,ri:1}],a0:as,a1:3.2,stop:[-90,90],beats:[[as,'ban',ban],[as,'lt',{ds:[d,s],q:ann.text,ann:true}],[as,'say',ann],[cs,'lt',{ds:[d,s],q:call.text}],[cs,'say',call],
-        [tw,'lt',{ds:[d,s],q:twr.text,twr:true}],[tw,'say',twr],[-9,'shot',{i:0,ban,until:3}]]};};},
+        [tw,'lt',{ds:[d,s],q:twr.text,twr:true}],[tw,'say',twr],
+        // the guqin (music/guqin.mp3, 18.9 s) plays over the whole landing shot, which is cut to its length: it opens 16.5 s out
+        // and holds 2.4 s past touchdown, so Air China One lands on the music's last phrase
+        [-16.5,'music','guqin'],[-16.5,'shot',{i:0,ban,until:2.4}],[2.6,'music',null]]};};},
     ru(){return rw=>{const d0=DL.RUCARGO,d1=DL.RU1,d2=DL.RU2,ann=V('ru_announcer','PROTOCOL','Attention, please. The delegation of the Russian Federation. First, the cars. Then two aircraft. They are identical.'),
       c0=V('ru',d0.cs,fillC(d0.call,d0,rw[1])),c1=V('ru',d1.cs,fillC(d1.call,d1,rw[0])),c2=V('ru',d2.cs,fillC(d2.call,d2,rw[1])),twr=V('tower','TWR','Russia, Russia Two, welcome to Zero Mile. We will not ask which one.'),
       as=-12.8-ann.dur,s2=2.2,tw=Math.max(5.9,s2+c2.dur+0.3),all=[d0,d1,d2];
@@ -3015,7 +3043,7 @@ tick(c,t){const pl=c.pl;
   // the beats, in order: lower-thirds, voices, banners, shots, music, the SPG
   if(c.beatsPl!==pl){c.beatsPl=pl;c.beats=pl.items.flatMap(it=>it.abs.map(b=>[b[0],b[1],b[2],it])).filter(b=>c.doneT==null||b[0]>c.doneT).sort((a,b)=>a[0]-b[0]);c.bi=0;}
   const beats=c.beats;
-  while(c.bi<beats.length&&T>=beats[c.bi][0]){const [at,ty,p,it]=beats[c.bi++];const late=at+3*SUMP;
+  while(c.bi<beats.length&&T>=beats[c.bi][0]){const [at,ty,p,it]=beats[c.bi++];const late=at+10*SUMP;   // a reply queued behind a pilot call still gets heard; later than this it would be out of step with the shot
     if(ty==='say')say(p.src,p.text,{gap:150,valid:()=>T<=late});
     else if(ty==='lt')ltSet(Object.assign({fs:c.fs},p));
     else if(ty==='ban'){if(!CINE)vipBanner(true,p[0],p[1],p[2],p[3]);}
@@ -3099,7 +3127,7 @@ tick(c,t){const r=c.r;if(c.bt&&!c.sc&&T>=c.scenAt&&!r.occ&&T<r.btUntil-60)this.b
 begin(c){const r=c.r,side=procC.y>r.y?1:-1;
   const B=mk({kind:'dep',state:'xhold',al:'OCA',type:'B77W',intl:false,to:'Mumbai',toCode:'BOM',dir:'W',std:T});Object.assign(B,{num:'1801',disp:'Orange City Cargo 1801 (777F)',callsign:'ORANGE CITY 1801',x:r.x1-60,y:r.y,heading:Math.PI,v:0,rwy:r,origStd:T,readyAt:T,cargo:true});
   const A=mk({kind:'dep',state:'xbt',al:'SPC',type:'B748',intl:false,to:'Kolkata',toCode:'CCU',dir:'E',std:T+900});Object.assign(A,{num:'77',disp:'Satpura Cargo 77 (747-8F)',callsign:'SATPURA 77',x:r.x1-1500,y:r.y,heading:0,v:8,rwy:r,origStd:T+900,readyAt:T,cargo:true});
-  r.occ=B;c.sc={A,B,t0:T,go:SIMR()<0.4,side,turn:0,phase:'bt'};
+  r.occ=B;c.sc={A,B,t0:T,go:true,side,turn:0,phase:'bt'};   // the player chose to backtrack in fog: the garbled clearance follows; only STOP saves it
   say('TWR',`Satpura 77, backtrack runway ${r.short}, vacate at the next exit, report runway vacated.`);logE(`Satpura 77 backtracking on ${r.short} in fog.`);},
 run(c){const s=c.sc,{A,B}=s,r=c.r,t=T-s.t0,dt=Math.min(1,T-(s.last||T));s.last=T;
   // the freighter backtracks east towards the threshold, then turns off towards the taxiway on the terminal side
@@ -3510,7 +3538,11 @@ function tick(dt){
 }
 // the level ends at LEN; a level with windDown:true runs on (at most 30 minutes) until every departure due by LEN is airborne
 const depLeft=()=>flights.filter(f=>f.kind==='dep'&&!f.counted&&f.std<=LEN&&['sched','at_gate','push','start','taxi_out','hp','lineup','stuck','roll'].includes(f.state)).length;
-function endDue(){if(T<LEN)return false;if(!LV.windDown||T>=LEN+1800)return true;return depLeft()===0;}
+// arrivals still in the air (or rolling out) also hold the end; arrivals not yet airborne at LEN are cancelled (the day is over)
+const arrLeft=()=>flights.filter(f=>f.kind==='arr'&&['inbound','holding','approach','goaround','rollout'].includes(f.state)).length;
+function endDue(){if(T<LEN)return false;if(!LV.windDown||T>=LEN+1800)return true;
+  if(!endDue.cut){endDue.cut=true;for(const f of flights)if(f.kind==='arr'&&f.state==='sched'&&!f.vip){f.state='cancelled';if(f.gate){f.gate.occ=null;f.gate=null;}if(f.res){f.res.res=null;f.res=null;}}}
+  return depLeft()===0&&arrLeft()===0;}
 const onceSet=new Set();function once(k,fn){if(onceSet.has(k))return;onceSet.add(k);fn();}
 
 /* ============ input ============ */
@@ -3611,7 +3643,7 @@ function startLevel(n){
 
 }
 function finish(){
-  ended=true;paused=true;closePop();
+  ended=true;paused=true;closePop();voiceReset();CINE=null;if(cinema.q)cinema.q.length=0;try{vipBanner(false);}catch(e){}
   const left=flights.filter(f=>f.kind==='dep'&&['at_gate','taxi_out','hp','push','start','stuck'].includes(f.state)&&T>f.std+1500).length;
   for(const f of flights)if(f.links&&f.kind==='dep'&&f.state==='at_gate'&&T>f.std){for(const l of f.links){if(l.arr.inBlock!=null&&l.arr.inBlock+l.x<=T)S.cnxMade+=l.n;else S.cnxMiss+=l.n;}}
   const st=stars(LV,S);const best=store.get('zm_stars')||{};if((best[LV.n]||0)<st){best[LV.n]=st;store.set('zm_stars',best);}
@@ -11251,7 +11283,7 @@ float fogF(vec3 off){float d=length(off);float h0=max(uCamPos.y,0.),h1=max(uCamP
 buildTerrain();resize();
 let last=performance.now(),hudT=0;
 function frame(ms){
-  requestAnimationFrame(frame);const pf=PERFM.on?performance.now():0;   // the perf meter (hub3d.js), off by default
+  requestAnimationFrame(frame);audioSync();const pf=PERFM.on?performance.now():0;   // the perf meter (hub3d.js), off by default
   if(cv.clientWidth&&(cv.clientWidth!==VW||cv.clientHeight!==VH))resize();
   const dtR=Math.min(0.1,(ms-last)/1000);last=ms;camEase(dtR);
   if(running&&!paused&&!ended){let d=dtR*BASE*(PACE!=null?PACE:speed);try{while(d>0){const st=Math.min(1,d);tick(st);d-=st;}}catch(err){console.error(err);}incTick(dtR);if(toastTimer>0&&!frame.cine&&!toastFold){toastTimer-=dtR;if(toastTimer<=0&&!$('#toast').matches(':hover'))$('#toast').hidden=true;}}

@@ -125,7 +125,7 @@ Z3MOD.fx3 = function (Z) {
   const MARI = [col('#ff7a00'), col('#ffae00'), col('#ff9200'), col('#e85d00')];
   function garland(pts, r, beads) {
     const curve = new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(p[0], p[1], p[2])));
-    const segs = beads || Math.max(6, Math.round(curve.getLength() / Math.max(0.1, r * 1.6))), rad = 4;
+    const segs = beads || Math.max(6, Math.round(curve.getLength() / Math.max(0.1, r * 1.6))), rad = r > 0.1 ? 4 : 3;
     const g = new THREE.TubeGeometry(curve, segs, r, rad, false);
     const pa = g.attributes.position, na = g.attributes.normal;
     for (let i = 0; i < pa.count; i++) { const ring = Math.floor(i / (rad + 1)), f = ring % 2 ? 0.3 : -0.15;
@@ -166,17 +166,17 @@ Z3MOD.fx3 = function (Z) {
   const CW = 6.75, CD = 4.75, YE = 5.75, RWd = 2.3, YR = 7.5;
   const poles = [[-CW, -CD], [CW, -CD], [CW, CD], [-CW, CD], [CW, 0], [-CW, 0]];
   poles.forEach(([px, pz], i) => { ctx(0.18 + i * 0.01, [px, 0, pz], [0, 0.6]);
-    const g = new THREE.CylinderGeometry(0.1, 0.12, YE, 8, 14, false);
+    const g = new THREE.CylinderGeometry(0.1, 0.12, YE, 6, 12, true);
     addGeo(g, M(px, YE / 2, pz), (x, y, z) => { const a = Math.atan2(z - pz, x - px) / 6.2832; return ((y * 1.6 + a) % 1 + 1) % 1 < 0.38 ? K.saffron : K.white; });
     cyl(px, 0, pz, 0.32, 0.26, 0.18, 8, K.white); });
   ctx(0.3, [0, YR, 0], [0, 0.9]);
   { const E = [[-CW, YE, -CD], [CW, YE, -CD], [CW, YE, CD], [-CW, YE, CD]], R0 = [-RWd, YR, 0], R1 = [RWd, YR, 0], sag = 0.16;
     const longFace = (b0, b1, u0, u1, n, off) => { for (let i = 0; i < n; i++) { const t0 = i / n, t1 = (i + 1) / n, tmid = (t0 + t1) / 2;
       const a = L3(b0, b1, t0), b = L3(b0, b1, t1), c = L3(u0, u1, t1), d = L3(u0, u1, t0), bm = L3(b0, b1, tmid), um = L3(u0, u1, tmid);
-      bm[1] -= sag; um[1] -= sag * 0.25; const k = (i + off) % 2 ? K.white : K.saffron; quad(a, bm, um, d, k); quad(bm, b, c, um, k); } };
+      bm[1] -= sag; um[1] -= sag * 0.25; const k = (i + off) % 2 ? K.white : K.saffron; MR = [0, k === K.white ? 0.905 : 0.9]; quad(a, bm, um, d, k); quad(bm, b, c, um, k); } MR = [0, 0.9]; };
     longFace(E[3], E[2], R0, R1, 12, 0); longFace(E[1], E[0], R1, R0, 12, 0);
     const endFace = (b0, b1, apex, n) => { for (let i = 0; i < n; i++) { const t0 = i / n, t1 = (i + 1) / n; const a = L3(b0, b1, t0), b = L3(b0, b1, t1), bm = L3(b0, b1, (t0 + t1) / 2);
-      bm[1] -= sag; const k = i % 2 ? K.white : K.saffron; tri(a, bm, apex, k); tri(bm, b, apex, k); } };
+      bm[1] -= sag; const k = i % 2 ? K.white : K.saffron; MR = [0, k === K.white ? 0.905 : 0.9]; tri(a, bm, apex, k); tri(bm, b, apex, k); } MR = [0, 0.9]; };
     endFace(E[2], E[1], R1, 8); endFace(E[0], E[3], R0, 8);
     rod(R0, R1, 0.09, K.gold, 6);
     // valance: maroon band, scallops alternating saffron / white / green, a gold tassel at each point
@@ -249,7 +249,7 @@ Z3MOD.fx3 = function (Z) {
   for (const s of [-1, 1]) { POTS.push([s * 2.15, 0, HD + 0.9, 1.25]); for (let z = 8.2; z < 21; z += 3.2) POTS.push([s * 1.75, 0.17, z, 0.85]); }
   POTS.forEach(([x, y, z, k], i) => { ctx(0.5 + i * 0.006, [x, y, z]);
     cyl(x, y, z, 0.17 * k, 0.24 * k, 0.4 * k, 8, K.terra); cyl(x, y + 0.4 * k, z, 0.26 * k, 0.26 * k, 0.05 * k, 8, K.terra);
-    addGeo(SPH, M(x, y + 0.5 * k, z, 0, 0.3 * k, 0.17 * k, 0.3 * k), K.leaf);
+    addGeo(OCT, M(x, y + 0.5 * k, z, 0.4, 0.3 * k, 0.15 * k, 0.3 * k), K.leaf);
     addGeo(SPH, M(x, y + 0.66 * k, z, i, 0.27 * k, 0.24 * k, 0.27 * k), (xx, yy, zz, j) => MARI[(j * 7 + i) % 4]); });
   // stage-front swags
   ctx(0.52, [0, FLOOR, HD]); for (let i = 0; i < 8; i++) { const x0 = -HW + i * 1.5, x1 = x0 + 1.5; swag([x0, FLOOR - 0.04, HD + 0.14], [x1, FLOOR - 0.04, HD + 0.14], 0.38, 0.06); }
@@ -275,21 +275,22 @@ Z3MOD.fx3 = function (Z) {
   sg.setAttribute('color', new THREE.Float32BufferAttribute(CC, 3)); sg.setAttribute('uv', new THREE.Float32BufferAttribute(UV, 2));
   sg.setAttribute('aB', new THREE.Float32BufferAttribute(AB, 4)); sg.setAttribute('aMR', new THREE.Float32BufferAttribute(MRA, 2)); sg.setIndex(IX);
   sg.computeBoundingSphere();
-  const U = { uBuild: { value: 1 }, uRib: { value: 0 } };
+  const U = { uBuild: { value: 1 }, uRib: { value: 0 }, uFar: { value: 0 } };
   const BUILD = `float bph=aB.x;float bcond=step(9.5,bph);bph-=bcond*10.;float bk=clamp((uBuild-bph)/0.16,0.,1.);bk=bk*bk*(3.-2.*bk);bk*=mix(1.,uRib,bcond);
     transformed=aB.yzw+(transformed-aB.yzw)*bk;`;
   const patchV = sh => { sh.uniforms.uBuild = U.uBuild; sh.uniforms.uRib = U.uRib;
     sh.vertexShader = 'attribute vec4 aB;attribute vec2 aMR;uniform float uBuild,uRib;varying vec2 vMR;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n' + BUILD + 'vMR=aMR;'); };
   const smat = new THREE.MeshStandardMaterial({ vertexColors: true, map: atlas, roughness: 1, metalness: 1, side: THREE.DoubleSide, envMapIntensity: 0.9 });
   smat.onBeforeCompile = sh => { patchV(sh);
-    sh.fragmentShader = 'varying vec2 vMR;\n' + sh.fragmentShader.replace('#include <roughnessmap_fragment>', 'float roughnessFactor = roughness * vMR.y;').replace('#include <metalnessmap_fragment>', 'float metalnessFactor = metalness * vMR.x;'); };
+    sh.uniforms.uFar = U.uFar;
+    sh.fragmentShader = 'varying vec2 vMR;uniform float uFar;\n' + sh.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\nif(abs(vMR.y-0.905)<0.002)diffuseColor.rgb=mix(diffuseColor.rgb,vec3(1.,0.33,0.01),uFar);').replace('#include <roughnessmap_fragment>', 'float roughnessFactor = roughness * vMR.y;').replace('#include <metalnessmap_fragment>', 'float metalnessFactor = metalness * vMR.x;'); };
   smat.customProgramCacheKey = () => 'fx3-stage';
   const sdep = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, side: THREE.DoubleSide });
   sdep.onBeforeCompile = sh => { sh.uniforms.uBuild = U.uBuild; sh.uniforms.uRib = U.uRib;
     sh.vertexShader = 'attribute vec4 aB;uniform float uBuild,uRib;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n' + BUILD); };
   sdep.customProgramCacheKey = () => 'fx3-stage-depth';
   const root = new THREE.Group(); root.name = 'fx3-stage'; root.visible = false; Z.scene.add(root);
-  const structure = new THREE.Mesh(sg, smat); structure.customDepthMaterial = sdep; structure.castShadow = true; structure.receiveShadow = true; structure.frustumCulled = false; root.add(structure);
+  const structure = new THREE.Mesh(sg, smat); structure.customDepthMaterial = sdep; structure.castShadow = true; structure.receiveShadow = true; root.add(structure);
   const nTriStatic = IX.length / 3;
 
   // ================= contact shadow =================
@@ -298,14 +299,22 @@ Z3MOD.fx3 = function (Z) {
   const shTex = new THREE.CanvasTexture(shc);
   const shMat = new THREE.MeshBasicMaterial({ map: shTex, color: 0x000000, transparent: true, depthWrite: false, opacity: 0.5, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   const shGeo = new THREE.PlaneGeometry(1, 1); shGeo.rotateX(-Math.PI / 2);
-  const shadow = new THREE.Mesh(shGeo, shMat); shadow.position.set(0, 0.2, 5); shadow.scale.set(22, 1, 30); shadow.renderOrder = -1; shadow.frustumCulled = false; root.add(shadow);
+  const shadow = new THREE.Mesh(shGeo, shMat); shadow.position.set(0, 0.2, 5); shadow.scale.set(22, 1, 30); shadow.renderOrder = -1; root.add(shadow);
 
   // ================= people and props: one instanced capsule, posed on the CPU every frame =================
-  const capGeo = new THREE.LatheGeometry([[0, -1], [0.36, -0.84], [0.5, -0.45], [0.5, 0.45], [0.36, 0.84], [0, 1]].map(p => new THREE.Vector2(p[0], p[1])), 6);
+  // a 40-triangle capsule (two poles, four rings of five), smooth normals
+  const capGeo = (() => { const pos = [0, -1, 0], idx = [], RG = [[-0.84, 0.36], [-0.45, 0.5], [0.45, 0.5], [0.84, 0.36]], n = 5;
+    for (const [y, r] of RG) for (let k = 0; k < n; k++) { const a = k / n * Math.PI * 2; pos.push(Math.cos(a) * r, y, Math.sin(a) * r); }
+    pos.push(0, 1, 0); const top = 1 + RG.length * n;
+    for (let k = 0; k < n; k++) { const k1 = (k + 1) % n; idx.push(0, 1 + k, 1 + k1);
+      for (let g = 0; g < RG.length - 1; g++) { const a = 1 + g * n + k, b = 1 + g * n + k1, c = a + n, d = b + n; idx.push(a, c, b, b, c, d); }
+      idx.push(top, 1 + (RG.length - 1) * n + k1, 1 + (RG.length - 1) * n + k); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); return g; })();
   const MAXI = 760;
   const pmat = new THREE.MeshStandardMaterial({ roughness: 0.78, metalness: 0, envMapIntensity: 0.8 });
   const IM = new THREE.InstancedMesh(capGeo, pmat, MAXI); IM.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-  IM.setColorAt(0, K.white); IM.instanceColor.setUsage(THREE.DynamicDrawUsage); IM.castShadow = true; IM.receiveShadow = true; IM.frustumCulled = false; IM.count = 0; root.add(IM);
+  IM.setColorAt(0, K.white); IM.instanceColor.setUsage(THREE.DynamicDrawUsage); IM.castShadow = false; IM.receiveShadow = true; IM.count = 0; root.add(IM);
+  IM.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 2, 7), 18);
   const EA = IM.instanceMatrix.array, CA = IM.instanceColor.array;
   let NI = 0;
   function seg(ax, ay, az, bx, by, bz, r, dz, c, fx, fz) {
@@ -348,7 +357,11 @@ Z3MOD.fx3 = function (Z) {
   const at = (o, i, j, t, dy) => { o[0] = lerp(W[i * 3], W[j * 3], t); o[1] = lerp(W[i * 3 + 1], W[j * 3 + 1], t) + dy * PK; o[2] = lerp(W[i * 3 + 2], W[j * 3 + 2], t); };
   const SP = (r, dz, c) => seg(tA[0], tA[1], tA[2], tB[0], tB[1], tB[2], r * PK, dz, c, pfx, pfz);
   // dress the skeleton: o = {skin, hair, top, bottom, jacket, saree, pallu, cap, kurta, police}
+  let LOD = false;
   function dress(o, seatedPose) {
+    if (LOD) {   // far away: torso, legs, head (three capsules, a little stockier so they still read)
+      S(PELV, NECK, 0.2, 0.8, o.jacket || o.top); if (!seatedPose) { at(tA, LF, RF, 0.5, 0.05); at(tB, PELV, PELV, 0, 0); SP(0.13, 1, o.saree || o.bottom); }
+      at(tA, HEAD, HEAD, 0, -0.03); at(tB, HEAD, HEAD, 0, 0.04); SP(0.1, 1, o.cap || o.skin); return; }
     if (o.saree) { at(tA, PELV, PELV, 0, seatedPose ? 0.02 : 0.05); if (seatedPose) { at(tB, LK, RK, 0.5, 0); SP(0.2, 0.9, o.saree); at(tA, LK, RK, 0.5, 0); at(tB, LF, RF, 0.5, 0.04); SP(0.17, 0.8, o.saree); }
       else { at(tB, LF, RF, 0.5, 0.02); SP(0.21, 0.85, o.saree); } }
     else { S(LHIP, LK, 0.085, 1, o.bottom); S(LK, LF, 0.064, 1, o.bottom); S(RHIP, RK, 0.085, 1, o.bottom); S(RK, RF, 0.064, 1, o.bottom);
@@ -432,7 +445,8 @@ Z3MOD.fx3 = function (Z) {
         else{float d=length(c)*2.;if(d>1.)discard;float I=(exp(-d*d*22.)*7.+exp(-d*d*5.)*0.9+(exp(-abs(c.x)*70.)+exp(-abs(c.y)*70.))*(1.-d)*1.6)*vA*(1.-ff);
           gl_FragColor=vec4(vCol*I,0.);}
       }` });
-  const points = new THREE.Points(pgeo, pmatP); points.frustumCulled = false; points.renderOrder = 5; root.add(points);
+  pgeo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 3, 4), 22);
+  const points = new THREE.Points(pgeo, pmatP); points.renderOrder = 5; root.add(points);
 
   // ================= state =================
   let cur = null, scl = 1, lastT = 0, snipAt = -1e9, welAt = -1e9, appl = -1e9, cheer = -1e9, gest = 0, gestT = 0, nextGest = 0, flSlot = 0, flDirty = true;
@@ -549,11 +563,11 @@ Z3MOD.fx3 = function (Z) {
     U.uBuild.value = build; U.uRib.value = cut != null ? 1 : 0; PU.uBuild.value = build;
     shMat.opacity = 0.55 * sm(0, 0.25, build);
     // placement and scale (bigger with camera distance, so it reads from the strategic camera)
-    const tgt = clamp(Math.sqrt(Math.max(1, Z.camDist) / 38), 1, 9.5);
+    const tgt = clamp(Math.sqrt(Math.max(1, Z.camDist) / 38), 1, 13);
     scl += (tgt - scl) * (1 - Math.exp(-dt * 5)); if (!isFinite(scl)) scl = tgt;
     root.position.set(it.x, 0, it.y); root.rotation.y = -(it.a || 0); root.scale.setScalar(scl);
-    PU.uScl.value = scl; PU.uPx.value = Z.renderer.domElement.height / (2 * Math.tan(Z.camera.fov * Math.PI / 360));
-    const far = Z.camDist > 4500; IM.castShadow = !far;
+    PU.uScl.value = scl; U.uFar.value = sm(4.5, 10, scl); PU.uPx.value = Z.renderer.domElement.height / (2 * Math.tan(Z.camera.fov * Math.PI / 360));
+    LOD = scl > 5.5;
 
     // ---- people ----
     NI = 0;

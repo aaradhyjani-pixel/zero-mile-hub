@@ -1544,5 +1544,1743 @@
    "estimate": true,
    "note": "Greenfield UDF precedent (NMIA); AERA resets it each era from RAB x 15.41% RoE (WACC 12.89%) less 30% of non-aero."
   }
+ },
+ "world": {
+  "_note": {
+   "value": "World layer: shocks, valuation, handback, termination, regulation abroad, incidents, growth",
+   "unit": "-",
+   "source": "research/money-world.md",
+   "period": "compiled 2026-10-19",
+   "estimate": false,
+   "note": "Skeptic corrections applied. Keys prefixed game_ are game estimates calibrated to the sourced keys. FX for game conversion: fx_inr."
+  },
+  "fx_inr": {
+   "value": {
+    "USD": 88,
+    "EUR": 100,
+    "GBP": 115,
+    "NZD": 52
+   },
+   "unit": "INR per unit",
+   "source": "game conversion",
+   "period": "2026",
+   "estimate": true,
+   "note": "Keep source currency in tooltips."
+  },
+  "covid_global_2020_multiplier": {
+   "value": {
+    "low": 0.36,
+    "high": 0.4,
+    "aci_prelim_drop_pct": -64.6
+   },
+   "unit": "fraction of 2019 actual pax",
+   "source": "https://aci.aero/2024/02/13/the-trusted-source-for-air-travel-demand-updates/ ; https://www.internationalairportreview.com/news/140149/dramatic-passenger-declines-aci-world",
+   "period": "2020",
+   "estimate": false,
+   "note": "The -64.2% figure is vs a pre-COVID forecast, not 2019 actual (skeptic S1)."
+  },
+  "covid_global_recovery": {
+   "value": {
+    "2021": 0.48,
+    "2021_intl": 0.278,
+    "2022": 0.72,
+    "2023": 0.95,
+    "2024": 1.06
+   },
+   "unit": "fraction of 2019 pax",
+   "source": "https://aci.aero/2024/02/13/the-trusted-source-for-air-travel-demand-updates/ ; https://www.moodiedavittreport.com/global-passenger-traffic-set-to-reach-half-of-2019-levels-in-2021-recovery-to-accelerate-in-2022/",
+   "period": "2021-2024",
+   "estimate": false,
+   "note": "2023 = 95% (8.7bn), 2024 forecast 106% (9.7bn) per skeptic S2."
+  },
+  "covid_india_fy21": {
+   "value": {
+    "drop_pct": -66.3,
+    "fy20_m": 342.18,
+    "fy21_m": 115
+   },
+   "unit": "% YoY / million pax",
+   "source": "https://www.aviationpros.com/airports/news/21231736/most-airports-continue-to-report-losses-amid-covid-turbulence",
+   "period": "FY2020-21",
+   "estimate": false
+  },
+  "covid_india_fy22_share": {
+   "value": 0.58,
+   "unit": "fraction of FY20 pax (~199m)",
+   "source": "https://www.business-standard.com/amp/industry/news/airports-authority-of-india-plans-to-spend-rs-4-000-crore-in-fy24-123042000917_1.html",
+   "period": "FY2021-22",
+   "estimate": true,
+   "note": "AAI estimate; recovery to pre-COVID by FY24 unverified."
+  },
+  "covid_hub_drops": {
+   "value": {
+    "LHR": -0.73,
+    "DXB": -0.7,
+    "DEL_proj": -0.73
+   },
+   "unit": "fraction YoY",
+   "source": "https://www.cityam.com/heathrow-passenger-numbers-fall-nearly-75-per-cent-in-2020/ ; https://gulfnews.com/business/aviation/dubai-airports-saw-259-million-passengers-in-2020-india-tops-in-number-of-travellers-1.1613364302190",
+   "period": "2020 / FY21",
+   "estimate": false,
+   "note": "LHR 22.1m vs ~80.1m base, lowest for decades (not since 1975)."
+  },
+  "fm_precedent_mial": {
+   "value": {
+    "fee_excused_from": "2020-03-13",
+    "fee_excused_to": "2022-02-28",
+    "months": 23.5,
+    "term_extension": "equal period",
+    "award": "2023-12-21 (corrected 2024-01-16)",
+    "hc_dismissed_aai_challenge": "2025-03-07",
+    "case": "OMP(COMM) 185/2024 AAI v MIAL",
+    "companion": "OMP(COMM) 186/2024 similar facts"
+   },
+   "unit": "event",
+   "source": "https://delhihighcourt.nic.in/app/showFileJudgment/DIS07032025OMPCOMM1852024_184404.pdf",
+   "period": "2020-2025",
+   "estimate": false,
+   "note": "Corrects claims that this case is DIAL. finance.covid_force_majeure (DIAL, from ICRA) left unchanged; its dates are not confirmed by this judgment."
+  },
+  "covid_rab_uplift_lhr": {
+   "value": 300,
+   "unit": "GBP million (partial RAB uplift)",
+   "source": "https://assets.publishing.service.gov.uk/media/652d19506b6fbf0014b756b7/Summary_of_the_CMA_s_FD_in_Heathrow_airport_appeals_pdfa.pdf",
+   "period": "2021-2023",
+   "estimate": false,
+   "note": "CMA found CAA not wrong. Regulator relief is partial."
+  },
+  "lhr_dividend_restart": {
+   "value": {
+    "gbp_m": 250,
+    "years_without": 5,
+    "share_of_ebitda": 0.12
+   },
+   "unit": "GBP million / years / fraction",
+   "source": "https://mediacentre.heathrow.com/pressrelease/detail/22074",
+   "period": "FY2024",
+   "estimate": false,
+   "note": "share_of_ebitda derived (250/2035)."
+  },
+  "scl_extension_settlement": {
+   "value": {
+    "months": 36,
+    "state_share_before": 0.7756,
+    "state_share_during_ext": 0.73,
+    "icsid_claim_usd_m": 323
+   },
+   "unit": "months / fraction",
+   "source": "https://www.emol.com/noticias/Economia/2026/02/06/1190789/mop-nuevo-pudahuel-acuerdo.html",
+   "period": "2026",
+   "estimate": true,
+   "note": "Unverified; pending Contraloria registration."
+  },
+  "collapse_kingfisher_2012": {
+   "value": {
+    "share_oct2011": 0.167,
+    "share_sep2012": 0.035,
+    "india_dom_cy2012_pct": -3.04,
+    "pax_m": [
+     60.7,
+     58.8
+    ],
+    "stopped": "2012-10-20"
+   },
+   "unit": "share / % YoY",
+   "source": "https://eparlib.nic.in/bitstream/123456789/647095/1/146374.pdf ; https://centreforaviation.com/news/indias-domestic-pax-numbers-down-12-to-4-million-in-sep-2012-182092",
+   "period": "2011-2012",
+   "estimate": false,
+   "note": "Decline broke ~3 years of growth (\"35 months\" unconfirmed)."
+  },
+  "collapse_jet_2019": {
+   "value": {
+    "capacity_pct": -14,
+    "apr2019_dom_pax_m": 10.99,
+    "apr2019_yoy_pct": -4.2,
+    "janapr_growth_pct": [
+     2.5,
+     24.6
+    ],
+    "fare_rise_pct": [
+     30,
+     40
+    ],
+    "suspended": "2019-04-18"
+   },
+   "unit": "% / million",
+   "source": "https://www.devdiscourse.com/article/business/535081-de-growth-in-domestic-traffic-due-to-jet-airways-grounding-icra",
+   "period": "2019",
+   "estimate": false,
+   "note": "Last flights night of 17 Apr. Fare rise is Mar 2019 vs Sep 2018."
+  },
+  "collapse_gofirst_2023": {
+   "value": {
+    "share_mar2023": 0.07,
+    "share_cy22": 0.088,
+    "insolvency": "2023-05-02",
+    "liquidation_ordered": "2025-01-20",
+    "operational_creditor_dues_cr": 3856
+   },
+   "unit": "share / date / INR crore",
+   "source": "https://www.business-standard.com/amp/industry/news/go-first-bankruptcy-seen-helping-rivals-boosting-airfares-in-india-123050300287_1.html ; https://businesstoday.in/industry/aviation/story/nclt-orders-liquidation-of-budget-airline-go-first-461388-2025-01-20",
+   "period": "2023-2025",
+   "estimate": false
+  },
+  "airline_dues_aai_2020": {
+   "value": {
+    "overdue_inr_bn": 24,
+    "air_india_group_share": 0.83,
+    "air_india_bn": 18.9,
+    "alliance_bn": 0.97,
+    "aix_bn": 0.13,
+    "kingfisher_owed_cr": 294.57
+   },
+   "unit": "INR bn / fraction",
+   "source": "https://www.ch-aviation.com/news/96255-indias-airlines-owe-airport-authority-328mn ; https://www.asianage.com/business/kingfisher-owes-about-rs-295-crore-airport-authority-india-557",
+   "period": "2020 (Kingfisher 2016)",
+   "estimate": false
+  },
+  "airline_lien_wow": {
+   "value": {
+    "unpaid_eur_m": 16,
+    "unpaid_isk_bn": 2
+   },
+   "unit": "EUR million",
+   "source": "https://travelweekly.co.uk/articles/312185/wow-air-plans-listing-but-leaves-airport-unpaid",
+   "period": "2019",
+   "estimate": false,
+   "note": "Isavia held a leased A321 under statutory lien."
+  },
+  "fuel_spike_2008": {
+   "value": {
+    "crude_peak_usd_bbl": 147,
+    "capacity_cut_pct": [
+     -6,
+     -14
+    ],
+    "industry_dom_capacity_pct": -11.4
+   },
+   "unit": "USD/bbl / %",
+   "source": "https://www.sec.gov/Archives/edgar/data/0001351548/000114420408064633/v132088_10q.htm",
+   "period": "2008",
+   "estimate": true,
+   "note": "Industry -11.4% unverified."
+  },
+  "fuel_spike_2022": {
+   "value": {
+    "jet_avg_usd_bbl": 136,
+    "yoy_pct": 75,
+    "crack_peak_usd_bbl": 67,
+    "crack_peak": "2022-06",
+    "fuel_share_opex": 0.3,
+    "peak_usd_bbl_secondary": 170
+   },
+   "unit": "USD/bbl / fraction",
+   "source": "https://www.iata.org/en/iata-repository/publications/economic-reports/soaring-jet-fuel-prices-now-trending-downward ; https://www.iata.org/en/iata-repository/publications/economic-reports/fuel-fact-sheet",
+   "period": "2022",
+   "estimate": false,
+   "note": "Peak ~170 secondary; $222bn extra bill unverified (skeptic S11)."
+  },
+  "rbi_repo": {
+   "value": {
+    "low": 4.0,
+    "low_period": "2020-05 to 2022-04",
+    "high": 6.5,
+    "high_reached": "2023-02",
+    "hike_bps": 250,
+    "hike_months": 9,
+    "jun2025": 5.5,
+    "prior_540": "2022-08-05"
+   },
+   "unit": "% repo",
+   "source": "https://www.dtnext.in/news/business/rbi-cuts-repo-rate-by-50-bps-to-55-pc-third-consecutive-reduction-836121",
+   "period": "2020-2025",
+   "estimate": false,
+   "note": "2019 path and Dec 2025/Feb 2026 moves unverified."
+  },
+  "airport_debt_spread_india": {
+   "value": {
+    "dial_usd_2016_pct": 6.125,
+    "inr_refi_pct": 9.5,
+    "spread_over_repo_bps": [
+     300,
+     450
+    ]
+   },
+   "unit": "% / bps",
+   "source": "https://financeasia.com/article/dial-sells-dollar-bond-abandons-masala/430738",
+   "period": "2016-2025",
+   "estimate": true
+  },
+  "aena_bond_2026": {
+   "value": {
+    "yield_pct": 3.6,
+    "coupon_pct": 3.5,
+    "spread_bp": 78,
+    "spread_2023_bp": 90
+   },
+   "unit": "% / bp",
+   "source": "https://www.aena.es/en/press/aena-issues-a-10-year-bond-for-an-amount-of-500-million-euros-with-an---annual-coupon-of-3.5.html",
+   "period": "2026-01",
+   "estimate": false
+  },
+  "airspace_india_2025": {
+   "value": {
+    "closure_start": "2025-05-07",
+    "lifted": "2025-05-12",
+    "effective_days": 5,
+    "airports_max": 32,
+    "cancels_per_day": 430,
+    "pak_ban_from": "2025-04-23",
+    "ai_cost_usd_m_yr": [
+     455,
+     600
+    ],
+    "fuel_up_pct": 29,
+    "extra_hours": 3
+   },
+   "unit": "days / airports / USD m",
+   "source": "https://www.tribuneindia.com/news/business/temporary-closure-of-32-airports-lifted-following-de-escalation-of-india-pakistan-tensions/amp ; https://www.khaleejtimes.com/world/asia/air-india-pakistani-ban-costs-pahalgam-attack",
+   "period": "2025",
+   "estimate": false,
+   "note": "Corrected from 9-15 May (skeptic S15). Ban duration to Apr 2026 unverified."
+  },
+  "airspace_ukraine": {
+   "value": {
+    "closed": "2022-02-24",
+    "normal_before": 2029,
+    "years": 7
+   },
+   "unit": "years",
+   "source": "https://www.eurocontrol.int/event/how-airspace-closures-triggered-russian-war-against-ukraine-are-impacting-european-aviation",
+   "period": "2022-2029",
+   "estimate": true
+  },
+  "volcanic_ash_2010": {
+   "value": {
+    "flights_cancelled": 100000,
+    "airports_closed": 313,
+    "days": 6,
+    "airline_loss_usd_bn": 1.7,
+    "uk_airports_gbp_m": 80
+   },
+   "unit": "flights / days / bn",
+   "source": "https://en.wikipedia.org/wiki/Air_travel_disruption_after_the_2010_Eyjafjallaj%C3%B6kull_eruption",
+   "period": "2010",
+   "estimate": false
+  },
+  "multiples_cycle_pwc": {
+   "value": {
+    "2007_08": 18,
+    "2009_10": 16,
+    "2016_18": 22
+   },
+   "unit": "x EV/EBITDA",
+   "source": "https://www.pwc.co.uk/transport-logistics/assets/airport-valuations-february-2019.pdf",
+   "period": "2007-2018",
+   "estimate": false
+  },
+  "gatwick_vinci": {
+   "value": {
+    "gbp_bn": 2.9,
+    "stake": 0.5001,
+    "pax_m": 45.7,
+    "ebitda_fy18_gbp_m": 411.2,
+    "multiple_bloomberg": 19
+   },
+   "unit": "GBP bn / x",
+   "source": "https://www.vinci.com/vinci.nsf/en/press-releases/pages/20181227-0700.htm",
+   "period": "2018-2019",
+   "estimate": true,
+   "note": "19x unverified (source URL dead)."
+  },
+  "sydney_takeprivate": {
+   "value": {
+    "multiple": [
+     23,
+     25
+    ],
+    "ev_aud_bn": 32,
+    "price_aud": 8.75
+   },
+   "unit": "x EV/EBITDA",
+   "source": "https://milfordasset.com/?p=20108",
+   "period": "2022",
+   "estimate": true,
+   "note": "Unverified."
+  },
+  "heathrow_blocks": {
+   "value": {
+    "stake": 0.3762,
+    "gbp_m": 3259,
+    "announced": "2024-06-14",
+    "completed": "2024-12-12",
+    "implied_equity_gbp_bn": 8.66,
+    "ferrovial_last_5_25pct_gbp_m": 455,
+    "multiple_jpm": 14.3,
+    "multiple_adj_ebitda_2023": 11.7
+   },
+   "unit": "GBP / x",
+   "source": "https://newsroom.ferrovial.com/en/?p=126996",
+   "period": "2023-2025",
+   "estimate": true,
+   "note": "14.3x unverified; 11.7x derived (EV ~26bn / 2,228m). Per-share price flat over 14 months."
+  },
+  "heathrow_ev_rab": {
+   "value": {
+    "low": 1.2,
+    "high": 1.31,
+    "rab_2023_gbp_m": 19804,
+    "rab_2024_gbp_m": 20422
+   },
+   "unit": "x EV/RAB",
+   "source": "https://mediacentre.heathrow.com/pressrelease/detail/22074",
+   "period": "2023-2024",
+   "estimate": true,
+   "note": "Derived."
+  },
+  "ana_bids": {
+   "value": {
+    "vinci": 3.08,
+    "fraport": 2.44,
+    "corp_america": 2.41,
+    "zurich": 2.0,
+    "winner_over_second": 0.26
+   },
+   "unit": "EUR bn / fraction",
+   "source": "https://centreforaviation.com/news/vinci-selected-to-acquire-ana-following-eur308bn-bid-196984",
+   "period": "2012-2013",
+   "estimate": false,
+   "note": "15.4x and sector 8x unverified."
+  },
+  "bial_implied_multiple": {
+   "value": {
+    "low": 10,
+    "high": 12
+   },
+   "unit": "x EV/EBITDA FY26",
+   "source": "derived from benchmarks.bial_valuation, benchmarks.debt_to_ebitda, benchmarks.ebitda_margin",
+   "period": "2024-2026",
+   "estimate": true,
+   "note": "Equity Rs 21,800 cr + net debt ~4x EBITDA, EBITDA ~Rs 3,050 cr."
+  },
+  "bial_ladder": {
+   "value": [
+    {
+     "date": "2017-03-24",
+     "stake": 0.38,
+     "usd_m": 385,
+     "implied_usd_bn": 1.0,
+     "note": "33% GVK + 5% Zurich (USD 48.9m); INR 25.22bn"
+    },
+    {
+     "date": "2017-07-13",
+     "stake": 0.1,
+     "usd_m": 200,
+     "implied_usd_bn": 2.0,
+     "fair_value_usd_m": 123,
+     "note": "38->48%; ~USD 77m expensed"
+    },
+    {
+     "date": "2018",
+     "stake": 0.06,
+     "usd_m": 67,
+     "implied_usd_bn": 1.1,
+     "note": "unverified"
+    },
+    {
+     "date": "2023",
+     "stake": 0.1,
+     "usd_m": 250,
+     "implied_usd_bn": 2.5,
+     "note": "3%+7%, 7% conditional; unverified"
+    },
+    {
+     "date": "2024-12",
+     "stake": 0.1,
+     "usd_m": 255,
+     "implied_usd_bn": 2.55,
+     "note": "64->74%; 3 instalments: close Q1 2025, ~2025-08-31, 2026-07-31"
+    }
+   ],
+   "unit": "blocks",
+   "source": "https://fairfaxindia.ca/wp-content/uploads/FIH-PR-March-24-2017-FAIRFAX-INDIA-ACQUIRES-38-OF-BANGALORE-INTERNATIONAL-AIRPORT-LIMITED.pdf ; https://fairfaxindia.ca/wp-content/uploads/2017-Q2-Press-Release-FIH-Final.pdf ; https://www.fairfaxindia.ca/wp-content/uploads/2024/12/2024_12_December_03-PRFIH-Acquisition-of-Additional-Interest-in-BIAL.pdf",
+   "period": "2017-2026",
+   "estimate": false,
+   "note": "AAI and KSIIDC 13% each; concession to 2068. Value 2.55x in ~8 years."
+  },
+  "bial_control_path_premium": {
+   "value": {
+    "premium": 0.63,
+    "whole_48pct_cost_usd_m": 585,
+    "whole_48pct_fair_usd_m": 591
+   },
+   "unit": "fraction over fair value (one block)",
+   "source": "https://fairfaxindia.ca/wp-content/uploads/2017-Q2-Press-Release-FIH-Final.pdf",
+   "period": "2017",
+   "estimate": false,
+   "note": "Premium sat on one block, not the whole stake."
+  },
+  "gmr_adp_2020": {
+   "value": {
+    "stake": 0.49,
+    "price_cr": 10780,
+    "post_money_cr": 22000,
+    "earnout_cr": 4475,
+    "earnout_share": 0.2,
+    "max_cr": 26475,
+    "first_tranche_cr": 5248,
+    "earnout_years": 5
+   },
+   "unit": "INR crore",
+   "source": "https://www.aviationpros.com/airport-business/airport-infrastructure-operations/news/21126494/group-adp-to-pick-up-49-in-gmr-airports-limited",
+   "period": "2020",
+   "estimate": false
+  },
+  "mial_rofr_2019": {
+   "value": {
+    "stake": 0.135,
+    "price_cr": 1248,
+    "per_share_inr": 77,
+    "implied_100pct_inr_bn": 95,
+    "rofr_holder_stake": 0.505
+   },
+   "unit": "INR",
+   "source": "https://www.airport-technology.com/news/adani-group-mumbai-airport/",
+   "period": "2019-2021",
+   "estimate": false,
+   "note": "GVK matched at same price via ROFR. Rs 11,200 cr counter-claim not found."
+  },
+  "galeao_2025": {
+   "value": {
+    "variable_fee": 0.2,
+    "old_fixed_brl_bn_yr": 1.3,
+    "infraero_stake": 0.49,
+    "buyout_brl_m": 932.8,
+    "disputes_ended_brl_bn": 8
+   },
+   "unit": "fraction / BRL",
+   "source": "https://www.panrotas.com.br/aviacao/aeroportos/2025/06/tcu-aprova-novo-contrato-para-o-galeao-rj-e-garante-permanencia-da-changi_218228.html",
+   "period": "2025",
+   "estimate": false,
+   "note": "Buyout only if no rival bidder emerges in a share auction."
+  },
+  "control_premium_band": {
+   "value": {
+    "airport_low": 0.15,
+    "airport_high": 0.63,
+    "generic_low": 0.2,
+    "generic_high": 0.4,
+    "default": 0.25
+   },
+   "unit": "fraction",
+   "source": "https://en.wikipedia.org/wiki/Control_premium",
+   "period": "general",
+   "estimate": true,
+   "note": "Minority discount = 1 - 1/(1+premium). Sydney 15% unverified."
+  },
+  "adani_airports_raise_2026": {
+   "value": {
+    "usd_bn_primary": 1,
+    "pre_money_usd_bn": 18
+   },
+   "unit": "USD bn",
+   "source": "https://dealroom.co/news/149572-adani-airport-holdings-raises-1b-from-blackrock-temasek-at-18b-valuation/",
+   "period": "2026",
+   "estimate": true,
+   "note": "Secondary source, unverified."
+  },
+  "mca_handback": {
+   "value": {
+    "info_exchange_months_before": 9,
+    "advisory_months_after": 6,
+    "ie_preinspection_days_before": [
+     210,
+     180
+    ],
+    "final_verification_days_before": [
+     90,
+     15
+    ],
+    "retention_of_last_year_fee": 0.05,
+    "defects_liability_days": 120,
+    "cure_days": 15,
+    "daily_damages_of_avg_daily_fee": 0.005,
+    "daily_damages_of_repair_cost": 0.001,
+    "authority_repair_markup": 0.2,
+    "stamp_duty": "Authority"
+   },
+   "unit": "days / months / fraction",
+   "source": "https://www.niti.gov.in/sites/default/files/2020-02/DRAFT-ModelConcessionAgreement-for-Setting-upPassengerRopewayProjects-underPublicPrivatePartnership.pdf",
+   "period": "2020 draft MCA",
+   "estimate": false,
+   "note": "Clauses 39.2, 39.3.2, 39.6.1, 40.1, 40.2.1-3, 17.8.1, 17.9.1 verbatim. Caveat: ropeway MCA, same template family."
+  },
+  "ports_mca_delayed_transfer": {
+   "value": {
+    "ld_per_day": "avg daily profit of last 3 years",
+    "expiry_compensation": 0,
+    "authority_default_equity_paid": 1.5
+   },
+   "unit": "formula",
+   "source": "https://www.shipmin.gov.in/sites/default/files/FinalMCA17012018-18610118.pdf",
+   "period": "2018",
+   "estimate": false
+  },
+  "anac_reversion": {
+   "value": {
+    "residual_operability_months": 24,
+    "post_term_bond_share": 0.2,
+    "post_term_bond_months": 24,
+    "demob_plan_years_before": 2
+   },
+   "unit": "months / fraction",
+   "source": "https://lawinsider.com/pt/contracts/39ld8mFh8us",
+   "period": "2019",
+   "estimate": true,
+   "note": "Unverified by skeptic."
+  },
+  "residual_life_thresholds": {
+   "value": {
+    "pavement_years": 10,
+    "pavement_compliant_share": 0.85,
+    "pavement_floor_years": 7,
+    "structures_years": 25,
+    "systems_years": 10
+   },
+   "unit": "years / fraction",
+   "source": "https://www.codot.gov/programs/ctio/projects/us-36/us-36-phase-ii/p-3/us-36-public-private-partnership-executed-concession-agreement/schedule-20.pdf",
+   "period": "2014",
+   "estimate": true,
+   "note": "US-36 Schedule 20; unverified by skeptic."
+  },
+  "handback_reserve": {
+   "value": {
+    "start_years_before": 5,
+    "revenue_share": [
+     0.02,
+     0.05
+    ],
+    "uk_ipa_prep_years": 7
+   },
+   "unit": "years / fraction",
+   "source": "https://www.txdot.gov/content/dam/docs/ald/north-tarrant-express/nte-seg-3-amend-fac-agree-exhibit-12.pdf",
+   "period": "2022-2025",
+   "estimate": true,
+   "note": "Unverified."
+  },
+  "renewal_precedents": {
+   "value": {
+    "dial_mial": "30+30",
+    "hyd_extension_to": "2068-03-22",
+    "hyd_confirmed_years_before_expiry": 16,
+    "aai_2019_round_years": 50,
+    "naia": "15+10, review after year 8"
+   },
+   "unit": "years",
+   "source": "https://indiainfrahub.com/news/gmr-gets-30-year-extension-to-operate-hyderabad-airport-till-2068/",
+   "period": "2006-2024",
+   "estimate": false,
+   "note": "Hyderabad verified; MIAL years 20-24 no-default condition and NAIA unverified."
+  },
+  "termination_india": {
+   "value": {
+    "concessionaire_default_debt_due": [
+     0.8,
+     0.9
+    ],
+    "authority_default_debt_due": 1.0,
+    "authority_default_adj_equity": [
+     1.3,
+     1.5
+    ]
+   },
+   "unit": "fraction",
+   "source": "https://www.epcworld.in/termination-of-highway-contracts-by-nhai-legal-framework-and-remedies/",
+   "period": "MCA practice",
+   "estimate": true,
+   "note": "See also finance.termination_*."
+  },
+  "damepl": {
+   "value": {
+    "notice": "2012-10-08",
+    "handover": 2013,
+    "award_usd_m": 960,
+    "annulled": "2024-04-10"
+   },
+   "unit": "USD million",
+   "source": "https://www.linklaters.com/insights/blogs/arbitrationlinks/2024/june/indian-supreme-court-annuls-arbitral-award-by-exercising-extraordinary-power-of-curative-review",
+   "period": "2012-2024",
+   "estimate": false,
+   "note": "Termination payout can be annulled a decade later."
+  },
+  "lender_substitution_highway": {
+   "value": 135.99,
+   "unit": "INR crore anchor bid (Swiss Challenge)",
+   "source": "https://sbi.co.in/documents/39129/46365e95-03c7-c93e-ac29-b8a333b0de94",
+   "period": "2025",
+   "estimate": true,
+   "note": "Highway precedent; no Indian airport case."
+  },
+  "viracopos": {
+   "value": {
+    "debt_brl_bn": 2.88,
+    "financial_creditors_brl_bn": 2.71,
+    "plan_approved": "2020-02-14",
+    "vote_share": 0.999,
+    "closed": "2020-12-10",
+    "outorga_bid_brl_bn": 3.821,
+    "indemnity_brl_bn": 2.5
+   },
+   "unit": "BRL bn",
+   "source": "https://www.infomoney.com.br/?p=1401961 ; https://www.suno.com.br/noticias/?p=107309",
+   "period": "2012-2025",
+   "estimate": false,
+   "note": "Filing month and 2025 relicitacao status/indemnity unverified."
+  },
+  "relicitacao_rules": {
+   "value": {
+    "months": 24,
+    "extension_months": 24,
+    "rebid_bar_stake": 0.2,
+    "capex": "frozen",
+    "indemnity": "unamortised reversible assets minus fines and arrears"
+   },
+   "unit": "months / fraction",
+   "source": "https://www2.camara.leg.br/legin/fed/lei/2017/lei-13448-5-junho-2017-785012-normaatualizada-pl.pdf",
+   "period": "2017/2022",
+   "estimate": true,
+   "note": "Unverified by skeptic."
+  },
+  "asga_reauction": {
+   "value": {
+    "bid_brl_m": 320.0,
+    "reserve_brl_m": 226.9,
+    "premium_over_reserve": 0.41,
+    "runner_up_gap_brl": 1,
+    "indemnity_brl_m": 554.55,
+    "bid_to_indemnity": 0.58,
+    "auction": "2023-05-19",
+    "signed": "2023-09-12"
+   },
+   "unit": "BRL million",
+   "source": "https://mercadoeconsumo.com.br/19/05/2023/noticias/zurich-airport-arremata-leilao-de-relicitacao-de-aeroporto-no-rn-por-r-320-mi-agio-e-de-41/",
+   "period": "2020-2023",
+   "estimate": false,
+   "note": "Indemnity unverified."
+  },
+  "naicm_cancellation": {
+   "value": {
+    "cost_mxn_bn": [
+     113.3,
+     331.9
+    ],
+    "bond_buyback_usd_bn": 1.8,
+    "noncompete_km": 70
+   },
+   "unit": "MXN bn / km",
+   "source": "https://mexiconewsdaily.com/news/government-sweetens-offer-to-airport-investors/",
+   "period": "2018-2021",
+   "estimate": true,
+   "note": "Unverified."
+  },
+  "h7_wacc": {
+   "value": {
+    "vanilla_low": 2.64,
+    "vanilla_high": 3.73,
+    "point": 3.18,
+    "fp_point": 3.26,
+    "coe_low": 5.59,
+    "coe_high": 8.32,
+    "equity_beta": [
+     0.95,
+     1.47
+    ],
+    "debt_beta": [
+     0.05,
+     0.1
+    ],
+    "gearing": 0.6
+   },
+   "unit": "% real (RPI)",
+   "source": "https://www.caa.co.uk/publication/download/20193",
+   "period": "H7 2022-2026",
+   "estimate": false,
+   "note": "Corrected range (skeptic). 8.32% is top of CoE range."
+  },
+  "h7_caps": {
+   "value": {
+    "2023": 31.57,
+    "2023_underlying": 31.32,
+    "2024_fc": 25.43,
+    "2025_fc": 25.24,
+    "2026_fc": 25.28,
+    "2024_outturn": 26.78,
+    "2025_remittal": 23.72,
+    "2026_remittal": 23.7,
+    "revenue_reduction_fd_gbp_m": 390,
+    "revenue_reduction_remittal_gbp_m": 250,
+    "proposal": "2024-03-20"
+   },
+   "unit": "GBP per pax nominal",
+   "source": "https://caa.co.uk/newsroom/news/regulator-proposes-changes-to-heathrow-airport-limited-s-airline-charges-in-response-to-cma-appeal",
+   "period": "2023-2026",
+   "estimate": false,
+   "note": "2023->2024 forecast step = -19.5%. Outturn vs forecast +5.3%."
+  },
+  "cma_h7_appeal": {
+   "value": {
+    "appellants": 4,
+    "grounds_upheld": 3,
+    "decided": "2023-10-17"
+   },
+   "unit": "count",
+   "source": "https://assets.publishing.service.gov.uk/media/652d19506b6fbf0014b756b7/Summary_of_the_CMA_s_FD_in_Heathrow_airport_appeals_pdfa.pdf",
+   "period": "2023",
+   "estimate": false
+  },
+  "dublin_caps": {
+   "value": {
+    "draft": [
+     8.68,
+     8.6,
+     8.29,
+     8.48
+    ],
+    "draft_avg": 8.52,
+    "final_avg": 7.59,
+    "final_published": "2023-04"
+   },
+   "unit": "EUR per pax (2022 real)",
+   "source": "https://www.iaa.ie/media/car-news-archive/2023/04/21/final-decision-on-the-maximum-levels-of-airport-charges-at-dublin-airport-2023-2026",
+   "period": "2023-2026",
+   "estimate": true,
+   "note": "Final 7.59 unverified; draft confirmed."
+  },
+  "sydney_aero_return": {
+   "value": {
+    "return_on_aero_assets": 0.202,
+    "aero_profit_aud_m": 570.5,
+    "bne_aud_m": 194.7,
+    "mel_aud_m": 198.9,
+    "per_aud_m": 70.7
+   },
+   "unit": "fraction / AUD m",
+   "source": "https://itwire.com/government-tech-news/technology-regulation/airports-report-record-aeronautical-revenues-despite-slower-growth-in-passenger-numbers",
+   "period": "FY2023-24",
+   "estimate": false,
+   "note": "Inflated by back-payments."
+  },
+  "changi_regulatory_period": {
+   "value": 12,
+   "unit": "years (4RP)",
+   "source": "https://www.caas.gov.sg/docs/default-source/docs---aras/notice-of-caas-determination-for-4rp.pdf",
+   "period": "2025-2037",
+   "estimate": true,
+   "note": "Hybrid-till per-pax cap since 2009; unverified."
+  },
+  "tdsat_single_till_2025": {
+   "value": {
+    "order": "2025-07-01",
+    "period": "FCP 2009-14",
+    "recompute_weeks": 12,
+    "years_after_orders": 13
+   },
+   "unit": "event",
+   "source": "https://corporate.cyrilamarchandblogs.com/2025/08/tdsat-redefines-aeronautical-tariff-setting-in-indian-airports/",
+   "period": "2025",
+   "estimate": false,
+   "note": "Rs 50,000 cr burden, UDF ranges and SC appeal unverified."
+  },
+  "sc_aera_can_appeal": {
+   "value": "2024-10-18",
+   "unit": "date",
+   "source": "https://www.livelaw.in/amp/top-stories/supreme-court-upholds-maintainability-of-appeals-filed-by-airports-economic-regulatory-authority-against-orders-of-tdsat-on-tariff-imposition-272836",
+   "period": "2024",
+   "estimate": false,
+   "note": "TDSAT mostly upheld AERA before 2025."
+  },
+  "nonaero_share_world": {
+   "value": {
+    "share": 0.367,
+    "mix": {
+     "parking": 0.24,
+     "retail": 0.21,
+     "property": 0.16,
+     "car_rental": 0.07,
+     "fnb": 0.06,
+     "other": 0.26
+    },
+    "apac_retail": 0.35
+   },
+   "unit": "fraction",
+   "source": "https://blog.aci.aero/airport-economics/maximizing-non-aeronautical-revenues-key-to-airport-financial-sustainability/",
+   "period": "CY2023",
+   "estimate": false
+  },
+  "ebitda_margins_world": {
+   "value": {
+    "VINCI_2024": 0.637,
+    "Aena_2024": 0.602,
+    "LHR_2024": 0.57,
+    "Changi_FY25": 0.477,
+    "ADP_2024": 0.336,
+    "Fraport_2024_ex_ifric12": 0.33
+   },
+   "unit": "fraction",
+   "source": "https://www.globenewswire.com/news-release/2025/02/06/3022248/0/en/VINCI-2024-Annual-Results.html ; https://www.aena.es/en/press/annual-results-2024--aena-obtains-a-record-net-profit-of-1934-million-in-2024.html ; https://www.fraport.com/en/newsroom/press-releases/2025/q1/2024-fiscal-year--improved-result-despite-unfavorable-market-env.html",
+   "period": "2024",
+   "estimate": true,
+   "note": "Fraport 33% on EUR 3.89bn ex-IFRIC12 (not 29.4%). Changi/ADP derived."
+  },
+  "payout_world": {
+   "value": {
+    "Aena": 0.8,
+    "ADP": 0.6,
+    "ADP_floor_eur_share": 3.0,
+    "LHR_2020_23": 0.0,
+    "Fraport_build_era": 0.0
+   },
+   "unit": "fraction of net profit",
+   "source": "https://www.webdisclosure.com/press-release/groupe-adp-epa-adp-adp-sa-solid-annual-results-2024-targets-met-FP08FP26yJl",
+   "period": "2024",
+   "estimate": false
+  },
+  "fraport_build_era": {
+   "value": {
+    "net_debt_ebitda": 6.4,
+    "fcf_eur_m": -674.7,
+    "ebitda_eur_bn": 1.3,
+    "revenue_ex_ifric12_eur_bn": 3.89,
+    "pax_m": 61.6,
+    "net_retail_per_pax_eur": 3.35
+   },
+   "unit": "x / EUR",
+   "source": "https://www.fraport.com/en/newsroom/press-releases/2025/q1/2024-fiscal-year--improved-result-despite-unfavorable-market-env.html",
+   "period": "FY2024",
+   "estimate": false,
+   "note": "Net debt EUR 8,388.5m not on source page."
+  },
+  "per_pax_world": {
+   "value": {
+    "aena_aero_eur": 10.3,
+    "aena_commercial_eur": 5.8,
+    "lhr_commercial_gbp": 11.36,
+    "adp_spp_eur": 32.1,
+    "ddf_spp_usd": 42
+   },
+   "unit": "per passenger",
+   "source": "https://www.aena.es/en/press/annual-results-2024--aena-obtains-a-record-net-profit-of-1934-million-in-2024.html ; https://www.caa.co.uk/media/32ojzdp0/appendix-fv-pragma-hal-commercial-benchmarking-phase-2-report-1st-september-2025-redacted.pdf",
+   "period": "2024",
+   "estimate": true,
+   "note": "Aena per-pax derived; DDF derived."
+  },
+  "infra_equity_irr_dm": {
+   "value": {
+    "low": 8,
+    "high": 10
+   },
+   "unit": "% net IRR",
+   "source": "https://infrastructureinvestor.com/trio-ex-jlif-advisors-list-200m-infra-fund",
+   "period": "2024-2026",
+   "estimate": true
+  },
+  "inc_drone_gatwick": {
+   "value": {
+    "hours": [
+     33,
+     36
+    ],
+    "flights": 1000,
+    "pax": 140000,
+    "airport_loss_gbp_m": 20,
+    "counter_drone_gbp_m": 5,
+    "easyjet_gbp_m": 15,
+    "per_cancel_gbp_k": 37,
+    "counter_drone_inr_cr": 58
+   },
+   "unit": "hours / GBP",
+   "source": "https://www.itv.com/news/2019-01-22/easyjet-takes-15m-hit-from-gatwick-drone-chaos ; https://www.ifsecglobal.com/drones/gatwick-airport-spends-5m-anti-drone-tech-christmas-chaos-cost-20m-lost-revenue/amp/",
+   "period": "2018-12",
+   "estimate": true,
+   "note": "Airport loss is a spokesman estimate."
+  },
+  "inc_grid_heathrow": {
+   "value": {
+    "suspension_hours": 10,
+    "cancellations": 1400,
+    "pax": 250000,
+    "airline_claims_gbp_m": 100,
+    "q1_rev_gbp_m": 825,
+    "q1_rev_yoy": 0.021,
+    "q1_pax_m": 18.2,
+    "q1_ebitda_gbp_m": 454
+   },
+   "unit": "hours / GBP",
+   "source": "https://airport-world.com/heathrow-on-target-for-good-2025-despite-q1-traffic-dip/",
+   "period": "2025-03",
+   "estimate": false
+  },
+  "inc_hull_loss_sfo": {
+   "value": {
+    "runway_days": 6,
+    "adjacent_hours": 24
+   },
+   "unit": "days",
+   "source": "https://www.sfexaminer.com/news/sfo-runway-reopens-after-fatal-asiana-airlines-crash/article_e5aae990-4e33-521c-aa5b-0880511304e4.html",
+   "period": "2013-07",
+   "estimate": false
+  },
+  "inc_muan": {
+   "value": {
+    "closure_years": 3,
+    "reopen": "late 2027"
+   },
+   "unit": "years",
+   "source": "https://en.wikipedia.org/wiki/Muan_International_Airport",
+   "period": "2024-2027",
+   "estimate": true,
+   "note": "Partly localizer/pavement works and Gwangju consolidation, not only the accident."
+  },
+  "inc_diversion_cost": {
+   "value": {
+    "regional_eur": 15000,
+    "narrow_mainline_eur": 55000,
+    "narrow_lcc_eur": 55000,
+    "wide_eur": 82000,
+    "eu261_lcc_eur": 40000,
+    "eu261_mainline_eur": 27000,
+    "eu261_wide_eur": 32000,
+    "india_narrow_inr_l": [
+     15,
+     28
+    ],
+    "india_wide_inr_l": 50
+   },
+   "unit": "EUR per diverted flight",
+   "source": "https://standard-inputs.netlify.app/chapters/cost_of_diversion.html",
+   "period": "Release 10.0.2",
+   "estimate": false,
+   "note": "India figures exclude EU261 (est.)."
+  },
+  "inc_it_outage": {
+   "value": {
+    "day1_cancel_share": 0.039,
+    "delta_usd_m": 550,
+    "delta_cancels": 7000,
+    "per_cancel_usd": 78600,
+    "days": 5
+   },
+   "unit": "fraction / USD",
+   "source": "https://www.businessinsurance.com/delta-rejects-crowdstrike-criticism-sees-500-million-hit-from-cyber-outage/",
+   "period": "2024-07",
+   "estimate": false
+  },
+  "inc_fuel_pipeline": {
+   "value": {
+    "uplift_share": 0.3,
+    "days": [
+     10,
+     15
+    ],
+    "storage_nzd_m": [
+     100,
+     150
+    ],
+    "pipeline_nzd_m": 220,
+    "storage_inr_cr": [
+     520,
+     780
+    ]
+   },
+   "unit": "fraction / NZD m",
+   "source": "https://nbr.co.nz/refining-nz-could-lose-up-to-15m-after-fuel-pipeline-breach",
+   "period": "2017-09",
+   "estimate": true,
+   "note": "Unverified."
+  },
+  "inc_bird_strikes": {
+   "value": {
+    "us_2023": 19628,
+    "us_2024": 22372,
+    "damaging_share": 0.07,
+    "damage_per_damaging_usd": 89813,
+    "damage_inr_l": 79
+   },
+   "unit": "count / fraction / USD",
+   "source": "https://www.faa.gov/airports/airport_safety/wildlife/wildlife-strike-report-1990-2023-USDA-FAA ; https://digitalcommons.unl.edu/icwdm_usdanwrc/464",
+   "period": "2008-2024",
+   "estimate": true,
+   "note": "2023 revised to 19,628 (Report 31); cost and 2024 figure unverified."
+  },
+  "inc_atc_strikes_eu": {
+   "value": 1.4,
+   "unit": "EUR bn per year (EU economy)",
+   "source": "https://a4e.eu/publications/air-traffic-control-atc-strikes-are-destroying-air-traffic-and-economies-across-europe",
+   "period": "2010-2017",
+   "estimate": true,
+   "note": "Unverified."
+  },
+  "bom_capacity_cut": {
+   "value": {
+    "peak_before": 46,
+    "peak_after": 44,
+    "offpeak_before": 44,
+    "offpeak_after": 42,
+    "order": "2024-02-15",
+    "effective": "2024-02-20"
+   },
+   "unit": "movements per hour",
+   "source": "https://www.100knots.com/flight-delays-at-mumbai-down-after-government-cuts-capacity/",
+   "period": "2024",
+   "estimate": false,
+   "note": "Reason: excessive slot allocation and poor slot adherence."
+  },
+  "india_pax_fy25": {
+   "value": {
+    "total_m": 412.09,
+    "dom_m": 334.7,
+    "intl_m": 77.38,
+    "intl_share": 0.19,
+    "yoy": 0.095
+   },
+   "unit": "million pax",
+   "source": "https://www.ibef.org/blogs/how-indian-airlines-are-expanding-domestic-and-international-routes",
+   "period": "FY2024-25",
+   "estimate": false
+  },
+  "india_growth_forecasts": {
+   "value": {
+    "boeing_south_asia": 0.07,
+    "airbus_dom_2025": 0.089,
+    "airbus_2022": 0.062,
+    "gov_2030_m": 500,
+    "gov_2047_m": 1000,
+    "gov_implied_cagr": 0.04,
+    "taper_2044": 0.056,
+    "global": 0.036
+   },
+   "unit": "CAGR",
+   "source": "https://boeing.mediaroom.com/2026-01-28-Indian,-South-Asian-Airlines-Will-Need-Nearly-3,300-New-Airplanes-by-2044 ; https://asianaviation.com/posts/india-to-hit-500-million-pax-by-2030-executive-says",
+   "period": "2025-2047",
+   "estimate": true,
+   "note": "Gov implied CAGR derived. Boeing/Airbus/taper unverified."
+  },
+  "india_airports_2047": {
+   "value": 350,
+   "unit": "airports",
+   "source": "https://www.deccanherald.com/india/india-plans-to-increase-number-of-airports-to-350-by-2047-says-civil-aviation-minister-3209952",
+   "period": "2047",
+   "estimate": true
+  },
+  "del_transfer_share": {
+   "value": {
+    "may2026": 0.27,
+    "may2025": 0.2,
+    "transfers_fy23_m": 15.6,
+    "transfers_fy25_m": 20.3,
+    "dom_dom_share": 0.61
+   },
+   "unit": "fraction",
+   "source": "https://infrastructuretoday.co.in/delhi-airport-transfer-traffic-hits-27-reinforces-hub-status/",
+   "period": "2025-2026",
+   "estimate": false
+  },
+  "lead_times": {
+   "value": {
+    "noida_years": 4.7,
+    "nmia_years": 8,
+    "nmia_late_years": 6,
+    "del_r4_slip_months": 13,
+    "del_airside_mppa": 140,
+    "del_terminal_mppa": 100
+   },
+   "unit": "years / months",
+   "source": "https://newsonair.gov.in/noida-international-airport-in-jewar-begins-commercial-flight-operations-this-morning/ ; https://livefromalounge.com/delhi-airport-puts-to-use-the-fourth-runway-and-an-elevated-taxiway-adding-to-capacity/",
+   "period": "2018-2026",
+   "estimate": false
+  },
+  "expansion_trigger_noida": {
+   "value": {
+    "share_of_capacity": 0.8,
+    "runway_triggers_mppa": [
+     30,
+     50,
+     70
+    ]
+   },
+   "unit": "fraction",
+   "source": "https://www.airport-technology.com/news/zurich-airport-international-jewar-airport-in-india/",
+   "period": "2021-2061",
+   "estimate": true,
+   "note": "Press reports; contract not seen."
+  },
+  "nmia_ramp": {
+   "value": {
+    "first_19_days_pax": 109917,
+    "first_4_months_m": 0.39,
+    "target_m_per_month": 1,
+    "target_month": 11
+   },
+   "unit": "pax",
+   "source": "https://www.aci-asiapac.aero/media-centre/news/navi-mumbai-international-airport-crosses-1-lakh-passenger-footfall-within-19-days-of-opening",
+   "period": "2025-2026",
+   "estimate": false
+  },
+  "bom_saturation": {
+   "value": {
+    "pax_2025_m": 55.5,
+    "capacity_mppa": 55
+   },
+   "unit": "million pax",
+   "source": "https://www.latestly.com/india/news/mumbai-airport-records-highest-ever-passenger-traffic-of-55-5-million-in-2025-7267941.html/amp",
+   "period": "2025",
+   "estimate": false
+  },
+  "rofr_radius_dial": {
+   "value": 150,
+   "unit": "km",
+   "source": "https://www.theweek.in/wire-updates/national/2025/03/17/lgd25-dl-hc-dial-hindon.html",
+   "period": "2006-",
+   "estimate": false,
+   "note": "10% match window not in this source (Noida ROFR within 10% is in ppp.concession_terms)."
+  },
+  "game_era_calendar": {
+   "value": {
+    "1": [
+     2026,
+     2031
+    ],
+    "2": [
+     2031,
+     2036
+    ],
+    "3": [
+     2036,
+     2041
+    ],
+    "4": [
+     2041,
+     2046
+    ],
+    "5": [
+     2046,
+     2051
+    ],
+    "6": [
+     2051,
+     2056
+    ],
+    "7": [
+     2056,
+     2061
+    ],
+    "8": [
+     2061,
+     2066
+    ],
+    "9": [
+     2066,
+     2071
+    ],
+    "10": [
+     2071,
+     2076
+    ],
+    "11": [
+     2076,
+     2081
+    ],
+    "12": [
+     2081,
+     2086
+    ]
+   },
+   "unit": "calendar years per era",
+   "source": "research/money-world.md section 9",
+   "period": "game",
+   "estimate": true
+  },
+  "game_shocks": {
+   "value": {
+    "pandemic": {
+     "p": 0.06,
+     "first_era": 2,
+     "max_per_concession": 1,
+     "dom_curve": [
+      0.35,
+      0.6,
+      0.88,
+      1.0,
+      1.05
+     ],
+     "intl_curve": [
+      0.2,
+      0.3,
+      0.6,
+      0.9,
+      1.0
+     ],
+     "transfer_year1_extra": 0.85,
+     "fm_win_p": 0.65,
+     "fm_fee_holiday_months": 23.5,
+     "fm_resolves_eras_later": 1,
+     "rab_uplift_share_of_lost_arr": [
+      0.1,
+      0.15
+     ],
+     "dividend_lock_eras": 1
+    },
+    "carrier_collapse": {
+     "p": 0.45,
+     "first_era": 2,
+     "share_lost": [
+      0.07,
+      0.15
+     ],
+     "recapture": 0.8,
+     "recapture_months": [
+      6,
+      12
+     ],
+     "fare_rise": 0.3,
+     "fare_months": 6,
+     "demand_hit": -0.03,
+     "receivable_months": [
+      2,
+      4
+     ],
+     "deposit_cuts_writeoff": 0.75,
+     "lien_lawsuit_p": 0.3,
+     "precursor_share_drop": 0.5
+    },
+    "fuel_spike": {
+     "p": 0.35,
+     "first_era": 1,
+     "atf_mult_typical": [
+      1.5,
+      1.75
+     ],
+     "atf_mult_extreme": 2.15,
+     "capacity_cut": [
+      -0.06,
+      -0.14
+     ],
+     "months": [
+      6,
+      18
+     ]
+    },
+    "rate_spike": {
+     "p": 0.3,
+     "bps": [
+      150,
+      250
+     ],
+     "years": [
+      2,
+      3
+     ]
+    },
+    "rate_fall": {
+     "p": 0.3,
+     "bps": [
+      -150,
+      -100
+     ],
+     "years": [
+      2,
+      3
+     ]
+    },
+    "regional_closure": {
+     "p": 0.25,
+     "days": 5,
+     "zmi_gains_diversions": true
+    },
+    "overflight_ban": {
+     "p": 0.12,
+     "first_era": 2,
+     "fuel_up": 0.29,
+     "extra_hours": 3,
+     "widebody_intl": -0.1,
+     "eras": [
+      1,
+      2
+     ]
+    },
+    "rival_airport": {
+     "p": 0.25,
+     "first_era": 3,
+     "opens_next_era_p": 0.7,
+     "diversion_of_od_lcc": [
+      0.05,
+      0.1
+     ],
+     "ramp": [
+      0.5,
+      0.8,
+      1.0
+     ]
+    },
+    "regime_shock": {
+     "p": 0.12,
+     "first_era": 3,
+     "options": [
+      "single_till_recompute",
+      "tariff_reset_-0.20",
+      "wacc_review_+-100_150bps"
+     ]
+    },
+    "political_cancellation": {
+     "p": 0.0
+    }
+   },
+   "unit": "per-era probabilities and sizes",
+   "source": "research/money-world.md section 9",
+   "period": "game",
+   "estimate": true,
+   "note": "Calibrated to world.* history; at most 2 negative shocks per era."
+  },
+  "game_shock_correlations": {
+   "value": {
+    "fuel_then_collapse_mult": 1.6,
+    "pandemic_then_collapse_mult": 1.5,
+    "fuel_rate_joint_p": 0.5,
+    "max_negative_per_era": 2
+   },
+   "unit": "multipliers",
+   "source": "research/money-world.md section 9",
+   "period": "game",
+   "estimate": true,
+   "note": "2012, 2022, 2023 precedents."
+  },
+  "game_market_cycle": {
+   "value": {
+    "crisis": {
+     "p": 0.15,
+     "adj": -2
+    },
+    "normal": {
+     "p": 0.6,
+     "adj": 0
+    },
+    "boom": {
+     "p": 0.25,
+     "adj": 3
+    }
+   },
+   "unit": "x EV/EBITDA adjustment",
+   "source": "research/money-world.md section 9",
+   "period": "game",
+   "estimate": true,
+   "note": "From multiples_cycle_pwc."
+  },
+  "game_stake_pricing": {
+   "value": {
+    "base_multiple": 12,
+    "growth_prem_per_pp_over": 3,
+    "growth_prem_cap": 6,
+    "track_prem_per_3star_era": 0.5,
+    "track_prem_cap": 1.5,
+    "dscr_breach_penalty": -2,
+    "safety_event_penalty": -2,
+    "reg_prem_range": [
+     -3,
+     3
+    ],
+    "clamp": [
+     8,
+     24
+    ],
+    "life_rate": 0.075,
+    "ev_rab_check": [
+     1.1,
+     1.4
+    ],
+    "control_cross_threshold": 0.75,
+    "control_mult": 1.35,
+    "control_mult_range": [
+     1.15,
+     1.63
+    ],
+    "distressed_mult": 0.85,
+    "earnout_max_share": 0.2,
+    "instalments": 3,
+    "instalment_years": 1.5,
+    "primary_raise_discount": 0.95,
+    "partner_block": [
+     0.02,
+     0.1
+    ],
+    "partner_offer_p": 0.5,
+    "partner_offer_p_stressed": 0.8,
+    "partner_first_era": 3,
+    "rofr_match": true,
+    "rival_dividend_veto_above_payout": 0.6,
+    "min_parent_stake": 0.51
+   },
+   "unit": "formula parameters",
+   "source": "research/money-world.md section 9",
+   "period": "game",
+   "estimate": true,
+   "note": "EV = EBITDA x multiple x (1 - 1.075^-yearsLeft); equity = EV - net debt."
+  },
+  "game_handback": {
+   "value": {
+    "survey_era": 11,
+    "reserve_start_years_before": 5,
+    "reserve_revenue_share": 0.03,
+    "reserve_range": [
+     0.02,
+     0.05
+    ],
+    "demob_years_before": 2,
+    "info_months_before": 9,
+    "ie_pre_days": [
+     210,
+     180
+    ],
+    "final_days": [
+     90,
+     15
+    ],
+    "retention_share": 0.05,
+    "retention_mult_below85": 1.5,
+    "retention_mult_below70": 2.0,
+    "repair_markup": 1.2,
+    "open_defect_daily": 0.005,
+    "delay_ld": "3y avg daily profit",
+    "classes": {
+     "airside_pavement": {
+      "w": 0.3,
+      "years": 10,
+      "share": 0.85,
+      "floor": 7
+     },
+     "terminal_structures": {
+      "w": 0.25,
+      "years": 25
+     },
+     "systems": {
+      "w": 0.25,
+      "years": 10
+     },
+     "safety": {
+      "w": 0.1,
+      "years": 10
+     },
+     "landside": {
+      "w": 0.1,
+      "years": 10
+     }
+    },
+    "bands": {
+     "exemplary": 95,
+     "compliant": 85,
+     "deficient": 70
+    },
+    "bond_draw_failed": 0.2,
+    "deferred_maint_incident_mult": 1.5
+   },
+   "unit": "scoring parameters",
+   "source": "research/money-world.md section 9",
+   "period": "game",
+   "estimate": true,
+   "note": "From mca_handback, anac_reversion, residual_life_thresholds, handback_reserve."
+  },
+  "game_appeal": {
+   "value": {
+    "cost_share_of_era_arr": 0.002,
+    "win_p": 0.2,
+    "win_p_range": [
+     0.15,
+     0.25
+    ],
+    "gap_closed_on_win": 0.25,
+    "delay_eras": 1,
+    "sc_reappeal_p": 0.3,
+    "jackpot_p": 0.05
+   },
+   "unit": "parameters",
+   "source": "research/money-world.md section 9",
+   "period": "game",
+   "estimate": true
+  },
+  "game_termination": {
+   "value": {
+    "dscr_step_in": "world/game.dscr_thresholds",
+    "expansion_missed_eras_warning": 1,
+    "expansion_missed_eras_default": 2,
+    "fee_arrears_years": 1,
+    "authority_default_payout_p": 0.6,
+    "authority_default_delay_eras": [
+     1,
+     2
+    ],
+    "voluntary_handback_months": 24,
+    "voluntary_extension_months": 24,
+    "indemnity_paid_p": 0.7,
+    "reauction_to_indemnity": 0.58
+   },
+   "unit": "parameters",
+   "source": "research/money-world.md section 9",
+   "period": "game",
+   "estimate": true
+  },
+  "game_endgame": {
+   "value": {
+    "irr_bands": {
+     "fail": 8,
+     "weak": 12.4,
+     "solid": 15.5,
+     "strong": 17.3
+    },
+    "weights": {
+     "irr": 35,
+     "handback": 20,
+     "dividends_over_equity": 15,
+     "peak_valuation": 10,
+     "safety": 10,
+     "stars": 10
+    },
+    "debt_unpaid_cap": "weak",
+    "margin_good": 0.55,
+    "valuation_anchor_cr": 21800
+   },
+   "unit": "score parameters",
+   "source": "research/money-world.md section 9",
+   "period": "game",
+   "estimate": true
+  },
+  "game_traffic_growth": {
+   "value": {
+    "cagr_by_era": [
+     0.07,
+     0.065,
+     0.06,
+     0.055,
+     0.05,
+     0.045,
+     0.04,
+     0.035,
+     0.03,
+     0.0275,
+     0.025,
+     0.025
+    ],
+    "bull_pp": 1.5,
+    "bear_pp": -2.0,
+    "intl_share_start": 0.19,
+    "intl_share_step_per_era": 0.02,
+    "intl_share_cap": 0.35,
+    "transfer_share_start": 0.12,
+    "transfer_share_cap": 0.27
+   },
+   "unit": "CAGR per era",
+   "source": "research/money-world.md section 9",
+   "period": "game",
+   "estimate": true,
+   "note": "412m x factors ~ 1.1bn by 2046, consistent with gov ~1bn by 2047."
+  },
+  "game_capacity": {
+   "value": {
+    "phase1_mppa": 70,
+    "full_mppa": 209,
+    "phase2_mppa": 260,
+    "spill_above": 0.95,
+    "moves_per_runway_hour": 44,
+    "otp_cut_threshold": 0.7,
+    "slot_cut_per_hour": 2,
+    "phase2_trigger": 0.8,
+    "phase2_early_option": 0.7,
+    "phase2_cost_cr": 14025,
+    "phase2_build_eras": 1,
+    "slip_p": 0.3,
+    "slip_years": 1,
+    "land_delay_p": 0.1,
+    "land_delay_eras": 1,
+    "ramp": [
+     0.55,
+     0.85,
+     1.0
+    ]
+   },
+   "unit": "capacity parameters",
+   "source": "research/money-world.md section 9",
+   "period": "game",
+   "estimate": true,
+   "note": "Phase 2 cost = 51 mppa x capex.brownfield_cr_per_added_mppa (275)."
+  },
+  "game_incidents": {
+   "value": {
+    "drone": {
+     "p": 0.3,
+     "shift_minutes": [
+      20,
+      40
+     ],
+     "recapture": 0.3,
+     "buy_cr": 58,
+     "buy_cut": 0.6
+    },
+    "grid": {
+     "p": 0.2,
+     "shift_segments": 1,
+     "airline_claim_mult": 1.5,
+     "buy_cr": [
+      150,
+      250
+     ],
+     "buy_cut": 0.8
+    },
+    "it_outage": {
+     "p": 0.25,
+     "day1_cancel": 0.04,
+     "throughput": -0.1,
+     "days": 3
+    },
+    "fuel_supply": {
+     "p": 0.15,
+     "uplift": 0.3,
+     "days": [
+      10,
+      15
+     ],
+     "buy_cr": [
+      520,
+      780
+     ]
+    },
+    "hull_loss": {
+     "p": 0.03,
+     "runway_days": 6,
+     "adjacent_shifts": 1
+    },
+    "fatal_airside_hazard": {
+     "p": 0.005
+    },
+    "diversion_airline_cost_inr_l": {
+     "narrow": [
+      15,
+      28
+     ],
+     "wide": 50
+    },
+    "bird_strike": {
+     "damaging_share": 0.07,
+     "airline_cost_inr_l": 79,
+     "inspection_min": [
+      10,
+      20
+     ],
+     "programme_cut": 0.3
+    }
+   },
+   "unit": "per-era probabilities and effects",
+   "source": "research/money-world.md section 9",
+   "period": "game",
+   "estimate": true,
+   "note": "grid buy cost is a game estimate; routine incidents automated per ZMI feedback."
+  }
  }
 }

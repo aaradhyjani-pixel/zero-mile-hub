@@ -55,7 +55,7 @@ Z3MOD.fx3 = function (Z) {
       g.beginPath(); g.moveTo(-10, 8); g.lineTo(-45, 88); g.lineTo(-22, 88); g.lineTo(35, 8); g.closePath(); g.fill();
       g.beginPath(); g.moveTo(-70, -4); g.lineTo(-92, -38); g.lineTo(-80, -38); g.lineTo(-58, -4); g.closePath(); g.fill();
       g.beginPath(); g.moveTo(-70, 4); g.lineTo(-92, 38); g.lineTo(-80, 38); g.lineTo(-58, 4); g.closePath(); g.fill(); g.restore();
-      g.fillStyle = '#f2c94c'; g.font = 'bold 34px Georgia, "Times New Roman", serif'; g.textAlign = 'center'; g.fillText('ZMI', cx, cy + 102); }
+      g.fillStyle = '#f2c94c'; g.font = 'bold 34px Georgia, "Times New Roman", serif'; g.textAlign = 'center'; g.fillText('VSI', cx, cy + 102); }
     // a tricolour flag, right
     { const fx = 1760, fy = 290, fw = 210, fh = 140;
       g.fillStyle = '#d9d9d9'; g.fillRect(fx - 10, fy - 20, 9, 330);
@@ -69,10 +69,10 @@ Z3MOD.fx3 = function (Z) {
     const tx = 1040; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
     const fit = (txt, font, px, maxW) => { let s = px; g.font = font.replace('#', s); while (g.measureText(txt).width > maxW && s > 20) { s -= 2; g.font = font.replace('#', s); } return s; };
     g.fillStyle = '#ffe9b8'; g.font = 'italic 42px Georgia, "Times New Roman", serif'; g.fillText('Welcome to the', tx, 300);
-    fit('ZERO MILE INTERNATIONAL', 'bold #px Georgia, "Times New Roman", serif', 132, 1280);
-    g.lineWidth = 10; g.strokeStyle = '#3a0509'; g.strokeText('ZERO MILE INTERNATIONAL', tx, 430);
+    fit('VIKRAM SARABHAI INTERNATIONAL', 'bold #px Georgia, "Times New Roman", serif', 132, 1280);
+    g.lineWidth = 10; g.strokeStyle = '#3a0509'; g.strokeText('VIKRAM SARABHAI INTERNATIONAL', tx, 430);
     const tg = g.createLinearGradient(0, 330, 0, 440); tg.addColorStop(0, '#fff7cf'); tg.addColorStop(0.5, '#f3c443'); tg.addColorStop(1, '#c48a16');
-    g.fillStyle = tg; g.fillText('ZERO MILE INTERNATIONAL', tx, 430);
+    g.fillStyle = tg; g.fillText('VIKRAM SARABHAI INTERNATIONAL', tx, 430);
     // the saffron scroll with INAUGURATION
     { const y0 = 462, y1 = 572, x0 = tx - 560, x1 = tx + 560;
       g.fillStyle = '#b8560a'; g.beginPath(); g.moveTo(x0 - 70, y0 + 20); g.lineTo(x0 + 10, y0 + 20); g.lineTo(x0 + 10, y1 + 20); g.lineTo(x0 - 70, y1 + 20); g.lineTo(x0 - 40, (y0 + y1) / 2 + 20); g.closePath(); g.fill();
@@ -86,9 +86,10 @@ Z3MOD.fx3 = function (Z) {
     { const y0 = FY0, h = FY1 - FY0, fg = g.createLinearGradient(0, y0, 0, y0 + h); fg.addColorStop(0, '#a3142a'); fg.addColorStop(1, '#5c0715');
       g.fillStyle = fg; g.fillRect(0, y0, AW, h); g.fillStyle = gold; g.fillRect(0, y0 + 20, AW, 5); g.fillRect(0, y0 + h - 25, AW, 5);
       for (let x = 6, i = 0; x < AW; x += 22, i++) { g.fillStyle = i % 2 ? '#ffb000' : '#ff7a00'; g.beginPath(); g.arc(x, y0 + 9, 10, 0, 7); g.fill(); g.beginPath(); g.arc(x + 11, y0 + h - 9, 10, 0, 7); g.fill(); }
-      const fL = 'bold 88px Georgia, "Times New Roman", serif', fD = '700 92px "Kohinoor Devanagari", "Devanagari Sangam MN", "ITF Devanagari", "Noto Sans Devanagari", sans-serif';
-      const t1 = 'ZERO MILE INTERNATIONAL  \u00b7  ', t2 = 'उद्घाटन';
-      g.font = fL; const w1 = g.measureText(t1).width; g.font = fD; const w2 = g.measureText(t2).width;
+      let fs = 88, fL, fD, w1, w2;   // shrink the pair until it fits the strip
+      const t1 = 'VIKRAM SARABHAI INTERNATIONAL  \u00b7  ', t2 = 'उद्घाटन';
+      do { fL = `bold ${fs}px Georgia, "Times New Roman", serif`; fD = `700 ${fs + 4}px "Kohinoor Devanagari", "Devanagari Sangam MN", "ITF Devanagari", "Noto Sans Devanagari", sans-serif`;
+        g.font = fL; w1 = g.measureText(t1).width; g.font = fD; w2 = g.measureText(t2).width; fs -= 4; } while (w1 + w2 > AW - 80 && fs > 40);
       const x0 = (AW - w1 - w2) / 2, by = y0 + h / 2 + 31; g.textAlign = 'left';
       const fgd = g.createLinearGradient(0, y0 + 30, 0, y0 + h - 30); fgd.addColorStop(0, '#fff4c4'); fgd.addColorStop(0.5, '#f3c443'); fgd.addColorStop(1, '#c48a16');
       g.lineWidth = 8; g.strokeStyle = '#2a0306'; g.font = fL; g.strokeText(t1, x0, by); g.font = fD; g.strokeText(t2, x0 + w1, by);

@@ -1,4 +1,4 @@
-# Zero Mile International (ZMI)
+# Vikram Sarabhai International (VSI)
 
 A speculative mega-hub at India's geographic centre, near Nagpur, sized for the combined traffic of Delhi, Mumbai, Bengaluru and Hyderabad: about 3,630 movements and 209 million passengers a year. Plus a browser game where you run it.
 

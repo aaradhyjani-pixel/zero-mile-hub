@@ -30,7 +30,7 @@ The core loop works: read the waves on the bank chart, flip runways ahead of the
 
 ## Replay and meta
 
-- **Daily challenge (S).** One seeded day for everyone, with a share code ("ZMI-1018: ★★★ 9,420"). Same schedule, compare scores.
+- **Daily challenge (S).** One seeded day for everyone, with a share code ("VSI-1018: ★★★ 9,420"). Same schedule, compare scores.
 - **Campaign: "The Migration" (L).** The four levels become chapters across the opening year, with a build budget in crores between chapters (open a concourse, add a rapid exit, extend a runway, hire a second wildlife team). Choices persist and have trade-offs.
 - **Achievements (S).** "Flawless bank" (a wave with no holding), "A380 whisperer" (every A380 on time), "Calm in the andhi" (no go-arounds in the storm), "Zero MAYDAY at Level 4".
 - **Endless mode (M).** Traffic grows 5% every hour of game time until the hub breaks. Your score is how long you hold it together.

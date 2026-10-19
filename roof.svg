@@ -423,6 +423,10 @@
 <path d="M404 190 V423" stroke="#ece7da" stroke-width="1.2" opacity=".8"/>
 <text x="404" y="164" fill="#ece7da" font-family="Barlow, sans-serif" font-size="15" font-weight="700" text-anchor="middle">OCULUS over the Zero Mile marker</text>
 <text x="404" y="182" fill="#a6afb4" font-family="Barlow, sans-serif" font-size="13" text-anchor="middle">the three gateway axes meet here</text>
+<g stroke="#f4c430" stroke-width="1.6" fill="#0f1417"><circle cx="445.2" cy="443.0" r="4.2"/><circle cx="457.2" cy="443.0" r="4.2"/><path d="M445.2 443.0 L450.2 436.0 L457.2 443.0" fill="none"/></g><path d="M442.2 434.0 H456.2 l5 -2.5 l-5 -2.5 H442.2 z" fill="#f4c430"/>
+<path d="M454 431 L644 238" stroke="#0f1417" stroke-width="3.5" opacity=".6"/><path d="M454 431 L644 238" stroke="#ece7da" stroke-width="1.3"/>
+<text x="714" y="212" fill="#ece7da" font-family="Barlow, sans-serif" font-size="15" font-weight="700" text-anchor="end">BICYCLE AND ROCKET</text>
+<text x="714" y="229" fill="#a6afb4" font-family="Barlow, sans-serif" font-size="13" text-anchor="end">after the Thumba photographs, 1960s</text>
 <text x="30" y="52" fill="#ece7da" font-family="Barlow Condensed, Barlow, sans-serif" font-size="34" font-weight="700">THE ROOF · ONE SURFACE OVER THE HALL, THE MALL AND PIERS A AND B</text>
 <text x="30" y="80" fill="#a6afb4" font-family="Barlow, sans-serif" font-size="17">Roof plan. Structure from Mumbai, underside and gardens from Bengaluru, edges from Ahmedabad.</text>
 <path d="M42 768 L42 756 L242 518" stroke="#d9894a" stroke-width="1.4" fill="none" opacity=".9"/><circle cx="242" cy="518" r="4" fill="#d9894a" stroke="#0f1417" stroke-width="1"/>

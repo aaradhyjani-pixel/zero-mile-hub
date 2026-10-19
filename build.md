@@ -1,9 +1,9 @@
-# build.md — Zero Mile International (ZMI): the hub game
+# build.md — Vikram Sarabhai International (VSI): the hub game
 
 Read this first if you are a new Claude picking up the project. It covers what this is, why it is built this way, how the code works, how to build, test and deploy, and what to do next. `prompt.md` is the brief for the next big step (3D).
 
 ## 1. What this is
-A browser airport-operations game. The player runs **Zero Mile International (ZMI)**, a speculative mega-hub on a greenfield site south-west of Nagpur (between Butibori and the start of the Samruddhi Expressway), at India's geographic centre (the Zero Mile stone).
+A browser airport-operations game. The player runs **Vikram Sarabhai International (VSI)**, a speculative mega-hub on a greenfield site south-west of Nagpur (between Butibori and the start of the Samruddhi Expressway), at India's geographic centre (the Zero Mile stone).
 
 Brief from the owner, Aaradhy: **merge Ahmedabad (SVPIA), Mumbai (CSMIA) and Bengaluru (KIA) into one airport near Nagpur. The merger is the core concept: design elements from all three must show up in the new building (not done yet, see prompt.md Workstream A0).** The airport is designed "with the capabilities of a world-class parametric studio" (the Beijing Daxing kind), then simulate it with the combined traffic of Delhi, Mumbai, Bengaluru and Hyderabad. He originally named the site "Dakchung", which couldn't be found; the Nagpur greenfield site was assumed and he can correct it.
 
@@ -22,7 +22,7 @@ Brief from the owner, Aaradhy: **merge Ahmedabad (SVPIA), Mumbai (CSMIA) and Ben
 2. **BLR Day Shift** (06:00 to 12:00, busiest window). Timeline chart of flights due, two-way resource controls, holding-stack explainer, landing and take-off animations.
    - Bugs he reported and that were fixed: zoom and pan felt wrong (fixed with a camera module with anchor zoom, trackpad vs mouse wheel detection and clamping); black screen on reopen (zero-size canvas at load, fixed with a per-frame size check, ResizeObserver and a visibilitychange handler); the Arrivals tab froze the game (an exception killed the requestAnimationFrame loop, so rAF is now called first and draw/hud are wrapped in try/catch).
 3. **BOM Monsoon Shift** (Mumbai single runway). He said it **"was not fun"**: you mostly watched and answered multiple-choice cards.
-4. **ZMI hub (this build)**, designed to fix that:
+4. **VSI hub (this build)**, designed to fix that:
    - **Map-first direct actions** instead of cards: click runways to switch modes, click incident icons on the map.
    - **Short escalating levels with stars** (about 4.5 real minutes each at 1×).
    - A **bank chart** that shows the next hour's arrival and departure waves against runway capacity.

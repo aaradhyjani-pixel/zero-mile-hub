@@ -759,7 +759,7 @@ function perfPaint(ms){const P=PERFM,n=P.n;if(!n||!P.el)return;
 function perfReport(){const P=PERFM,n=P.frames,R=Z.renderer;let gpu='';
   if(R){try{const gl=R.getContext(),x=gl.getExtension('WEBGL_debug_renderer_info');gpu=P.gpu||(P.gpu=String(gl.getParameter(x?x.UNMASKED_RENDERER_WEBGL:gl.RENDERER)));}catch(e){}}
   const secs=(performance.now()-P.t0)/1000,c=perfCtx(),ph=q=>q.n?`${q.n} frames, ${(q.s/q.n).toFixed(1)} ms avg, ${q.c50} over 50 ms`:'none';
-  const L=[`ZMI perf report · ${new Date().toISOString().slice(0,19)} · meter on ${secs.toFixed(0)} s`,
+  const L=[`VSI perf report · ${new Date().toISOString().slice(0,19)} · meter on ${secs.toFixed(0)} s`,
     `${navigator.userAgent}`,`screen ${VW}x${VH} dpr ${window.devicePixelRatio||1} · 3D pr ${R?R.getPixelRatio():'-'} · ${V3.on?'3D':'2D'} ${c.q} · gpu ${gpu||'?'} · cores ${navigator.hardwareConcurrency||'?'}`,
     `level ${LV&&running?LV.n:'-'} at ${c.clk} · ${c.spd}`,
     n?`frames ${n}: ${(n*1000/P.sum).toFixed(0)} fps avg · median ${perfQ(P.hD,n,0.5)} ms · p95 ${perfQ(P.hD,n,0.95)} · p99 ${perfQ(P.hD,n,0.99)} · over 33 ms ${P.c33}, over 50 ms ${P.c50}, over 100 ms ${P.c100}`:'no frames yet',

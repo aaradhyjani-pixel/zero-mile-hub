@@ -1,4 +1,4 @@
-"""Zero Mile International (ZMI): parametric master plan generator.
+"""Vikram Sarabhai International (VSI): parametric master plan generator.
 
 Writes spec.json: the geometry the simulation routes on, plus the architecture (one continuous roof,
 the merger DNA of Ahmedabad, Mumbai and Bengaluru, landside, phase 2) for drawings and the 3D build.
@@ -405,7 +405,7 @@ phase2 = {
 }
 
 spec = {
-    'name': 'Zero Mile International Airport', 'short_title': 'Zero Mile Hub', 'code': 'ZMI',
+    'name': 'Vikram Sarabhai International Airport', 'short_title': 'Vikram Sarabhai International', 'code': 'VSI',
     'tagline': "Ahmedabad, Mumbai and Bengaluru, merged under one roof near Nagpur's Zero Mile. Six runways, one continuous roof, and a Hall whose three gateway lobes each point home.",
     'extent': {'x0': -4300, 'x1': 3300, 'y0': -OUTER - 500, 'y1': OUTER + 500},
     'runways': runways, 'taxiways': taxiways, 'concourses': concourses, 'remote': remote, 'bays': bays,

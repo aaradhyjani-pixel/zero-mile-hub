@@ -378,6 +378,15 @@ const CSS=`
 .zdk-hb .zdk-tab .h.big{font-size:30px}
 .zhb-own{display:flex;justify-content:space-between;gap:12px;padding:1px 0}.zhb-own .h{font-size:19px}
 .zdk-sigs.hb{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 30px}
+.zdk-hb .zdk-note{width:min(300px,calc(100% - 34px))}
+.zdk-hb .zdk-note .zdk-dscr>b{font-size:34px;white-space:nowrap}
+.zdk-hb .zdk-note p.pen{font-family:var(--ft);font-size:12.5px;line-height:1.45;color:var(--zpe)}
+.zdk-hb .zdk-note ol{margin:4px 0 0;padding-left:20px;font-size:16px;line-height:1.35}.zdk-hb .zdk-note ol li+li{margin-top:6px}
+.zdk-hb .zdk-tab td small.split{display:block;margin-top:2px}
+.zdk-acts .zdk-q.cert,.zbx-acts .zdk-q.cert{margin-left:auto;white-space:nowrap}
+.zdk-q.cert[disabled]{text-decoration:none;color:var(--zpe);cursor:default}
+.zdk-q.cert.why{white-space:normal;text-align:left;max-width:440px;line-height:1.4;padding-top:4px;padding-bottom:4px}
+@media (max-width:1280px){.zdk-hb .zdk-note{width:min(260px,calc(100% - 24px))}.zdk-hb .zdk-note .zdk-dscr>b{font-size:29px}.zdk-hb .zdk-note p{font-size:15px}}
 .zdk-sigs.hb .s.then .ink{height:118px;align-items:center}
 .zdk-sigs.hb .s.then img{display:block;max-height:96px;max-width:100%;width:auto}
 .zdk-sigs.hb .s.then em{font-family:var(--fh);font-style:normal;font-size:16px;color:var(--zpe)}
@@ -1003,6 +1012,21 @@ M.incomeStatement=function(o){o=o||{};const txt=h=>{const d=document.createEleme
   for(const k of ['paragraph','cover','stake','margin','adviser','year','page','pile'])if(o[k]!=null)B[k]=o[k];
   return M.bill(Object.assign(B,o.bill||{})).then(r=>r||'cta');};
 
+/* ---------- the Certificate of Concession (money/cert.js, window.ZMCert): one button, on the handover and the Black Box ----------
+   cert = VSIEra.certificate(state). With no certificate (the banks took control), the button is disabled and the reason
+   is written beside it in plain words. */
+function certButton(cert){if(!cert)return '';
+  return cert.ok?`<button class="zdk-q cert" data-cert="1">Download your certificate (PDF)</button>`:`<button class="zdk-q cert why" disabled>${esc(cert.why||'No certificate for this concession.')}</button>`;}
+function certWire(root,cert){const b=root.querySelector('.zdk-q.cert[data-cert]');if(!b||!cert||!cert.ok)return;
+  const label=b.textContent;
+  b.onclick=e=>{e.stopPropagation();if(b.disabled)return;
+    if(!window.ZMCert){b.textContent='The certificate writer is missing from this build';return;}
+    b.disabled=true;b.textContent='Writing your certificate…';
+    ZMCert.download(cert).then(r=>{b.textContent=r&&r.ok?'Saved: '+r.name:(r&&r.why)||'Could not write the certificate';window.__zmmCert=r;})
+      .catch(err=>{console.warn('certificate',err);b.textContent='Could not write the certificate';})
+      .then(()=>setTimeout(()=>{b.textContent=label;b.disabled=false;},3200));};}
+M.certButton=certButton;M.certWire=certWire;
+
 /* ---------- handback (year 60): the handover certificate, on duty paper ----------
    The concession ends. VSIAL hands the airport back to AAI and the State. The certificate records sixty years in plain
    words; the player's day-one signature (from the Concession Agreement) sits beside an empty pad, and they sign again.
@@ -1027,6 +1051,7 @@ M.handback=function(o){o=o||{};
   const COND=[['excellent','in excellent condition','nothing to repair'],['good','in good condition, with ordinary wear','repairs within the handover allowance'],['poor','in poor condition','repairs charged to '+M.cfg.spvShort]];
   const assets=(o.assets||[]).filter(Boolean),list=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' and '+a[a.length-1];
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const C=o.cert&&o.cert.ok?o.cert:null,CL=C?C.lines||{}:{};   // VSIEra.certificate: the money in plain words, and what delivered it
   const GUIL='url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 44 44"><rect width="44" height="44" fill="#dfeadf"/>'+rosette(22,22,19)+'</svg>')+'")';
   const plan=document.getElementById('planTpl');
   const late=new Date(d1.getFullYear()-5,d1.getMonth(),d1.getDate());
@@ -1055,7 +1080,10 @@ M.handback=function(o){o=o||{};
           <tr><td>Passengers served</td><td><span class="h big">${esc(pax(o.paxTotalM))}</span><small>over ${yrs} years</small></td></tr>
           ${assets.length?`<tr><td>Handed over in working order</td><td>${esc(list(assets))}</td></tr>`:''}
           <tr><td>Paid to the State and AAI</td><td><span class="h">${esc(fmt(o.paidToStateCr))}</span><small>over the whole concession</small></td></tr>
-          <tr><td>Your return per year</td><td><span class="h">${esc(pct(o.returnPct))}</span><small>on the money ${esc(parent)} put in</small></td></tr>
+          ${C?`<tr><td>Put in by ${esc(parent)}</td><td><span class="h">${esc(fmt(C.inCr))}</span><small>over the ${yrs} years</small></td></tr>
+          <tr><td>Came back to ${esc(parent)}</td><td><span class="h">${esc(fmt(C.outCr))}</span>${CL.split?`<small class="split">${esc(CL.split)}</small>`:''}</td></tr>
+          <tr><td>Made, more than it put in</td><td><span class="h big">${esc(fmt(C.madeCr))}</span><small>about ${esc(pct(C.returnPct))} a year</small></td></tr>`
+          :`<tr><td>Your return per year</td><td><span class="h">${esc(pct(o.returnPct))}</span><small>on the money ${esc(parent)} put in</small></td></tr>`}
           <tr><td>Condition at handback, as inspected by AAI</td><td><div class="zdk-ticks insp" role="radiogroup" aria-label="Condition at handback">${COND.map(c=>`<button role="radio" aria-checked="${c[0]===cond}" aria-disabled="true" tabindex="-1"><i></i>${esc(c[1])} <small>${esc(c[2])}</small></button>`).join('')}</div></td></tr>
           <tr><td>Owners of ${esc(M.cfg.spvShort)} at handback</td><td>${owners.map((w,k)=>`<div class="zhb-own">${k===0?H(w.name):esc(w.name)}<span>${esc(pct(w.pct))}</span></div>`).join('')}</td></tr>
         </tbody></table>
@@ -1071,11 +1099,15 @@ M.handback=function(o){o=o||{};
             <div class="zdk-seal" id="zhbSeal" aria-hidden="true">${sealSvg()}</div></div>
         </div>
       </article>
-      <div class="zdk-acts"><button class="zdk-go" id="zhbN" disabled>Sign and hand back the airport</button><button class="zdk-q" id="zhbC" disabled>Clear</button></div></div>
-      <aside class="zdk-note${reduce?'':' arrive'}" aria-live="polite">
+      <div class="zdk-acts"><button class="zdk-go" id="zhbN" disabled>Sign and hand back the airport</button><button class="zdk-q" id="zhbC" disabled>Clear</button>${certButton(o.cert)}</div></div>
+      <aside class="zdk-note${reduce?'':' arrive'}" aria-live="polite">${C?`
+        <h3>What your company made</h3><div class="zdk-dscr"><b>${esc(fmt(C.madeCr))}</b></div>
+        <p>${esc([CL.putIn,CL.cameBack,CL.made,CL.perYear].filter(Boolean).join(' '))}</p>
+        ${CL.today?`<p class="pen">${esc(CL.today)}</p>`:''}
+        <h3>What delivered it</h3>${C.delivered&&C.delivered.length?`<ol>${C.delivered.map(d=>`<li>${esc(d.sentence)}</li>`).join('')}</ol>`:`<p>${esc(C.closing||'')}</p>`}`:`
         <h3>Sixty years, in one number</h3><div class="zdk-dscr"><b>${esc(pct(o.returnPct))} <small>a year</small></b></div>
         <p>Your return per year on everything ${esc(parent)} put in, counting every dividend that came back.</p>
-        ${o.stakeValueCr!=null?`<h3>What you walk away with</h3><div class="zdk-dscr"><b>${esc(fmt(o.stakeValueCr))}</b></div><p>Your ${esc(pct(o.stakePct))} of ${esc(M.cfg.spvShort)} on the day you hand back. The airport itself now belongs to the State.</p>`:''}
+        ${o.stakeValueCr!=null?`<h3>What you walk away with</h3><div class="zdk-dscr"><b>${esc(fmt(o.stakeValueCr))}</b></div><p>Your ${esc(pct(o.stakePct))} of ${esc(M.cfg.spvShort)} on the day you hand back. The airport itself now belongs to the State.</p>`:''}`}
       </aside></main>
   </div>`,'zmm-ob');
   const desk=sh.querySelector('.zdk'),docEl=sh.querySelector('#zhbDoc');
@@ -1087,14 +1119,14 @@ M.handback=function(o){o=o||{};
     for(let y=0;y<c.height;y++)for(let x=0;x<c.width;x++)if(a[(y*c.width+x)*4+3]>16){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
     if(x1<0)return;const p=6;x0=Math.max(0,x0-p);y0=Math.max(0,y0-p);x1=Math.min(c.width-1,x1+p);y1=Math.min(c.height-1,y1+p);
     const t=document.createElement('canvas');t.width=x1-x0+1;t.height=y1-y0+1;t.getContext('2d').drawImage(c,x0,y0,t.width,t.height,0,0,t.width,t.height);im.src=t.toDataURL('image/png');}catch(_){}};
-  const go=sh.querySelector('#zhbN'),clr=sh.querySelector('#zhbC');
+  const go=sh.querySelector('#zhbN'),clr=sh.querySelector('#zhbC');certWire(sh,o.cert);
   const pad=sigPad(sh.querySelector('#zhbSig'),ok=>{go.disabled=!ok;clr.disabled=pad.empty();sh.querySelector('#zhbHint').classList.toggle('gone',!pad.empty());sh.querySelector('#zhbFlag').classList.toggle('gone',!pad.empty());});
   // walk the reader down to the two signatures, as a clerk would
   setTimeout(()=>{const t=sh.querySelector('#zhbSigs');if(t&&!finished)docEl.scrollTo({top:Math.max(0,t.offsetTop-150),behavior:reduce?'auto':'smooth'});},reduce?0:1100);
   clr.onclick=()=>pad.clear();
   go.onclick=()=>{
     const result={signature:pad.png(),signedOn:iso(new Date()),handedBackOn:iso(d1)};pad.lock();
-    sh.querySelectorAll('.zdk-acts button,#zhbX').forEach(b=>b.disabled=true);
+    sh.querySelectorAll('.zdk-acts button:not(.cert),#zhbX').forEach(b=>b.disabled=true);
     sh.querySelector('#zhbSeal').classList.add('down');
     const sigs=sh.querySelector('#zhbSigs'),big=()=>sigs.insertAdjacentHTML('beforeend',stamp(yrs+' years','Handed over · '+dStamp(d1),'down big'));
     if(reduce){big();setTimeout(()=>done(result),1400);return;}
@@ -1103,10 +1135,13 @@ M.handback=function(o){o=o||{};
   });
 };
 /* ?moneymock=handback, or window.__zmmHandbackDemo(): the certificate with sample numbers and a drawn day-one signature */
+// the demo's money: a finished concession played through the engine (VSIEra), so even the sample figures are the engine's own
+function hbSampleCert(sig){try{const E=window.VSIEra,c=E&&E.chapters&&E.chapters[7];if(!c)return null;let st=c.fixture();st=c.applyDecision(st,{district:true,phase2:true,l5:true});
+  st=c.applyShift(st,c.shiftPlan(st).auto).state;st.signature=sig;return E.certificate(st);}catch(e){return null;}}
 function hbSampleSig(){return new Promise(r=>{const svg=scribble(53,'#1f3a8a').replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" width="300" height="80" ');
   const i=new Image();i.onload=()=>{const c=document.createElement('canvas');c.width=640;c.height=118;c.getContext('2d').drawImage(i,40,22,300,80);r(c.toDataURL('image/png'));};i.onerror=()=>r(null);
   i.src='data:image/svg+xml,'+encodeURIComponent(svg);});}
-window.__zmmHandbackDemo=o=>hbSampleSig().then(sig=>M.handback(Object.assign({founder:'Asha Rao',parent:'Meridian Infra',signature:sig,signedOn:'2026-10-19',endsOn:'2086-10-18',
+window.__zmmHandbackDemo=o=>hbSampleSig().then(sig=>M.handback(Object.assign({cert:hbSampleCert(sig),founder:'Asha Rao',parent:'Meridian Infra',signature:sig,signedOn:'2026-10-19',endsOn:'2086-10-18',
   stakePct:68,stakeValueCr:21400,returnPct:14.6,paxTotalM:4180,paidToStateCr:198000,condition:'good',
   assets:['four runways','Terminals 1 and 2','Satellites G and H','Zero Mile Tower','the APM train','the airport city'],
   owners:[{name:'Meridian Infra',pct:68},{name:'NIIF',pct:12},{name:'Airports Authority of India',pct:10},{name:'State of Maharashtra, through MADC',pct:10}],
@@ -2506,6 +2541,7 @@ const CSSS=`
 .zbx-th li i{font-style:normal;font-family:var(--fh);font-weight:700;font-size:22px;line-height:1}.zbx-th li i.y{color:var(--zi)}.zbx-th li i.n{color:var(--trace)}
 .zbx-acts{position:absolute;left:300px;right:44px;bottom:26px;z-index:2;display:flex;align-items:center;gap:4px}
 .zbx-acts .zdk-go{margin-right:8px}
+#zbxCert{margin-left:auto;display:flex;align-items:center}#zbxCert[hidden]{display:none}
 @media (max-width:1280px){.zbx-case{left:28px;width:200px;top:110px}.zbx-case .sten{font-size:25px}.zbx-case .sten.s{font-size:16px}.zbx-pg{left:246px;right:24px;top:100px;bottom:88px;padding:20px 30px}.zbx-acts{left:246px;right:24px;bottom:22px}.zbx-big{font-size:50px}.zbx-papers{height:270px}.zbx-pp{height:218px}.zbx-led td.lb{width:220px}}
 @media (prefers-reduced-motion:reduce){.zbx-pg.pull{animation:none}.zbx-case{transition:none}}
 `;
@@ -3004,12 +3040,13 @@ M.debrief=function(P,opt){mountS();P=P||{};opt=opt||{};return new Promise(res=>{
   let n=Math.max(0,Math.min(4,+opt.start||0));
   const sh=desk5('zbx'+(n?'':' shut'),`<div class="zbx-case" id="zbxCase"><span class="slot"></span><span class="sten">Flight<br>recorder</span><span class="sten s">Do not open</span><button class="op" id="zbxOpen">open it</button></div>
     <section class="zbx-pg" id="zbxPg" aria-live="polite"></section>
-    <div class="zbx-acts"><button class="zdk-go" id="zbxNext"></button><button class="zdk-q" id="zbxBack">Back</button></div>`);
+    <div class="zbx-acts"><button class="zdk-go" id="zbxNext"></button><button class="zdk-q" id="zbxBack">Back</button><span id="zbxCert" hidden>${certButton(P.cert)}</span></div>`);
   const desk=sh.querySelector('.zdk'),pg=sh.querySelector('#zbxPg'),nx=sh.querySelector('#zbxNext'),bk=sh.querySelector('#zbxBack'),op=sh.querySelector('#zbxOpen');
   const show=k=>{n=k;desk.classList.remove('shut');pg.innerHTML=bxPage(k,P,opt);pg.scrollTop=0;pg.classList.remove('pull');if(!reduced()){void pg.offsetWidth;pg.classList.add('pull');quiet();}
-    nx.textContent=k<4?'Pull the next page':'Close the Black Box';bk.disabled=k<=1;op.hidden=true;window.__zmmBoxPage=k;
+    nx.textContent=k<4?'Pull the next page':'Close the Black Box';bk.disabled=k<=1;op.hidden=true;window.__zmmBoxPage=k;sh.querySelector('#zbxCert').hidden=k<4;
     if(k===1)bxClear(pg);
     pg.querySelectorAll('.zbx-pp').forEach(b=>b.onclick=()=>{const was=b.classList.contains('open');pg.querySelectorAll('.zbx-pp.open').forEach(x=>x.classList.remove('open'));if(!was)b.classList.add('open');});};
+  certWire(sh,P.cert);
   op.onclick=()=>show(1);sh.querySelector('#zbxCase').onclick=e=>{if(desk.classList.contains('shut')&&e.target!==op)show(1);};
   nx.onclick=()=>{if(n<4)show(n+1);else{close();res();}};bk.onclick=()=>{if(n>1)show(n-1);};
   if(n)show(n);else setTimeout(()=>quietFocus(op),40);
@@ -3074,7 +3111,7 @@ function s0Mock(kind){mountS();
     if(kind==='minutes'){M.setStrip(at(7,{title:'Board minutes, 2059',stamp:null},[34,60]));return M.minutes(Object.assign({signature:sig},S0.minutes));}
     if(kind==='letter'){M.setStrip(at(6,{title:'Letter from the banks',stamp:null},[19,33]));return M.letter(Object.assign({signature:sig},S0.letter));}
     if(kind==='stepin'){M.setStrip(at(6,{title:'Letter from the banks',stamp:'Refused'},[19,33]));return M.stepIn(S0.letter.stepIn);}
-    const m=/^debrief([1-4])?$/.exec(kind);if(m){M.setStrip(null);return M.debrief(S0.debrief,{company:'Meridian Infra',founder:'Asha Rao',start:m[1]?+m[1]:0});}
+    const m=/^debrief([1-4])?$/.exec(kind);if(m){M.setStrip(null);return M.debrief(Object.assign({cert:hbSampleCert(sig)},S0.debrief),{company:'Meridian Infra',founder:'Asha Rao',start:m[1]?+m[1]:0});}
     return Promise.resolve();});}
 M._s0Mock=s0Mock;
 

@@ -1257,6 +1257,7 @@
     var lastRow = eng.rows[eng.rows.length - 1], s = state.s || {}, def = stakeDef(state);
     var pf = playerFlows(s, companyFlows(eng), def);
     var inv = 0, ret = 0; pf.forEach(function (f) { if (f < 0) inv -= f; else ret += f; });
+    var td = todayOf(pf);
     var r = eng.step_in ? null : irr(pf);
     var paxM = 0, fees = 0, repaidYear = null, divs = 0;
     eng.rows.forEach(function (rw) { paxM += rw.pax; fees += rw.fee; divs += (rw.div || 0) * pctAt(s, rw.year, def) / 100; if (repaidYear == null && rw.t >= 4 && rw.debt < 1) repaidYear = rw.year; });
@@ -1264,7 +1265,14 @@
     return {irr: r, investedCr: Math.round(inv), returnedCr: Math.round(ret), dividendsCr: Math.round(divs), stakePct: pctAt(s, 60, def),
       debtRepaid: !eng.step_in && lastRow && lastRow.debt < 1, banks: !!eng.step_in,
       paxTotalM: Math.round(paxM), paidToStateCr: Math.round(fees), residualCr: Math.round(residual * pctAt(s, 60, def) / 100), repaidYear: repaidYear,
-      p2: !!state.s.p2year, ac: !!state.s.ac_year};
+      p2: !!state.s.p2year, ac: !!state.s.ac_year, investedTodayCr: td.inCr, returnedTodayCr: td.outCr};
+  }
+  // the same money in the signing year's rupees (year 1 = 2026), deflated by the game's own price rise (cpi_forward):
+  // the player's flow in year t + 1 is in that year's rupees, worth (1 + cpi)^t of year 1's
+  function todayOf(pf) {
+    var c = P.cpi_forward || 0, a = 0, b = 0;
+    pf.forEach(function (f, t) { var v = f / Math.pow(1 + c, t); if (v < 0) a -= v; else b += v; });
+    return {inCr: Math.round(a), outCr: Math.round(b)};
   }
 
   function boardOptions(state) {
@@ -1631,7 +1639,6 @@
     var lines = [];
     if (f.paxTotalM) lines.push('Over sixty years the airport served ' + (f.paxTotalM >= 1000 ? (f.paxTotalM / 1000).toFixed(1) + ' billion' : f.paxTotalM.toLocaleString('en-IN') + ' million') + ' passengers.');
     if (f.repaidYear) lines.push('The bank loans were fully repaid in ' + (2025 + f.repaidYear) + '.');
-    lines.push('Your company put in ' + cr(f.investedCr || 0) + ' and received ' + cr(f.dividendsCr || 0) + ' in dividends.');
     if (state.construction && state.construction.slipMonths) lines.push('It opened ' + state.construction.slipMonths + ' months late, in ' + monthName(state.opensOn || addMonths(state.signedOn, 48)) + '.');
     var o = {signature: state.signature || undefined, signedOn: state.signedOn || undefined, endsOn: state.endsOn || undefined,
       stakePct: state.stake, stakeValueCr: f.residualCr != null ? f.residualCr : undefined, returnPct: f.irr == null ? undefined : Math.round(f.irr * 1000) / 10,
@@ -1639,7 +1646,60 @@
       assets: assets, owners: pr.map(function (x) { return {name: x.name, pct: x.pct}; }), lines: lines};
     if (state.founder) o.founder = state.founder;
     if (state.parent) o.parent = state.parent;
+    o.cert = certificate(state);
     return o;
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // The certificate (money/cert.js, ZMCert) and the handover's money in plain words: VSIEra.certificate(state[, attribution]) →
+  //   {ok, why (when ok is false: why there is no certificate, in plain words), founder, company, signature, signedOn, endsOn, years,
+  //    returnPct, inCr, outCr, madeCr, dividendsCr, leftCr, stakePct, baseYear, cpiPct, inTodayCr, outTodayCr, madeTodayCr,
+  //    lines: {putIn, cameBack, made, perYear, split, today} (sentences), big ('10.5% a year for 60 years'),
+  //    delivered: [{group, label, sharePct, sentence}] (the one or two decisions that made most of the return)}
+  // Every figure is the engine's own: state.final (the player's money in and out, in rupees of the year each was paid), the
+  // same flows in the signing year's rupees (todayOf), and the Black Box's attribution.
+  // ---------------------------------------------------------------------------------------------
+  function crFull(v) { return (v < 0 ? '−' : '') + '₹' + Math.round(Math.abs(v)).toLocaleString('en-IN') + ' cr'; }
+  function certificate(state, attr) {
+    ensure();
+    if (!state) return {ok: false, why: 'There is no concession to certify.'};
+    var o = state.over || {}, f = state.final || {}, yrs = 60, company = state.parent || 'Your company';
+    var base = {founder: state.founder || '', company: company, signature: state.signature || null, signedOn: state.signedOn || null, endsOn: state.endsOn || null, years: yrs};
+    if (o.reason === 'banks' || f.banks)
+      return Object.assign(base, {ok: false, why: 'No certificate: the banks took control in ' + cal(o.year || state.year || 1) + ', so ' + company + ' never handed the airport back.'});
+    if (o.reason !== 'handback' || f.investedCr == null)
+      return Object.assign(base, {ok: false, why: 'The certificate comes at the end of the concession, when you hand the airport back in year ' + yrs + '.'});
+    var inn = f.investedCr || 0, out = f.returnedCr || 0, made = out - inn, ret = f.irr == null ? null : Math.round(f.irr * 1000) / 10;
+    var tIn = f.investedTodayCr, tOut = f.returnedTodayCr;
+    if (tIn == null || tOut == null) {   // a game finished before this field: the same 60 years, run again
+      var eng = simulate(state.s, 60), td = todayOf(playerFlows(state.s, companyFlows(eng), stakeDef(state)));
+      tIn = td.inCr; tOut = td.outCr;
+    }
+    var divs = f.dividendsCr || 0, left = f.residualCr || 0, stake = f.stakePct != null ? f.stakePct : state.stake, by = cal(1), cpi = Math.round((P.cpi_forward || 0) * 1000) / 10;
+    var more = function (v, who) { return v >= 0 ? (who || 'You') + ' made ' + crFull(v) + ' more than ' + (who ? 'it' : 'you') + ' put in.' : (who || 'You') + ' got back ' + crFull(-v) + ' less than ' + (who ? 'it' : 'you') + ' put in.'; };
+    var lines = {
+      putIn: (company === 'Your company' ? 'Your company' : 'Your company, ' + company + ',') + ' put in ' + crFull(inn) + '.',
+      cameBack: 'Over ' + yrs + ' years, ' + crFull(out) + ' came back to it.',
+      made: more(made),
+      perYear: ret == null ? '' : 'That is about ' + ret + '% a year.',
+      split: Math.abs(divs + left - out) <= Math.max(2, out * 0.002) && left > 0 ? 'Of what came back, ' + crFull(divs) + ' was dividends paid over the years, and ' + crFull(left) + ' was your ' + stake + '% of the cash left in ' + 'VSIAL on the last day.' : '',
+      today: 'Each amount is in rupees of the year it was paid, and prices rise about ' + cpi + '% a year in this game. In ' + by + ' rupees, ' + company + ' put in ' + crFull(tIn) + ' and ' + crFull(tOut) + ' came back: ' + (tOut - tIn >= 0 ? crFull(tOut - tIn) + ' more than it put in.' : crFull(tIn - tOut) + ' less than it put in.')};
+    // what delivered it: the decisions that made the most of the return (the Black Box's page 2), in one plain sentence each
+    var a = attr || attribution(state), s = state.s || {};
+    var what = function (b) {
+      if (b.group === 'bid') return s.bid && s.bid.type === 'ppf' ? 'Bidding to pay AAI and the State ₹' + s.bid.value + ' a passenger' : 'Bidding to pay AAI and the State ' + (s.bid ? s.bid.value : '') + '% of what the airport earns';
+      if (b.group === 'finance') return 'Borrowing ' + Math.round((s.gearing || 0) * 100) + '% ' + (s.lender === 'dollar' ? 'in dollars' : s.lender === 'infra' ? 'from the infrastructure bank' : s.privateLoan && s.privateLoan.house ? 'from ' + s.privateLoan.house : 'from Indian banks') + ' and building the first phase ' + (s.phase1 === 'big' ? 'big' : 'lean');
+      if (b.group === 'build') { var cn = s.construction || {}, w = [cn.monsoon === 'slip' ? 'waiting out the monsoon' : '', cn.overrun === 'slip' ? 'letting the roof run late' : '', cn.trials === 'short' ? 'running short trials' : ''].filter(Boolean); return w.length ? andList(w).replace(/^./, function (c) { return c.toUpperCase(); }) : 'Paying to open on time'; }
+      if (b.group === 'opening') return /big/i.test(b.chosen || '') ? 'Moving every flight in on opening day' : /soft/i.test(b.chosen || '') ? 'A soft opening, one airline first' : 'Moving the flights in over three weeks';
+      if (b.group === 'shifts') return 'Running your own shifts at the airport';
+      var c = String(b.chosen || b.label || ''); return c.charAt(0).toUpperCase() + c.slice(1);
+    };
+    var delivered = (a.groups || []).filter(function (b) { return b.npvCr > 0 && b.sharePct >= 3; }).slice(0, 2).map(function (b) {
+      return {group: b.group, label: b.label, sharePct: b.sharePct, sentence: what(b) + ' made ' + Math.round(b.sharePct) + '% of your return.'};
+    });
+    return Object.assign(base, {ok: true, why: '', returnPct: ret, big: ret == null ? yrs + ' years, handed back' : ret + '% a year for ' + yrs + ' years',
+      inCr: inn, outCr: out, madeCr: made, dividendsCr: divs, leftCr: left, stakePct: stake, baseYear: by, cpiPct: cpi, inTodayCr: tIn, outTodayCr: tOut, madeTodayCr: tOut - tIn,
+      lines: lines, delivered: delivered, closing: delivered.length ? '' : 'No single decision made it: it was many small ones.'});
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -3128,7 +3188,7 @@
       everythingElsePct: a.everythingElse.sharePct, everythingElseCr: a.everythingElse.npvCr, closing: a.powerLaw, sentences: a.sentences, totalCr: a.totalCr, checkSum: a.checkSum, groups: a.groups};
     var p3 = {frontPages: pa.map(function (x) { return {chapter: x.chapter, name: x.name, year: x.calYear, lead: x.lead, dateLine: x.dateLine, line: x.line, light: x.light}; }), once: mo};
     var p4 = {lines: pr.map(function (l) { return {id: l.id, title: l.title, line: l.text, evidence: l.evidence}; }), thiel: th};
-    return {p1: p1, p2: p2, p3: p3, p4: p4,
+    return {p1: p1, p2: p2, p3: p3, p4: p4, cert: certificate(state, a),
       'return': rp, attribution: a, papers: pa, profile: pr, thiel: th, moment: mo,
       company: state.parent || 'Your company', founder: state.founder || '', signature: state.signature || null, signedOn: state.signedOn || null, endsOn: state.endsOn || null};
   }
@@ -3161,7 +3221,7 @@
     previewBid: previewBid, previewClose: previewClose, bidOpening: bidOpening, bidRivals: bidRivals, privateHouses: privateHouses, pitchPrivate: pitchPrivate, _tender: {BIDDERS: BIDDERS, reset: function () { _ceil = null; }, ceilings: function () { return rivalCeilings(); }},
     newCampaign: newCampaign, needsConstruction: needsConstruction, constructionOpts: constructionOpts, applyConstruction: applyConstruction,
     levelFor: levelFor, applyShift: applyShift, boardOptions: boardOptions, applyBoard: applyBoard,
-    isOver: isOver, endOpts: endOpts, handbackOpts: handbackOpts, acPlan: acPlan,
+    isOver: isOver, endOpts: endOpts, handbackOpts: handbackOpts, certificate: function (st, a) { return certificate(st, a); }, acPlan: acPlan,
     fmtDate: function (iso) { ensure(); return fmtDate(iso); }, campaignDocs: campaignDocs, fileCard: fileCard, asBill: asBill,
     resumable: resumable, recordOf: recordOf, chapter: chapter, endBill: endBill, advance: advance, SAVE_VERSION: SAVE_VERSION,
     // for tests and bots

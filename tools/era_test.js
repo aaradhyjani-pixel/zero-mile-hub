@@ -583,6 +583,19 @@ else {
   if (P1.ended !== 'handback' || P1.endedYear !== 2085 || pgR.p1.ended !== 'banks' || pgR.p1.endedYear !== 2046 || !/^2046-04-01$/.test(pgR.p1.endedOn) || P1.moneyInCr == null || P1.moneyOutCr == null) fail('debrief.pages p1 names: ' + JSON.stringify([P1.ended, P1.endedYear, pgR.p1.ended, pgR.p1.endedYear, pgR.p1.endedOn]));
   if (!F || !Array.isArray(F.pct) || F.pct.join() !== '12.2,17.5' || typeof pg.p1.benchmarks.find(b => b.id === 'aera').pct !== 'number') fail('debrief.pages p1 benchmarks: pct a number, or [low, high]');
   if (pg.p2.everythingElsePct == null || !pg.p2.closing || pg.p3.frontPages.some(x => !x.year)) fail('debrief.pages p2/p3 names');
+  // the Certificate of Concession (VSIEra.certificate, money/cert.js): the money in plain words, from the engine's own figures
+  const ce = E.certificate(SM.st), ceR = E.certificate(RF.st), ceH = E.handbackOpts(SM.st).cert;
+  if (!ce.ok || ce.inCr !== P1.moneyInCr || ce.outCr !== P1.moneyOutCr || ce.madeCr !== ce.outCr - ce.inCr || ce.returnPct !== P1.returnPct || !ceH || !ceH.ok || !pg.cert || !pg.cert.ok)
+    fail('certificate: put in, came back and made should be the Black Box\'s figures: ' + JSON.stringify([ce.inCr, P1.moneyInCr, ce.outCr, P1.moneyOutCr, ce.returnPct, P1.returnPct]));
+  if (!(ce.inTodayCr > 0 && ce.inTodayCr <= ce.inCr && ce.outTodayCr > 0 && ce.outTodayCr < ce.outCr) || ce.baseYear !== 2026) fail('certificate: the 2026-rupee figures should be smaller than the year-of-payment ones: ' + [ce.inTodayCr, ce.outTodayCr]);
+  if (!ce.lines.putIn || !ce.lines.cameBack || !/more than you put in|less than you put in/.test(ce.lines.made) || !/% a year\.$/.test(ce.lines.perYear) || !/2026 rupees/.test(ce.lines.today) || !ce.delivered.length || ce.delivered.some(d => !/% of your return\.$/.test(d.sentence)))
+    fail('certificate lines: ' + JSON.stringify(ce.lines) + ' ' + JSON.stringify(ce.delivered));
+  if (ceR.ok || !/banks took control in 2046/.test(ceR.why) || E.certificate(SM.log.ch7start).ok) fail('certificate: none when the banks took control, or before year 60: ' + ceR.why);
+  if (BANNED.test(JSON.stringify([ce, ceR]))) fail('certificate: jargon');
+  const CERT = require(path.join(ROOT, 'money', 'cert.js')), pdf = Buffer.from(CERT.build(ce, null)), pdfS = pdf.toString('latin1');
+  if (!pdfS.startsWith('%PDF-1.4') || !/%%EOF\n$/.test(pdfS) || !/\(Certificate of Concession\)/.test(pdfS) || /₹/.test(pdfS) || !/Rs 85,396|Rs [\d,]+ cr/.test(pdfS)) fail('cert.js: a one-page PDF with the title and the money in "Rs"');
+  const xo = +/startxref\n(\d+)/.exec(pdfS)[1]; if (pdfS.slice(xo, xo + 4) !== 'xref') fail('cert.js: startxref should point at the cross-reference table');
+  console.log('- certificate: "' + ce.lines.putIn + ' ' + ce.lines.cameBack + ' ' + ce.lines.made + ' ' + ce.lines.perYear + '" / delivered: ' + ce.delivered.map(d => d.sentence).join(' | ') + ' / PDF ' + pdf.length + ' bytes; banks: "' + ceR.why + '"');
   // engine requests §3 (after the Stage 0 integration)
   const b4 = E.bridge(SM.log.afterCh3, 4), b6 = SM.log.bridge6;
   if (b4.fromYear !== 2032 || b4.toYear !== 2033 || b6.fromYear !== 2043 || b6.toYear !== 2046 || b6.years.map(y => y.calYear).join() !== '2044,2045') fail('bridges after an act start at the cliffhanger and land on the front page: ' + [b4.fromYear, b4.toYear, b6.fromYear, b6.toYear, b6.years.map(y => y.calYear)]);

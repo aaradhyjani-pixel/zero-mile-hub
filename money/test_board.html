@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Board meeting: test harness</title>
+<!-- Standalone harness for ZMMoney.boardMeeting (DESIGN.md §9). Serve the repo root over http and open
+     /money/test_board.html?moneymock=board. It loads the game's sign face, the masterplan and money/ui.js only. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>:root{--f-sign:'Barlow Condensed','Arial Narrow',sans-serif;--f-mono:'JetBrains Mono',monospace;--panel-edge:#26313a;--ink:#e8edf0;--ink-2:#b9c2c8;--ink-3:#7f8b93;--sign:#ffcc00;--go:#3ad07f;--stop:#ff4d3f}
+html,body{margin:0;height:100%;background:#05080a;font-family:Barlow,sans-serif;font-size:14px;line-height:1.45}button{font:inherit;background:none;border:0;cursor:pointer;color:inherit}#app{position:fixed;inset:0;overflow:hidden}</style>
+</head><body><div id="app"></div><template id="planTpl"></template>
+<script>
+fetch('../masterplan.svg').then(r=>r.ok?r.text():'').catch(()=>'').then(t=>{document.getElementById('planTpl').innerHTML=t;
+  const s=document.createElement('script');s.src='ui.js';document.body.appendChild(s);});
+</script></body></html>

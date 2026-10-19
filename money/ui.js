@@ -289,6 +289,62 @@ const CSS=`
 @media (prefers-reduced-motion:reduce){.zdk-plan,.zdk-plotter,.zdk-doc.arrive,.zdk-doc.leave,.zdk-doc.thud,.zdk-card,.zdk-note.arrive{animation:none}.zdk-plotter{display:none}.zdk-stamp.down,.zdk-seal.down{animation:none;opacity:.9}.zdk.finale{animation:none}}
 @media (max-width:1280px){.zdk-tb{right:12px;bottom:10px;font-size:9.5px}.zdk-tb td{padding:3px 7px}.zdk-main{grid-template-columns:minmax(200px,1fr) minmax(540px,600px) minmax(220px,1fr);padding:0 20px 18px}.zdk-doc{padding:30px 38px 28px}.zdk-pile{width:170px}.zdk-card{width:150px;height:196px}.zdk-note{margin-left:24px;width:min(240px,calc(100% - 24px))}}
 /*@ob-end*/
+/*@bm board meeting: the board minutes on white bond, AERA's order clipped on top on duty paper */
+.zbm .zdk-plan{animation:none;opacity:.5}
+.zbm .zdk-main{grid-template-columns:minmax(230px,1fr) minmax(600px,680px) minmax(250px,1fr)}
+.zbm .zdk-doc{padding:36px 54px 40px 46px}
+.zbm-att{margin:2px 0 18px}.zbm-att td{padding:5px 0}.zbm-att td.lb{font-size:12.5px;color:var(--zpe);border-top:0;padding:6px 0 2px}
+.zbm-att tr:last-child td{border-bottom:0;padding-top:8px}
+.zbm-min{position:relative;display:grid;grid-template-columns:40px 1fr;margin:20px 0 0}
+.zbm-no{font-family:var(--ft);font-weight:700;font-size:14.5px;line-height:1.5;padding-top:1px}
+.zbm-b h3{font-family:var(--ft);font-weight:700;font-size:14.5px;line-height:1.5;margin:0 0 6px;text-decoration:underline;text-underline-offset:3px}
+.zbm-ini{position:absolute;right:-46px;top:0;width:36px;height:26px;border-bottom:1px dotted #9a9fa3;text-align:center}
+.zbm-ini .h{font-size:17px;line-height:26px}
+/* the regulator's order, on duty paper, clipped to the minutes */
+.zbm-order{--guil:none;position:relative;margin:8px -14px 6px 26px;padding:16px 22px 14px;border:10px solid transparent;background:linear-gradient(#eff4ed,#eff4ed) padding-box,var(--guil) border-box;transform:rotate(-1.1deg);box-shadow:0 10px 22px rgba(30,40,50,.18),0 1px 3px rgba(30,40,50,.12)}
+.zbm-clip{position:absolute;left:34px;top:-26px;width:14px;height:50px;border:2.2px solid #81878c;border-radius:8px;transform:rotate(-8deg);z-index:2}
+.zbm-clip::after{content:'';position:absolute;left:2px;right:2px;top:6px;bottom:12px;border:2px solid #81878c;border-top:0;border-radius:0 0 6px 6px}
+.zbm-ol{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;border:1.5px solid #2e7a57;padding:7px 12px;margin-bottom:12px;color:#21533c;background:rgba(255,255,255,.5)}
+.zbm-ol>b{font-family:var(--fd);font-weight:700;font-size:22px;line-height:1}
+.zbm-ol .dc{display:flex;flex-direction:column;gap:1px;text-align:center;text-wrap:balance;font-family:var(--ft);font-weight:700;font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;line-height:1.35}
+.zbm-ol .dc span[lang]{font-family:var(--fhi);font-weight:400;font-size:12px;letter-spacing:0;text-transform:none}
+.zbm-ol .ser{text-align:right;font-family:var(--ft);font-size:10px}.zbm-ol .ser span{display:block}.zbm-ol .ser b{font-size:12.5px;color:var(--zr)}
+.zbm-order h4{font-family:var(--fd);font-weight:700;font-size:19px;line-height:1.2;margin:0 0 8px}
+.zbm-order .t{font-size:14px;margin:0 0 8px}.zbm-order .zbm-ask{margin:10px 0 0}
+.zbm-order .zdk-ticks{margin:4px 0 0}
+/* the capital budget */
+.zbm-cb thead td,.zbm-cb thead td.n{border-top:0;padding:0 0 4px;font-size:12px;color:var(--zpe);vertical-align:bottom}
+.zbm-cb td{padding:4px 0}.zbm-cb td.n{padding-left:12px;width:1%;vertical-align:top;padding-top:10px}
+.zbm-cb .zdk-ticks{margin:0}.zbm-cb .zdk-ticks button{width:100%;font-size:14px;padding:5px 0 3px}
+.zbm-cb .zdk-ticks b{font-weight:700}
+.zbm-cb .zdk-ticks small{font-size:12px;line-height:1.45;margin-top:1px}
+.zbm-cb small.zdk-cap{font-family:var(--fh);font-size:14px;color:var(--zw);grid-column:2}
+.zbm-cb tr.off button{cursor:not-allowed}.zbm-cb tr.off b,.zbm-cb tr.off td.n{color:var(--zpe)}.zbm-cb tr.off i{border-color:#b4b8bb}
+.zbm-cb tr.own b{text-decoration:line-through;text-decoration-color:var(--zpe)}.zbm-cb tr.own button{cursor:default}.zbm-cb tr.own i::after{color:var(--zpe)!important}
+.zbm-cb tr.tot td{padding:8px 0;font-weight:700}.zbm-cb tr.tot .h{font-size:28px;font-weight:700}
+/* dividend and early repayment */
+.zbm-amt{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;margin:14px 0 0}
+.zbm-amt>.h{font-weight:700;font-size:38px;min-width:2.2em}
+.zbm-amt .t{margin:0;font-size:14px}
+.zbm .zbm-pen{font-family:var(--fh);font-size:15px;line-height:1.35;color:var(--zpe);margin:-8px 0 10px}.zbm .zbm-pen.warn{color:var(--zw)}
+.zbm .zdk-err{color:var(--zr);font-size:12.5px;margin:6px 0 0}
+.zbm .zdk-card{top:calc(var(--i)*60px)}.zbm .zdk-card span{font-size:13.5px;line-height:1.2}
+.zdk-ruler.off{opacity:.45}.zdk-ruler.off input{cursor:not-allowed}
+.zbm-res{position:relative}.zbm-res .zdk-sigl{margin-top:14px}.zbm-res .zdk-sigl .h{font-size:30px;min-height:34px}
+.zdk-stamp.zbm-st{--tf:rotate(-8deg);right:-6px;top:auto;bottom:-6px}
+.zdk-stamp.zbm-st b{font-size:46px}
+/* the adviser's slip: three numbers */
+.zbm .zdk-note{margin-top:46px;padding:24px 22px 18px}
+.zbm .zdk-note h3{font-size:17px;margin:0 0 2px}.zbm .zdk-note h3:not(:first-child){margin-top:14px}
+.zbm-big{display:block;font-family:var(--fh);font-weight:700;font-size:34px;line-height:1.1;color:var(--zt)}
+.zbm-mood{display:block;font-family:var(--fh);font-weight:700;font-size:25px;line-height:1.15}
+.zbm .zdk-note p{margin:2px 0 0;max-width:none;font-size:15px;line-height:1.35;color:#26292c}
+.zbm .zdk-doc p{max-width:none}
+.zbm .zdk-doc:focus{outline:none}
+#zbmLeft.neg{color:var(--zr)}
+@media (max-width:1280px){.zbm .zdk-main{grid-template-columns:minmax(190px,1fr) minmax(580px,620px) minmax(220px,1fr)}.zbm .zdk-doc{padding:28px 50px 32px 38px}.zbm .zdk-note{margin-top:30px}}
+@media (prefers-reduced-motion:reduce){.zbm .zdk-doc.arrive{animation:none}}
+/*@bm-end*/
 `;
 
 /* ---------- mount ---------- */
@@ -354,6 +410,29 @@ function close(){const ov=$('#zmmOv');if(ov)ov.hidden=true;}
 M.close=close;
 const stepper=(names,i)=>`<div class="steps">${names.map((n,k)=>`<span class="${k===i?'on':k<i?'done':''}">${k+1} · ${esc(n)}</span>`).join('')}</div>`;
 
+/* ---------- shared paper helpers: the deal desk, the board meeting and later paper screens use these ---------- */
+const H=s=>`<span class="h">${esc(s)}</span>`;               // a handwritten fill-in
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const stampDate=d=>{d=d||new Date();return `${String(d.getDate()).padStart(2,'0')} ${MONTHS[d.getMonth()].slice(0,3).toUpperCase()} ${d.getFullYear()}`;};
+/* a red rubber stamp, dated (today unless a date is passed), with the SPV's short name */
+function stampHtml(word,cls,d){return `<div class="zdk-stamp ${cls||''}" aria-label="Stamped: ${esc(word)}"><b>${esc(word)}</b><small>${stampDate(d)} · ${esc(M.cfg.spvShort)}</small></div>`;}
+/* a drafting ruler over a range input: graduations, pencilled benchmarks, a red cursor */
+function ruler(id,min,max,step,val,label,marks,fmtv){
+  const span=(max-min)||1,ticks=[];const major=span/5;
+  for(let k=0;k<=50;k++){const x=k*2;ticks.push(`<line x1="${x}%" x2="${x}%" y1="0" y2="${k%10===0?13:k%5===0?9:5}"/>`);}
+  const nums=[0,1,2,3,4,5].map(k=>`<span style="left:${k*20}%">${fmtv(min+major*k)}</span>`).join('');
+  let last=-99,lane=0;
+  const mk=(marks||[]).slice().sort((a,b)=>a.val-b.val).map(m=>{const p=(m.val-min)/span*100;lane=p-last<24?1-lane:0;last=p;
+    return `<span class="m${lane?' lo':''}${p>80?' r':''}" style="left:${p}%">${esc(m.name)} ${fmtv(m.val)}</span>`;}).join('');
+  return `<div class="zdk-ruler${mk?'':' bare'}"><div class="mk" aria-hidden="true">${mk}</div><div class="strip"><div class="in"><svg class="g" aria-hidden="true">${ticks.join('')}</svg><div class="nums" aria-hidden="true">${nums}</div>
+    <input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}" aria-label="${esc(label)}"></div></div></div>`;}
+/* the duty-paper security border, as a CSS url() tile */
+const guilTile=()=>'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 44 44"><rect width="44" height="44" fill="#dfeadf"/>'+rosette(22,22,19)+'</svg>')+'")';
+/* the grainy rubber-ink filter that stamps and seals use */
+const INK_DEFS=`<svg class="zdk-defs" width="0" height="0" aria-hidden="true"><defs>
+  <filter id="zdkInk" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="7" result="n"/>
+    <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.1 1.55" result="m"/><feComposite in="SourceGraphic" in2="m" operator="in"/></filter></defs></svg>`;
+
 /* ---------- onboarding: the deal desk ----------
    A full-screen desk for a laptop. The desk is an engineering drawing sheet with VSI's masterplan plotted on it.
    Four documents cross it one at a time, and only the current one is shown: incorporation, the financial bid,
@@ -385,11 +464,9 @@ M.onboarding=function(opts){opts=opts||{};
   const now=new Date(),MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
   const ord=n=>n+(n%10===1&&n!==11?'st':n%10===2&&n!==12?'nd':n%10===3&&n!==13?'rd':'th');
   const dateLong=`${ord(now.getDate())} day of ${MON[now.getMonth()]} ${now.getFullYear()}`;
-  const dateStamp=`${String(now.getDate()).padStart(2,'0')} ${MON[now.getMonth()].slice(0,3).toUpperCase()} ${now.getFullYear()}`;
   const dShort=d=>`${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()}`;
   const endDate=new Date(now.getFullYear()+M.cfg.years,now.getMonth(),now.getDate()-1);   // the concession runs to the day before the anniversary
   const today=dShort(now),ends=dShort(endDate);
-  const H=s=>`<span class="h">${esc(s)}</span>`;               // a handwritten fill-in
   const pvClose=()=>{const c=capexNow(),loan=st.stateLoan?c*(SL.pct||14.17)/100:0;
     const q=opts.previewClose?opts.previewClose({gearing:st.gearing,repayment:st.repayment,bid:st.bid,phase1:st.phase1,stateLoan:st.stateLoan,lender:st.lender}):
       {debtCr:(c-loan)*st.gearing/100,equityCr:(c-loan)*(1-st.gearing/100),parentCr:(c-loan)*(1-st.gearing/100)*pp/100,minDscr:null,note:''};
@@ -424,7 +501,6 @@ M.onboarding=function(opts){opts=opts||{};
     noteEl.innerHTML=note||'';noteEl.hidden=!note;
     if(!reduce){docEl.classList.remove('arrive');void docEl.offsetWidth;docEl.classList.add('arrive');noteEl.classList.remove('arrive');void noteEl.offsetWidth;noteEl.classList.add('arrive');}
     docEl.scrollTop=0;}
-  const stampHtml=(word,cls)=>`<div class="zdk-stamp ${cls||''}" aria-label="Stamped: ${esc(word)}"><b>${esc(word)}</b><small>${dateStamp} · ${esc(M.cfg.spvShort)}</small></div>`;
   /* stamp the current document, then file it on the stack */
   function stampAndFile(word,title,next){
     actsEl.querySelectorAll('button').forEach(b=>b.disabled=true);
@@ -459,17 +535,6 @@ M.onboarding=function(opts){opts=opts||{};
     sh.querySelector('#zdkN').onclick=()=>{if(ok())stampAndFile('Incorporated','Incorporation',docBid);};
     sh.querySelector('#zdkQ').onclick=()=>{if(!ok())return;st.quick=true;st.bid={type:'share',value:T.share.def};st.gearing=G.def;st.repayment='sculpted';
       stampAndFile('Incorporated','Incorporation',docCA);};}
-
-  /* a drafting ruler over a range input: graduations, pencilled benchmarks, a red cursor */
-  function ruler(id,min,max,step,val,label,marks,fmtv){
-    const span=max-min,ticks=[];const major=span/5;
-    for(let k=0;k<=50;k++){const v=min+span*k/50,x=k*2;ticks.push(`<line x1="${x}%" x2="${x}%" y1="0" y2="${k%10===0?13:k%5===0?9:5}"/>`);}
-    const nums=[0,1,2,3,4,5].map(k=>`<span style="left:${k*20}%">${fmtv(min+major*k)}</span>`).join('');
-    let last=-99,lane=0;
-    const mk=(marks||[]).slice().sort((a,b)=>a.val-b.val).map(m=>{const p=(m.val-min)/span*100;lane=p-last<24?1-lane:0;last=p;
-      return `<span class="m${lane?' lo':''}${p>80?' r':''}" style="left:${p}%">${esc(m.name)} ${fmtv(m.val)}</span>`;}).join('');
-    return `<div class="zdk-ruler${mk?'':' bare'}"><div class="mk" aria-hidden="true">${mk}</div><div class="strip"><div class="in"><svg class="g" aria-hidden="true">${ticks.join('')}</svg><div class="nums" aria-hidden="true">${nums}</div>
-      <input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}" aria-label="${esc(label)}"></div></div></div>`;}
 
   /* 2 · the financial bid */
   function docBid(){inkUp(1);
@@ -654,33 +719,116 @@ function sigPad(cv,onChange){
   cv.style.touchAction='none';requestAnimationFrame(fit);
   return {clear(){strokes=[];ink=0;redraw();changed();},empty:()=>strokes.length===0,png:()=>cv.toDataURL('image/png'),lock(){locked=true;}};}
 
-/* ---------- board meeting (between eras) ---------- */
-/* opts: {era, years, parent, treasuryCr, cashCr, aera:{title,text,canAppeal,appealText}, dscr:{value,warn:1.2,covenant:1.1},
-          investments:[{id,name,costCr,effect,why,payback,owned,disabled,reason}],
-          dividend:{maxCr}, prepay:{maxCr}, debtCr}
-   resolves {bought:[ids], appeal:bool, dividendCr, prepayCr} */
-M.boardMeeting=function(o){o=o||{};return new Promise(res=>{
-  const sel=new Set();let appeal=false,div=0,pre=0;
-  const spend=()=>[...sel].reduce((s,id)=>s+((o.investments||[]).find(i=>i.id===id)||{}).costCr||0,0)+div+pre;
-  const sh=open(`<div class="band"><span>Board meeting · era ${esc(o.era)} · ${esc(o.years||'')}</span><span>${esc(o.parent||'')} · ${esc(M.cfg.spvShort)}</span></div><div class="in">
-   <h1>Board meeting</h1>
-   <div class="zmm-grid">
-    <div class="zmm-box"><div class="k">Cash available</div><div class="v" id="zmmCash">${fmt(o.cashCr)}</div><div class="s" id="zmmLeft"></div></div>
-    <div class="zmm-box"><div class="k">Bank loan left</div><div class="v">${fmt(o.debtCr)}</div><div class="s">${o.dscr?`Last era the airport earned ₹${Math.round(o.dscr.value*100)} for every ₹100 it owed the banks`:''}</div></div>
-    <div class="zmm-box"><div class="k">What the banks think</div><div class="v" style="font-size:17px;color:${!o.dscr?'inherit':o.dscr.value<(o.dscr.covenant||1.1)?'var(--stop)':o.dscr.value<(o.dscr.warn||1.2)?'var(--warn)':'var(--go)'}">${!o.dscr?'—':o.dscr.value<1?'Ready to take control':o.dscr.value<(o.dscr.covenant||1.1)?'You broke their condition':o.dscr.value<(o.dscr.warn||1.2)?'Watching you closely':'Relaxed'}</div><div class="s">They warn you below ₹${Math.round((o.dscr&&o.dscr.warn||1.2)*100)} and can take control below ₹100</div></div></div>
-   ${o.aera?`<div class="zmm-order"><div class="h">${esc(o.aera.title||'AERA tariff order')}</div><div class="t">${esc(o.aera.text)}</div>${o.aera.canAppeal?`<div class="zmm-row"><label style="font-size:13px;color:var(--ink-2)"><input type="checkbox" id="zmmAp"> Appeal the order. ${esc(o.aera.appealText||'')}</label></div>`:''}</div>`:''}
-   <h2>Invest</h2><div class="zmm-grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">${(o.investments||[]).map(i=>`<button class="zmm-card ${i.owned?'own':''}" data-id="${esc(i.id)}" ${i.owned||i.disabled?'disabled':''} aria-pressed="false"><b>${esc(i.name)}</b><span class="c">${i.owned?'Owned':fmt(i.costCr)}</span><span class="e">${esc(i.effect)}</span><span class="w">${esc(i.disabled&&i.reason?i.reason:(i.why||'')+(i.payback?' Payback about '+i.payback+'.':''))}</span></button>`).join('')}</div>
-   ${o.dividend||o.prepay?`<h2>Cash</h2><div class="zmm-grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
-     ${o.dividend?`<div class="zmm-box"><div class="k">Dividend to shareholders</div><div class="v" id="zmmDv">${fmt(0)}</div><input type="range" class="zmm-range" id="zmmDR" min="0" max="${o.dividend.maxCr}" step="${Math.max(1,o.dividend.maxCr/100)}" value="0" aria-label="Dividend"><div class="s">${o.parentPct!=null?o.parentPct+'% goes to your company':'Your company gets its share'}. Lenders block dividends while the DSCR is below the covenant.</div></div>`:''}
-     ${o.prepay?`<div class="zmm-box"><div class="k">Prepay debt</div><div class="v" id="zmmPv">${fmt(0)}</div><input type="range" class="zmm-range" id="zmmPR" min="0" max="${o.prepay.maxCr}" step="${Math.max(1,o.prepay.maxCr/100)}" value="0" aria-label="Prepay debt"><div class="s">Less interest from now on, and a safer DSCR.</div></div>`:''}</div>`:''}
-   <div class="zmm-err" id="zmmBErr"></div>
-   <div class="zmm-row"><button class="zmm-go" id="zmmBGo">Approve and play the next shift</button></div></div>`);
-  const upd=()=>{const left=(o.cashCr||0)-spend();sh.querySelector('#zmmLeft').textContent='After these decisions: '+fmt(left);sh.querySelector('#zmmLeft').style.color=left<0?'var(--stop)':'';sh.querySelector('#zmmBGo').disabled=left<0;sh.querySelector('#zmmBErr').textContent=left<0?'That spends more cash than ZMIAL has. Drop something.':'';};
-  sh.querySelectorAll('.zmm-card[data-id]').forEach(b=>b.onclick=()=>{const id=b.dataset.id;if(sel.has(id))sel.delete(id);else sel.add(id);b.classList.toggle('on',sel.has(id));b.setAttribute('aria-pressed',sel.has(id));upd();});
-  const dr=sh.querySelector('#zmmDR');if(dr)dr.oninput=()=>{div=+dr.value;sh.querySelector('#zmmDv').textContent=fmt(div);upd();};
-  const pr=sh.querySelector('#zmmPR');if(pr)pr.oninput=()=>{pre=+pr.value;sh.querySelector('#zmmPv').textContent=fmt(pre);upd();};
-  const ap=sh.querySelector('#zmmAp');if(ap)ap.onchange=()=>{appeal=ap.checked;};
-  sh.querySelector('#zmmBGo').onclick=()=>{close();res({bought:[...sel],appeal,dividendCr:div,prepayCr:pre});};upd();});};
+/* ---------- board meeting (between eras): the board minutes ----------
+   The page is the minutes of a VSIAL board meeting on white bond. AERA's tariff order, if there is one, is clipped on
+   top on duty paper with a tick: accept it or appeal it. The investments are a capital budget with tick boxes; the
+   dividend and the early repayment to the banks are set on drafting rulers. The adviser's slip shows three numbers
+   only: today's money, the banks' mood in words, and the player's stake. Approving initials each minute and brings
+   down a red APPROVED stamp; then the minutes join the stack and the decision resolves.
+   opts: {era, years, year?, parent, parentPct?, founder?, partners?:[{name,pct}], cashCr, debtCr?, stakeValueCr?,
+          dscr:{value, warn:1.2, covenant:1.1},
+          aera:{title, text, canAppeal, appealText, acceptText?, orderNo?},
+          investments:[{id, name, costCr, effect, why, payback, owned, disabled, reason, opens?, land?:{earnCr, aeraCr}}],
+          dividend:{maxCr, lastCr?, blocked?, reason?}, prepay:{maxCr, savesPct?}, pile?:[{title, stamp}]}
+   resolves {bought:[ids], appeal:bool, dividendCr, prepayCr, approvedOn:'YYYY-MM-DD'} */
+M.boardMeeting=function(o){o=o||{};loadDeskFonts();return new Promise(res=>{
+  const inv=o.investments||[],now=new Date(),era=o.era!=null?o.era:1;
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const coName=M.cfg.coinvestor.name.split(':')[0];
+  const P=(o.partners||[{name:o.parent||'Your company',pct:o.parentPct!=null?o.parentPct:64},{name:coName,pct:16},
+    {name:'Airports Authority of India',pct:10},{name:'State of Maharashtra, through MADC',pct:10}]).map(p=>Object.assign({},p));
+  if(!o.partners&&o.parent)P[0].name=o.parent;
+  const pp=P[0].pct;
+  const chair=o.founder||'';
+  const ini=(chair||P[0].name).split(/\s+/).filter(w=>/^[A-Za-z]/.test(w)).slice(0,3).map(w=>w[0].toUpperCase()+'.').join('');
+  const today=`${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
+  const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const D=o.dscr,warn=D&&D.warn||1.2,cov=D&&D.covenant||1.1;
+  const mood=!D?null:D.value<1?{w:'Ready to take control',c:'var(--zr)'}:D.value<cov?{w:'Their condition is broken',c:'var(--zr)'}:D.value<warn?{w:'Warning you',c:'var(--zw)'}:{w:'Relaxed',c:'var(--zg)'};
+  const divBlocked=o.dividend&&(o.dividend.blocked||(D&&D.value<cov));
+  const fz=v=>v<0.5?'₹0':fmt(v),fr=v=>'₹'+Math.round(v).toLocaleString('en-IN');   // fr: the short figures printed on a ruler
+  const nice=m=>{const r=m/100,p=Math.pow(10,Math.floor(Math.log10(Math.max(1,r))));return Math.max(1,[1,2,5,10].map(k=>k*p).find(x=>x>=r)||p*10);};
+  const opens=i=>i.opens==null?'':typeof i.opens==='number'?'year '+i.opens:String(i.opens);
+  const effect=i=>(i.effect||'')+(i.land?(i.effect?' ':'')+`Your land earns ${fmt(i.land.earnCr)} a year; AERA counts ${fmt(i.land.aeraCr)} of it against your airline charges.`:'');
+  const sel=new Set();let appeal=false,div=0,pre=0,finished=false;
+  const spendInv=()=>[...sel].reduce((s,id)=>s+(+(inv.find(i=>i.id===id)||{}).costCr||0),0);
+  const pile=o.pile||[{title:'Concession Agreement',stamp:'Executed'}].concat(Array.from({length:Math.max(0,Math.min(3,era-1))},(_,k)=>({title:'Board minutes, era '+(era-Math.min(3,era-1)+k),stamp:'Approved'})));
+  let no=0;const minute=(title,body)=>`<section class="zbm-min"><div class="zbm-no">${era}.${++no}</div><div class="zbm-b"><h3>${esc(title)}</h3>${body}</div><div class="zbm-ini" aria-hidden="true"></div></section>`;
+  const plan=document.getElementById('planTpl');
+
+  const order=o.aera?`<div class="zbm-order" id="zbmOrder"><span class="zbm-clip" aria-hidden="true"></span>
+      <div class="zbm-ol"><b>AERA</b><div class="dc"><span>Airports Economic Regulatory Authority of India</span><span lang="hi">भारतीय विमानपत्तन आर्थिक विनियामक प्राधिकरण</span></div><div class="ser"><span>Tariff order</span><b>${esc(o.aera.orderNo||('No. '+String(era*7+3).padStart(2,'0')+'/'+String(o.years||'').replace(/[–-].*/,'')))}</b></div></div>
+      <h4>${esc(o.aera.title||'Tariff order')}</h4><p class="t">${esc(o.aera.text||'')}</p>
+      ${o.aera.canAppeal?`<p class="t zbm-ask">The board resolves to:</p><div class="zdk-ticks" role="radiogroup" aria-label="The regulator's order">
+        <button role="radio" data-a="0" aria-checked="true"><i></i>accept the order <small>${esc(o.aera.acceptText||'Your charges are fixed for the five years. No quarrel with the airlines.')}</small></button>
+        <button role="radio" data-a="1" aria-checked="false"><i></i>appeal it <small>${esc(o.aera.appealText||'')}</small></button></div>`:`<p class="t zbm-ask">The order is final. The board takes note of it.</p>`}</div>`:'';
+
+  const budget=inv.length?`<table class="zdk-tab zbm-cb"><thead><tr><td>Item</td><td class="n">₹ cr</td><td class="n">Opens</td></tr></thead><tbody>
+      ${inv.map(i=>`<tr class="${i.owned?'own':i.disabled?'off':''}"><td><div class="zdk-ticks"><button role="checkbox" data-id="${esc(i.id)}" aria-checked="${i.owned?'true':'false'}" ${i.owned||i.disabled?'disabled':''}><i></i><span><b>${esc(i.name)}</b></span>
+        <small>${esc(i.owned?'Already built.':effect(i))}${!i.owned&&i.payback?` Pays for itself in about ${esc(i.payback)}.`:''}</small>${i.disabled&&i.reason?`<small class="zdk-cap">${esc(i.reason)}</small>`:''}</button></div></td>
+        <td class="n">${i.owned?'—':esc(fmt(i.costCr).replace(/ cr$/,'').replace('₹',''))}</td><td class="n">${esc(i.owned?'built':opens(i))}</td></tr>`).join('')}
+      <tr class="tot"><td>Total approved</td><td class="n" colspan="2"><span class="h" id="zbmTot">₹0</span></td></tr></tbody></table>`:'';
+
+  const cash=o.dividend||o.prepay?`
+      ${o.dividend?`<div class="zbm-amt"><span class="h" id="zbmDv">₹0</span><span class="t">paid to shareholders${pp!=null?`, of which ${esc(P[0].name)} gets <span class="h" id="zbmDvP">₹0</span>`:''}</span></div>
+        ${ruler('zbmDR',0,o.dividend.maxCr,nice(o.dividend.maxCr),0,'Dividend to shareholders',o.dividend.lastCr?[{name:'last era',val:o.dividend.lastCr}]:[],fr)}
+        ${divBlocked?`<p class="zbm-pen warn">${esc(o.dividend.reason||`The banks allow no dividend while the airport earns less than ₹${Math.round(cov*100)} for every ₹100 due.`)}</p>`:''}`:''}
+      ${o.prepay?`<div class="zbm-amt"><span class="h" id="zbmPv">₹0</span><span class="t">repaid to the banks early</span></div>
+        ${ruler('zbmPR',0,o.prepay.maxCr,nice(o.prepay.maxCr),0,'Repay the banks early',[],fr)}
+        <p class="zbm-pen" id="zbmPN">Less interest from now on, and more room before the banks warn you.</p>`:''}`:'';
+
+  const sh=open(`<div class="zdk zbm" data-stage="b">${INK_DEFS}
+    <div class="zdk-sheet" aria-hidden="true"><div class="zdk-plan" id="zdkPlan" style="--ink:4">${plan?plan.innerHTML:''}</div>
+      <table class="zdk-tb"><tr><td colspan="2">${esc(M.cfg.airportName)}, Nagpur</td></tr><tr><td>Minutes book</td><td>Era ${esc(era)}</td></tr><tr><td>${esc(o.years||'')}</td><td>${esc(M.cfg.spvShort)}</td></tr></table></div>
+    <header class="zdk-top"><div class="zdk-mark">${vsiLogo(30)}<span>${esc(M.cfg.airportName)}</span></div></header>
+    <div class="zdk-pile" id="zdkPile" aria-label="Documents on file">${pile.slice(-4).map((p,n)=>`<div class="zdk-card" style="--r:${[-4,3,-2,5][n%4]}deg;--i:${n};animation:none"><span>${esc(p.title)}</span><i></i><i></i><i class="s"></i>${p.stamp?stampHtml(p.stamp,'mini'):''}</div>`).join('')}</div>
+    <main class="zdk-main"><div class="zdk-col"><article class="zdk-doc" id="zdkDoc" tabindex="-1" autofocus aria-label="Minutes of the board meeting">
+      <header class="zdk-dh">${vsiLogo(26)}<span>Minutes book · ${esc(M.cfg.spvShort)}</span><span class="dt">${today}</span></header>
+      <h2>Minutes of the board meeting</h2>
+      <p class="t">Of ${esc(M.cfg.spvName)}, held at Zero Mile Tower, Nagpur, on ${H(today)}${o.years?`, before era ${esc(era)} (${esc(o.years)})`:''}${o.year?`, in year ${esc(o.year)} of the concession`:''}.</p>
+      <table class="zdk-tab zbm-att"><tbody><tr><td colspan="2" class="lb">Present, for the shareholders</td></tr>
+        ${P.map((p,k)=>`<tr><td>${k===0?H(p.name):esc(p.name)}${k===0&&chair?`<small>represented by ${esc(chair)}, in the chair</small>`:k===0?'<small>in the chair</small>':''}</td><td class="n">${esc(p.pct)}%</td></tr>`).join('')}
+        <tr><td colspan="2" class="lb">In attendance: the company secretary, the chief financial officer, and the banks' observer.</td></tr></tbody></table>
+      ${o.aera?minute('Tariff order',`<p class="t">The regulator's order for ${esc(o.years||'the next five years')}, clipped to these minutes, was tabled. The board resolved as ticked on it.</p>`)+order:''}
+      ${inv.length?minute('Capital budget',`<p class="t">The board considered the following works. Those ticked are approved, to be paid from the company's money.</p>`+budget+`<p class="zdk-err" id="zbmErr" role="alert"></p>`):''}
+      ${cash?minute('Dividend and early repayment',`<p class="t">Of the money left this era, the board resolved to pay:</p>`+cash):''}
+      <div class="zbm-res" id="zbmRes">${minute('Resolution',`<p class="t">Resolved that the decisions above be approved, and that the directors carry them out.</p>
+        <div class="zdk-sigl"><span class="h" id="zbmChair">&nbsp;</span><span>Chair${chair?', '+esc(chair):''}, for ${esc(P[0].name)}</span></div>`)}</div>
+    </article><div class="zdk-acts" id="zdkActs"><button class="zdk-go" id="zbmGo">Approve the minutes</button></div></div>
+    <aside class="zdk-note arrive" id="zdkNote" aria-live="polite">
+      <h3>Today's money</h3><b class="zbm-big" id="zbmCash">${fmt(o.cashCr||0)}</b><p id="zbmLeft"></p>
+      ${mood?`<h3>The banks</h3><b class="zbm-mood" style="color:${mood.c}">${mood.w}</b><p>The airport earns ₹${Math.round(D.value*100)} for every ₹100 due. They warn you below ₹${Math.round(warn*100)} and take control below ₹100.</p>`:''}
+      <h3>Your stake</h3><b class="zbm-big">${esc(pp)}%</b><p>of ${esc(M.cfg.spvShort)}${o.stakeValueCr!=null?`, worth about ${fmt(o.stakeValueCr)}`:''}.</p>
+    </aside></main></div>`,'zmm-ob');
+  const $s=q=>sh.querySelector(q),docEl=$s('#zdkDoc');
+  const ord=$s('#zbmOrder');if(ord)ord.style.setProperty('--guil',guilTile());
+  if(!reduce){docEl.classList.add('arrive');}
+  const upd=()=>{const inv$=spendInv(),left=(o.cashCr||0)-inv$-div-pre;
+    const t=$s('#zbmTot');if(t)t.textContent=fz(inv$);
+    const l=$s('#zbmLeft');l.textContent=`After these decisions: ${left<0?'−':''}${fmt(Math.abs(left))}`;l.classList.toggle('neg',left<0);
+    const e=$s('#zbmErr');if(e)e.textContent=left<0?`That spends ${fmt(-left)} more than ${M.cfg.spvShort} has. Untick something, or pay out less.`:'';
+    $s('#zbmGo').disabled=left<0;};
+  sh.querySelectorAll('.zbm-cb button[data-id]').forEach(b=>b.onclick=()=>{const id=b.dataset.id;if(sel.has(id))sel.delete(id);else sel.add(id);b.setAttribute('aria-checked',sel.has(id));upd();});
+  sh.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{appeal=b.dataset.a==='1';sh.querySelectorAll('[data-a]').forEach(x=>x.setAttribute('aria-checked',x===b));});
+  const rul=(id,max,set,out)=>{const r=$s(id);if(!r)return;const f=()=>{set(+r.value);r.style.setProperty('--p',(+r.value)/(max||1)*100+'%');out();upd();};r.oninput=f;f();return r;};
+  if(o.dividend){const r=rul('#zbmDR',o.dividend.maxCr,v=>div=v,()=>{$s('#zbmDv').textContent=fz(div);const q=$s('#zbmDvP');if(q)q.textContent=fz(div*pp/100);});if(r&&divBlocked){r.disabled=true;r.closest('.zdk-ruler').classList.add('off');}}
+  if(o.prepay)rul('#zbmPR',o.prepay.maxCr,v=>pre=v,()=>{$s('#zbmPv').textContent=fz(pre);const n=$s('#zbmPN');if(n&&o.prepay.savesPct&&pre>0.5)n.textContent=`Saves about ${fmt(pre*o.prepay.savesPct/100)} of interest a year, and gives more room before the banks warn you.`;});
+  upd();
+  $s('#zbmGo').onclick=()=>{if(finished)return;finished=true;
+    sh.querySelectorAll('#zdkDoc button,#zdkDoc input,#zdkActs button').forEach(b=>b.disabled=true);
+    const result={bought:[...sel],appeal,dividendCr:div,prepayCr:pre,approvedOn:iso(now)};
+    const boxes=[...sh.querySelectorAll('.zbm-ini')],step=reduce?0:140;
+    boxes.forEach((b,k)=>setTimeout(()=>{b.innerHTML=H(ini);},k*step));
+    setTimeout(()=>{$s('#zbmChair').textContent=ini;const res$=$s('#zbmRes');
+      docEl.scrollTo({top:docEl.scrollHeight,behavior:reduce?'auto':'smooth'});
+      res$.insertAdjacentHTML('beforeend',stampHtml('Approved','down zbm-st'));if(!reduce)setTimeout(()=>docEl.classList.add('thud'),40);},boxes.length*step+120);
+    const t0=boxes.length*step+120;
+    if(reduce){setTimeout(()=>{close();res(result);},t0+900);return;}
+    setTimeout(()=>docEl.classList.add('leave'),t0+1500);
+    setTimeout(()=>{const pl=$s('#zdkPile'),n=pl.children.length;const c=document.createElement('div');c.className='zdk-card';c.style.setProperty('--r',[-4,3,-2,5][n%4]+'deg');c.style.setProperty('--i',Math.min(n,4));
+      c.innerHTML=`<span>Board minutes, era ${esc(era)}</span><i></i><i></i><i class="s"></i>${stampHtml('Approved','mini')}`;pl.appendChild(c);},t0+1900);
+    setTimeout(()=>{close();res(result);},t0+2700);};
+  });};
 
 /* ---------- income statement (end of a shift, an era, or the concession) ---------- */
 /* opts: {band, title, sections:[{title, rows:[{label, amount, kind:'rev'|'cost'|'total'|'good'|'bad'}]}],
@@ -732,9 +880,17 @@ function boot(){M.mount();if(!/[?&]moneymock\b/.test(location.search))return;
       previewClose:c=>{const cap=c.phase1==='big'?85000:60000,loan=c.stateLoan?cap*0.1417:0,ask=(cap-loan)*c.gearing/100,max=(cap-loan)*(c.phase1==='big'?0.62:0.72),debt=Math.min(ask,max),eq=cap-loan-debt;
         return{debtCr:debt,equityCr:eq,parentCr:eq*0.64,stateLoanCr:loan,minDscr:(c.repayment==='sculpted'?1.32:1.08)-(c.gearing-60)*0.012-(c.stateLoan?0:0.06)+(c.lender==='infra'?0.08:c.lender==='dollar'?0.04:0),note:c.repayment==='equal'?'Equal instalments are heavy in the first years. Expect a warning from the banks before Mumbai moves in.':'Repayments grow with the passengers. Money gets tight when Mumbai and Delhi move in and you have to build more.'};},
       bidTypes:{share:{min:10,max:50,step:0.5,def:30,benchmarks:[{name:'Navi Mumbai',val:12.6},{name:'Mumbai',val:38.7},{name:'Delhi',val:45.99}]},ppf:{min:100,max:450,step:5,def:250,benchmarks:[{name:'lowest Adani bid',val:115},{name:'highest recent bid',val:401}]}}}),
-    board:()=>M.boardMeeting({era:3,years:'2041–46',parent:'Meridian Infra',parentPct:64,cashCr:3120,debtCr:31400,dscr:{value:1.16,warn:1.2,covenant:1.1},aera:{title:'The regulator\'s decision for 2041–46',text:'AERA lets you charge ₹1,040 per passenger on average. Last period you earned ₹1,820 cr less than it allowed, so you get that back over these five years.',canAppeal:true,appealText:'Win and your charges rise 6%. Lose and the airlines stay angry with you for the whole period.'},
-      investments:[{id:'cdm',name:'A-CDM system',costCr:420,effect:'Departures leave the gate only when the runway can take them. Shorter taxi queues.',why:'Airport collaborative decision making.',payback:'4 years'},{id:'drill',name:'Faster changeover drills',costCr:60,effect:'Runway mode changes take 75 s instead of 120 s.',payback:'1 year'},{id:'radar',name:'Bird radar',costCr:180,effect:'Fewer bird events and no closure surprises.',payback:'3 years'},{id:'ret',name:'Extra rapid-exit taxiway',costCr:240,effect:'Arrivals clear 27R faster; arrival spacing shrinks a little.',payback:'3 years'},{id:'apm',name:'APM train upgrade',costCr:900,effect:'Transfers 15% faster, so more connections are made.',payback:'6 years'},{id:'retail',name:'Retail upgrade in the Mall',costCr:650,effect:'+12% spend per passenger.',payback:'3 years'},{id:'g',name:'Satellite G (phase 1B)',costCr:7800,effect:'+40 stands for when Mumbai moves in.',disabled:true,reason:'Not enough cash: needs a debt top-up from the lenders.'},{id:'sweep',name:'Second sweeper truck',costCr:12,effect:'FOD sweeps fit into smaller gaps.',owned:true}],
-      dividend:{maxCr:800},prepay:{maxCr:2000}}),
+    board:()=>M.boardMeeting({era:3,years:'2041–46',year:16,parent:'Meridian Infra',founder:'Asha Rao',parentPct:64,cashCr:14800,debtCr:31400,stakeValueCr:23600,dscr:{value:1.16,warn:1.2,covenant:1.1},
+      aera:{title:'Charges to airlines and passengers, 2041–46',text:'AERA lets you charge ₹1,040 per passenger on average. Last period you earned ₹1,820 cr less than it allowed, so you get that back over these five years.',canAppeal:true,
+        acceptText:'Your charges are fixed for five years. No quarrel with the airlines.',appealText:'Win and your charges rise 6%. Lose and the airlines stay angry with you for the whole period.'},
+      investments:[{id:'city',name:'Airport City — a property district on VSI land',costCr:9600,opens:'year 19',land:{earnCr:1450,aeraCr:435},effect:'Offices, hotels and shops, built in three phases; rents climb for six years after it opens.'},
+        {id:'cdm',name:'Departure planning system',costCr:420,opens:'year 17',effect:'Aircraft leave the gate only when the runway can take them. Shorter taxi queues.',payback:'4 years'},
+        {id:'radar',name:'Bird radar',costCr:180,opens:'year 17',effect:'Fewer bird strikes and no surprise runway closures.',payback:'3 years'},
+        {id:'ret',name:'Extra rapid-exit taxiway',costCr:240,opens:'year 18',effect:'Arrivals clear 27R faster, so they can land a little closer together.',payback:'3 years'},
+        {id:'retail',name:'Retail upgrade in the Mall',costCr:650,opens:'year 17',effect:'Passengers spend 12% more in the shops.',payback:'3 years'},
+        {id:'g',name:'Satellite G (phase 1B)',costCr:18500,opens:'year 21',effect:'40 more stands, for when Mumbai moves in.',disabled:true,reason:'Needs more than the company has: ask the banks for a bigger loan first.'},
+        {id:'sweep',name:'Second sweeper truck',costCr:12,effect:'Runway sweeps fit into smaller gaps.',owned:true}],
+      dividend:{maxCr:2400,lastCr:900},prepay:{maxCr:4000,savesPct:9.1}}).then(d=>{window.__zmmLast=d;console.log('board',JSON.stringify(d));}),
     income:()=>M.incomeStatement({band:'Concession complete · year 60',title:'Handback',hero:'<em>Meridian Infra</em> ran Vikram Sarabhai International for 60 years. <em>₹1,42,800 cr</em> returned on <em>₹13,440 cr</em> invested.',
       sections:[{title:'Over 60 years',rows:[{label:'Fees from airlines and passengers',amount:612000,kind:'rev'},{label:'Shops, food, parking and property',amount:488000,kind:'rev'},{label:'Paid to AAI',amount:198000,kind:'cost'},{label:'Running costs',amount:301000,kind:'cost'},{label:'Operating profit',amount:601000,kind:'total'}]},{title:'For your company',rows:[{label:'Your return, per year',amount:'16.8%',kind:'good'},{label:'Bank loans repaid',amount:'Yes, in year 24',kind:'total'},{label:'Tightest year with the banks',amount:'₹112 per ₹100 due (year 11)',kind:'total'}]}],
       compare:[{name:'Bengaluru (BIAL)',value:72},{name:'Mumbai (MIAL)',value:40},{name:'Delhi (DIAL)',value:37},{name:'Your VSIAL',value:55,me:true}],moments:['Year 11: Mumbai moved in before Satellite G opened. 19 aircraft a day waited for stands, and the airlines charged you ₹410 cr in penalties.','Year 31: the pandemic year. Passengers fell 62% and the airport earned only ₹94 for every ₹100 it owed. You put in more of your own money, and the banks let you keep the airport.'],cta:'Start a new concession',cta2:'Back to the menu'})

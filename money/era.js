@@ -106,7 +106,7 @@
     if (a >= 1e5) return s + '₹' + (a / 1e5).toFixed(a >= 1e6 ? 0 : 1).replace(/\.0$/, '') + ' lakh cr';
     return s + '₹' + Math.round(a).toLocaleString('en-IN') + ' cr';
   }
-  function coverWords(d) { return d == null ? 'No loan payments due' : '₹' + Math.round(d * 100) + ' earned for every ₹100 due'; }
+  function coverWords(d) { return d == null ? 'No loan payments due' : '₹' + Math.floor(d * 100 + 1e-9) + ' earned for every ₹100 due'; }
   function lightOf(d) { var t = P.thr; return d == null ? 'green' : d < t.step_in ? 'red' : d < t.warning ? 'amber' : 'green'; }
 
   // ---------------------------------------------------------------------------------------------
@@ -522,7 +522,7 @@
     var renewal = function (t) { return t < 4 ? 0 : Math.min(rs.full, rs.start + (rs.full - rs.start) * (t - 4) / life); };
     var c = {
       T: 60, price: pr, cps: cps, vintages: vintages, tranches: tranches, demand: function (t) { return D(t + 1); }, fc_pax: fc_pax, cap: cap, ops: ops,
-      nar: function (t) { return narReal(t + 1, opsYear) * ops(t).Q * pr(t) * (s.mall ? 1 : 1); },
+      nar: function (t) { return narReal(t + 1, opsYear) * ops(t).Q * pr(t); },
       nar_bench: function (t) { return narReal(t + 1, function (y) { return opsProfile('base', y); }) * opsProfile('base', t + 1).Q * pr(t); },
       opex_bench: opx, opening_cost: opening, feeShare: feeShare, feePpf: feePpf, wacc: wacc,
       equity_need: equity_need, era: function (t) { return eraOf(t + 1); }, state_loan: state_loan, stage_list: stage_list,
@@ -837,7 +837,7 @@
           {label: 'Cash in hand', amount: Math.round(eng.cash), kind: 'total'}]}],
       moments: sentences.slice(0, 3), cta: bt ? 'See the end' : 'To the board meeting'};
     return {eraLabel: label, era: e, years: [ys[1], ys[2]], calendar: [2025 + ys[1], 2025 + ys[2]], light: light,
-      coverWorst: worst == null ? null : Math.round(worst * 100) / 100, coverWords: coverWords(worst), worstYear: worstRow ? worstRow.year : null,
+      coverWorst: worst == null ? null : Math.round(worst * 100) / 100, coverWorstExact: worst, coverWords: coverWords(worst), worstYear: worstRow ? worstRow.year : null,
       todayCr: Math.round(eng.cash), cashCr: Math.round(eng.cash), stakePct: state.stake, stakeValueCr: Math.round(sv),
       debtCr: Math.round(eng.c.tranches.reduce(function (a, x) { return a + x.out; }, 0)), returnPerYear: r == null ? null : Math.round(r * 1000) / 10,
       payoutShare: lockShare, sentences: sentences, banksTookControl: bt, incomeStatement: inc,

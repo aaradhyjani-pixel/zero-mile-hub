@@ -1868,7 +1868,10 @@
     var out = applyShift(state, shift), st = out.state, rep = out.report;
     var eng = simulate(st.s, eraYears(4)[2]);
     var hubRows = eng.rows.filter(function (x) { return x.year >= CH5.banksFrom && x.year <= eraYears(4)[2]; });
-    var hubEarned = hubRows.reduce(function (a, x) { return a + x.hubInc; }, 0), hubSpent = hubRows.reduce(function (a, x) { return a + x.hubCost; }, 0);
+    // the era's figures are the partner's banks only: the Chapter 4 bank (s.streams) is taken out
+    var sNo = clone(st.s); delete sNo.streams; delete sNo.rivalTake;
+    var hubOnly = simulate(sNo, eraYears(4)[2]).rows.filter(function (x) { return x.year >= CH5.banksFrom && x.year <= eraYears(4)[2]; });
+    var hubEarned = hubOnly.reduce(function (a, x) { return a + x.hubInc; }, 0), hubSpent = hubOnly.reduce(function (a, x) { return a + x.hubCost; }, 0);
     // the banks' number for the years the partner flies (the era's worst year is 2039, before the first bank)
     var cov = null; hubRows.forEach(function (x) { if (x.dscr != null && (cov == null || x.dscr < cov)) cov = x.dscr; });
     var y1 = cal(eraYears(4)[2]);

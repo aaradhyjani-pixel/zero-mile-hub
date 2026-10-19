@@ -158,3 +158,166 @@ The in-game HUD (the "Today" chip, floaters and the P&L tab) stays in the game's
 - Finance jargon on screen (DSCR and the rest).
 - Mobile layouts: this is a laptop game.
 - Under-priced numbers. VSI is the size of Istanbul's airport: about ₹2 lakh crore for the full build, and about ₹60,000 crore for phase 1.
+
+---
+
+# Part II · The Flight: how the whole game behaves
+
+Part I is the Paperwork system for single documents. Part II covers the whole 60-year game, told as one flight in seven chapters plus the Black Box (design/chapters.md). The 3D view, the maps and the ops mechanics don't change. What changes is how the game moves between worlds, shows progress, pauses, passes time and tells you what happened.
+
+## 12. Three surfaces, and the objects that cross between them
+
+| Surface | When | Look |
+|---|---|---|
+| **Night**: the ops game | every shift | The game's own: night black, sign yellow, Barlow Condensed (unchanged) |
+| **Day**: the desk | every decision, front page, bill and card | Part I: drafting paper, Courier, Kalam, red stamps |
+| **Recorder**: the Black Box | only after Landing (or after the banks take control) | Flight-recorder orange casing around graph-paper readouts |
+
+Three **bridge objects** belong to more than one surface. They keep the game feeling like one thing:
+1. **The flight progress strip** (§14.1): the chapter header in both Night and Day.
+2. **The pin** (§14.5): a document from the desk, pinned onto the map in the shift.
+3. **The file** (§14.3): the concession itself, closed between sittings and opened again.
+
+## 13. New tokens
+
+| Token | Value | Use, and only this use |
+|---|---|---|
+| `--rec` | `#ff5a1f` (international orange) | The Black Box casing and its stencil. Never anywhere else, so the orange always means "the record". |
+| `--buff` | `#d8c393` | The concession file folder (an Indian office file) |
+| `--tape` | `#b8232f` | The red tape that ties the file shut between sittings |
+| `--strip` | `#efe6c8`, with a `#c9b98a` holder edge | Flight progress strips |
+| `--flap` | `#16191c` background, `#ece7da` digits | The split-flap year counter |
+| `--trace` | `#c22a2e` on `--zs` graph paper | Black Box readout traces |
+
+Type is unchanged: Courier Prime, Kalam, Libre Caslon, Tiro Devanagari and Barlow Condensed. The split-flap digits use **JetBrains Mono 500**, the game's existing number face.
+
+## 14. Components
+
+### 14.1 The flight progress strip (the chapter header)
+Air traffic controllers track every flight on a paper strip in a holder. Here, each chapter is a strip.
+
+```
+┌──────────┬──────────────┬──────────────┬───────────────────────────────┬──────────┐
+│ VSI 60Y  │ CLIMB        │ 2033 → 2038  │ Network agreement · SIGNED    │ 64% ₹    │
+│ VSIAL    │ wire the     │ year 8–13    │ (the deciding document, with  │ stake    │
+│          │ country      │              │  its red stamp, once signed)  │          │
+└──────────┴──────────────┴──────────────┴───────────────────────────────┴──────────┘
+```
+- **Night:** the strip replaces the level title at the top left of the ops HUD, in its holder. **Day:** it sits at the top of the desk.
+- **Past strips** stack under the current one in a **strip bay**, collapsed to 6px edges with their phase name; hover to read one. **Future phases are never shown**, which keeps Part I principle 1 (no step lists).
+- **Voice:** terse ATC capitals for the callsign and the phase only (real strip vernacular). Everything else is in sentence case.
+
+### 14.2 The split-flap years (between chapters)
+The engine runs the years between chapters. The player sees them pass in about **3 seconds**:
+- a split-flap counter, like an airport departures board, flips the year (2033 → 2034 → … → 2039), one flap per year at 80 ms;
+- behind it, that period's front-page headlines riffle past like a flipbook, one per year at 250 ms, each written by the engine from state;
+- it lands on the next chapter's front page.
+
+Clicking skips it. With reduced motion, it shows the final year and the first headline only.
+
+### 14.3 The concession file (the save, made physical)
+The save is an Indian office file: a buff folder tied with red tape.
+- **On the cover:** the file number (`VSIAL/2026/001`), the company and "<founder>, director", with the player's signature in blue ink, and "Year *n* of 60 · Act *k*".
+- **Three plain numbers on a pasted slip:** your stake and what it's worth, the banks' light in rupees, and cash in hand.
+- **Opening it:** the tape slides off (0.4 s) and the folder opens onto the desk at the right document.
+- **Closing for tonight** (an act break, "Close the file for tonight"): the papers slide back in, the tape ties (0.6 s), and the desk dims.
+- **Earlier concessions** sit as thinner files beneath, each with its ending stamped on the cover: HANDED BACK, TAKEN BY THE BANKS or TORN UP.
+
+### 14.4 The cliffhanger (the end of an act)
+The act's last front page is the **Late City edition** (stamped in the masthead corner). As the player reads, the page folds in half, leaving the lead headline readable above the fold. In pencil across the fold: "Act II · The Network". The player can turn the page or close the file.
+
+### 14.5 Pins (the paper trail on the map, Night)
+- **The pin:** a **12px pushpin** on the exact spot (the stands, the lakes, the transfer area).
+- **The slip:** a paper slip of at most **2 lines**, 110px wide, Courier 10px, the document's short name in bold. It is joined to the pin by a **1px dashed pencil leader**.
+- **Placement:** candidate slots run along the map's margins, nearest first. A slot is rejected if its box meets a runway, taxiway, terminal or apron polygon, a moving aircraft's next 60 s path, or another slip.
+- At most **2 slips open**. A new tag pushes the oldest back to a bare pin. Slips collapse to pins after **6 s** unless hovered. Hover or click opens the full document from the pile.
+
+### 14.6 The connection stream (Night)
+Connecting passengers are 2px dots walking the Mall from the feeder gate to the departure gate.
+- **Made:** they reach the gate and fade in **sign yellow**.
+- **Missed:** they turn **stop red** and drift off the map edge toward a small "DOHA ↗" label (or "DUBAI ↗").
+- **Density cap:** 1 dot for 10 passengers, at most 300 dots on screen.
+- This is the thesis drawn: the network is the business.
+
+### 14.7 The Black Box (the debrief)
+- **The casing:** the four pages slide out of a **flight-recorder casing** in `--rec` orange. Real recorders are painted bright orange so they can be found after a flight. It is stencilled in black: "FLIGHT RECORDER · DO NOT OPEN", and under it, in small Kalam: "*open it*".
+- **The pages** are readouts on graph paper (`--zs` grid) with red traces:
+
+  | Page | Readout |
+  |---|---|
+  | 1 · The return | One handwritten number, plus the drafting ruler with the sourced benchmark marks |
+  | 2 · The power law | A ledger: Courier labels, hatched ink bars (long ones bold, short ones pencil), and the sentences in Kalam |
+  | 3 · What happened | The player's seven front pages as an overlapping strip across the page, each with its causal line |
+  | 4 · How you work | Typed lines, each with its evidence in pencil underneath; then Thiel's seven questions with ✓ in blue ink or ✗ in stamp red |
+
+- **The tone is an accident report's:** "Findings", factual, no blame. The page turns with a paper slide; the casing stays visible at the edge.
+
+## 15. The motion grammar (every motion has a name, a trigger and a fallback)
+
+| Name | Trigger | Duration | Reduced motion |
+|---|---|---|---|
+| **Plot** | the desk opens for the first time | 2.6 s | the drawing appears whole |
+| **Arrive** | a document is shown | 0.55 s | none |
+| **Stamp** | a document is finished | 0.3 s, with overshoot | the stamp appears |
+| **File** | a stamped document joins the pile | 0.45 s | it appears in the pile |
+| **Strip** | a chapter starts: its strip slides into the holder, and the last one drops into the bay | 0.5 s | it appears |
+| **Flip** | the years between chapters | ≈ 3 s, skippable | the final year only |
+| **Fold** | the cliffhanger | 0.8 s | a static folded page |
+| **Tie / untie** | an act break / resuming | 0.6 s / 0.4 s | instant |
+| **Pin drop** | a tag appears in a shift | 0.25 s | instant |
+| **Stream** | a connection is made or missed | continuous, capped | dots without drift |
+| **Pull** | a Black Box page comes out | 0.5 s | instant |
+| **Push-in** | the end of Clearance: the camera into the masterplan | 1.5 s | a cross-fade |
+
+Only Plot and Flip happen without the player acting. Everything else answers something they did.
+
+## 16. Sound (follows the game's existing Sound on/off; off means silent)
+
+| Sound | When | How loud |
+|---|---|---|
+| A stamp thud | Stamp | short and low |
+| Split-flap clatter | Flip | one soft clatter per flap, fading |
+| A paper slide | Arrive, Pull | very quiet |
+| Tape | Tie / untie | very quiet |
+
+There is no music under paper screens. Shifts keep the game's own sound.
+
+## 17. The voices
+
+| Voice | Where | Like |
+|---|---|---|
+| The newspaper | front pages | "VSI OPENS: A CITY'S FLIGHTS MOVE IN OVERNIGHT." Facts, never judging the player. |
+| The document | decisions, agreements | typed and formal, short clauses |
+| The adviser | slips, margin notes | handwritten, plain, cause then effect |
+| The strip | flight progress strips | terse ATC capitals: callsign and phase only |
+| The recorder | the Black Box | "Findings." Factual, evidence first, no blame, no grades |
+
+## 18. The surfaces map
+
+| Moment | Surface | Main component |
+|---|---|---|
+| Concession tab, with a save | Day | the concession file |
+| Clearance and Pushback | Day | the deal desk, the construction register |
+| Chapter start | Day, then Night | the strip, the front page, the decision, the briefing |
+| Shift | Night | the strip in its holder, pins, the connection stream |
+| After the shift | Day | the bill, the card |
+| Between chapters | Day | Flip |
+| Act break | Day | Fold, then Tie |
+| After Landing | Recorder | the Black Box |
+| Banks take control | Day, greyed | the step-in notice, the pile sliding off, then the Black Box |
+
+## 19. Tests (added to §9)
+
+- **Pins:** at 1440×900, no slip's box meets a runway, taxiway, terminal or apron polygon in any chapter's shift. At most 2 slips are open.
+- **No future steps:** the strip bay never shows a phase after the current one.
+- **Orange:** `--rec` appears only inside the Black Box.
+- **The file:** reload mid-act, and the file's cover shows the right company, signature, year and act; untying it resumes at the right document.
+- **Flip:** skippable with one click; under 3.5 s.
+- **Reduced motion:** every row in §15 has its fallback.
+
+## 20. Also rejected, for the flight (add to §11)
+
+- A chapter progress bar or "3 of 7": the strip bay shows only the past.
+- Badges, trophies, confetti or score animations. The stamp is the only celebration.
+- Grades or personality labels in the Black Box: only lines backed by evidence.
+- Orange anywhere except the recorder.

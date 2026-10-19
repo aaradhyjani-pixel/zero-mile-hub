@@ -4,6 +4,8 @@
 **Written:** 19 October 2026, from the code on `main` (25a8a83, the build live on Vercel) and a headless tablet run.
 **Goal:** Levels 1–4 play well on an Android tablet in Chrome: playable with fingers alone, smooth, and lighter to load. The laptop game must not change by a single pixel.
 
+**Decision (the player, 19 October 2026, 19:30): the tablet is 2D only.** No 3D on a tablet at all: no toggle, no button, no setting, and the 3D code and three.js are never downloaded. The laptop keeps its 3D as it is.
+
 ---
 
 ## 0. Scope and rules
@@ -11,11 +13,11 @@
 **In scope:**
 - quick play, Levels 1–4;
 - the start menu, the level cards, the in-shift HUD, the debrief sheet;
-- the 2D map, plus making 3D optional on tablets.
+- the 2D map. **On a tablet the game is 2D only.**
 
 **Out of scope:**
 - the concession and Stage 0 paper screens (`money/*`); they get their own tablet pass later. This pass must not break them.
-- new 3D work;
+- any 3D on a tablet; new 3D work anywhere;
 - any redesign. Same look, same words. Only sizes, inputs and loading change.
 
 **Devices:**
@@ -91,17 +93,18 @@ All CSS changes go under `html.touch …`. All JS changes go under `if (TOUCH)`.
    - **Bank chart tooltip:** tap a bar to show it; tap anywhere else to hide it.
    - **KPI explanations:** tap a KPI for a small paper-slip note with the `title` text; it closes on the next tap.
    - **Aircraft highlight:** drop it on touch.
-5. **On-screen buttons for keyboard-only actions** (TOUCH only), in the existing `#zoomBox` style:
-   - **2D / 3D**, shown only if 3D is offered (see 6);
-   - **Camera** (3D only);
+5. **On-screen replacements for keyboard-only actions** (TOUCH only), in the existing `#zoomBox` style:
    - every popup gets a visible **×**;
    - a tap on empty map closes the open popup (that is Escape);
-   - Q/E rotate becomes a two-finger twist in 3D;
-   - G quality and Shift+P stay as menu settings; add **Copy report** to the perf meter overlay.
-6. **3D is off by default on tablets.**
-   - When `TOUCH` is true, or `navigator.deviceMemory <= 4`, or `hardwareConcurrency <= 4`, the default view is 2D. The player can still turn 3D on, and it then starts at the Low tier (no AO, no bloom, `pr` 1).
-   - If 3D fails to load (offline, CDN blocked), fall back to 2D **without the red banner**: show one quiet line in the ticker, "3D isn't available right now; playing in 2D."
-   - *Check:* with the CDN blocked, the tablet profile shows no banner and plays in 2D.
+   - Shift+P stays a menu setting; add **Copy report** to the perf meter overlay.
+
+   The 3D keys (M, C, Q/E, G) get **no** tablet equivalent: there is no 3D on a tablet.
+6. **2D only on tablets.**
+   - When `TOUCH` is true, `V3.want` is forced to false and `init3D()` is never called, whatever `zm_view` says in storage.
+   - Hide every 3D control and every mention of 3D on the tablet: the view switch, the quality setting, and any "3D" wording in the menu or the help.
+   - The 2D/3D keyboard shortcut does nothing on TOUCH.
+   - three.js is never fetched, so the red "3D view could not start" banner can never appear on a tablet.
+   - *Check:* on the tablet profile, no request goes to jsDelivr, `V3.on` stays false through L1–L4, and no visible text contains "3D".
 7. **Words that match the device.** On touch, "How to play" and the tooltips read:
    - "Tap any aircraft to see where it's going, prioritise it or hold it at the gate";
    - "Pinch to zoom, drag to move";
@@ -116,9 +119,11 @@ All CSS changes go under `html.touch …`. All JS changes go under `if (TOUCH)`.
 
 ### P1 · Lighter and smoother (about 1.5 h)
 
-10. **Load 3D only when asked.** Write `hub3d.js` plus `3d/*.js` to `site/v3.js` and load it with a `<script>` the first time 3D is turned on. This applies to everyone; the laptop's 3D still works, only later. Today 3D shares hub.js's closure, so pass the closure's needed bindings through one object (`window.__V3HOST`), or keep the inline build for the laptop and the split build for `TOUCH`. Pick the one with the smaller diff; note which in `progress.md`.
+10. **Tablets never download the 3D code.** `build.py` writes `hub3d.js` plus `3d/*.js` to `site/v3.js` instead of inlining them. At boot, a non-touch device loads `v3.js` straight away, exactly when the inline code runs today, so the laptop behaves the same. A TOUCH device never loads it.
 
-    *Check:* first-load gzipped size on the tablet profile is at most **230 KB** (today 459 KB), and three.js is never fetched unless 3D is turned on.
+    Today 3D shares hub.js's closure, so the split needs the closure's bindings passed through one object (`window.__V3HOST`). If that diff grows past a clean hook, build two pages instead: `index.html` (the laptop, unchanged) and a 2D-only `index.html` variant chosen at load by a tiny inline check. Pick the smaller diff and note which in `progress.md`.
+
+    *Check:* first-load gzipped size on the tablet profile is at most **230 KB** (today 459 KB). The laptop still opens in 3D with no visible difference.
 11. **Cap the canvas DPR at 1.5 on TOUCH.** That is 1920×1200 at 1280×800: 44% fewer pixels, still sharp at tablet viewing distance. Lines and labels stay crisp, because they are drawn in CSS px. *Check:* the canvas backing store is 1920×1200 at 1280×800 DPR 2.
 12. **A frame budget.** Reuse the existing perf meter (`PERFM`). On TOUCH, if the frame time stays over 25 ms for 3 s, drop the cosmetic layers in this order: particle and weather dust, terrain grain, the aircraft trails; then show "Lighter graphics on" in the ticker. Never drop gameplay: aircraft, runways, labels, incident rings. *Check:* at 4× CPU slow-down, L4 holds **at least 30 fps** in headless 2D after the drop. Confirm on the real tablet (§5).
 13. **Draw less when nothing moves.** When paused, or with the menu or debrief sheet open, render the map at 10 fps. `visibilitychange` already exists; make sure a hidden tab draws nothing.
@@ -158,7 +163,7 @@ All CSS changes go under `html.touch …`. All JS changes go under `if (TOUCH)`.
   - plain words (no DSCR, RAB, WACC, true-up, EBITDA, IRR, SLA, UDF, covenant, step-in, CFADS);
   - tags stay in the margins.
 - **Concession mode still opens and plays on the laptop.** On the tablet it may look unpolished, but it must not throw.
-- No new external domains. Fonts stay on Google Fonts; three.js stays on jsDelivr, but only when 3D is turned on.
+- No new external domains. Fonts stay on Google Fonts. three.js stays on jsDelivr and is fetched only by the laptop.
 
 ---
 
@@ -188,7 +193,7 @@ All CSS changes go under `html.touch …`. All JS changes go under `if (TOUCH)`.
 - no visible game control under 44×44;
 - no keyboard-only action;
 - the bank chart is visible in every profile except `phone`;
-- 3D never loads unless asked;
+- 3D never loads on a tablet: no `v3.js`, no jsDelivr request, `V3.on` always false, no "3D" text;
 - first-load gzipped size is 230 KB or less;
 - L4 holds 30 fps or more at a 4× CPU slow-down after the frame-budget drop;
 - laptop screenshots are pixel-identical.
@@ -218,7 +223,7 @@ Pass:
 |---|---|
 | 1280×800 landscape, touch | Fits, with no page scroll. HUD 892×134, rail 352×776, bank chart 892×190. **36 of 36 controls under 44 px; smallest 22 px.** A tap 14 px off a plane opened nothing. |
 | 800×1280 portrait, touch | Bank chart and tabs hidden (the 980 px rule). Runway desk at the bottom, 44% of the height. Coach toast hidden. |
-| Both | The 3D view tried to load from jsDelivr, failed (no network in the test box) and showed the red "3D view could not start" banner over the bank chart. |
+| Both | The 3D view tried to load from jsDelivr, failed (no network in the test box) and showed the red "3D view could not start" banner over the bank chart. With 2D only on tablets, this can't happen there. |
 | CPU 4× slower | 2D: L1 at 4 fps, L4 at 8 fps (software rendering; real GPUs do better, but the drawing is CPU-bound at DPR 2). |
 | Page weight | `index.html` 1.66 MB, 459 KB gzipped. 3D code is 246 KB of that. Masterplan SVG 31 KB, spec 24 KB, roof 12 KB (all gzipped). |
 

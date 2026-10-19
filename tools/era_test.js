@@ -42,7 +42,7 @@ function pyRow(label) {
 const fl = v => Math.floor(v * 100 + 1e-9) / 100;
 function play(ob, shiftFor, boardFor, conChoices) {
   let st = E.newCampaign(ob, 1);
-  const cells = [], reports = [], texts = [];
+  const cells = [], reports = [], texts = [], sAt = [];
   if (E.needsConstruction(st)) {
     const co = E.constructionOpts(st);
     texts.push(...co.years.map(y => y.line), ...co.works.map(w => w.name + ' ' + w.note), ...co.events.map(e => e.title + ' ' + e.text + ' ' + e.options.map(o => o.label + ' ' + o.effect).join(' ')), co.numbers.coverWords);
@@ -54,8 +54,8 @@ function play(ob, shiftFor, boardFor, conChoices) {
     const r = E.applyShift(st, shiftFor(e, L));
     st = r.state;
     const rep = r.report;
-    reports.push(rep);
-    texts.push(rep.coverWords, ...rep.sentences, JSON.stringify(rep.incomeStatement));
+    reports.push(rep); sAt.push(JSON.parse(JSON.stringify(st.s)));   // the scenario as it stood at this era's report
+    texts.push(rep.coverWords, ...rep.sentences, JSON.stringify(rep.incomeStatement), JSON.stringify(rep.bill));
     cells.push(rep.coverWorst == null ? 'repaid' : rep.coverWorstExact);
     if (E.isOver(st)) break;
     const bo = E.boardOptions(st);
@@ -63,9 +63,9 @@ function play(ob, shiftFor, boardFor, conChoices) {
     st = E.applyBoard(st, boardFor(e, bo));
   }
   while (cells.length < 12) cells.push(null);
-  texts.push(JSON.stringify(E.endOpts(st)), JSON.stringify(E.handbackOpts(st)));
+  texts.push(JSON.stringify(E.endOpts(st)), JSON.stringify(E.endBill(st)), JSON.stringify(E.handbackOpts(st)));
   const over = E.isOver(st), f = st.final || {};
-  return {cells, reports, texts, st, outcome: over.reason === 'banks' ? 'banks ' + over.year : (f.debtRepaid ? 'debt repaid' : 'debt left'),
+  return {cells, reports, texts, st, sAt, outcome: over.reason === 'banks' ? 'banks ' + over.year : (f.debtRepaid ? 'debt repaid' : 'debt left'),
     irr: over.reason === 'banks' || f.irr == null ? null : f.irr * 100};
 }
 const profileShift = prof => (e, L) => ({level: L, stars: 3, ops: I.opsProfile(prof, I.eraYears(e)[1])});
@@ -180,13 +180,14 @@ compare('BAD-like shifts', B.BAD, pyRow('BAD'), TOL_B, TOL_B_IRR);
 
 // ---- Part C ----
 console.log('\n## Part C: plain words, determinism, stable history\n');
-const BANNED = /\b(DSCR|RAB|WACC|true-?ups?|EBITDA|IRR|SLA|UDF|covenants?|step-?in)\b/i;
+const BANNED = /\b(DSCR|RAB|WACC|true-?ups?|EBITDA|IRR|SLA|UDF|covenants?|step-?in|CFADS)\b/i;
 const texts = [].concat(...Object.values(A).map(r => r.texts), ...Object.values(B).map(r => r.texts), ...Object.values(AC).map(r => r.texts), SL.texts);
 ['banks', 'dollar', 'infra'].forEach(l => texts.push(E.previewClose({gearing: 70, repayment: 'sculpted', bid: {type: 'share', value: 15}, lender: l, phase1: 'big', stateLoan: false}).note));
 texts.push(JSON.stringify(E.lenders()), JSON.stringify(E.phase1Options()), JSON.stringify(E.stateLoanOpt()));
 texts.push(E.previewBid({type: 'share', value: 15}).note, E.previewBid({type: 'ppf', value: 180}).note,
   E.previewClose({gearing: 75, repayment: 'equal', bid: {type: 'share', value: 15}}).note,
   E.previewClose({gearing: 70, repayment: 'sculpted', bid: {type: 'share', value: 15}}).note);
+texts.push(JSON.stringify(E.fileCard(A.EXPERT.st)), JSON.stringify(E.recordOf(A.EXPERT.st)), JSON.stringify(E.recordOf(A.BAD.st)), JSON.stringify(E.endBill(A.BAD.st)));
 const hits = texts.filter(t => BANNED.test(t || ''));
 if (hits.length) fail('jargon on screen: ' + hits.slice(0, 3).map(t => (t.match(BANNED) || [])[0] + ' in "' + t.slice(0, 120) + '"').join(' | '));
 console.log('- plain-words scan: ' + texts.length + ' strings, ' + hits.length + ' with jargon');
@@ -237,7 +238,7 @@ for (const [name, choice, held, slack, what] of PLAYERS) {
   plan.tags.forEach(t => { if (!(st.docs || []).some(d => d.id === t.docId)) fail('ch5 tag without a doc: ' + t.docId); });
   const r = C5.applyShift(st, c5shift(plan, held, slack));
   rt(r.state);
-  const b = r.bill, row = l => b.table.find(t => t.label === l) || {cr: 0, made: 0, missed: 0}, tb = [row('Earned'), row('Spent'), row('Connections to Skyward')];
+  const b = r.bill, row = l => b.table.find(t => t.label.indexOf(l) === 0) || {cr: 0, made: 0, missed: 0}, tb = [row('Earned'), row('Spent'), row('Connections to Skyward')];
   c5[name] = b;
   c5texts.push(JSON.stringify(br), JSON.stringify(plan), JSON.stringify(b), JSON.stringify(r.card));
   console.log('| ' + name + ' | ' + what + ' | ' + tb[0].cr + ' | ' + tb[1].cr + ' | ' + tb[2].made.toLocaleString('en-IN') + ' / ' + tb[2].missed.toLocaleString('en-IN') + ' | ' +
@@ -252,7 +253,7 @@ if (!(c5['hub-smart'].stake.valueCr > c5['hub-blind'].stake.valueCr && net('hub-
 if (!/held London/.test(c5['hub-smart'].margin)) fail('ch5: the margin note does not read the London call');
 if (!(c5['hub-smart'].stake.valueCr - c5['hub-letgo'].stake.valueCr > 1000)) fail('ch5: holding London is not clearly worth more than letting it go');
 if (/Frankfurt/.test(c5['hub-letgo'].margin)) fail('ch5: the let-go margin still promises a new flight');
-if (!c5['hub-blind'].table.some(t => t.label === 'Domestic connections' && t.made > 0)) fail('ch5: the decline bill does not report the domestic connections');
+if (!c5['hub-blind'].table.some(t => /^Domestic connections/.test(t.label) && t.made > 0)) fail('ch5: the decline bill does not report the domestic connections');
 const nDep = ['three', 'london', 'decline'].map(id => C5.shiftPlan(C5.applyDecision(fx, id)).intl.length).join();
 if (nDep !== '3,1,0') fail('ch5: the three options should give 3, 1 and 0 departures, got ' + nDep);
 if ([1, 2, 3, 4, 5, 6, 7].some(n => { const c = C5.card(n); return !c || !c.text || !c.sources.length || !c.sources.every(x => x.url); })) fail('ch5: a chapter card without text or a source');
@@ -265,6 +266,134 @@ console.log('- paper trail: lean → ' + C5.shiftPlan(C5.applyDecision(fx, 'thre
 const c5hits = c5texts.filter(t => BANNED.test(t));
 if (c5hits.length) fail('ch5 jargon: ' + c5hits.map(t => (t.match(BANNED) || [])[0]).join(', '));
 if (JSON.stringify(C5.fixture()) !== JSON.stringify(fx)) fail('ch5 fixture is not deterministic');
+// ---- the saved concession (zm_campaign v2) and F5: the stake and the return per year tell one story ----
+if (E.fmtDate('2039-04-01') !== '1 April 2039') fail('fmtDate: ' + E.fmtDate('2039-04-01'));
+const own = E.newCampaign({parent: 'Kestrel Airports', founder: 'Ravi Menon', signature: 'data:image/png;base64,AAAA', phase1: 'big', bid: {type: 'share', value: 12}, gearing: 65, repayment: 'equal', lender: 'banks', stateLoan: true, signedOn: '2026-07-15', endsOn: '2086-07-14'}, 7);
+const fxOwn = C5.fixture({from: own});
+if (fxOwn.parent !== 'Kestrel Airports' || fxOwn.founder !== 'Ravi Menon' || fxOwn.signature !== own.signature || fxOwn.phase1 !== 'big' || fxOwn.sample) fail('ch5 fixture does not start from the player\'s own onboarding');
+if (!C5.fixture().sample) fail('ch5 fixture without a save is not marked as the sample company');
+if (C5.frontPage(fxOwn).signature !== own.signature) fail('ch5 front page does not carry the player\'s signature');
+const fc = E.fileCard(fx);
+if (!fc || fc.company !== fx.parent || fc.stake.pct !== fx.stake || !fc.cover.words || fc.docs[0].id !== 'concession' || !fc.docs.some(d => /^board-/.test(d.id))) fail('fileCard: ' + JSON.stringify(fc && {company: fc.company, docs: fc.docs.map(d => d.id)}));
+if (fc.docs.some(d => !/^\d{4}-\d{2}-\d{2}$/.test(d.date))) fail('fileCard docs without an ISO date');
+console.log('\n### F5: the stake against the return per year (Meridian Infra, sample company, three banks, London held)\n');
+console.log('| Year | Money in (your share) | Stake shown | Return per year so far | Implied: the 2038 stake grown at its return per year |\n|---|---|---|---|---|');
+{
+  const st3 = C5.applyDecision(fx, 'three');
+  const out = C5.applyShift(st3, {made: 1000, missed: 50, byDest: {London: {made: 420, missed: 10}, Singapore: {made: 300, missed: 0}, Nairobi: {made: 220, missed: 0}}, held: {London: true}, domestic: {made: 200, missed: 20}, trail: {happened: false}, stars: 3, otp: 0.9});
+  const rows = [];
+  for (const [y, s, val] of [[13, fx.s, fx.lastReport.stakeValueCr], [18, out.state.s, out.bill.stake.valueCr]]) {
+    const eng = I.simulate(s, y), fl = []; for (let t = 0; t < y; t++) fl.push((eng.eq_flows[t] || 0) * fx.stake / 100);
+    const inv = -fl.filter(x => x < 0).reduce((a, b) => a + b, 0), f2 = fl.slice(); f2[f2.length - 1] += val; const r = I.irr(f2);
+    const fv = rows.length ? rows[0].val * Math.pow(1 + rows[0].r, y - rows[0].y) : val;
+    rows.push({y, r, val});
+    console.log('| ' + (2025 + y) + ' | ₹' + Math.round(inv).toLocaleString('en-IN') + ' cr | ₹' + val.toLocaleString('en-IN') + ' cr | ' + (r * 100).toFixed(1) + '% | ₹' + Math.round(fv).toLocaleString('en-IN') + ' cr |');
+  }
+  if (Math.abs(rows[0].r - rows[1].r) > 0.03) fail('F5: the return per year moves ' + ((rows[1].r - rows[0].r) * 100).toFixed(1) + ' points between ' + (2025 + rows[0].y) + ' and ' + (2025 + rows[1].y));
+  if (rows[1].val / rows[0].val > 2.5) fail('F5: the stake grows ' + (rows[1].val / rows[0].val).toFixed(1) + '× in five years');
+  if (!/a year/.test(out.bill.stake.words) || !/2038/.test(out.bill.stake.words)) fail('F4/F5: the stake line does not label its years: ' + out.bill.stake.words);
+}
+
+let pay0 = [];
+// ---- fix a: the names (design/chapters.md §0) on every Chapter 5 payload and the board ----
+{
+  const OLD = /Skyward|Narmada|Airport City/;
+  const fxA = C5.fixture(), stA = C5.applyDecision(fxA, 'three'), planA = C5.shiftPlan(stA);
+  const pay = [C5.frontPage(fxA), C5.decision(fxA), C5.briefing ? C5.briefing(stA) : null, planA, stA.docs, C5.script];
+  const bo3 = A.EXPERT.reports.length ? null : null;
+  pay0 = pay.map(x => JSON.stringify(x)).concat(c5texts);
+  const hits = pay.map(x => JSON.stringify(x)).filter(t => OLD.test(t)).map(t => t.match(OLD)[0]);
+  if (hits.length) fail('a: old names on screen: ' + hits.join(', '));
+  if (c5texts.some(t => OLD.test(t))) fail('a: old names in a Chapter 5 bill or card');
+  if (!/Sutradhar Air/.test(JSON.stringify(planA.feeder)) || planA.partner !== 'Haversine Airways' || !/Haversine Airways/.test(JSON.stringify(C5.decision(fxA)))) fail('a: Sutradhar Air / Haversine Airways missing');
+  if (!planA.partnerCode || !planA.partnerRadio || !planA.feeder.code || !planA.feeder.radio || /SKY|NMA/.test(planA.partnerCode + planA.feeder.code)) fail('a: callsigns: ' + planA.partnerCode + '/' + planA.feeder.code);
+  // the board's land offer, from a concession at the era-3 board
+  let sB = E.applyConstruction(E.newCampaign(ob('EXPERT'), 1), null);
+  for (let e = 1; e <= 3; e++) { sB = E.applyShift(sB, {level: e, stars: 3, ops: I.opsProfile('expert', I.eraYears(e)[1])}).state; if (e < 3) sB = E.applyBoard(sB, {dividendCr: 0}); }
+  const land = E.boardOptions(sB).investments.find(i => i.id === 'airport_city');
+  if (!land || !/Zero Mile District/.test(land.name) || OLD.test(JSON.stringify(E.boardOptions(sB)))) fail('a: the land offer is not called Zero Mile District: ' + (land && land.name));
+  if (A.EXPERT.texts.concat(A.BAD.texts).some(t => OLD.test(t))) fail('a: an old name in an era report, board or handback');
+  console.log('- a: Sutradhar Air (' + planA.feeder.code + ', "' + planA.feeder.radio + '"), Haversine Airways (' + planA.partnerCode + ', "' + planA.partnerRadio + '"), Zero Mile District; no old names in ' + (pay.length + c5texts.length + A.EXPERT.texts.length + A.BAD.texts.length) + ' payloads');
+}
+// ---- fix c: every chapter starts from the player's own save; the sample only for test URLs ----
+{
+  const own2 = E.newCampaign({parent: 'Kestrel Airports', founder: 'Ravi Menon', signature: 'data:image/png;base64,AAAA', phase1: 'big', bid: {type: 'share', value: 12}, gearing: 65, repayment: 'equal', lender: 'banks', stateLoan: true, signedOn: '2026-07-15', endsOn: '2086-07-14'}, 7);
+  if (!E.resumable(own2).ok) fail('c: a fresh signed save is not resumable: ' + E.resumable(own2).why);
+  const bad = {unsigned: Object.assign({}, own2, {signature: null}), 'no founder': Object.assign({}, own2, {founder: ''}), 'no signing day': Object.assign({}, own2, {signedOn: null}),
+    old: Object.assign({}, own2, {version: 1}), sample: C5.fixture(), none: null};
+  for (const k in bad) if (E.resumable(bad[k]).ok) fail('c: a save that is ' + k + ' is resumable');
+  for (const k in bad) if (C5.start(bad[k]) !== null) fail('c: ch5.start falls back to the sample for a save that is ' + k);
+  // the player's own construction calls and a played era survive into Chapter 5
+  let mine = E.applyConstruction(own2, {choices: {monsoon: 'accept', overrun: 'pay', trials: 'short'}, finishedOn: '2030-10-15'});
+  mine = E.applyShift(mine, {level: 1, stars: 1, otp: 0.7, cx: 0.8, safety: 100}).state;   // a rough first era, awaiting its board
+  const c5own = C5.start(JSON.parse(JSON.stringify(mine)));
+  if (!c5own || c5own.parent !== 'Kestrel Airports' || c5own.founder !== 'Ravi Menon' || c5own.signature !== own2.signature || c5own.signedOn !== '2026-07-15' || c5own.sample || c5own.era !== 4 || c5own.year !== 14)
+    fail('c: ch5.start does not continue the player\'s own save');
+  else {
+    if (c5own.construction.trials !== 'short' || c5own.s.eraOps[1].star == null && c5own.history.find(h => h.era === 1 && h.stars != null).stars !== 1) fail('c: the player\'s own construction calls or first era were replaced');
+    if (c5own.history.filter(h => h.era === 1 && h.stars != null).length !== 1) fail('c: era 1 was played twice');
+    if (!E.resumable(c5own).ok) fail('c: Chapter 5 from a real save is not resumable: ' + E.resumable(c5own).why);
+    const fp = C5.frontPage(c5own);
+    if (fp.company !== 'Kestrel Airports' || fp.signature !== own2.signature || !/15 July 2039|July 2039/.test(fp.dateLine)) fail('c: the front page is not the player\'s: ' + fp.dateLine);
+    if (JSON.stringify(c5own).includes('Meridian Infra') || JSON.stringify(c5own).includes('Asha Rao')) fail('c: the sample company leaked into the player\'s chapter');
+    if (!['concession', 'phase1', 'budget-2034', 'feeders-2033'].every(id => c5own.docs.some(d => d.id === id))) fail('c: the Chapter 5 pile is missing a document');
+    const r5 = C5.applyShift(C5.applyDecision(c5own, 'london'), {made: 400, missed: 20, byDest: {London: {made: 400, missed: 20}}, held: {London: true}, domestic: {made: 150, missed: 10}, trail: {happened: false}, stars: 2, otp: 0.86});
+    if (r5.state.parent !== 'Kestrel Airports' || !E.resumable(r5.state).ok) fail('c: the state after Chapter 5 is not the player\'s resumable save');
+  }
+  const fc2 = E.fileCard(c5own || own2);
+  if (!/^Signed 15 July 2026 · now year 14 of 60 · Chapter 5, Cruise$/.test(fc2.line) || fc2.director !== 'Ravi Menon, director') fail('b: file card line: ' + fc2.line);
+  const ch = [E.newCampaign({parent: 'X'}, 1), own2, mine, c5own].map(x => E.chapter(x).n).join();
+  if (ch !== '2,2,3,5' || E.chapter(null).n !== 1 || E.chapter(A.EXPERT.st).n !== 8) fail('chapter(): ' + ch);
+  if (pay0.some(t => /Airways's/.test(t))) fail('a: "Airways\'s"');
+  const rec = E.recordOf(c5own, 'torn-up');
+  if (!rec || rec.company !== 'Kestrel Airports' || rec.yearsRun !== 14 || rec.how !== 'torn-up' || !rec.signature || !/Torn up in year 14/.test(rec.howWords)) fail('b: recordOf: ' + JSON.stringify(rec && {y: rec.yearsRun, w: rec.howWords}));
+  const recEnd = E.recordOf(A.EXPERT.st);
+  if (!recEnd || recEnd.how !== 'handback' || recEnd.yearsRun !== 60 || recEnd.finalReturnPct == null) fail('b: recordOf a finished concession: ' + JSON.stringify(recEnd));
+  console.log('- c: ch5.start(save) continues the player\'s own concession (Kestrel Airports, signed 15 July 2026, short trials, a 1-star first era kept); unsigned, founderless, undated, version-1 and sample saves are refused, never replaced by the sample');
+}
+// ---- fix e: the bill's figures share one labelled period; the stake agrees with the return per year; dates in words ----
+{
+  const ISO = /\d{4}-\d{2}-\d{2}/;
+  let worstDiff = 0, worstR = 0, n = 0;
+  console.log('\n### e: the stake against the return per year, every era (EXPERT)\n');
+  console.log('| Era | Money in since 2026 | Dividends out | Return per year shown (implied by the shown stake) | Implied: money in, less dividends, grown at that rate | Stake shown | Gap |\n|---|---|---|---|---|---|---|');
+  for (const run of [A.EXPERT, A.LAZY, A.NAGPUR]) run.reports.forEach((rep, ri) => {
+    const b = rep.bill;
+    if (!b || !b.table.length) { fail('e: era ' + rep.era + ' has no bill'); return; }
+    const per = b.per;
+    b.table.forEach(t => { if (!(t.label.endsWith(', ' + per) || /, at the end of \d{4}$/.test(t.label))) fail('e: a bill figure without its period: ' + t.label); });
+    if (!b.paragraph.includes(per)) fail('e: the bill paragraph is not about ' + per + ': ' + b.paragraph);
+    if (ISO.test(b.paragraph + b.margin + JSON.stringify(b.table)) || !/^\d{1,2} [A-Z][a-z]+ \d{4}$/.test(b.dateWords)) fail('e: an ISO date on the bill: ' + b.dateWords);
+    const c = rep.stakeCheck;
+    if (rep.banksTookControl) return;
+    if (!c) { fail('e: era ' + rep.era + ' has no stake check'); return; }
+    // independent recomputation from the engine's own cash flows as they stood at this report (not stakeCheck's):
+    // (1) the return per year implied by the money in and out plus the SHOWN stake rounds to the SHOWN return;
+    // (2) money in, less dividends, grown at the shown (rounded) return lands within 3% of the shown stake while the
+    //     sum is well-conditioned (the first 18 years; later, decades of dividends net against money in and a
+    //     0.05-point rounding moves the sum by more than the stake itself, so only (1) is meaningful there)
+    const eng = I.simulate(run.sAt[ri], I.eraYears(rep.era)[2]), T = eng.rows[eng.rows.length - 1].t, sh = run.st.stake / 100, rr = rep.returnPerYear / 100;
+    const fl2 = []; for (let t = 0; t <= T; t++) fl2.push((eng.eq_flows[t] || 0) * sh); fl2[T] += rep.stakeValueCr;
+    const rIndep = I.irr(fl2) * 100;
+    let implied = 0; for (let t = 0; t <= T; t++) implied += -(eng.eq_flows[t] || 0) * sh * Math.pow(1 + rr, T - t);
+    const gap = (implied - rep.stakeValueCr) / rep.stakeValueCr;
+    if (Math.abs(rIndep - rep.returnPerYear) > 0.06) fail('e: era ' + rep.era + ': the shown stake implies ' + rIndep.toFixed(2) + '% a year, the bill shows ' + rep.returnPerYear + '%');
+    worstR = Math.max(worstR, Math.abs(rIndep - rep.returnPerYear)); n++;
+    if (rep.era <= 4) worstDiff = Math.max(worstDiff, Math.abs(gap));
+    if (run === A.EXPERT) console.log('| ' + rep.calendar.join('–') + ' | ₹' + c.moneyInCr.toLocaleString('en-IN') + ' cr | ₹' + c.dividendsCr.toLocaleString('en-IN') + ' cr | ' + c.returnPct + '% (' + rIndep.toFixed(2) + '%) | ₹' + Math.round(implied).toLocaleString('en-IN') + ' cr | ₹' + rep.stakeValueCr.toLocaleString('en-IN') + ' cr | ' + (gap * 100).toFixed(2) + '% |');
+    if (rep.era <= 4 && Math.abs(gap) > 0.03) fail('e: era ' + rep.era + ' stake ₹' + rep.stakeValueCr + ' cr vs ₹' + Math.round(implied) + ' cr implied at ' + rep.returnPerYear + '% a year (tolerance 3%)');
+    if (Math.abs(c.impliedCr - c.shownCr) > 2 + 0.001 * c.shownCr) fail('e: stakeCheck: the stake and the return come from different books: ' + c.impliedCr + ' vs ' + c.shownCr);
+    if (!b.paragraph.includes('since 2026') || !(b.paragraph.includes(c.returnPct + '% a year') || c.returnPct < 0 && b.paragraph.includes('less than'))) fail('e: the bill paragraph does not reconcile the stake: ' + b.paragraph);
+  });
+  console.log('\n- e: ' + n + ' era bills: the shown stake implies the shown return per year within ' + worstR.toFixed(3) + ' points (tolerance 0.06); years 1-18: the stake within ' + (worstDiff * 100).toFixed(2) + '% of the money in, less dividends, grown at the shown return (tolerance 3%)');
+  console.log('- e: era bill, EXPERT era 2: "' + A.EXPERT.reports[1].bill.paragraph + '"');
+  const eb = E.endBill(A.EXPERT.st);
+  if (!eb.table.length || ISO.test(eb.paragraph + eb.year + JSON.stringify(eb.table)) || !/^\d{1,2} [A-Z][a-z]+ \d{4}$/.test(eb.dateWords)) fail('e: endBill: ' + JSON.stringify(eb).slice(0, 200));
+  if (E.fmtDate('2026-07-15') !== '15 July 2026') fail('e: fmtDate');
+  const s5 = c5['hub-smart'].stake;
+  if (!s5.check || !s5.words.includes(s5.check.returnPct + '% a year') || /since 2025/.test(s5.words) || Math.abs(s5.check.diffPct) > 2) fail('e: Chapter 5 stake line does not reconcile: ' + s5.words);
+  if (C5.fixture().docs.concat(c5['hub-smart'] ? [] : []).some(d => !d.dateWords)) fail('e: a document without its date in words');
+}
 console.log('- plain words: ' + c5texts.length + ' Chapter 5 payloads, ' + c5hits.length + ' with jargon; fixture deterministic');
 console.log('\n' + (fails ? fails + ' FAILED' : 'ALL PASS'));
 process.exit(fails ? 1 : 0);

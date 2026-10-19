@@ -5932,7 +5932,7 @@
   }
  },
  "airport_city": {
-  "_about": "Airport City: a property district on VSI land (hotels, offices, retail, logistics), Delhi Aerocity style. A board choice from era 3. VSIAL builds the roads and services and licenses plots; developers build and pay a yearly licence fee (rent and a share of their retail takings). Income is non-aero, so AERA's hybrid till counts 30% of it against the airline charges. Paid for with equity (the airport's lenders do not lend on it). Every number is sourced or a stated assumption (estimate: true).",
+  "_about": "Airport City (shown on screen as Zero Mile District; the id airport_city stays): a property district on VSI land (hotels, offices, retail, logistics), Delhi Aerocity style. A board choice from era 3. VSIAL builds the roads and services and licenses plots; developers build and pay a yearly licence fee (rent and a share of their retail takings). Income is non-aero, so AERA's hybrid till counts 30% of it against the airline charges. Paid for with equity (the airport's lenders do not lend on it). Every number is sourced or a stated assumption (estimate: true).",
   "precedents": {
    "value": {
     "delhi_aerocity": {
@@ -6059,7 +6059,7 @@
   "screen_text": {
    "value": {
     "income_line": "Your land earns ₹{X} cr a year; AERA counts ₹{Y} of it against your airline charges.",
-    "board_offer": "Build Airport City phase {N}: ₹{C} cr now, full rent in {R} years."
+    "board_offer": "Build Zero Mile District phase {N}: ₹{C} cr now, full rent in {R} years."
    },
    "unit": "template",
    "source": "design",

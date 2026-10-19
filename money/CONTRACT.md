@@ -153,9 +153,9 @@ Every figure comes in from `VSIEra.ch5`; ui.js invents no numbers. Mocks: `?mone
 
 ## Margin pins: tags never cover a runway, a taxiway or the terminal (F7, Stage 0 fix d)
 - `ZMMoney.tag(x, y, docTitle, line, docId?)` → `{el, move(x, y, cx?, cy?), remove(), flash(), size()}` and the `tag(id, {doc, line, docId})` + `tagAt(id, x, y, cx?, cy?)` + `tagRemove(id)` form both still work. `(x, y)` is now **the spot** (the aircraft, stand or runway point), relative to `#app`; call `move`/`tagAt` every frame.
-- What shows: a **12px pushpin in the margin**, never on the spot, joined to the spot by a **dashed leader**. Open, the pin carries **at most two short lines**: the line (one line, ellipsis) and the document's title in small type. `size()` returns `{w:244, h:38}` (the open size; ui.js always places as if open, so opening never moves the pin).
+- What shows (DESIGN.md §14.5): a **12px pushpin in the margin**, never on the spot, joined to the spot by a **1px dashed leader**. Open, the pin carries a slip of **at most two lines** in Courier 10px: the document's short name in **bold**, then the line (each one line, ellipsis). The slip is 110px wide and grows with its text up to 232px. `size()` returns the open size, `{w: 17 + slip width, h:32}` (ui.js always places as if open, so opening never moves the pin).
 - Open and fold: a new tag opens the first time it finds a place; hover opens; a click on the pin opens it, a click on the open lines (or on an open pin) opens the document. **At most two are open at once** (opening a third folds the oldest). Each **folds 6 s after it opened** (hover holds it open; leaving gives it at least 1.5 s more). `tagFlash(id)` pulses the pin and opens it for 6 s.
-- `ZMMoney.tagAvoid(shapes, {region}?)`: hub.js calls it **every frame** with the screen shapes (relative to `#app`) of every runway, **taxiway** and the terminal. A shape is a rectangle (`{l,t,r,b}`, `{left,top,right,bottom}`, `{x,y,w,h}`, `{x0,y0,x1,y1}`, `[x,y,w,h]`) or **a polygon** (`[[x,y],...]`, `[{x,y},...]`, or `{pts|points|poly:[...], kind}`), with an optional `kind` (`'runway'`, `'taxiway'`, `'terminal'`, `'panel'`; `kind:'region'` or `opt.region` is the free map area). Polygons are tested exactly (vertex-in-box, corner-in-polygon, edge crossings), with an 8px gap. Pins are placed again only when the shapes change.
+- `ZMMoney.tagAvoid(shapes, {region}?)`: hub.js calls it **every frame** with the screen shapes (relative to `#app`) of every runway, **taxiway** and the terminal. A shape is a rectangle (`{l,t,r,b}`, `{left,top,right,bottom}`, `{x,y,w,h}`, `{x0,y0,x1,y1}`, `[x,y,w,h]`) or **a polygon** (`[[x,y],...]`, `[{x,y},...]`, or `{pts|points|poly:[...], kind}`), with an optional `kind` (`'runway'`, `'taxiway'`, `'terminal'`, `'panel'`; `kind:'region'` or `opt.region` is the free map area). Polygons are tested exactly (vertex-in-box, corner-in-polygon, edge crossings), with an 8px gap. New: a **polyline** `{line|path:[[x,y],...], kind:'path'}` (a moving aircraft's next 60 s) is tested by its segments, so no slip sits across it. `kind:'apron'` works like any other shape. Pins are placed again only when the shapes change.
 - Placement order: where the pin already is (if still clear and within 520px of the spot), the `cx, cy` hint from `move`, beside the union of the shapes on the side nearest the spot, then rings around the spot. Every candidate must be clear of the shapes, the HUD panels in the page, the other pins and 12px around the spot. No room for the lines: the pin alone (`pinOnly`; a click opens the document). No room at all: the tag hides until there is room. A pin left of its spot puts its lines on its left (`flip`).
 - Tests: `ZMMoney.tagBox(id)` → `{l,t,r,b,open,pinOnly}` or null; `ZMMoney.tagBoxes()` → every visible one with its `id`; `ZMMoney.tagClashes()` → `[{id, kind}]` for any visible pin touching a shape (must be `[]`); `ZMMoney.tagShapes()` → the shapes in use. `?moneymock=pins` in the live game feeds `tagAvoid` with the real runways, every taxiway segment and each concourse polygon, with four pins (`window.__zmmClash` holds the clashes); `?moneymock=tags` is the older two-tag mock.
 
@@ -173,3 +173,60 @@ Every figure comes in from `VSIEra.ch5`; ui.js invents no numbers. Mocks: `?mone
   - `record` (oldest first; the file shows the last four, newest on top): `[{company, founder, signature, years, ended:'handback'|'banks'|'torn', returnPct, endedOn}]`, one line each under **Earlier concessions**, with the signature: "Meridian Infra · Asha Rao · 17 years · torn up in 2026 · returned 9.6% a year".
 - **`ZMMoney.confirmTear(company)`** → `Promise<boolean>`. A paper memo over the menu: "This tears up <Company>'s concession. Start again?" with [Tear it up and start again] and [Keep it] (focused; Escape and a click outside keep it). On "Tear it up" the memo tears in two and falls apart, then it resolves `true`.
 - Mocks: `money/test_file.html?moneymock=file` (a saved company, three documents, two earlier concessions), `?moneymock=file0` (no save) and `?moneymock=tear` (the memo; "Tear it up" moves the company to the record and opens the deal desk). The same mocks run in the game page and render into `#tConc` when the Concession tab is open.
+
+## Stage 0 · The Flight (DESIGN.md Part II)
+Every figure comes in from `VSIEra`; ui.js invents no numbers. Mocks (in `money/test_s0.html` and in the game page): `?moneymock=strip|flaps|cliff|tie|minutes|letter|stepin|debrief|debrief1|debrief2|debrief3|debrief4`. Sample data: `ZMMoney._s0Sample`.
+
+### The strip (§14.1)
+- `ZMMoney.setStrip(o)` sets where the player is in the flight (or `null` to clear). From then on every desk screen (frontPage, decision, bill, whatHappened, flaps, cliffhanger, minutes, letter, stepIn) shows the strip at the top right, and the desk moves down by the depth of the bay. Calling it with a new chapter makes the next strip drawn slide into the holder (0.5 s) and the last one drop into the bay.
+  - `o = {chapter:{n, id, name, act}` (`VSIEra.chapter(state)`)`, years:[first, last]` (game years)`, cal?:[from, to]` (calendar; default 2025 + year, like era.js `cal()`; year 0 prints "signing")`, doc?:{title, stamp?}` (the chapter's deciding document; `stamp` once signed, else "open")`, stakePct?, callsign?` (default "VSI 60Y")`, past:[{chapter:{n, name}, years, cal?, doc, stakePct}]}`.
+  - The bay shows **only past chapters** (`n` below the current one), newest first, as 6px edges with the phase name; hover or focus shows the whole strip.
+- `ZMMoney.strip(container?, mode?)` → the holder element. Mounts the current strip into `container` (an element or selector). With no container it goes into `#app` at the top left in the **night** look (for the ops HUD; hub.js hides the level title). `ZMMoney.getStrip()` returns the data.
+
+### The split-flap years (§14.2)
+`ZMMoney.flaps(bridge, opts?)` → Promise. `bridge = VSIEra.bridge(state, n) = {fromYear, toYear, lines[] (one headline per year, oldest first; a string or {lead}), frontPage}`. The board flips one year at a time (each flap 80 ms, about 2.5 s in all, whatever the span), the headlines riffle behind it at most one every 250 ms, then it **lands on `bridge.frontPage`** (`ZMMoney.frontPage`) and resolves when the player turns that over. One click anywhere skips to the last year. Reduced motion: the final year and the first headline; a click goes on. `opts.land:false` resolves after the board without the front page. `window.__zmmFlapMs` holds how long the flip took (test: under 3,500).
+
+### The cliffhanger (§14.4)
+`ZMMoney.cliffhanger(frontPage, opts?)` → Promise<`'turn'|'close'`>. `frontPage = VSIEra.cliffhanger(state, act)` (the frontPage shape; `date` optional for the stamp). The **Late City** edition, stamped in the masthead corner. A click on the paper, or on either choice, folds it in half (0.8 s), leaving the lead above the fold with "Act II · The Network" pencilled across it. "Turn the page" resolves `'turn'`; "Close the file for tonight" runs `ZMMoney.closeFile(opts.file)` and resolves `'close'`. `opts = {act (the next act, 2 or 3), actName?, file?}`. Reduced motion: it arrives folded.
+
+### The concession file (§14.3)
+- `ZMMoney.concessionFile(container, opts)` keeps its contract (above) and now draws the save as a **buff office file tied with red tape**: file no. (`opts.fileNo`, else `VSIAL/<signing year>/<earlier concessions + 1>`), the company, "<founder>, director" with the signature, "Year *n* of 60 · Act *k*" (`opts.act`, else from `chapter`), the three numbers on a pasted slip, and the EXECUTED stamp. "Continue as …" unties it (the tape slides off, 0.4 s; the cover opens) and then calls `onContinue()`. Earlier concessions sit beneath as thinner files, each stamped HANDED BACK, TAKEN BY THE BANKS or TORN UP.
+- `ZMMoney.closeFile(o)` → Promise. The act break: the papers slide back in, the tape ties (0.6 s), the desk dims, "Back to the menu" (`o.cta`) resolves. `o` takes the concessionFile fields (`company, founder, signature, signedOn, year, act|chapter`).
+
+### The board minutes, Chapter 7
+`ZMMoney.minutes(o)` → Promise<`{adopted:{[id]: boolean}, ids:[adopted ids], approvedOn}`>. Minutes of the VSIAL board on white bond; three resolutions with **one tick box each** (ticked = adopted, blank = rejected). The slip shows one number per resolution, for whichever way it is ticked. "Approve the minutes: 2 adopted, 1 rejected" initials each resolution (Adopted / Rejected), the chair signs, APPROVED comes down, the minutes go on the pile.
+
+| o field | Shape |
+|---|---|
+| `docId, title?, date` (YYYY-MM-DD)`, year` | the header, "in year 34 of the concession" |
+| `founder, parent, signature?` | the chair; initials from `founder` |
+| `present?` | `[{name, role}]` (default: the chair, L5 Capital's partner, the AAI and MADC nominees) |
+| `intro?` | one typed paragraph |
+| `resolutions` | `[{id, title, text, slip:{yes, no, line?}, def?}]` ×3 (Zero Mile District, phase 2, buy L5 to 80%). Or pass `choices` in the decision shape: `{id, label, terms, slip:{big, no, line}}` |
+| `stamp?, pile?, slipQuestion?` | defaults: Approved, the pile from setPile |
+
+### The letter from the banks, Chapter 6
+`ZMMoney.letter(o)` → Promise<`{choice, signedOn}`>. One cold paragraph from the lenders' agent (fictional, `M.cfg.signatories.lenders`), with the worst number circled in pencil, and a reply slip below a tear line with three replies. Signing brings down CURED / AGREED / REFUSED. **Refusing** then shows `ZMMoney.stepIn(o.stepIn)` before the promise resolves.
+
+| o field | Shape |
+|---|---|
+| `docId, date, title?` | the reference and date; `title` names the pile card |
+| `from?` | `{name, address}` (default "The lenders to VSIAL", through their agent) |
+| `signatory?` | overrides the agent `{name, title, hand}` |
+| `subject, body` | one bold line; one paragraph |
+| `circle, circleNote?` | the text in `body` to circle (e.g. "₹96"); a pencilled note under it |
+| `replies` | `[{id:'own'|'l5'|'refuse', label, terms, slip:{big, money, line}, act?}]`, or `choices` in the decision shape |
+| `stamps?` | `{[id]: word}` |
+| `founder, parent, signature?, pile?, stepIn?` | `stepIn` is passed to `ZMMoney.stepIn` |
+
+`ZMMoney.stepIn(o)` → Promise. "The banks take control of VSIAL": a notice on duty paper, in plain words; the pile slides off and the whole desk goes grey. No stamp. "Open the Black Box" (`o.cta`) resolves. `o = {date, company, founder, stakePct?, docId?, lines?:[sentences], pile?}`.
+
+### The Black Box (§14.7, design/debrief.md)
+`ZMMoney.debrief(pages, opts?)` → Promise. `pages = VSIEra.debrief.pages(state)`. The orange casing ("Flight recorder · Do not open", and "open it" in Kalam) opens on a click; each page pulls out of it (0.5 s) onto graph paper with red traces; "Pull the next page" / "Back"; "Close the Black Box" resolves. `--rec` orange is used here and nowhere else. `opts = {company, founder, start (1–4: open at that page)}`.
+
+| Page | Fields | What it shows |
+|---|---|---|
+| 1 · The return | `p1:{returnPct, moneyInCr, moneyOutCr, valueCr, benchmarks:[{label, pct (number or [low, high]), source}], ended?:'handback'|'banks', endedYear?, endedOn?}` | the return in Kalam; a ruler with the sourced marks (a range is a hatched band) and "you" in red; put in / came back; the share's value; how it ended; the sources as numbered footnotes. `ended:'banks'` says so first in stamp red, and the return reads "Lost." |
+| 2 · What made the return | `p2:{method:'leave-one-out'|'shapley', bars:[{decision, label, sharePct, sentence}], everythingElsePct, closing?}` | a ledger of hatched ink bars (the top two in ink, the rest in pencil, a negative one in red, "cost you 9%"), each sentence in Kalam under it. Shares under 3% join "everything else"; at most 5 bars. Leave-one-out is labelled "a quick estimate". The power-law line shows only when the top two hold at least half. |
+| 3 · What happened | `p3:{frontPages:[{year, chapter, lead, line?, light?}], once?}` | the front pages as an overlapping strip; a click enlarges one; the causal line and year under each; the "happened once" line |
+| 4 · How you work | `p4:{lines:[{title, line, evidence}], thiel?:[{q, answer, mark}]}` | typed lines with their evidence in pencil; with no lines, "The airport mostly ran on its defaults. Next time, try a decision that scares you." |

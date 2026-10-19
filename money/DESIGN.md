@@ -321,3 +321,20 @@ There is no music under paper screens. Shifts keep the game's own sound.
 - Badges, trophies, confetti or score animations. The stamp is the only celebration.
 - Grades or personality labels in the Black Box: only lines backed by evidence.
 - Orange anywhere except the recorder.
+
+## 21. Decisions made while building Stage 0 (lane U), where Part II was silent or could not be followed exactly
+
+- **Pin slips are 110–232px wide**, sized to their text. §14.5 says 110px, but at Courier 10px that holds 16 characters, less than the shortest document name in chapters.md §4 ("Capital budget, 2034" is 20). Everything else in §14.5 holds: a 12px pushpin, two lines (the short name in bold, then the line), a 1px dashed leader, at most 2 open, folding after 6 s.
+- **The leader is light pencil** (`#e2e4e0`, dashed, with a dark hairline shadow): graphite would vanish on the night map.
+- **Hover holds a slip open and shows its full text as a tooltip; a click opens the document.** Opening a document on hover would stop a shift every time the mouse crosses a pin.
+- **Aircraft paths:** `tagAvoid` now takes polylines (`{line:[...]}`), so hub.js can pass each moving aircraft's next 60 s.
+- **The strip sits at the top right of the desk** (the airport's name holds the top left), and the desk's content moves down by the depth of the bay. Bay edges are 6px with a 4px gap, so the phase names (9.5px) can be read; hovering an edge shows the whole strip just below it.
+- **The strip's second line** ("wire the country") is a fixed list in ui.js: words, not numbers. Calendar years are 2025 + game year, as in era.js; year 0 reads "signing".
+- **Flip pacing:** one year every 80–320 ms (about 2.5 s in all, whatever the span), headlines at most every 250 ms. With fewer headlines than years, each one holds for its share of the years.
+- **The fold is the player's act:** a click on the paper, or either choice, folds it (§15 allows only Plot and Flip to run unprompted). With reduced motion it arrives folded.
+- **Closing the file** ends on the dimmed desk with one line ("Meridian Infra's file is closed for tonight. It waits in the Concession tab, at year 7.") and "Back to the menu".
+- **The file's cover:** the number is `VSIAL/<signing year>/<concessions on record + 1>`; the act comes from the chapter (1–3 → I, 4–5 → II, 6–8 → III); "Opened <date>" and the EXECUTED stamp sit right of the tape.
+- **The minutes have one tick box per resolution:** ticked is adopted, blank is rejected, and the button says the count ("2 adopted, 1 rejected"), so a blank box is never an accident. Those present are one typed sentence, to keep all three resolutions near the fold on a 1280×800 screen.
+- **The letter:** the lenders' agent is a new fictional signatory, Prakash Venugopal. The reply is a slip below a tear line on the same page, and the stamps are chapters.md's CURED / AGREED / REFUSED.
+- **The notice that the banks take control** carries no stamp (the grey desk is its moment) and only the lenders' agent signs: the officials of 2026 would not still be in office twenty years later. Its Hindi line is "नियंत्रण की सूचना" (notice of control).
+- **The Black Box:** the casing sits to the left, with its pages pulled out to the right. The buttons say "Pull the next page" and "Back". Page 2 is titled "What made the return". Its power-law line appears only when the two largest bars hold at least half of the total. Page 3 enlarges a paper in place rather than leaving the Black Box.

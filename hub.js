@@ -3080,7 +3080,8 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
   err(where,e){console.error('flight '+where,e);FL.errors.push(where+': '+(e&&e.message||e));},
   // the flight progress strip (DESIGN.md §14.1): the current chapter, its deciding document once signed, and the past strips only
   strip(st){const Z=window.ZMMoney;if(!Z||!Z.setStrip)return;try{const f=st&&st.flight;if(!f){Z.setStrip(null);return;}const c=FL_CH[f.n]||FL_CH[8];
-    Z.setStrip({chapter:{n:f.n,name:c.name,act:c.act,years:c.years},years:c.years,cal:c.years.map(y=>2025+Math.max(1,y)),doc:f.doc||null,stakePct:st.stake,past:f.past||[]});}catch(e){console.warn('strip',e);}},
+    const ys=f.n>=8&&st.over&&st.over.year?[st.over.year,st.over.year]:c.years;   // the Black Box: the year the concession ended (the banks may take it early)
+    Z.setStrip({chapter:{n:f.n,name:c.name,act:c.act,years:ys},years:ys,cal:ys.map(y=>2025+Math.max(1,y)),doc:f.doc||null,stakePct:st.stake,past:f.past||[]});}catch(e){console.warn('strip',e);}},
   pastAdd(f,st,n){const c=FL_CH[n];f.past=(f.past||[]).filter(p=>p.chapter.n!==n).concat([{chapter:{n,name:c.name,act:c.act},years:c.years,cal:c.years.map(y=>2025+Math.max(1,y)),doc:f.doc||null,stakePct:st.stake}]);},
   // one paper screen: logged for bots (window.__flightStep, FL.log); in bot mode without screens it is skipped (the default answer)
   async show(kind,payload,fn,dflt){const f=CAMP.st&&CAMP.st.flight;window.__flightStep=kind;FL.log.push({n:f&&f.n,kind,at:Date.now(),lead:payload&&(payload.lead||payload.title)||''});
@@ -3106,13 +3107,15 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
     for(let n=3;n<=7;n++){const e0=E.chapters[n].eras[0];if(e0>st.era||(e0===st.era&&!played))return {n,step:n===3?'front':'flaps',past:[]};}
     return {n:7,step:'flaps',past:[]};},
   leave(){if(!FL.live)return;FL.live=false;FL.nightOff();const st=CAMP.st;if(st&&st.flight&&!FL.bot){st.flight.left=true;FL.save();}},
-  nightOff(){try{if(FL.night){FL.night.remove();FL.night=null;}document.querySelectorAll('#top>.zfs-h').forEach(h=>h.remove());const l=$('#top .lvl');if(l)l.hidden=false;}catch(e){}},
+  nightOff(){try{if(FL.night){FL.night.remove();FL.night=null;}document.querySelectorAll('#top>.zfs-h').forEach(h=>h.remove());const l=$('#top .lvl');if(l){l.hidden=false;l.style.display='';}fitCam();}catch(e){}},
   // the night strip takes the level title's place in the ops HUD (DESIGN.md §14.1), in the header's flow: it never covers the
   // clock, the speed buttons or the numbers, and the paper tags avoid it with the rest of #top
   nightOn(){const Z=window.ZMMoney,top=$('#top');if(!Z||!Z.strip||!top)return null;const h=Z.strip(top,'night');if(!h)return null;
-    if(!$('#flNightCss')){const c=document.createElement('style');c.id='flNightCss';c.textContent='#top>.zfs-h.night{position:relative;left:auto;top:auto;flex:0 0 auto}';document.head.appendChild(c);}
+    if(!$('#flNightCss')){const c=document.createElement('style');c.id='flNightCss';c.textContent='#top>.zfs-h.night{position:relative;left:auto;top:auto;flex:0 0 auto;margin-right:78px}';document.head.appendChild(c);}
     top.insertBefore(h,top.firstChild);
-    const l=top.querySelector('.lvl');if(l)l.hidden=true;return h;},
+    const l=top.querySelector('.lvl');if(l){l.hidden=true;l.style.display='none';}
+    try{fitCam();}catch(e){}   // the HUD grew: the map region, the zoom buttons and the pins' free area start under it
+    return h;},   // (.lvl is display:flex, which beats [hidden])
 
   // ---- the run: one step at a time, saved after each ----
   async run(){if(FL.busy)return;const E=CAMP.E(),Z=window.ZMMoney;if(!CAMP.st||!CAMP.st.flight){menu('concession');return;}
@@ -3158,7 +3161,8 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
         else {f.n=n+1;f.step='flaps';f.doc=null;}
         FL.save();continue;}
       if(f.step==='cliff'){const ab=E.actBreak(st)||(n===3?1:2),act=ab+1,fp=FL.who(st,E.cliffhanger(st,ab));   // the act just finished (the engine's actBreak: 1 after Takeoff, 2 after Cruise)
-        const r=await FL.show('cliff',fp,()=>Z.cliffhanger?Z.cliffhanger(fp,{act,actName:FL_ACT[act],file:FL.cover(st)}):FL.cliffPaper(fp,act),'turn');
+        if(!fp.date)fp.date=FL.isoOf(fp.dateLine);   // the Late City stamp is dated from the paper's own date line (else it shows today's)
+        const r=await FL.show('cliff',fp,()=>Z.cliffhanger?Z.cliffhanger(fp,{act,actName:FL_ACT[act],file:Object.assign(FL.cover(st),{act,chapter:n+1})}):FL.cliffPaper(fp,act),'turn');
         f.n=n+1;f.step='flaps';f.doc=null;
         if(r==='close'){f.left=true;FL.save();FL.live=false;FL.busy=false;window.__flightStep='closed';menu('concession');return;}
         FL.save();continue;}
@@ -3190,7 +3194,7 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
   // Chapter 6: the letter from the banks (three replies). Refusing shows the banks' notice before it resolves (ZMMoney.letter).
   async letter(st,d){const Z=window.ZMMoney,E=CAMP.E(),dflt=FL.bot?(FL.bot.ch6||FL_BOT[FL.bot.mode].pick[6]):null;
     let nt=null;try{nt=E.ch6.notice?E.ch6.notice(st):null;}catch(e){}
-    const body=(d.body||[]).join(' '),circ=(body.match(/₹[\d,]+(?= earned)/)||[])[0]||null;
+    const body=(d.body||[]).join(' ').replace(/\bearn (₹[\d,]+) earned for every\b/g,'earn $1 for every'),circ=(body.match(/₹[\d,]+(?= (?:earned )?for every)/)||[])[0]||null;
     const o=FL.who(st,Object.assign({},d,{from:{name:d.parties&&d.parties.from},signatory:d.parties&&d.parties.signatory,subject:'Fresh money for '+(st.parent||'the airport')+'\'s airport, '+(String(d.date||'').slice(0,4)),
       body,circle:circ,circleNote:circ?'the hardest year':null,replies:d.choices,stepIn:FL.stepInOpts(st,nt)}));
     const r=await FL.show('letter',d,()=>Z.letter?Z.letter(o):Z.decision(FL.who(st,d)),dflt?{choice:dflt}:null);
@@ -3214,6 +3218,7 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
   cruise(st,plan){const C=CAMP.E().ch5,Z=window.ZMMoney;FL.pile(st);window.__flightStep='5:shift';
     startChapter5(plan,{briefing:FL.bot&&!FL.bot.papers?null:C.briefing(st),onEnd:res=>{FL.nightOff();
       const r=Object.assign({},res,{money:Object.assign({},res.money)});delete r.money.ledger;
+      if(r.otp>1.5)r.otp=r.otp/100;   // the engine takes a share (0.88), as every other chapter's shift: the Black Box averages them
       FL.log.push({n:5,kind:'shift',stars:r.stars,otp:r.otp,made:r.made,missed:r.missed,held:r.hub&&r.hub.answer});
       try{FL.shiftDone(CAMP.st,C.applyShift(CAMP.st,JSON.parse(JSON.stringify(r))),false);}catch(e){FL.err('cruise',e);}
       FL.run();}});
@@ -3240,6 +3245,9 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
   async cliffPaper(fp,act){await ZMMoney.frontPage(fp);
     const r=await ZMMoney.bill({head:'End of Act '+['','I','II','III'][act-1],title:'Act '+['','I','II','III'][act]+' · '+FL_ACT[act],paragraph:['The file is saved after every page. Close it for tonight and it waits in the Concession tab, at this page.'],cta:'Turn the page',cta2:'Close the file for tonight'});
     return r==='cta2'?'close':'turn';},
+  isoOf(line){const M=['january','february','march','april','may','june','july','august','september','october','november','december'];
+    const m=/(\d{1,2}) ([A-Za-z]+) (\d{4})/.exec(line||''),k=m?M.indexOf(m[2].toLowerCase()):-1;
+    return k<0?undefined:m[3]+'-'+String(k+1).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0');},
   cover(st){const f=st.flight||{},c=FL_CH[f.n]||FL_CH[3];return {company:st.parent,founder:st.founder,signature:st.signature,signedOn:st.signedOn,year:st.year,act:c.act,chapter:f.n,record:CAMP.rec()};},
 
   // ---- the Black Box (design/debrief.md): VSIEra.debrief.pages, four pages {p1, p2, p3, p4} as ZMMoney.debrief takes them ----

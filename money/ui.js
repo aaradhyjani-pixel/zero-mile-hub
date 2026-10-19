@@ -195,6 +195,7 @@ const CSS=`
 .zdk-ticks button i{position:relative;flex:none;width:17px;height:17px;border:1.5px solid var(--zt);transform:translateY(3px)}
 .zdk-ticks button[aria-checked="true"] i::after{content:'✓';position:absolute;left:0;top:-19px;font-family:var(--fh);font-weight:700;font-size:30px;color:var(--zi)}
 .zdk-ticks small{grid-column:2;font-size:12px;color:var(--zpe)}
+.zdk-ticks button.off{cursor:default;color:var(--zpe)}.zdk-ticks button.off span{text-decoration:line-through;text-decoration-thickness:1px}.zdk-ticks button.off i{border-style:dashed;opacity:.55}
 .zdk-tab .zdk-ticks{margin:0}.zdk-tab .zdk-ticks button{font-size:13.5px;padding:3px 0}
 .zdk-amt{display:flex;align-items:baseline;gap:12px;margin:16px 0 0}
 .zdk-amt .h{font-weight:700;font-size:54px}
@@ -1508,7 +1509,7 @@ M.decision=function(o){o=o||{};return new Promise(res=>{
       <h2>${esc(o.title||docName)}</h2>
       ${paras(o.body).map(p=>`<p class="t">${esc(p)}</p>`).join('')}
       <p class="t">The parties agree to the line ticked below.</p>
-      <div class="zdk-ticks" role="radiogroup" aria-label="The terms">${ch.map(c=>`<button role="radio" aria-checked="false" data-id="${esc(c.id)}"><i></i><span>${esc(c.label)}</span>${c.terms?`<small>${esc(c.terms)}</small>`:''}</button>`).join('')}</div>
+      <div class="zdk-ticks" role="radiogroup" aria-label="The terms">${ch.map(c=>`<button role="radio" aria-checked="false" data-id="${esc(c.id)}"${c.disabled?' disabled aria-disabled="true" class="off"':''}><i></i><span>${esc(c.label)}</span>${c.terms?`<small>${esc(c.terms)}</small>`:''}</button>`).join('')}</div>
       <div class="zdk-sigs"><div class="s"><div class="ink">${signSvg(sg)}</div><span><b>${esc(sg.name||'')}</b><br>${esc(sg.title||'Authorised signatory')}</span><small>for ${esc(pa.airline||'Haversine Airways')}</small></div>
         <div class="s" id="z5Me"><div class="ink"></div><span><b>${esc(o.founder||'Director')}</b><br>Director${o.parent?', for '+esc(o.parent):''}</span><small>for ${esc(M.cfg.spvShort)}</small></div></div>
     </article><div class="zdk-acts"><button class="zdk-go" id="z5Sign" disabled>Tick one line first</button></div></div>
@@ -1520,7 +1521,7 @@ M.decision=function(o){o=o||{};return new Promise(res=>{
   const slipNow=()=>{const c=ch.find(x=>x.id===pick);
     note.innerHTML=`<h3>${esc(o.slipQuestion||'What each line does for VSI')}</h3>${ch.map(x=>{const s=x.slip||{};return `<div class="z5-sl${x.id===pick?' on':''}"><b>${esc(x.label)}</b><span>${esc([s.big,s.money].filter(Boolean).join(' · '))}</span>${s.stake?`<span>${esc(s.stake)}</span>`:''}</div>`;}).join('')}${c&&c.slip&&c.slip.line?`<p>${esc(c.slip.line)}</p>`:''}`;};
   slipNow();
-  sh.querySelectorAll('.zdk-ticks button').forEach(b=>b.onclick=()=>{if(done)return;pick=b.dataset.id;sh.querySelectorAll('.zdk-ticks button').forEach(x=>x.setAttribute('aria-checked',x===b?'true':'false'));
+  sh.querySelectorAll('.zdk-ticks button').forEach(b=>b.onclick=()=>{if(done||b.disabled)return;pick=b.dataset.id;sh.querySelectorAll('.zdk-ticks button').forEach(x=>x.setAttribute('aria-checked',x===b?'true':'false'));
     const c=ch.find(x=>x.id===pick);go.disabled=false;go.textContent=actOf(c);slipNow();});
   go.onclick=()=>{if(done||!pick)return;done=true;go.disabled=true;
     const me=sh.querySelector('#z5Me .ink');const sgs=sh.querySelector('.zdk-sigs');if(sgs&&doc.scrollHeight>doc.clientHeight)doc.scrollTo({top:doc.scrollHeight,behavior:reduced()?'auto':'smooth'});me.innerHTML=o.signature?`<img src="${esc(o.signature)}" alt="Your signature">`:H(o.founder||M.cfg.spvShort);
@@ -2608,19 +2609,31 @@ function bxRuler(p){const bs=(p.benchmarks||[]).map(b=>({label:b.label,source:b.
   const bands=bs.filter(b=>b.hi>b.lo).map(b=>`<i class="band" style="left:${X(b.lo)}%;width:${X(b.hi)-X(b.lo)}%"></i>`).join('');
   return {bs,html:`<div class="zbx-rd"><div class="strip"><div class="in">${bands}<svg class="g" aria-hidden="true">${ticks.join('')}</svg><div class="nums">${nums.join('')}</div>${mk}${isFinite(r)&&!p.lost?`<i class="cur" style="left:${X(r)}%"><b>you, ${f(r)}</b></i>`:''}</div></div></div>`};}
 /* after layout: a benchmark label that the red cursor runs through is hung from the other side of its tick */
-function bxClear(pg){const cur=pg.querySelector('.zbx-rd .cur');if(!cur)return;const run=()=>{const c=cur.getBoundingClientRect();
+function bxClear(pg){const cur=pg.querySelector('.zbx-rd .cur');const run=()=>{if(cur){const c=cur.getBoundingClientRect();
   pg.querySelectorAll('.zbx-rd .mk').forEach(m=>{const r=m.getBoundingClientRect();if(r.bottom<c.top||r.left>c.right+6||r.right<c.left-6)return;
-    const tick=m.classList.contains('r')?r.right-10:m.classList.contains('l')?r.left+10:(r.left+r.right)/2;m.classList.remove('l','r');m.classList.add(c.left<tick?'l':'r');});};
+    const tick=m.classList.contains('r')?r.right-10:m.classList.contains('l')?r.left+10:(r.left+r.right)/2;m.classList.remove('l','r');m.classList.add(c.left<tick?'l':'r');});}
+  const rd=pg.querySelector('.zbx-rd');if(rd){const bx=rd.getBoundingClientRect();   // a label that runs off the ruler hangs back from its tick
+    pg.querySelectorAll('.zbx-rd .mk').forEach(m=>{const r=m.getBoundingClientRect();if(r.right>bx.right){m.classList.remove('l');m.classList.add('r');}else if(r.left<bx.left){m.classList.remove('r');m.classList.add('l');}});}
+  const mk=[...pg.querySelectorAll('.zbx-rd .mk')],hit=(a,b)=>{const p=a.getBoundingClientRect(),q=b.getBoundingClientRect();return p.left<q.right+8&&q.left<p.right+8&&p.top<q.bottom&&q.top<p.bottom;};
+  for(let i=0;i<mk.length;i++)for(let j=0;j<mk.length;j++){if(i===j)continue;const a=mk[i],b=mk[j];if(!hit(a,b))continue;
+    const [L,R]=a.getBoundingClientRect().left<=b.getBoundingClientRect().left?[a,b]:[b,a];L.classList.remove('l');L.classList.add('r');if(!hit(L,R))continue;
+    // the right-hand label hangs to the right of its tick only if it stays on the ruler; else it drops a lane
+    const box=pg.querySelector('.zbx-rd').getBoundingClientRect(),was=R.className;R.classList.remove('r');R.classList.add('l');
+    if(R.getBoundingClientRect().right>box.right||hit(L,R)){R.className=was;R.classList.toggle('lo');}}};
   run();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(run);}
+// a benchmark's footnote: the source's site as a link, then any paragraph reference after the URL
+function bxSrc(b){const m=/^(https?:\/\/\S+)\s*(.*)$/.exec(String(b.source||''));if(!m)return esc(b.source||b.label||'');
+  let host=m[1];try{host=new URL(m[1]).hostname.replace(/^www\./,'');}catch(e){}
+  return `${esc(b.label)}: <a href="${esc(m[1])}" target="_blank" rel="noopener">${esc(host)}</a>${m[2]?', '+esc(m[2]):''}`;}
 function bxPage(n,P,o){const yrs=M.cfg.years,co=o.company||'your company';
   const head=`<header class="zbx-ph"><span>Findings</span><b>${n} · ${esc(BX_TITLES[n])}</b><span class="r">${esc(M.cfg.airportName)}${o.company?' · '+esc(o.company):''}</span></header>`;
   if(n===1){const p=P.p1||{},banks=p.ended==='banks',r=+p.returnPct;const ru=bxRuler(Object.assign({},p,{lost:banks}));
-    const how=banks?`The banks took control${p.endedYear?` in year ${esc(p.endedYear)}`:''}${p.endedOn?`, on ${esc(M.fmtDate(p.endedOn))}`:''}.`:`Handed back${p.endedOn?` on ${esc(M.fmtDate(p.endedOn))}`:''}, in year ${yrs}.`;
-    return head+`${banks?`<p class="zbx-lost">The banks took control${p.endedYear?' in year '+esc(p.endedYear):''}. Your return: lost.</p>`:''}
+    const yw=v=>+v>1000?'in '+esc(v):'in year '+esc(v);const how=banks?`The banks took control${p.endedYear?' '+yw(p.endedYear):''}${p.endedOn?`, on ${esc(M.fmtDate(p.endedOn))}`:''}.`:`Handed back${p.endedOn?` on ${esc(M.fmtDate(p.endedOn))}`:''}, in year ${yrs}.`;
+    return head+`${banks?`<p class="zbx-lost">The banks took control${p.endedYear?' '+yw(p.endedYear):''}. Your return: lost.</p>`:''}
       <div class="zbx-big">${banks?'Lost.':isFinite(r)?`<u>${esc(pctTxt(r))} a year</u>, for ${yrs} years.`:''}</div>${ru.html}
       <dl class="zbx-ln"><dt>What you put in, what came back</dt><dd>${p.moneyInCr!=null?`${fmt(+p.moneyInCr)} put in by ${esc(co)}`:''}${p.moneyOutCr!=null?`; ${fmt(+p.moneyOutCr)} came back${banks?'':` over ${yrs} years`}.`:''}</dd>
       ${p.valueCr!=null?`<dt>What your share was worth at the end</dt><dd>${fmt(+p.valueCr)}</dd>`:''}<dt>How it ended</dt><dd>${how}</dd></dl>
-      ${ru.bs.length?`<ol class="zbx-src">${ru.bs.map(b=>`<li>${esc(b.source||'')}</li>`).join('')}</ol>`:''}`;}
+      ${ru.bs.some(b=>b.source)?`<ol class="zbx-src">${ru.bs.map(b=>`<li>${bxSrc(b)}</li>`).join('')}</ol>`:''}`;}
   if(n===2){const p=P.p2||{};let bars=(p.bars||[]).slice().sort((a,b)=>Math.abs(b.sharePct)-Math.abs(a.sharePct));let ee=+p.everythingElsePct||0;
     const small=bars.filter(b=>Math.abs(b.sharePct)<3);ee+=small.reduce((s,b)=>s+(+b.sharePct||0),0);bars=bars.filter(b=>Math.abs(b.sharePct)>=3);ee+=bars.slice(5).reduce((s,b)=>s+(+b.sharePct||0),0);bars=bars.slice(0,5);
     const mx=Math.max(1,...bars.map(b=>Math.abs(b.sharePct)),Math.abs(ee));const tot=bars.reduce((s,b)=>s+Math.abs(b.sharePct),0)+Math.abs(ee);
@@ -2634,12 +2647,12 @@ function bxPage(n,P,o){const yrs=M.cfg.years,co=o.company||'your company';
   if(n===3){const p=P.p3||{},fp=(p.frontPages||[]).slice(0,8),k=Math.max(1,fp.length);
     const pw=`min(196px, calc((100% + ${(k-1)*18}px) / ${k}))`,step=`calc(${pw} - 18px)`;   // papers overlap by 18px at most
     return head+`<div class="zbx-papers" style="--pw:${pw};--step:${step}">${fp.map((f,i)=>`<button class="zbx-pp" style="--i:${i};--r:${[-3,2,-1.5,3,-2.5,1.5,-1,2.5][i%8]}deg;--y:${[10,26,4,20,12,30,6,18][i%8]};--z:${i+1}" aria-label="${esc(f.year)}: ${esc(f.lead)}"><span class="ms">The Zero Mile Times</span><span class="dy"><span>Nagpur, ${esc(f.year)}</span><span>${f.chapter?'Chapter '+esc(f.chapter):''}</span></span><b>${esc(f.lead)}</b><span class="rl"></span></button>`).join('')}</div>
-      <div class="zbx-cls" style="--step:${step}">${fp.map((f,i)=>`<p class="zbx-cl" style="--i:${i}">${esc(f.line||'')}<small>${esc(f.year)}${f.light?' · the banks '+esc(f.light):''}</small></p>`).join('')}</div>
+      <div class="zbx-cls" style="--step:${step}">${fp.map((f,i)=>`<p class="zbx-cl" style="--i:${i}">${esc(String(f.line||'').replace(new RegExp(', '+f.year+'\\.$'),'.'))}<small>${esc(f.year)}${f.light?' · the banks '+esc(f.light):''}</small></p>`).join('')}</div>
       ${p.once?`<p class="zbx-once">${esc(p.once)}</p>`:''}`;}
   const p=P.p4||{},ls=(p.lines||[]).slice(0,7);
   // §20: no personality labels and no grades. The finding leads, its evidence in pencil under it; the engine's title is not shown.
   return head+(ls.length?`<ol class="zbx-hw">${ls.map(l=>`<li>${esc(l.line||l.title||'')}<small>${esc(l.evidence||'')}</small></li>`).join('')}</ol>`:`<p class="t" style="font-family:var(--ft);font-size:15px">The airport mostly ran on its defaults. Next time, try a decision that scares you.</p>`)
-    +(p.thiel&&p.thiel.length?`<ul class="zbx-th">${p.thiel.map(t=>`<li><i class="${t.mark?'y':'n'}">${t.mark?'✓':'✗'}</i><span><b>${esc(t.q)}</b> ${esc(t.answer||'')}</span></li>`).join('')}</ul>`:'');}
+    +(p.thiel&&p.thiel.length?`<ul class="zbx-th">${p.thiel.map(t=>{const y=t.mark===true||t.mark==='✓';return `<li><i class="${y?'y':'n'}">${y?'✓':'✗'}</i><span><b>${esc(t.q)}</b> ${esc(t.answer||'')}</span></li>`;}).join('')}</ul>`:'');}
 M.debrief=function(P,opt){mountS();P=P||{};opt=opt||{};return new Promise(res=>{
   let n=Math.max(0,Math.min(4,+opt.start||0));
   const sh=desk5('zbx'+(n?'':' shut'),`<div class="zbx-case" id="zbxCase"><span class="slot"></span><span class="sten">Flight<br>recorder</span><span class="sten s">Do not open</span><button class="op" id="zbxOpen">open it</button></div>

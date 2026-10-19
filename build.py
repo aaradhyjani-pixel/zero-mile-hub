@@ -26,10 +26,15 @@ vp=os.path.join(d,'voice','spg_audio.js')
 js=js.replace('/*@@VOICE@@*/',open(vp,encoding='utf-8').read() if os.path.exists(vp) else '')
 # money.json, minified for the page: each entry keeps its value (and estimate:true where set); sources and notes stay in the
 # repo. The page reads it as window.MONEY_DATA (hub.js's ledger, money/era.js). No money.json: no MONEY_DATA, and money stays off.
-def _strip(o):
+# The Black Box's three sourced marks keep their source (the first one), so page 1 can footnote them.
+_KEEP_SRC={'bial.owners.dcf_inputs','till.fair_return_on_equity','till.efficient_cost_of_debt'}
+def _strip(o,path=''):
     if isinstance(o,dict):
-        if 'value' in o: return dict({'value':o['value']},**({'estimate':True} if o.get('estimate') else {}))
-        return {k:_strip(v) for k,v in o.items() if k!='_meta'}
+        if 'value' in o:
+            r=dict({'value':o['value']},**({'estimate':True} if o.get('estimate') else {}))
+            if path in _KEEP_SRC and o.get('source'): r['source']=o['source'].split(' ; ')[0]
+            return r
+        return {k:_strip(v,(path+'.'+k).lstrip('.')) for k,v in o.items() if k!='_meta'}
     return o
 mp=os.path.join(d,'money.json')
 money_data='\n<script>window.MONEY_DATA='+json.dumps(_strip(json.load(open(mp,encoding='utf-8'))),separators=(',',':'),ensure_ascii=False).replace('</','<\\/')+';</script>' if os.path.exists(mp) else ''

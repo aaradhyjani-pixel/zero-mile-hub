@@ -14332,6 +14332,9 @@ const CSS5=`
 .z5 .z5-txt{font-family:var(--fd);font-size:13px;line-height:1.48;color:#16181a;text-align:justify;hyphens:auto;-webkit-hyphens:auto;margin:0;max-width:none}
 .z5 .z5-txt+.z5-txt{text-indent:1.2em}
 .z5-cc{column-count:2;column-gap:20px}
+.z5-sg{grid-column:1/3;margin:8px 0 0;display:flex;align-items:center;gap:14px;border-top:1px solid rgba(0,0,0,.25);padding-top:6px}
+.z5-sg .ink{height:38px;width:170px;display:flex;align-items:center;color:#16181a}.z5-sg .ink *{color:#16181a!important}.z5-sg .ink img,.z5-sg .ink svg{max-height:38px;max-width:170px;filter:grayscale(1) contrast(1.2)}
+.z5-sg figcaption{font:italic 11px/1.3 var(--fd);color:#3b3f44}
 .z5-cols{grid-column:3;grid-row:1/3;border-left:1px solid #16181a;padding-left:18px}
 .z5-cols section+section{border-top:1px solid #16181a;margin-top:12px;padding-top:10px}
 .z5-cols h4{margin:0 0 5px;font-family:var(--fd);font-weight:700;font-size:16px;line-height:1.15}
@@ -14358,7 +14361,7 @@ const CSS5=`
 .z5-pad{position:relative;padding:30px 22px 14px 44px;background-color:#fdfdf8;cursor:pointer;
   background-image:linear-gradient(90deg,transparent 33px,rgba(194,42,46,.45) 33px,rgba(194,42,46,.45) 34.5px,transparent 34.5px),repeating-linear-gradient(180deg,transparent 0 25px,rgba(40,100,160,.2) 25px 26px);background-position:0 0,0 9px}
 .z5-pin{position:absolute;left:50%;top:-2px;z-index:2;width:16px;height:16px;margin-left:-8px;border-radius:50%;background:#c22a2e;box-shadow:inset -3px -3px 0 rgba(0,0,0,.22),0 3px 4px rgba(0,0,0,.4)}
-.z5-pad header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 6px}
+.z5-pad header{display:flex;flex-direction:column;gap:2px;margin:0 0 6px}
 .z5-pad header b{font-family:var(--fd);font-weight:700;font-size:17px;line-height:1.2}
 .z5-pad header span{font-family:var(--ft);font-size:11.5px;color:var(--zpe);white-space:nowrap}
 .z5-pad ol{list-style:none;margin:0;padding:0}
@@ -14411,7 +14414,7 @@ const CSS5=`
 .z5-hl b{display:block;font-family:var(--ft);font-weight:700;font-size:19px;margin:2px 0 10px}
 .z5-hl .zdk-dscr{margin:0 0 4px;max-width:420px}
 .z5-hl .zdk-dscr .lb{font-family:var(--fh);color:#3b3f44}
-.z5 .z5-stake{font-family:var(--ft);font-size:14px;margin:18px 0 0}
+.z5 .z5-stake{font-family:var(--ft);font-size:14px;margin:18px 0 0;color:#1d2024}
 .z5-mn{grid-column:2!important;grid-row:2/9;align-self:start;position:relative;margin-top:96px;padding-left:20px;font-family:var(--fh);font-weight:700;font-size:20px;line-height:1.32;color:#2c3036;transform:rotate(-2.2deg)}
 .z5-mn svg{position:absolute;left:-6px;top:-8px;width:20px;height:calc(100% + 16px);overflow:visible}
 .z5-mn small{display:block;margin-top:8px;font-weight:400;font-size:15px;color:var(--zpe)}
@@ -14419,7 +14422,7 @@ const CSS5=`
 .z5-card{position:relative;width:480px;box-sizing:border-box;padding:26px 32px 20px;background-color:#fcfcf9;transform:rotate(-.6deg);box-shadow:0 20px 44px rgba(30,40,50,.22),0 2px 5px rgba(30,40,50,.12);
   background-image:linear-gradient(180deg,transparent 64px,rgba(194,42,46,.5) 64px,rgba(194,42,46,.5) 65.5px,transparent 65.5px),repeating-linear-gradient(180deg,transparent 0 25px,rgba(40,100,160,.14) 25px 26px);background-position:0 0,0 13px}
 .z5 .z5-card h2{margin:0 0 22px;font-family:var(--fd);font-weight:700;font-size:25px;line-height:1.1}
-.z5 .z5-card p{margin:0;font-family:var(--fd);font-size:15.5px;line-height:26px}
+.z5 .z5-card p{margin:0;font-family:var(--fd);font-size:15.5px;line-height:26px;color:#1d2024;max-width:none}
 .z5 .z5-card p sup{font-family:var(--ft);font-size:10px;color:var(--zr)}
 .z5-card ol{margin:16px 0 0;padding:10px 0 0 18px;border-top:1px solid #9aa0a5;font-family:var(--ft);font-size:11.5px;line-height:1.5;color:#3b3f44}
 .z5-card ol a{color:inherit;text-underline-offset:2px}
@@ -14439,7 +14442,7 @@ const paras=t=>(Array.isArray(t)?t:String(t||'').split(/\n\n+/)).filter(Boolean)
    ZMMoney.setPile(state.docs) once per chapter; each doc {id, title, year, kind, summary, stamp?} */
 let PILE=[];
 M.setPile=function(docs){PILE=(docs||[]).slice();return PILE;};
-const findDoc=id=>PILE.find(d=>d.id===id);
+const findDoc=id=>PILE.find(d=>d.id===id)||PILE.find(d=>d.title===id);
 const stampFor=d=>d.stamp||({agreement:'Executed',concession:'Executed',budget:'Approved',minutes:'Approved','route-agreement':'Signed',route:'Signed',declined:'Declined',choice:'Approved',order:'Filed',letter:'Filed'}[d.kind])||'Filed';
 
 /* a desk for the paper screens: grid paper with the masterplan in faint drafting ink */
@@ -14456,9 +14459,14 @@ function photoSvg(kind){const t=document.getElementById('planTpl'),vb=CROPS[kind
   let s='';for(let i=0;i<7;i++){const x=70+i*78;s+=`<path d="M${x} 118 v-46 M${x-20} 70 h40 M${x} 52 v-18" stroke="#fff" stroke-width="3"/><path d="M${x} 150 v46 M${x-20} 198 h40 M${x} 216 v18" stroke="#fff" stroke-width="3"/>`;}
   return `<svg viewBox="0 0 640 260" preserveAspectRatio="xMidYMid slice"><rect width="640" height="260" fill="#0f1417"/><rect x="20" y="118" width="600" height="32" fill="none" stroke="#fff" stroke-width="3"/>${s}</svg>`;}
 /* a paper slap: a short filtered noise burst. Silent if audio is not allowed yet. */
-function slap(){try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;const a=M._ac||(M._ac=new A());if(a.state!=='running')return;
-  const n=Math.floor(a.sampleRate*.16),b=a.createBuffer(1,n,a.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,5);
-  const s=a.createBufferSource();s.buffer=b;const f=a.createBiquadFilter();f.type='lowpass';f.frequency.value=1600;const g=a.createGain();g.gain.value=.5;s.connect(f);f.connect(g);g.connect(a.destination);s.start(a.currentTime+.36);}catch(e){}}
+/* hub.js keeps its AudioContext private, so this has its own; it follows the game's Sound on/off button (#snd). */
+function noise(dur,cut,gain,at,pow){try{const sb=document.getElementById('snd');if(sb&&!sb.classList.contains('on'))return;
+  const A=window.AudioContext||window.webkitAudioContext;if(!A)return;const a=M._ac||(M._ac=new A());if(a.state==='suspended')a.resume();if(a.state==='closed')return;
+  const n=Math.floor(a.sampleRate*dur),b=a.createBuffer(1,n,a.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,pow);
+  const s=a.createBufferSource();s.buffer=b;const f=a.createBiquadFilter();f.type='lowpass';f.frequency.value=cut;const g=a.createGain();g.gain.value=gain;s.connect(f);f.connect(g);g.connect(a.destination);s.start(a.currentTime+at);}catch(e){}}
+const slap=()=>noise(.16,1600,.5,.36,5);
+/* the stamp: a short low thud, timed to the stamp's landing */
+const thud=()=>noise(.11,320,.9,.12,3);
 
 /* ZMMoney.frontPage(opts) → Promise<void>. opts = VSIEra.ch5.frontPage(state):
    {masthead, dateLine, price, lead, deck, sub:{head, body}, columns:[{head, body} ×2], photo:{kind, caption}}
@@ -14471,6 +14479,7 @@ M.frontPage=function(o){o=o||{};return new Promise(res=>{
     <h2 class="z5-lead">${esc(o.lead||'')}</h2>${o.deck?`<p class="z5-deck">${esc(o.deck)}</p>`:''}
     <div class="z5-body"><figure class="z5-photo"><div class="ph">${photoSvg(ph.kind)}</div>${ph.caption?`<figcaption>${esc(ph.caption)}</figcaption>`:''}</figure>
       ${o.sub?`<section class="z5-sub"><h3>${esc(o.sub.head)}</h3><div class="z5-cc">${paras(o.sub.body).map(p=>`<p class="z5-txt">${esc(p)}</p>`).join('')}</div></section>`:''}
+      ${o.company||o.founder?`<figure class="z5-sg"><div class="ink">${o.signature?`<img src="${esc(o.signature)}" alt="">`:H(o.founder||o.company)}</div><figcaption>From our files: the signature on the concession${o.founder?', '+esc(o.founder):''}${o.company?', for '+esc(o.company):''}.</figcaption></figure>`:''}
       <aside class="z5-cols">${cols.map(c=>`<section><h4>${esc(c.head)}</h4>${paras(c.body).map(p=>`<p class="z5-txt">${esc(p)}</p>`).join('')}</section>`).join('')}</aside></div>
   </article><div class="z5-acts"><button class="zdk-go" id="z5Turn">${esc(o.cta||'Turn it over')}</button></div></div>`);
   const np=sh.querySelector('#z5Np');
@@ -14517,7 +14526,7 @@ M.decision=function(o){o=o||{};return new Promise(res=>{
   go.onclick=()=>{if(done||!pick)return;done=true;go.disabled=true;
     const me=sh.querySelector('#z5Me .ink');me.innerHTML=o.signature?`<img src="${esc(o.signature)}" alt="Your signature">`:H(o.founder||M.cfg.spvShort);
     const word=(o.stamps||{})[pick]||(pick==='decline'?'Declined':'Signed');
-    doc.insertAdjacentHTML('beforeend',stampHtml(word,'down'));doc.classList.remove('arrive');
+    doc.insertAdjacentHTML('beforeend',stampHtml(word,'down'));doc.classList.remove('arrive');if(!reduced())thud();
     const fin=()=>{close();res({choice:pick,signedOn:isoDay(now)});};
     if(reduced()){setTimeout(fin,700);return;}
     setTimeout(()=>{const p=sh.querySelector('#zdkPile'),n=Math.min(5,p.children.length),cd=document.createElement('div');cd.className='zdk-card';cd.style.setProperty('--i',n);cd.style.setProperty('--r','-3deg');
@@ -14532,7 +14541,7 @@ M.decision=function(o){o=o||{};return new Promise(res=>{
 M.briefing=function(o){o=o||{};mount5();return new Promise(res=>{
   const app=$('#app');if(!app){res();return;}
   const old=$('#z5Brief');if(old)old.remove();
-  const docs=o.docs||PILE,dOf=id=>docs.find(d=>d.id===id)||findDoc(id);
+  const docs=o.docs||PILE,dOf=id=>id==null?null:(docs.find(d=>d.id===id||d.title===id)||findDoc(id)||{title:id});
   const ref=id=>{const d=dOf(id);return d?`<button class="z5-ref" data-doc="${esc(id)}">${esc(d.title)}${d.year!=null&&!/\d{4}/.test(d.title)?', '+esc(d.year):''}</button>`:'';};
   // a torn top edge: a seeded zigzag, so the same sheet always tears the same way
   let q=17;const rnd=()=>((q=(q*9301+49297)%233280)/233280);const pts=['0% 100%','100% 100%'];for(let x=100;x>=0;x-=2.5)pts.push(`${x}% ${(rnd()*7).toFixed(1)}px`);
@@ -14540,7 +14549,7 @@ M.briefing=function(o){o=o||{};mount5();return new Promise(res=>{
   const sec=Math.max(0,+(o.autoStartSec==null?6:o.autoStartSec));
   el.innerHTML=`<i class="z5-pin" aria-hidden="true"></i><div class="z5-pad" style="clip-path:polygon(${pts.join(',')})">
     <header><b>${esc(o.title||'Duty manager’s handover')}</b><span>${esc(o.date||'')}</span></header>
-    <ol>${(o.lines||[]).slice(0,3).map(l=>`<li><span class="h">${esc(l.text)}</span>${ref(l.docId)}</li>`).join('')}</ol>
+    <ol>${(o.lines||[]).slice(0,3).map(l=>`<li><span class="h">${esc(l.text)}</span>${ref(l.docId!=null?l.docId:l.doc)}</li>`).join('')}</ol>
     ${o.watch?`<div class="z5-watch"><small>The one thing to watch</small><span>${esc(o.watch)}</span></div>`:''}
     <footer><button id="z5Go">Start the shift</button><span id="z5Cd"></span></footer></div>`;
   el.addEventListener('keydown',e=>e.stopPropagation());
@@ -14574,7 +14583,12 @@ M.openDoc=function(doc){mount5();if(typeof doc==='string')doc=findDoc(doc)||{tit
 const TAGS=new Map();
 function tagLayer(){mount5();let l=$('#z5Tags');if(!l){const app=$('#app');if(!app)return null;l=document.createElement('div');l.id='z5Tags';l.className='z5v';
   const fl=$('#zmmFloat');if(fl&&fl.nextSibling)app.insertBefore(l,fl.nextSibling);else app.appendChild(l);}return l;}
-M.tag=function(id,o){o=o||{};const l=tagLayer();if(!l)return null;let t=TAGS.get(id);
+let tagN=0;
+M.tag=function(id,o){
+  if(typeof id==='number'){const x=id,y=o,title=arguments[2],line=arguments[3],k='t'+(++tagN);
+    const el=M.tag(k,{doc:title,line,docId:title});M.tagAt(k,x,y);
+    return {el,move:(sx,sy)=>M.tagAt(k,sx,sy),remove:()=>M.tagRemove(k)};}
+  o=o||{};const l=tagLayer();if(!l)return null;let t=TAGS.get(id);
   if(!t){t=document.createElement('div');t.className='z5-tag'+(reduced()?'':' pin');t.hidden=true;l.appendChild(t);TAGS.set(id,t);}
   t.dataset.id=id;t.innerHTML=`<i class="th" aria-hidden="true"></i><i class="an" aria-hidden="true"></i><button title="Open: ${esc(o.doc||'')}"><b>${esc(o.doc||'')}</b><span>${esc(o.line||'')}</span></button>`;
   t.querySelector('button').onclick=()=>{const d=(o.docId&&findDoc(o.docId))||{title:o.doc,summary:o.line};M.openDoc(d);};
@@ -14609,7 +14623,7 @@ M.bill=function(o){o=o||{};return new Promise(res=>{
   const row=t=>t.made!=null||t.missed!=null?`<tr><td>${esc(t.label)}</td><td class="n">${nIN(+t.made||0)} made · <i>${nIN(+t.missed||0)} missed</i></td></tr>`:`<tr><td>${esc(t.label)}</td><td class="n">${fmt(+t.cr)}</td></tr>`;
   // the banks' scale: ₹90 to ₹190 earned per ₹100 due; the banks take control under ₹110 and warn under ₹130 (pencil hatching)
   const pos=isFinite(r)?Math.max(1,Math.min(99,(r-0.9)/1.0*100)):null;
-  const mood={green:'The banks are relaxed',amber:'The banks are watching closely',red:'The banks are warning you'}[cv.light]||'';
+  const lt=cv.light||(isFinite(r)?(r<1.1?'red':r<1.3?'amber':'green'):'');const mood={green:'The banks are relaxed',amber:'The banks are watching closely',red:'The banks are warning you'}[lt]||'';
   const sh=desk5('z5-bill',`<header class="zdk-top"><div class="zdk-mark">${vsiLogo(30)}<span>${esc(M.cfg.airportName)}</span></div></header>
     <div class="zdk-pile" id="zdkPile" aria-label="Documents on file">${pileCards(pile)}</div>
     <main class="zdk-main"><div class="zdk-col"><article class="zdk-doc arrive" id="zdkDoc">
@@ -14658,31 +14672,31 @@ const CH5={
       {id:'decline',label:'Decline the agreement',terms:'No international bank this chapter.',slip:{big:'0 new connections',money:'₹0 a year',line:'Nothing can go wrong tonight. Doha keeps India\'s travellers.'}}],
     stamps:{three:'Signed',london:'Signed',decline:'Declined'}},
   brief:{title:'Duty manager’s handover',date:'15 Oct 2040, 13:40',
-    lines:[{text:'Skyward’s London bank departs 14:10 · 380 connecting',docId:'ra2040'},{text:'Only two widebody stands on the international side',docId:'p1'},{text:'No bird radar: watch the lakes south of 28L',docId:'cb2034'}],
+    lines:[{text:'Skyward’s London bank departs 14:10 · 380 connecting',doc:'Route agreement with Skyward'},{text:'Only two widebody stands on the international side',doc:'Phase 1: the lean build'},{text:'No bird radar: watch the lakes south of 28L',doc:'Capital budget, 2034'}],
     watch:'Lucknow’s feeder. If it’s late, London has to wait or go.',autoStartSec:6},
   tags:[{id:'stands',doc:'Phase 1: the lean build',line:'No widebody stand free for Skyward 12.',docId:'p1'},{id:'birds',doc:'Capital budget, 2034',line:'You skipped the bird radar.',docId:'cb2034'}],
   bill:{title:'The first year of the Gulf race',year:2040,page:7,
     paragraph:'Skyward\'s evening bank to London, Singapore and Nairobi ran all year. Most feeders landed on time; when Lucknow ran late you held London. Two widebodies a night waited on taxiways for a stand.',
     table:[{label:'Earned',cr:2140},{label:'Spent',cr:1610},{label:'Connections',made:612000,missed:41000}],
     margin:'You held London twice. It cost ₹38 cr in slots and kept 760 passengers off Doha. Skyward is adding a Frankfurt flight.',
-    cover:{ratio:1.18,words:'₹118 earned for every ₹100 due',light:'amber'},stake:{pct:64,valueCr:23600}},
-  card:{title:'What really happened',text:'Emirates began flying from Dubai in October 1985 with two leased aircraft. Dubai grew its airport alongside the airline, and by 2014 it handled more international passengers than any other airport in the world.',
-    sources:[{label:'Emirates, “The Emirates Story”',url:'https://www.emirates.com/english/about-us/our-history/'},{label:'Airports Council International, World Airport Traffic Rankings 2014',url:'https://aci.aero/'}]}};
+    cover:{ratio:1.18,words:'₹118 earned for every ₹100 due'},stake:{pct:64,valueCr:23600}},
+  card:{title:'What really happened',text:'Emirates first flew on 25 October 1985, from Dubai to Karachi, with two leased aircraft and US$10 million from Dubai\'s government. In 2024 Dubai International handled a record 92.3 million passengers, and India was its biggest market.',
+    sources:[{label:'Gulf News, “40 years of UAE: the launch of Emirates Airline”',url:'https://gulfnews.com/news/uae/government/40-years-of-uae-the-launch-of-emirates-airline-1.920215'},{label:'AP, “Dubai International Airport, busiest for world travel, sees record 92.3 million passengers in 2024”',url:'https://www.yahoo.com/news/dubai-international-airport-busiest-world-081648847.html'}]}};
 M._ch5Sample=CH5;
 function ch5Mock(kind){M.setPile(CH5.docs);const H5=window.HUB;
   const live=()=>{if(H5&&H5.startLevel){try{H5.view&&H5.view('2d');H5.startLevel(3);H5.ff&&H5.ff(kind==='tags'?420:2);H5.pause&&H5.pause();}catch(e){console.warn(e);}}};
-  if(kind==='frontpage')return M.frontPage(CH5.front);
+  if(kind==='frontpage')return M.frontPage(Object.assign({company:'Meridian Infra',founder:'Asha Rao'},CH5.front));
   if(kind==='decision')return M.decision(Object.assign({founder:'Asha Rao',parent:'Meridian Infra',date:'15 October 2040'},CH5.decision));
   if(kind==='bill')return M.bill(CH5.bill);
   if(kind==='card')return M.whatHappened(CH5.card);
   if(kind==='briefing'){live();return M.briefing(Object.assign({},CH5.brief,{autoStartSec:600}));}
   if(kind==='tags'){live();M.enable(true);M.setDay({total:142.6,ratePerHr:61});M.setConnections({made:1840,missed:380});
-    CH5.tags.forEach(t=>M.tag(t.id,t));
+    const hs=CH5.tags.map(t=>M.tag(0,0,t.doc,t.line));
     // pin each tag to a real aircraft on the map: a widebody at a stand, and one on final approach
     const pickF=(want)=>{const fs=H5&&H5.flights?H5.flights():[];return fs.find(f=>f.sx!=null&&want(f));};
     let fA=null,fB=null;const step=()=>{if(!fA||fA.sx==null)fA=pickF(f=>f.state==='at_gate');if(!fB||fB.sx==null)fB=pickF(f=>f.state==='approach'||f.state==='holding');
       const app=$('#app').getBoundingClientRect();
-      M.tagAt('stands',fA?fA.sx:app.width*.42,fA?fA.sy:app.height*.5);M.tagAt('birds',fB?fB.sx:app.width*.3,fB?fB.sy:app.height*.25);requestAnimationFrame(step);};
+      hs[0].move(fA?fA.sx:app.width*.42,fA?fA.sy:app.height*.5);hs[1].move(fB?fB.sx:app.width*.3,fB?fB.sy:app.height*.25);requestAnimationFrame(step);};
     step();
     const fire=()=>{const r=$('#app').getBoundingClientRect();M.connFloat(r.width*.44,r.height*.56,{made:46,cr:0.4});M.connFloat(r.width*.56,r.height*.36,{missed:18,rival:'Doha'});};
     fire();setInterval(fire,1600);return Promise.resolve();}

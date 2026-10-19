@@ -138,3 +138,16 @@ This is the site progress register, on drafting paper: a schedule of the works f
 
 It resolves `{choices:{[eventId]: optionId}, finishedOn, slipMonths}`. `finishedOn` is Opening day (YYYY-MM-DD) after any slip, and `slipMonths` is the total slip. It resolves `null` for "Not now".
 
+
+## Chapter 5, "Take on the Gulf" (prompt-campaign.md §7)
+Every figure comes in from `VSIEra.ch5`; ui.js invents no numbers. Mocks: `?moneymock=bill|frontpage|decision|briefing|tags|card` (briefing and tags over the live game in site/index.html; the rest also in `money/test_ch5_ui.html`).
+- `ZMMoney.frontPage(VSIEra.ch5.frontPage(state))` → Promise. Newsprint dropped on the desk; "Turn it over" resolves. Optional `company`, `founder`, `signature` (PNG data URL) print a "from our files" signature line; `edition`, `price` fill the ears.
+- `ZMMoney.decision(VSIEra.ch5.decision(state))` → Promise<{choice, signedOn}>. The deal-desk document: tick a line, the adviser's slip shows `slip.big/money/line`, sign, the stamp lands (`stamps[id]`) with a short thud. Optional `founder`, `parent`, `signature`, `date`, `docId`, `docType`.
+- `ZMMoney.briefing(VSIEra.ch5.briefing(state))` → Promise. A torn notepad sheet pinned top-left over the live game, not a modal. `lines:[{text, doc}]` (doc = a document title in the pile, or `docId`), `watch`, `autoStartSec` (the countdown pauses while a document is open). Resolves after the countdown or on a click.
+- `ZMMoney.setPile(docs)`: the documents the player has signed, `[{id, title, year, kind, summary, stamp?}]`. Tags, briefing lines and `openDoc` look documents up here by id or title.
+- `ZMMoney.openDoc(docOrTitleOrId)` → Promise. A read-only page from the pile. Fires window `zmm-doc` `{detail:{open, doc}}` so the game can pause.
+- `ZMMoney.tag(x, y, docTitle, line)` → `{el, move(x, y), remove()}`. A small pinned paper tag at a point relative to #app; call `move` every frame to follow an aircraft. Click opens the document. (The older `tag(id, {doc, line, docId})` + `tagAt(id, x, y)` + `tagRemove(id)` form also works.)
+- `ZMMoney.connFloat(x, y, {made, cr})` → "+46 connections · ₹0.4 cr" in green; `{missed, rival}` → "−18 missed · Doha wins them" in red. Nearby floaters of the same kind merge.
+- `ZMMoney.setConnections({made, missed})`: the one line under the money chip (replaces the rate line from then on).
+- `ZMMoney.bill(bill)` → Promise. One annual-report page: paragraph, the Earned/Spent/Connections table, "Can the airport pay the banks?" with `cover.words` on a pencil scale (`cover.light` optional; else red under 1.1, amber under 1.3), the stake line and one handwritten margin note.
+- `ZMMoney.whatHappened(card)` → Promise. A small index card: 2–3 sentences, numbered sources in small type.

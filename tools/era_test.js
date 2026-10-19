@@ -430,6 +430,7 @@ function flight(p, stopAt) {
   st = E.ch4.applyDecision(rt(st), p.ch4); st = E.ch4.applyBudget(rt(st), p.radar);
   plan = E.ch4.shiftPlan(rt(st)); log.ch4plan = plan; pushT(plan, E.ch4.briefing(st), E.ch4.budget(st));
   r = E.ch4.applyShift(rt(st), played(plan, p.ch4r)); st = r.state; log.ch4 = r.bill; pushT(r.bill, r.card);
+  if (p.chips) { log.chipsPx = E.chips.offered(st) ? E.chips.prospectus(st) : null; st = E.chips.apply(rt(st), p.chips); }   // the chip bet, after Climb's bill (hub.js flChipBet)
   b = E.bridge(rt(st), 5); log.bridge5 = b; st = E.ch5.start(rt(b.state));
   if (!st) { fail('stage 0: ch5.start from the player\'s own save'); return null; }
   log.ch5fp = E.ch5.frontPage(st); pushT(log.ch5fp, E.ch5.decision(st));
@@ -443,7 +444,7 @@ function flight(p, stopAt) {
   if (st.over) { log.notice = st.ch6.notice; return {st, log}; }
   plan = E.ch6.shiftPlan(rt(st)); log.ch6plan = plan; pushT(plan, E.ch6.briefing(st));
   r = E.ch6.applyShift(rt(st), played(plan, p.late)); st = r.state; log.ch6 = r.bill; pushT(r.bill, r.card);
-  b = E.bridge(rt(st), 7); st = b.state;
+  b = E.bridge(rt(st), 7); log.bridge7 = b; st = b.state;
   log.ch7start = rt(st); log.ch7fp = E.ch7.frontPage(st); log.ch7dec = E.ch7.decision(st); pushT(log.ch7fp, log.ch7dec);
   st = E.ch7.applyDecision(rt(st), p.ch7);
   plan = E.ch7.shiftPlan(rt(st)); log.ch7plan = plan; pushT(plan, E.ch7.briefing(st));
@@ -613,6 +614,87 @@ else {
 const s0hits = S0.texts.filter(t => BANNED.test(t));
 if (s0hits.length) fail('stage 0 jargon: ' + s0hits.slice(0, 3).map(t => (t.match(BANNED) || [])[0] + ' in ' + t.slice(Math.max(0, t.search(BANNED) - 60), t.search(BANNED) + 30)).join(' | '));
 console.log('- plain words: ' + S0.texts.length + ' Stage 0 payloads, ' + s0hits.length + ' with jargon; ' + (fails - S0.fails0) + ' Stage 0 failures');
+
+// ---- The chip bet (design/ideas/chip-bet.md): offered at the 2035 board, seeded from the save, its own Black Box bar ----
+console.log('\n## The chip bet\n');
+if (SM && BL) {
+  const f0 = fails, ban = /\b(DSCR|RAB|WACC|true-?up|EBITDA|IRR|SLA|UDF|covenant|step-?in|CFADS)\b/i, texts = [];
+  const C = E.chips, sc = C.script;
+  // the passive player never has it: the engine's own decisions (advance), the smart and blind runs that never saw it, and a pass
+  const passive = E.ch7.fixture(), passed = C.apply(rt(SM.log.ch4start), 'pass');
+  [['passive', passive], ['smart (no prospectus)', SM.st], ['blind (no prospectus)', BL.st], ['passed', passed]].forEach(([n, x]) => {
+    if ((x.s.bets && x.s.bets.chips) || (x.s.streams && x.s.streams.chips)) fail('chips: the ' + n + ' player should have no chip stake or chip cargo');
+    if (E.debrief.groups(x).chips) fail('chips: the ' + n + ' player should have no chip-bet group');
+  });
+  if ((passive.s.decisions || []).some(d => d.id === 'ch4-chips')) fail('chips: the engine must never take the chip bet for a passive player');
+  // offered once, after Climb's bill; three choices; the slips' three plain numbers
+  const CH = flight(Object.assign({}, SMART, {chips: 'big'})), CS = flight(Object.assign({}, SMART, {chips: 'small'})), CB = flight(Object.assign({}, BLIND, {chips: 'big'}));
+  const px = CH.log.chipsPx;
+  if (!px) fail('chips: the prospectus should be offered after Climb\'s bill');
+  else {
+    texts.push(JSON.stringify(px));
+    if (px.choices.length !== 3 || px.choices.map(c => c.id).join() !== 'big,small,pass') fail('chips: three choices, big, small and pass');
+    if (!/^MIHAN Semiconductor Park: chip assembly and test, 2 km from your cargo apron\. Co-investors wanted\.$/.test(px.lead)) fail('chips: the prospectus lead: ' + px.lead);
+    if (px.year !== 2035 || px.map.dests.join() !== 'Singapore,Frankfurt,Dallas') fail('chips: dated 2035, routes to Singapore, Frankfurt and Dallas');
+    px.choices.slice(0, 2).forEach(c => { if (!/^Money out now: ₹[\d,]+ cr$/.test(c.slip.outWords) || !/^Your stake on the 25-year sale: about ₹[\d,]+ cr$/.test(c.slip.saleWords) || !/^Chip cargo from 2050: about ₹[\d,]+ cr a year$/.test(c.slip.cargoWords)) fail('chips: the slip\'s three numbers in plain words: ' + JSON.stringify(c.slip)); });
+    if (!px.sources.some(x => /Micron/.test(x) && /2023/.test(x)) || !px.sources.some(x => /Tata/.test(x) && /2024/.test(x)) || /\(est\.\)/.test(JSON.stringify(px))) fail('chips: sources cite Micron 2023 and Tata 2024; no (est.) on screen');
+    console.log('- prospectus (smart, no cargo terminal): ' + px.choices.map(c => c.id + ': ' + [c.slip.outWords, c.slip.saleWords, c.slip.cargoWords].join(' / ')).join(' | '));
+  }
+  if (C.offered(CH.st) || C.offered(SM.log.ch4start)) fail('chips: offered only once, after Climb\'s decision');
+  // outcome shares over many saves, and the same save always gives the same outcome
+  const N = 6000, cnt = {grows: 0, struggles: 0, fails: 0};
+  for (let i = 1; i <= N; i++) cnt[C.outcome({seed: i * 7919 + 3, parent: 'Meridian Infra', founder: 'Asha Rao', signedOn: '2026-04-01', s: {}})]++;
+  const sh = k => cnt[k] / N * 100;
+  if (Math.abs(sh('grows') - 60) > 2.5 || Math.abs(sh('struggles') - 25) > 2.5 || Math.abs(sh('fails') - 15) > 2) fail('chips: outcome shares should be about 60/25/15: ' + JSON.stringify(cnt));
+  const pre = rt(SM.log.ch4start), o1 = C.outcome(pre), same = [1, 2, 3].every(() => C.outcome(rt(pre)) === o1) && JSON.stringify(C.apply(rt(CH.log.ch4start), 'big').s.bets) === JSON.stringify(C.apply(rt(CH.log.ch4start), 'big').s.bets);
+  if (!same || CH.st.s.bets.chips.outcome !== C.outcome(CH.st)) fail('chips: the same save must give the same outcome');
+  const other = C.outcome(Object.assign(rt(pre), {seed: pre.seed + 1}));
+  console.log('- outcomes over ' + N + ' saves: grows ' + sh('grows').toFixed(1) + '%, struggles ' + sh('struggles').toFixed(1) + '%, fails ' + sh('fails').toFixed(1) + '% (want 60/25/15); the sample save: ' + o1 + ' on every reload (seed + 1: ' + other + ')');
+  // money in, the exit and the cargo in the player's flows, for each outcome (forced), against the same concession without it
+  const S0s = rt(SM.st.s), def = SM.st.s.stake0 != null ? SM.st.s.stake0 : 64, P_ = I.P(), prY = y => Math.pow(1 + P_.cpi_forward, y - 1);
+  const flowsOf = s => I.playerFlows(s, I.companyFlows(I.simulate(s, 60)), def), base = flowsOf(S0s), baseRows = I.simulate(S0s, 60).rows;
+  const ev = {};
+  ['grows', 'struggles', 'fails'].forEach(o => {
+    const s1 = I.applyPatch(rt(S0s), C.patch(SM.st, 'big', o)), b = s1.bets.chips, pf = flowsOf(s1), rows = I.simulate(s1, 60).rows, pct = I.playerFlows(s1, Array(60).fill(1), def)[b.exitYear - 1];
+    const inN = b.cr * prY(b.year), saleN = b.cr * b.multiple * prY(b.exitYear), dIn = pf[b.year - 1] - base[b.year - 1], dOut = pf[b.exitYear - 1] - base[b.exitYear - 1];
+    const cargo = rows.map((r, t) => r.hubInc - baseRows[t].hubInc), firstCargo = cargo.findIndex(x => x > 1e-6) + 1;
+    if (!(dIn < -0.5 * def / 100 * inN)) fail('chips ' + o + ': the money in should show in the player\'s flows in ' + (2025 + b.year) + ': ' + Math.round(dIn));
+    if (!(dOut > 0.8 * pct * saleN)) fail('chips ' + o + ': the sale should show in the player\'s flows in ' + (2025 + b.exitYear) + ': ' + Math.round(dOut) + ' vs ' + Math.round(pct * saleN));
+    if (o === 'fails' ? firstCargo !== 0 : firstCargo !== b.year + sc.cargoAfter) fail('chips ' + o + ': chip cargo should start in ' + (2025 + b.year + sc.cargoAfter) + (o === 'fails' ? ' (none when it fails)' : '') + ', got year ' + firstCargo);
+    if (b.exitYear !== b.year + (o === 'fails' ? sc.failAfter : sc.exitAfter)) fail('chips ' + o + ': exit year');
+    const r = 0.122, npv = a => a.reduce((x, f, t) => x + f / Math.pow(1 + r, t), 0); ev[o] = npv(pf) - npv(base);
+    console.log('- ' + o + ': ₹' + Math.round(-dIn).toLocaleString('en-IN') + ' cr out of the player\'s flows in ' + (2025 + b.year) + ', ₹' + Math.round(dOut).toLocaleString('en-IN') + ' cr back in ' + (2025 + b.exitYear) + ' (' + b.multiple + '×), chip cargo ' + (firstCargo ? 'from ' + (2025 + firstCargo) + ', ₹' + Math.round(cargo[firstCargo - 1]) + ' cr in its first year' : 'none') + '; worth ₹' + Math.round(ev[o]).toLocaleString('en-IN') + ' cr to the player at the Black Box\'s 12.2%');
+  });
+  console.log('- expected value at 12.2% (big, no cargo terminal): ₹' + Math.round(0.6 * ev.grows + 0.25 * ev.struggles + 0.15 * ev.fails).toLocaleString('en-IN') + ' cr; in plain multiples: ' + (0.6 * 6 + 0.25 * 1.5 + 0.15 * 0.3).toFixed(2) + '× the money in, plus the cargo');
+  // its own Black Box bar, and the sums still close (leave-one-out on smart, exact Shapley on blind)
+  const aC = E.debrief.attribution(CH.st), aS2 = E.debrief.attribution(CS.st), aCB = E.debrief.attribution(CB.st, {exact: true});
+  [['smart, big', aC], ['smart, small', aS2], ['blind, big, exact', aCB]].forEach(([n, a]) => {
+    const sum = a.groups.reduce((x, g) => x + g.npvCr, 0) + a.restCr, chip = a.groups.find(g => g.group === 'chips');
+    if (Math.abs(sum - a.totalCr) > Math.max(2, 0.01 * Math.abs(a.totalCr)) || a.checkSum > 0.01) fail('chips debrief ' + n + ': the shares should still add up: ' + sum + ' vs ' + a.totalCr);
+    const pooled = a.everythingElse.npvCr + a.bars.reduce((x, g) => x + g.npvCr, 0);
+    if (Math.abs(pooled - a.totalCr) > 3) fail('chips debrief ' + n + ': the bars and everything else should add up to the total: ' + pooled + ' vs ' + a.totalCr);
+    if (!chip || !a.bars.some(g => g.group === 'chips') || a.bars.length > 5 || chip.label !== 'The chip bet') fail('chips debrief ' + n + ': the chip bet needs its own bar');
+    texts.push(JSON.stringify(a.barsWithWords));
+    console.log('- Black Box, ' + n + ' (' + C.outcome(n.startsWith('blind') ? CB.st : n.endsWith('small') ? CS.st : CH.st) + '): ' + a.barsWithWords.find(g => g.group === 'chips').sentence + ' (₹' + chip.npvCr.toLocaleString('en-IN') + ' cr; ' + a.method + ', sums close within ' + Math.abs(sum - a.totalCr) + ')');
+  });
+  // the echoes: 2039's front page, 2050 in the years between, 2060's sale, the pile, Thiel
+  const fp5 = JSON.stringify(CH.log.ch5fp.columns), b = CH.st.s.bets.chips;
+  if (!/MIHAN chip plant ships its first wafer lots/.test(fp5) || /MIHAN/.test(JSON.stringify(SM.log.ch5fp.columns))) fail('chips: the 2039 front page should carry the plant\'s opening, only for a co-investor');
+  const h7 = CH.log.bridge7.headlines.join(' | ');
+  if (b.outcome !== 'fails' && !/^2050: Nagpur's chips (fly from Mumbai|take off from VSI)/m.test(CH.log.bridge7.headlines.join('\n'))) fail('chips: 2050 should be in the years between Chapters 6 and 7: ' + h7);
+  const pdoc = E.fileCard(CH.st).docs.find(d => d.kind === 'prospectus'), pdoc0 = E.fileCard(CH.log.ch7start).docs.find(d => d.kind === 'prospectus');
+  if (!pdoc || pdoc.stamp !== 'SOLD' || !pdoc0 || pdoc0.stamp !== (b.outcome === 'fails' ? 'SOLD' : 'CO-INVESTED')) fail('chips: the prospectus in the pile should be stamped SOLD once the stake is sold: ' + [pdoc && pdoc.stamp, pdoc0 && pdoc0.stamp]);
+  const yrs = [2039, 2043, 2050, 2059, 2060].map(y => C.news(CH.st, y - 2025)).map((x, i) => x && [2039, 2043, 2050, 2059, 2060][i] + ' ' + x.head).filter(Boolean);
+  if (b.outcome !== 'fails' && !/sold its 10% of the MIHAN chip plant/.test(CH.log.ch7.paragraph)) fail('chips: the closing bill should report the sale');
+  const th = E.debrief.thiel(CH.st).find(x => /^Secret/.test(x.q));
+  if ((b.outcome === 'grows') !== /backed chips in Nagpur/.test(th.answer)) fail('chips: Thiel\'s Secret answer should name the chip bet only if it paid');
+  texts.push(...yrs, CH.log.ch7.paragraph, JSON.stringify(E.debrief.pages(CH.st)), JSON.stringify(E.debrief.pages(CB.st)), JSON.stringify(CH.log.ch5fp), JSON.stringify(CH.log.bridge7.headlines), JSON.stringify(E.cliffhanger(CH.log.afterCh5)));
+  ['grows', 'struggles', 'fails'].forEach(o => { const x = rt(CH.st); I.applyPatch(x.s, C.patch(CH.st, 'big', o)); for (let y = 1; y <= 60; y++) { const n = C.news(x, y); if (n) texts.push(n.head + ' ' + n.body); } });
+  console.log('- front pages (' + b.outcome + '): ' + yrs.join('; ') + '; pile: prospectus ' + pdoc0.stamp + ' in 2059, ' + pdoc.stamp + ' at the handback; Thiel: "' + th.answer + '"');
+  const hits = texts.filter(t => ban.test(t));
+  if (hits.length) fail('chips jargon: ' + hits.slice(0, 2).map(t => (t.match(ban) || [])[0] + ' in ' + t.slice(Math.max(0, t.search(ban) - 60), t.search(ban) + 30)).join(' | '));
+  console.log('- plain words: ' + texts.length + ' chip-bet payloads, ' + hits.length + ' with jargon; ' + (fails - f0) + ' chip-bet failures');
+}
 
 // ---- Private capital: four houses, the pitch's outcomes, and an all-declined deal ----
 {

@@ -42,3 +42,13 @@ TRUTH:          India's semiconductor push is real: the India Semiconductor Miss
                 plant, its stake prices, outcomes and cargo values are game estimates (est.).
 SCORE:          Wow 3 / Agency 3 / Link 2 / Cost M → 4.0
 ```
+
+## Built (branch `chips`, 20 Oct 2026)
+
+All numbers below are game estimates (est.), in `money/era.js` (`CHIPS`, `VSIEra.chips`).
+- Offered once, after Climb's bill, as the 2035 fundraising board's prospectus (hub.js `flChipBet`). Big: ₹1,500 cr (today's money) for 10%; small: ₹500 cr for 3%; pass.
+- The plant opens in 2039; chip cargo from 2050; the stake is sold in 2060 (a failed plant is sold for what is left in 2043, year 8).
+- Outcomes, seeded from the save (its seed, company, director and signing day): 60% grows (6× in today's money, the cargo as planned), 25% struggles (1.5×, half the cargo), 15% fails (0.3×, no cargo).
+- Chip cargo (est.): 1,20,000 tonnes a year by air at full stride (about what Penang's chip cluster flies), at about ₹20,000 a tonne to VSI (secure handling, freighter landings, forwarders' rents), 30% of it in costs, growing 3% a year. Big routes all of it through VSI, small 40%; ×0.5 without a cargo terminal (Sanchori's cargo clause: lender `sanchore+`; or `s.cargoTerminal`, for a board item still to be built). So big: ₹240 cr a year with a terminal, ₹120 cr without; small ₹96 / ₹48 cr.
+- Finding: at the Black Box's yardstick (12.2% a year, Fairfax's low mark) a 6× sale 25 years out is about break-even, so the bet's expected value there is slightly negative (big, no terminal: grows +₹76 cr, struggles −₹341 cr, fails −₹406 cr to the player; expected −₹100 cr), though it is 4.0× the money in plain multiples. To make it clearly positive at 12.2%, the good case needs a sale nearer 10× or an earlier sale.
+

@@ -3078,10 +3078,90 @@ function s0Mock(kind){mountS();
     return Promise.resolve();});}
 M._s0Mock=s0Mock;
 
+/* ZMMoney.prospectus(opts) → Promise<{choice, signedOn}>. opts = VSIEra.chips.prospectus(state) (design/ideas/chip-bet.md):
+   {docId, title, date, lead, body:[typed paragraphs], map:{plant, apron, km, dests:[3]}, choices:[{id, label, terms,
+    slip:{outWords, saleWords, cargoWords, line}}] (big, small, pass), stamps:{[id]: word}, slipQuestion, slipNote, sources:[],
+    parties:{plant, signatory:{name, title}}}; optional founder, parent, signature, pile.
+   The plant's invitation to co-invest, with a drafting-ink map: the plant, 2 km of road to VSI's cargo apron, and the
+   dotted air routes beyond. The slip compares the three lines; signing brings down the stamp and files the paper. */
+const CSS_PX=`
+.zpx .zdk-doc{padding:26px 46px 22px}
+.zpx .zpx-lead{margin:0 0 10px;font-family:var(--fd);font-style:italic;font-size:17.5px;line-height:1.35;color:#1d2024}
+.zpx .zpx-map{display:block;width:100%;height:auto;margin:2px 0 8px;border-top:1px solid #c9ccc8;border-bottom:1px solid #c9ccc8}
+.zpx .zpx-map text{font-family:var(--ft);font-size:11px;fill:#55595e}
+.zpx .zpx-map text.k{fill:#1d2024;font-weight:700}
+.zpx .zpx-map .rd{stroke:#1d2024;stroke-width:1.8;fill:none}
+.zpx .zpx-map .air{stroke:#3b3f44;stroke-width:1.5;fill:none;stroke-dasharray:1.5 5;stroke-linecap:round}
+.zpx .zpx-src{margin:10px 0 0;padding-top:6px;border-top:1px solid #d6d8d4;font-family:var(--ft);font-size:10.5px;line-height:1.45;color:var(--zpe)}
+.zpx .zdk-note .z5-sl span{font-size:14.5px}
+.zpx .zdk-note .zpx-nb{font-size:13.5px;color:var(--zpe);margin-top:10px}
+@media (max-width:1280px){.zpx .zdk-doc{padding:22px 36px 20px}.zpx .zpx-lead{font-size:16.5px}}`;
+let cssPx=false;
+function zpxMap(m){m=m||{};const d=(m.dests||['Singapore','Frankfurt','Dallas']).slice(0,3),Y=[34,74,116],X=[452,500,440];
+  return `<svg class="zpx-map" viewBox="0 0 560 150" role="img" aria-label="${esc((m.plant||'The plant')+', '+(m.km||2)+' km by road to '+(m.apron||'the cargo apron')+', then by air to '+d.join(', '))}">
+    <g><rect x="22" y="62" width="58" height="34" fill="#fcfcf9" stroke="#1d2024" stroke-width="1.6"/><path d="M28 90l12-12M38 90l12-12M48 90l12-12M58 90l12-12M68 90l8-8" stroke="#676c71" stroke-width=".8"/>
+      <text class="k" x="22" y="114">${esc(m.plant||'MIHAN chip plant')}</text></g>
+    <path class="rd" d="M80 79 C 110 79, 120 76, 150 76"/><path d="M106 70v-6M126 70v-6M106 67h20" stroke="#676c71" stroke-width=".8"/><text x="107" y="60">${esc(String(m.km||2))} km</text>
+    <g><path d="M150 64 L206 64 L214 92 L158 92 Z" fill="#eef0ec" stroke="#1d2024" stroke-width="1.6"/><path d="M164 70h34M166 78h36M168 86h38" stroke="#9aa0a5" stroke-width=".7"/>
+      <text class="k" x="150" y="110">${esc(m.apron||'VSI cargo apron')}</text></g>
+    ${d.map((n,i)=>`<path class="air" d="M214 ${76+i*2} C 300 ${76+i*2}, ${X[i]-110} ${Y[i]}, ${X[i]} ${Y[i]}"/><circle cx="${X[i]}" cy="${Y[i]}" r="3" fill="#1d2024"/><text x="${X[i]+8}" y="${Y[i]+4}">${esc(n)}</text>`).join('')}
+    <text x="236" y="138">road</text><path d="M268 134h22" class="rd" stroke-width="1.4"/><text x="300" y="138">air</text><path d="M322 134h22" class="air"/>
+  </svg>`;}
+M.prospectus=function(o){o=o||{};mount5();if(!cssPx){cssPx=true;const c=document.createElement('style');c.id='zmmCssPx';c.textContent=CSS_PX;document.head.appendChild(c);}
+  return new Promise(res=>{
+  const ch=o.choices||[],pa=o.parties||{},sg=Object.assign({hand:{font:'La Belle Aurore',size:30,adv:.46,slant:2,rot:-4,ink:'#14161a',weight:.2,flourish:'under'}},pa.signatory||{});
+  const pile=o.pile||PILE,now=new Date(),sd=dayOf(o.date),dateTxt=sd?longDay(sd):(hd(o.date)||longDay(now));
+  let pick=null,done=false;
+  const sh=desk5('z5-dec zpx',`<header class="zdk-top"><div class="zdk-mark">${vsiLogo(30)}<span>${esc(M.cfg.airportName)}</span></div></header>
+    <div class="zdk-pile" id="zdkPile" aria-label="Documents on file">${pileCards(pile)}</div>
+    <main class="zdk-main"><div class="zdk-col"><article class="zdk-doc arrive" id="zdkDoc">
+      <div class="zdk-dh">${vsiLogo(22)}<span>Prospectus · ${esc(o.docId||'')}</span><span class="dt">${esc(dateTxt)}</span></div>
+      <h2>${esc(o.title||'An invitation to co-invest')}</h2>
+      <p class="zpx-lead">${esc(o.lead||'')}</p>
+      ${zpxMap(o.map)}
+      ${paras(o.body).map(p=>`<p class="t">${esc(p)}</p>`).join('')}
+      <div class="zdk-ticks" role="radiogroup" aria-label="VSIAL's answer">${ch.map(c=>`<button role="radio" aria-checked="false" data-id="${esc(c.id)}"><i></i><span>${esc(c.label)}</span>${c.terms?`<small>${esc(c.terms)}</small>`:''}</button>`).join('')}</div>
+      <div class="zdk-sigs"><div class="s"><div class="ink">${signSvg(sg)}</div><span><b>${esc(sg.name||'')}</b><br>${esc(sg.title||'Authorised signatory')}</span><small>for ${esc(pa.plant||'the plant')}</small></div>
+        <div class="s" id="z5Me"><div class="ink"></div><span><b>${esc(o.founder||'Director')}</b><br>Director${o.parent?', for '+esc(o.parent):''}</span><small>for ${esc(M.cfg.spvShort)}</small></div></div>
+      ${(o.sources||[]).length?`<p class="zpx-src">Sources: ${o.sources.map(esc).join('; ')}.</p>`:''}
+    </article><div class="zdk-acts"><button class="zdk-go" id="z5Sign" disabled>Tick one line first</button></div></div>
+    <aside class="zdk-note arrive" id="zdkNote" aria-live="polite"></aside></main>`);
+  wirePile(sh,pile);
+  const doc=sh.querySelector('#zdkDoc'),note=sh.querySelector('#zdkNote'),go=sh.querySelector('#z5Sign');
+  const actOf=c=>c.act||(c.id==='pass'?'Decline the invitation':'Sign for '+String(c.label||'').replace(/^Co-invest \w+: /,''));
+  const slipNow=()=>{const c=ch.find(x=>x.id===pick);
+    note.innerHTML=`<h3>${esc(o.slipQuestion||'What each line does')}</h3>${ch.map(x=>{const s=x.slip||{};return `<div class="z5-sl${x.id===pick?' on':''}"><b>${esc(String(x.label||'').split(':')[0])}</b>${[s.outWords,s.saleWords,s.cargoWords].filter(Boolean).map(t=>`<span>${esc(t)}</span>`).join('')}</div>`;}).join('')}${o.slipNote?`<p class="zpx-nb">${esc(o.slipNote)}</p>`:''}${c&&c.slip&&c.slip.line?`<p>${esc(c.slip.line)}</p>`:''}`;};
+  slipNow();
+  sh.querySelectorAll('.zdk-ticks button').forEach(b=>b.onclick=()=>{if(done)return;pick=b.dataset.id;sh.querySelectorAll('.zdk-ticks button').forEach(x=>x.setAttribute('aria-checked',x===b?'true':'false'));
+    go.disabled=false;go.textContent=actOf(ch.find(x=>x.id===pick));slipNow();});
+  go.onclick=()=>{if(done||!pick)return;done=true;go.disabled=true;
+    const me=sh.querySelector('#z5Me .ink'),sgs=sh.querySelector('.zdk-sigs');if(sgs&&doc.scrollHeight>doc.clientHeight)doc.scrollTo({top:doc.scrollHeight,behavior:reduced()?'auto':'smooth'});
+    me.innerHTML=o.signature?`<img src="${esc(o.signature)}" alt="Your signature">`:H(o.founder||M.cfg.spvShort);M.sfx('sign');
+    const word=(o.stamps||{})[pick]||(pick==='pass'?'Declined':'Signed');
+    (sgs||doc).insertAdjacentHTML('beforeend',stampHtml(word,'down',sd));doc.classList.remove('arrive');
+    const fin=()=>{close();res({choice:pick,signedOn:isoDay(sd||now)});};
+    if(reduced()){setTimeout(fin,700);return;}
+    setTimeout(()=>{const p=sh.querySelector('#zdkPile'),n=Math.min(5,p.children.length),cd=document.createElement('div');cd.className='zdk-card';cd.style.setProperty('--i',n);cd.style.setProperty('--r','-3deg');
+      cd.innerHTML=`<span>${esc(o.title||'Prospectus')}</span><i></i><i></i><i class="s"></i>${stampHtml(word,'mini',sd)}`;doc.classList.add('leave');note.style.opacity='0';setTimeout(()=>p.appendChild(cd),380);},900);
+    setTimeout(fin,2100);};
+});};
+/* ?moneymock=prospectus: the chip plant's invitation with the engine's figures for the sample company (no cargo terminal) */
+const PX_SAMPLE={docId:'chips-2035',title:'MIHAN Semiconductor Park: an invitation to co-invest',date:'2035-04-01',founder:'Asha Rao',parent:'Meridian Infra',
+  lead:'MIHAN Semiconductor Park: chip assembly and test, 2 km from your cargo apron. Co-investors wanted.',
+  body:['The plant will assemble and test chips for export, beside VSI in MIHAN. It opens in 2039 and wants patient co-investors for 25 years, until the stake is sold in 2060.','This year\'s cash is going into the new terminals, so the money would be called from the shareholders: Meridian Infra pays its 64%.','VSI has no cargo terminal of its own yet, so about half the chips would go by road to Mumbai.'],
+  map:{plant:'MIHAN chip plant',apron:'VSI cargo apron',km:2,dests:['Singapore','Frankfurt','Dallas']},slipQuestion:'What each line puts in, and what it could bring back',slipNote:'All in today\'s money, if the plant grows as planned. A plant like this can also struggle, or close.',
+  choices:[{id:'big',label:'Co-invest big: ₹1,500 cr for 10% of the plant',terms:'A seat on the plant\'s board. The plant flies all its chips through VSI.',slip:{outWords:'Money out now: ₹1,500 cr',saleWords:'Your stake on the 25-year sale: about ₹9,000 cr',cargoWords:'Chip cargo from 2050: about ₹120 cr a year',line:'The bigger bet: more cargo, and more to lose if the plant fails.'}},
+    {id:'small',label:'Co-invest small: ₹500 cr for 3% of the plant',terms:'A minority stake. The plant flies part of its chips through VSI; the rest goes by road.',slip:{outWords:'Money out now: ₹500 cr',saleWords:'Your stake on the 25-year sale: about ₹3,000 cr',cargoWords:'Chip cargo from 2050: about ₹48 cr a year',line:'A smaller cheque, a smaller share of the cargo.'}},
+    {id:'pass',label:'Pass',terms:'VSIAL does not invest. The park looks for backers elsewhere, and its chips go by road to Mumbai.',slip:{outWords:'Money out now: nothing',saleWords:'Your stake on the 25-year sale: none',cargoWords:'Chip cargo from 2050: none at VSI',line:'No risk, and no part in it.'}}],
+  stamps:{big:'CO-INVESTED',small:'CO-INVESTED',pass:'DECLINED'},sources:['Micron\'s chip assembly-and-test plant at Sanand, Gujarat, approved by the Union Cabinet in June 2023 (PIB, 6 Dec 2023)','Tata Electronics\' chip fab at Dholera, Gujarat, approved on 29 February 2024 (PIB)'],
+  parties:{plant:'MIHAN Semiconductor Park',signatory:{name:'The Chief Financial Officer',title:'MIHAN Semiconductor Park'}}};
+M._pxSample=PX_SAMPLE;
+
 /* ---------- auto-mount, and a mock driver for screenshots: ?moneymock ---------- */
 function boot(){M.mount();if(!/[?&]moneymock\b/.test(location.search))return;
   {const k=(location.search.match(/[?&]moneymock=(frontpage|decision|briefing|tags|pins|bill|card)\b/)||[])[1];if(k){ch5Mock(k).then(r=>{window.__zmmResult=r;});return;}}
   {const k=(location.search.match(/[?&]moneymock=(file0|file|tear)\b/)||[])[1];if(k){fileMock(k);}}
+  if(/[?&]moneymock=prospectus\b/.test(location.search)){M.prospectus(PX_SAMPLE).then(r=>{window.__zmmResult=r;});return;}
   {const k=(location.search.match(/[?&]moneymock=(strip|flaps|cliff|tie|minutes|letter|stepin|debrief[1-4]?)(?![\w-])/)||[])[1];if(k){s0Mock(k).then(r=>{window.__zmmResult=r===undefined?'done':r;});return;}}
   M.enable(true);let total=0;const hs=[];
   setInterval(()=>{const d=(Math.random()-0.28)*0.9;total+=d;hs.push(total);M.setDay({total,ratePerHr:total/Math.max(1,hs.length)*60,history:hs});

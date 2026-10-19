@@ -248,7 +248,7 @@ body.v3 #toast{right:auto;left:max(14px,env(safe-area-inset-left,0px));width:var
 }
 @media (prefers-reduced-motion:reduce){.inc,#toast.flash{animation:none}}
 </style>
-<script>(function(){var B='b3b7844dc1c3',K=['zm_campaign','zm_ch5'];window.__BUILD=B;function cancel(){try{K.forEach(function(x){localStorage.removeItem(x);});sessionStorage.setItem('zm_updated','1');}catch(e){}}try{var o=localStorage.getItem('zm_build');if(o&&o!==B)cancel();localStorage.setItem('zm_build',B);}catch(e){}if(location.protocol.indexOf('http')===0)setInterval(function(){fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(v){if(v&&v.build&&v.build!==B){cancel();try{localStorage.setItem('zm_build',v.build);}catch(e){}location.reload();}}).catch(function(){});},30000);document.addEventListener('DOMContentLoaded',function(){try{if(sessionStorage.getItem('zm_updated')){sessionStorage.removeItem('zm_updated');var n=document.createElement('div');n.textContent='A new version of VSI is live. Games in progress were closed; start again from the menu.';n.style.cssText='position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:99999;background:#1d2024;color:#fff7ea;padding:10px 16px;font:14px Barlow Condensed,sans-serif;letter-spacing:.02em;border-radius:3px;box-shadow:0 6px 18px rgba(0,0,0,.4)';document.body.appendChild(n);setTimeout(function(){n.remove();},7000);}}catch(e){}});})();</script>
+<script>(function(){var B='224ad06d69b4',K=['zm_campaign','zm_ch5'];window.__BUILD=B;function cancel(){try{K.forEach(function(x){localStorage.removeItem(x);});sessionStorage.setItem('zm_updated','1');}catch(e){}}try{var o=localStorage.getItem('zm_build');if(o&&o!==B)cancel();localStorage.setItem('zm_build',B);}catch(e){}if(location.protocol.indexOf('http')===0)setInterval(function(){fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(v){if(v&&v.build&&v.build!==B){cancel();try{localStorage.setItem('zm_build',v.build);}catch(e){}location.reload();}}).catch(function(){});},30000);document.addEventListener('DOMContentLoaded',function(){try{if(sessionStorage.getItem('zm_updated')){sessionStorage.removeItem('zm_updated');var n=document.createElement('div');n.textContent='A new version of VSI is live. Games in progress were closed; start again from the menu.';n.style.cssText='position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:99999;background:#1d2024;color:#fff7ea;padding:10px 16px;font:14px Barlow Condensed,sans-serif;letter-spacing:.02em;border-radius:3px;box-shadow:0 6px 18px rgba(0,0,0,.4)';document.body.appendChild(n);setTimeout(function(){n.remove();},7000);}}catch(e){}});})();</script>
 <div id="app">
   <div id="zoomBox" class="hud panel" role="group" aria-label="Map zoom"><button id="zIn" title="Zoom in (+)">+</button><button id="zOut" title="Zoom out (−)">−</button><button id="zFit" title="Show the whole airport (F)">Fit</button></div>
   <canvas id="map" aria-label="Live map of the hub: six parallel runways, the terminal and concourses, and every aircraft"></canvas>
@@ -4668,6 +4668,12 @@ const FL_BOT={
     pick:{3:'bigbang',4:'cut',5:'decline',6:'refuse',7:{district:false,phase2:false,l5:false}},radar:false,hold:'go',
     shift:{3:{stars:1,otp:0.7,cx:0.8,made:300,missed:200,incidents:{belt:'ignored',stands:'taxi'}},4:{stars:1,otp:0.72,cx:0.8,made:120,missed:60,incidents:{ramp:'meter'}},
       6:{stars:1,otp:0.74,cx:0.82},7:{stars:1,otp:0.74,cx:0.82}}}};
+// the chip bet (design/ideas/chip-bet.md): after Climb's bill, the 2035 fundraising board's prospectus, once (VSIEra.chips).
+// Bots: 'smart' co-invests small (on the banks' loan VSI has no cargo terminal, so half the chips would truck to Mumbai), 'blind' passes.
+async function flChipBet(st){const B=CAMP.E().chips;if(!B||!B.offered||!B.offered(st)||!ZMMoney.prospectus)return false;
+  const p=B.prospectus(st),dflt=FL.bot?{choice:FL.bot.mode==='smart'?'small':'pass'}:null;
+  const r=FL.bot&&!FL.bot.papers?(FL.log.push({n:4,kind:'chips',at:Date.now(),lead:p.title,pick:dflt.choice}),dflt):await FL.show('chips',p,()=>ZMMoney.prospectus(FL.who(st,p)),dflt);
+  const ns=B.apply(st,(r&&r.choice)||'pass');ns.flight=st.flight;CAMP.st=ns;FL.save();return true;}
 const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
   on(){return !FLIGHT_LEGACY&&FL.ok();},
   ok(){const E=CAMP.E();return !!(CAMP.ready()&&E&&E.chapters&&E.bridge&&E.cliffhanger&&E.debrief&&E.debrief.pages&&E.chapters[3]&&ZMMoney.frontPage&&ZMMoney.decision&&ZMMoney.bill);},
@@ -4754,6 +4760,7 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
             const ns=E.chapters[4].applyBudget(st,r==='cta');ns.flight=Object.assign({},f,{step:'card'});CAMP.st=ns;FL.save();continue;}
           await FL.show('bill',b,()=>Z.bill(b),null);}
         f.step='card';FL.save();continue;}
+      if(f.step==='card'&&n===4&&await flChipBet(st))continue;   // the chip bet, once, before Climb's card
       if(f.step==='card'){const card=f.out&&f.out.card;if(card)await FL.show('card',card,()=>Z.whatHappened(card),null);
         FL.pastAdd(f,st,n);delete f.out;delete f.stub;
         if(st.over&&st.over.reason==='handback')f.step='handback';
@@ -13002,7 +13009,7 @@ requestAnimationFrame(frame);
     }
     if (unfunded && !this.step_in) this.step_in = {t: t, why: 'a loan payment it could not make'};
     this.cash = cash; this.cures += cure; this.calls += call;
-    var flow = -call - cure - inj + (this.step_in ? 0 : div);
+    var flow = -call - cure - inj + (this.step_in ? 0 : div + (c.bet_in ? c.bet_in[t] || 0 : 0));   // + the chip stake's sale
     this.eq_flows[t] = (this.eq_flows[t] || 0) + flow;
     this.divs += div;
     row.cash = this.cash; row.dsra = this.dsra; row.div = div; row.cure = cure; row.call = call; row.sl_out = this.sl_out; row.swept = swept; row.prepay = prep;
@@ -13134,6 +13141,15 @@ requestAnimationFrame(frame);
       var t = p.year - 1, a = p.cr * pr(t); equity_need[t] = (equity_need[t] || 0) + a;
       vintages.push(new Vintage(a, a * P.aero_asset_share, t + 1, Math.min(CAL.dep_life, 60 - t - 1), null));
     });
+    // the chip bet (design/ideas/chip-bet.md): VSIAL's stake in the MIHAN plant (s.bets, keyed). Not an airport asset, so no
+    // vintage and nothing in AERA's base: the money in is an equity need in its year (VSIAL's cash first, then a call on the
+    // shareholders); the sale comes back as an equity inflow in its exit year (c.bet_in, straight to the shareholders)
+    var betIn = {};
+    if (!base && s.bets) vals(s.bets).forEach(function (b) {
+      if (!b.cr) return;
+      var t0 = b.year - 1; equity_need[t0] = (equity_need[t0] || 0) + b.cr * pr(t0);
+      if (b.exitYear && b.exitYear <= 60 && b.multiple > 0) { var t1 = b.exitYear - 1; betIn[t1] = (betIn[t1] || 0) + b.cr * b.multiple * pr(t1); }
+    });
     // Chapter 5: the partner's international banks (s.hub, set by VSIEra.ch5.applyShift). Income from connections made grows
     // each year by the route growth the shift earned (new routes when connections hold, Doha wins them when they miss),
     // through the era; after it, it rises with prices. Counted as non-aero, so AERA counts part of it (hybrid till).
@@ -13222,7 +13238,7 @@ requestAnimationFrame(frame);
       nar: function (t) { return narReal(t + 1, opsYear) * ops(t).Q * pr(t); },
       nar_bench: function (t) { return narReal(t + 1, function (y) { return opsProfile('base', y); }) * opsProfile('base', t + 1).Q * pr(t); },
       opex_bench: opx, opening_cost: opening, feeShare: feeShare, feePpf: feePpf, wacc: wacc,
-      equity_need: equity_need, era: function (t) { return eraOf(t + 1); }, state_loan: state_loan, stage_list: stage_list,
+      equity_need: equity_need, bet_in: betIn, era: function (t) { return eraOf(t + 1); }, state_loan: state_loan, stage_list: stage_list,
       renewal_share: renewal, first_cod_t: st[names[0]].cod - 1, dis_in_opex: P.ops_profiles.base.dis[0], forecast: !!base,
       nar_extra: acInc, hub_inc: hubInc, hub_cost: hubCost, hub_growth: (!base && s.hub && s.hub.growth) || 0, pax_factor: frac > 0 ? function (t) { return t + 1 === yOpen ? 1 - frac : 1; } : null,
       fx: (!base && lenderOf(s).fx) ? {t: lenderOf(s).fx.year - 1, fall: lenderOf(s).fx.fall, names: names.filter(function (n) { var k = stageKey(n); return k === '1A' || k === '1B'; })} : null,
@@ -14017,7 +14033,8 @@ requestAnimationFrame(frame);
   function allDocs(state) {
     var out = campaignDocs(state), ids = {};
     out.forEach(function (d) { ids[d.id] = true; });
-    (state.docs || []).forEach(function (d) { if (d && d.id && !ids[d.id]) { ids[d.id] = true; out.push(dw(Object.assign({}, d))); } });
+    var cb = chipsBet(state), sold = cb && (state.over ? (state.over.year || 60) : state.year || 0) >= cb.exitYear;
+    (state.docs || []).forEach(function (d) { if (d && d.id && !ids[d.id]) { ids[d.id] = true; var x = dw(Object.assign({}, d)); if (sold && x.kind === 'prospectus') x.stamp = 'SOLD'; out.push(x); } });
     return out.sort(function (a, b) { return String(a.date || '').localeCompare(String(b.date || '')); });
   }
   // the seven chapters of the flight (design/chapters.md §1) and which one a concession is in: VSIEra.chapter(state) →
@@ -14465,7 +14482,7 @@ requestAnimationFrame(frame);
       stake: state.stake, stakeValue: stakeWords(lr.stakeValueCr || 0), stands: state.phase1 === 'big' ? CH5.stands.need : CH5.stands.lean};
     return {masthead: F.masthead, dateLine: d.words + ' · Nagpur', price: F.price, lead: F.lead, deck: fill(F.deck, v),
       sub: {head: F.sub.head, body: fill(F.sub.body, v)},
-      columns: F.columns.map(function (c, i) { return i === 0 && state.s.chargeCut ? {head: 'Dubai matches VSI\'s cut', body: 'Dubai matched VSI\'s 30% cut in airline charges within a year. The flights it pulled from the Gulf mostly fly past each other.'} : {head: c.head, body: fill(c.body, v)}; }),
+      columns: F.columns.map(function (c, i) { return i === 0 && state.s.chargeCut ? {head: 'Dubai matches VSI\'s cut', body: 'Dubai matched VSI\'s 30% cut in airline charges within a year. The flights it pulled from the Gulf mostly fly past each other.'} : i === 1 && chipsNews(state, CH5.year) || {head: c.head, body: fill(c.body, v)}; }),
       photo: {kind: F.photo.kind, caption: fill(F.photo.caption, v)},
       company: state.parent, founder: state.founder || 'Asha Rao', signature: state.signature || state.founder || 'Asha Rao',
       sources: [GULF_SRC]};
@@ -15140,6 +15157,100 @@ requestAnimationFrame(frame);
   }
 
   // ---------------------------------------------------------------------------------------------
+  // The chip bet (design/ideas/chip-bet.md; sources research/chips.md): at the 2035 fundraising board a chip assembly-and-test
+  // plant in MIHAN asks VSIAL to co-invest. VSIEra.chips: offered(st) → bool; prospectus(st) → the paper; apply(st, 'big' |
+  // 'small' | 'pass') → st; news(st, year) → a front-page line or null; outcome(st) → the seeded outcome.
+  // s.bets.chips = {year, cr (today's money), pct, outcome, exitYear, multiple}: an equity need in its year, the sale an equity
+  // inflow at exit (build(): betIn). s.streams.chips: the plant's air cargo through VSI from year + 15. Every number is (est.).
+  // ---------------------------------------------------------------------------------------------
+  var CHIPS = {year: 10, opensAfter: 4, cargoAfter: 15, exitAfter: 25, failAfter: 8,
+    sizes: {big: {cr: 1500, pct: 10, cargo: 1}, small: {cr: 500, pct: 3, cargo: 0.4}},   // (est.) a small co-investor routes less of the plant's cargo
+    outcomes: [{id: 'grows', p: 0.60, multiple: 6, cargo: 1}, {id: 'struggles', p: 0.25, multiple: 1.5, cargo: 0.5}, {id: 'fails', p: 0.15, multiple: 0.3, cargo: 0}],
+    // (est.) the park at full stride ships about 1,20,000 tonnes a year by air (Penang's chip cluster flies about that much),
+    // and VSI earns about ₹20,000 a tonne from secure high-value handling, freighter landings and forwarders' rents
+    tonnes: 120000, perTonneInr: 20000, growth: 0.03, costShare: 0.3, noTerminal: 0.5,
+    dests: ['Singapore', 'Frankfurt', 'Dallas'],
+    sources: ['Micron\'s chip assembly-and-test plant at Sanand, Gujarat, approved by the Union Cabinet in June 2023 (PIB, 6 Dec 2023)',
+      'Tata Electronics\' chip fab at Dholera, Gujarat, approved on 29 February 2024 (PIB)']};
+  function chipsTerminal(s) { return !!(s && (s.cargoTerminal || /^sanchore\+$/.test(s.lender || ''))); }   // Sanchori's cargo clause, or one ordered at a board
+  function strHash(t) { var h = 2166136261; t = String(t); for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h % 2147483646 + 1; }
+  // seeded from the save (its seed, company, director and signing day), so a reload never changes it
+  function chipsRoll(st) { return rng(strHash([st.seed == null ? 1 : st.seed, st.parent || '', st.founder || '', st.signedOn || '', 'mihan-chips'].join('|')))(); }
+  function chipsOutcome(st) {
+    var u = chipsRoll(st), acc = 0;
+    for (var i = 0; i < CHIPS.outcomes.length; i++) { acc += CHIPS.outcomes[i].p; if (u < acc) return CHIPS.outcomes[i]; }
+    return CHIPS.outcomes[CHIPS.outcomes.length - 1];
+  }
+  function chipsCargoToday(s, size, share) {   // ₹ cr a year in today's money, in the first year of chip cargo
+    var z = CHIPS.sizes[size]; if (!z) return 0;
+    return CHIPS.tonnes * CHIPS.perTonneInr / 1e7 * z.cargo * (share == null ? 1 : share) * (chipsTerminal(s) ? 1 : CHIPS.noTerminal);
+  }
+  function chipsPatch(st, size, force) {   // force: an outcome id, for tests only
+    var z = CHIPS.sizes[size];
+    if (!z) return {'bets.chips': null, 'streams.chips': null};
+    var o = CHIPS.outcomes.filter(function (x) { return x.id === force; })[0] || chipsOutcome(st), fails = o.id === 'fails', from = CHIPS.year + CHIPS.cargoAfter, inc = chipsCargoToday(st.s, size, o.cargo) * prAt(from);
+    var bet = {year: CHIPS.year, cr: z.cr, pct: z.pct, size: size, outcome: o.id, exitYear: CHIPS.year + (fails ? CHIPS.failAfter : CHIPS.exitAfter), multiple: o.multiple};
+    return {'bets.chips': bet, 'streams.chips': inc > 0 ? {perDay: 0, from: from, until: 60, incCr: inc, costCr: CHIPS.costShare * inc, growth: CHIPS.growth, cargo: true} : null};
+  }
+  function chipsBet(st) { return st && st.s && st.s.bets && st.s.bets.chips || null; }
+  function chipsDecided(st) { return (st.s.decisions || []).some(function (d) { return d.id === 'ch4-chips'; }); }
+  function chipsOffered(st) { ensure(); return !!(st && st.s && !st.over && st.ch4 && !chipsDecided(st) && st.era >= 2 && st.era <= 4); }
+  function chipsSaleCr(b) { return b.cr * b.multiple * prAt(b.exitYear); }   // nominal, in the year of the sale
+  function chipsDate(st) { var md = String(st.signedOn || '2026-04-01').slice(4); return cal(CHIPS.year) + md; }
+  function chipsProspectus(st) {
+    ensure();
+    var s = st.s, term = chipsTerminal(s), g = CHIPS.outcomes[0], d = ch5Date(st, CHIPS.year);
+    var eng = simulate(s, CHIPS.year), row = eng.rows[CHIPS.year - 1] || {}, cashToday = Math.max(0, ((row.cash || 0) + (row.div || 0)) / prAt(CHIPS.year));
+    var cy = cal(CHIPS.year + CHIPS.cargoAfter), sy = cal(CHIPS.year + CHIPS.exitAfter);
+    var choices = ['big', 'small'].map(function (id) {
+      var z = CHIPS.sizes[id], sale = z.cr * g.multiple, cargo = chipsCargoToday(s, id, g.cargo);
+      return {id: id, label: 'Co-invest ' + id + ': ' + cr(z.cr) + ' for ' + z.pct + '% of the plant', terms: id === 'big' ? 'A seat on the plant\'s board. The plant flies all its chips through VSI.' : 'A minority stake. The plant flies part of its chips through VSI; the rest goes by road.',
+        slip: {out: cr(z.cr), sale: 'about ' + cr(sale), cargo: 'about ' + cr(cargo) + ' a year',
+          outWords: 'Money out now: ' + cr(z.cr), saleWords: 'Your stake on the 25-year sale: about ' + cr(sale), cargoWords: 'Chip cargo from ' + cy + ': about ' + cr(cargo) + ' a year',
+          line: id === 'big' ? 'The bigger bet: more cargo, and more to lose if the plant fails.' : 'A smaller cheque, a smaller share of the cargo.'}};
+    });
+    choices.push({id: 'pass', label: 'Pass', terms: 'VSIAL does not invest. The park looks for backers elsewhere, and its chips go by road to Mumbai.',
+      slip: {out: '₹0', sale: 'nothing', cargo: 'none', outWords: 'Money out now: nothing', saleWords: 'Your stake on the 25-year sale: none', cargoWords: 'Chip cargo from ' + cy + ': none at VSI', line: 'No risk, and no part in it.'}});
+    return {docType: 'prospectus', docId: 'chips-' + cal(CHIPS.year), title: 'MIHAN Semiconductor Park: an invitation to co-invest', date: d.iso, dateWords: d.words, year: cal(CHIPS.year),
+      lead: 'MIHAN Semiconductor Park: chip assembly and test, 2 km from your cargo apron. Co-investors wanted.',
+      body: ['The plant will assemble and test chips for export, beside VSI in MIHAN. It opens in ' + cal(CHIPS.year + CHIPS.opensAfter) + ' and wants patient co-investors for 25 years, until the stake is sold in ' + sy + '.',
+        cashToday >= 1 ? 'VSIAL has about ' + cr(cashToday) + ' of spare cash this year. Whatever it does not cover is called from the shareholders.' : 'This year\'s cash is going into the new terminals, so the money would be called from the shareholders: ' + (st.parent || 'your company') + ' pays its ' + st.stake + '%.',
+        term ? 'VSI has its own cargo terminal (' + poss('Sanchori Jain Samaj Capital') + ' lease), so the chips fly from here.' : 'VSI has no cargo terminal of its own yet, so about half the chips would go by road to Mumbai.'],
+      map: {plant: 'MIHAN chip plant', apron: 'VSI cargo apron', km: 2, dests: CHIPS.dests.slice()}, terminal: term, cashCr: Math.round(cashToday),
+      slipQuestion: 'What each line puts in, and what it could bring back', slipNote: 'All in today\'s money, if the plant grows as planned. A plant like this can also struggle, or close.',
+      choices: choices, stamps: {big: 'CO-INVESTED', small: 'CO-INVESTED', pass: 'DECLINED'}, sources: CHIPS.sources.slice(),
+      parties: {airport: VSIAL, plant: 'MIHAN Semiconductor Park', signatory: {name: 'The Chief Financial Officer', title: 'MIHAN Semiconductor Park'}}};
+  }
+  function chipsApply(st, id) {
+    ensure();
+    st = clone(st);
+    if (!CHIPS.sizes[id]) id = 'pass';
+    var p = chipsPatch(st, id), b = p['bets.chips'];
+    applyPatch(st.s, p);
+    st.chips = {choice: id};
+    addDoc(st, {id: 'chips-' + cal(CHIPS.year), title: 'MIHAN chip plant prospectus, ' + cal(CHIPS.year), year: CHIPS.year, date: chipsDate(st), kind: 'prospectus', stamp: b ? 'CO-INVESTED' : 'DECLINED',
+      summary: b ? 'VSIAL put ' + cr(b.cr) + ' (today\'s money) into ' + b.pct + '% of the MIHAN chip plant, 2 km from the cargo apron, to be sold in ' + cal(CHIPS.year + CHIPS.exitAfter) + '.' : 'VSIAL passed on the MIHAN chip plant.'});
+    logDecision(st, {id: 'ch4-chips', group: 'chips', chapter: 4, year: CHIPS.year, label: 'The chip bet', chosen: id,
+      chosenLabel: b ? 'Co-investing ' + cr(b.cr) + ' in the MIHAN chip plant' : 'Passing on the chip plant', 'default': 'pass', alt: {'bets.chips': null, 'streams.chips': null}});
+    return st;
+  }
+  // a front-page line for the chip bet in `year`, or null (2039 the plant opens; 2043 it fails; 2050 cargo; 2060 the sale)
+  function chipsNews(st, year) {
+    var b = chipsBet(st); if (!b) return null;
+    var term = chipsTerminal(st.s), S = st.s.streams && st.s.streams.chips;
+    if (year === b.year + CHIPS.opensAfter) return {head: 'MIHAN chip plant ships its first wafer lots', body: 'The chip assembly-and-test plant 2 km from VSI\'s cargo apron has opened. VSIAL owns ' + b.pct + '% of it.'};
+    if (b.outcome === 'fails' && year === b.exitYear) return {head: 'MIHAN chip plant closes', body: 'The plant could not win enough orders and has shut. VSIAL sells what is left of its ' + b.pct + '% for ' + cr(chipsSaleCr(b)) + '. No chips will fly from VSI.'};
+    if (S && year === S.from) return term ? {head: 'Nagpur\'s chips take off from VSI', body: 'The first freighter of MIHAN chips left VSI\'s cargo terminal for Singapore, Frankfurt and Dallas' + (b.outcome === 'struggles' ? ', at half the plan.' : '.')} :
+      {head: 'Nagpur\'s chips fly from Mumbai', body: 'VSI has no cargo terminal of its own, so half of MIHAN\'s chips go by road to Mumbai. The rest fly from VSI' + (b.outcome === 'struggles' ? ', at half the plan.' : '.')};
+    if (b.outcome !== 'fails' && year === b.exitYear - 1) return {head: 'VSIAL\'s chip stake goes on sale', body: 'After 25 years VSIAL is selling its ' + b.pct + '% of the MIHAN chip plant. The sale closes in ' + cal(b.exitYear) + '.'};
+    if (b.outcome !== 'fails' && year === b.exitYear) return {head: 'VSIAL sells its chip stake', body: 'VSIAL sold its ' + b.pct + '% of the MIHAN chip plant for ' + cr(chipsSaleCr(b)) + ' (' + b.multiple + ' times the money in, in today\'s money).'};
+    return null;
+  }
+  var chips = {offered: chipsOffered, prospectus: chipsProspectus, apply: chipsApply, news: function (st, y) { ensure(); return chipsNews(st, y); },
+    outcome: function (st) { ensure(); return chipsOutcome(st).id; }, bet: chipsBet, terminal: chipsTerminal, script: CHIPS,
+    patch: function (st, size, force) { ensure(); return chipsPatch(st, size, force); }};
+
+  // ---------------------------------------------------------------------------------------------
   // Chapter 6 · Turbulence: the crisis, chosen by the player's past (years 19-33, eras 5-7)
   // ---------------------------------------------------------------------------------------------
   var CH6 = {year: 21, fall: 0.25, cover: 1.10, reserveShare: 0.5 /* (est.) half a year's loan payments, if the crisis leaves cover above ₹110 */,
@@ -15341,7 +15452,7 @@ requestAnimationFrame(frame);
       deck: 'Vikram Sarabhai International connects about ' + conns.toLocaleString('en-IN') + ' passengers a day. ' + who + '\'s ' + st.stake + '% is worth about ' + stakeWords(lr.stakeValueCr || 0) + '.',
       sub: {head: NM.rival + ' opens a rival hub at Hyderabad', body: 'The bidder VSI beat for the concession is back, with a hub of its own. ' +
         (won ? 'Its first move: ' + poss(NM.feeder) + ' evening bank. VSI\'s network was thin enough to take.' : 'It is struggling to fill its banks: VSI\'s network already connects the cities it wanted.')},
-      columns: [{head: 'The last twenty-six years', body: 'The board meets to decide what VSI will be when it is handed back to the State in ' + cal(60) + '.'}, stakeColumn(st)],
+      columns: [chipsNews(st, CH7.year) || {head: 'The last twenty-six years', body: 'The board meets to decide what VSI will be when it is handed back to the State in ' + cal(60) + '.'}, stakeColumn(st)],
       photo: {kind: 'aerial', caption: 'VSI from the air, thirty years after the first digger.'}});
   }
   function ch7Decision(st) {
@@ -15417,7 +15528,8 @@ requestAnimationFrame(frame);
       (st.ch7 && st.ch7.rivalWon ? NM.rival + ' took some of your banks to Hyderabad: your network was too thin to hold them. ' : poss(NM.rival) + ' Hyderabad hub never filled its banks: your network got there first. ') +
       (adopted.indexOf('l5') >= 0 ? 'Buying ' + poss(NM.l5) + ' stake made ' + st.stake + '% of the last ' + (60 - CH7.year + 1) + ' years yours.' : '');
     var bill = chBill(prev, st, out.reports, {lead: (st.parent || 'Your company') + ' handed Vikram Sarabhai International back to the State' + (f.returnedCr != null ? ', having received ' + cr(f.returnedCr) + ' on ' + cr(f.investedCr) + ' put in' : '') + '.',
-      paragraph: 'From ' + cal(CH7.year) + ' to ' + cal(60) + ' the engine ran the airport on the board\'s plan. ' + (f.paxTotalM ? 'Over sixty years it served about ' + (f.paxTotalM / 1000).toFixed(1) + ' billion passengers.' : ''),
+      paragraph: 'From ' + cal(CH7.year) + ' to ' + cal(60) + ' the engine ran the airport on the board\'s plan. ' + (f.paxTotalM ? 'Over sixty years it served about ' + (f.paxTotalM / 1000).toFixed(1) + ' billion passengers.' : '') +
+        (chipsBet(st) && chipsBet(st).outcome !== 'fails' ? ' ' + chipsNews(st, chipsBet(st).exitYear).body : ''),
       margin: margin.trim()});
     st.ch7.bill = bill;
     fileReport(st, bill, y1);
@@ -15465,6 +15577,7 @@ requestAnimationFrame(frame);
         if (!line && e.k === 'refi') line = 'A steady record: the banks refinance ' + cr(e.amt) + ' more cheaply.';
         if (!line && (e.k === 'cure_ds' || e.k === 'cure_era')) line = 'The owners put in ' + cr(e.amt) + ' to keep the banks paid.';
       });
+      var cn = chipsNews(st, r.year); if (!line && cn) line = cn.head + '.';
       if (!line && p && r.cap > p.cap + 1) line = 'New terminal space opens: room for ' + Math.round(r.cap) + ' million passengers a year.';
       if (!line && p && p.debt > 1 && r.debt < 1) line = 'The last bank loan is repaid.';
       years.push({year: r.year, calYear: cal(r.year), paxM: Math.round(r.pax * 10) / 10, light: lightOf(r.dscr), connectionsPerDay: networkPerDay(st, r.year), line: line});
@@ -15508,7 +15621,7 @@ requestAnimationFrame(frame);
           'Health officials are tracking a new virus. Airports are drawing up plans for empty terminals.',
         sub: {head: 'Where VSI stands', body: who + '\'s ' + st.stake + '% is worth about ' + stakeWords(lr.stakeValueCr || 0) + '. ' + (lr.cover != null ? 'In its hardest recent year the airport earned ' + coverWords(lr.cover).replace(' earned', '') + ' to its banks.' : '')}};
     }
-    var fp = paperOf(st, o.year, {lead: o.lead, deck: o.deck, sub: o.sub, columns: [stakeColumn(st)], photo: {kind: act === 1 ? 'dusk-apron' : 'storm', caption: act === 1 ? 'The apron at dusk.' : 'Clouds over the lakes east of runway 3.'}});
+    var fp = paperOf(st, o.year, {lead: o.lead, deck: o.deck, sub: o.sub, columns: [stakeColumn(st)].concat(chipsNews(st, o.year) || []), photo: {kind: act === 1 ? 'dusk-apron' : 'storm', caption: act === 1 ? 'The apron at dusk.' : 'Clouds over the lakes east of runway 3.'}});
     fp.edition = 'Late City'; fp.act = act; fp.actName = A.name; fp.fold = A.next;
     return fp;
   }
@@ -15516,8 +15629,8 @@ requestAnimationFrame(frame);
   // ---------------------------------------------------------------------------------------------
   // The Black Box (design/debrief.md): VSIEra.debrief.*
   // ---------------------------------------------------------------------------------------------
-  var GROUPS = ['finance', 'bid', 'build', 'opening', 'network', 'radar', 'partner', 'hold', 'cure', 'plan30', 'shifts'];
-  var GROUP_LABEL = {finance: 'How you financed it', bid: 'Your bid', build: 'How you built it', opening: 'The opening plan', network: 'The network', radar: 'The bird radar',
+  var GROUPS = ['finance', 'bid', 'build', 'opening', 'network', 'radar', 'chips', 'partner', 'hold', 'cure', 'plan30', 'shifts'];
+  var GROUP_LABEL = {finance: 'How you financed it', bid: 'Your bid', build: 'How you built it', opening: 'The opening plan', network: 'The network', radar: 'The bird radar', chips: 'The chip bet',
     partner: CH5.partner, hold: 'Holding London for Lucknow', cure: 'The crisis cure', plan30: 'The thirty-year plan', shifts: 'Your shifts'};
   var MEDIAN_BID = 16.5;   // previewBid's 50% chance of winning (the rivals cluster 12-21%)
   var _sizeMemo = {};
@@ -15601,9 +15714,12 @@ requestAnimationFrame(frame);
       .sort(function (a, b) { return Math.abs(b.npvCr) - Math.abs(a.npvCr); });
     // the page: shares under 3% pooled into "everything else", at most 5 bars, the two largest as sentences
     var bars = groups.filter(function (x) { return Math.abs(x.sharePct) >= 3; }).slice(0, 5);
+    var chipBar = groups.filter(function (x) { return x.group === 'chips'; })[0];   // the chip bet always gets its own bar (design/ideas/chip-bet.md)
+    if (chipBar && bars.indexOf(chipBar) < 0) bars = bars.slice(0, 4).concat([chipBar]);
     var pooled = rest + groups.filter(function (x) { return bars.indexOf(x) < 0; }).reduce(function (a, x) { return a + phi[x.group]; }, 0);
     var sentence = function (x) {
-      var w = x.group === 'shifts' ? 'Your shifts, against an expert\'s,' : x.group === 'finance' || x.group === 'bid' || x.group === 'build' || x.group === 'plan30' ? x.label + ' (' + x.chosen + ')' : x.chosen ? x.chosen.charAt(0).toUpperCase() + x.chosen.slice(1) : x.label;
+      var w = x.group === 'shifts' ? 'Your shifts, against an expert\'s,' : x.group === 'chips' ? 'The chip bet' : x.group === 'finance' || x.group === 'bid' || x.group === 'build' || x.group === 'plan30' ? x.label + ' (' + x.chosen + ')' : x.chosen ? x.chosen.charAt(0).toUpperCase() + x.chosen.slice(1) : x.label;
+      if (x.group === 'chips' && Math.abs(Math.round(x.sharePct)) < 1) return w + ' barely changed your return.';
       return w + (x.npvCr >= 0 ? ' made ' : ' cost you ') + Math.abs(Math.round(x.sharePct)) + '% of your return.';
     };
     var absSum = groups.reduce(function (a, x) { return a + Math.abs(phi[x.group]); }, 0) + Math.abs(rest), top2 = groups.slice(0, 2).reduce(function (a, x) { return a + Math.abs(phi[x.group]); }, 0);
@@ -15652,6 +15768,9 @@ requestAnimationFrame(frame);
       if (rs > 0) out.push({id: 'risk-right', line: 'A risk-taker, and right about it.', evidence: risky.join('; ').replace(/^./, function (c) { return c.toUpperCase(); }) + ': it still made ' + Math.round(rs) + '%.'});
       else if (rs < 0) out.push({id: 'risk-cost', line: 'A risk-taker, and it cost you.', evidence: risky.join('; ').replace(/^./, function (c) { return c.toUpperCase(); }) + ': it cost ' + Math.abs(Math.round(rs)) + '%.'});
     }
+    var cb = chipsBet(state);
+    if (cb && cb.outcome === 'grows' && share('chips') > 0)
+      out.push({id: 'patient', line: 'Patient. You waited 25 years for a bet to pay.', evidence: cr(cb.cr) + ' into ' + cb.pct + '% of the MIHAN chip plant in ' + cal(cb.year) + ', sold in ' + cal(cb.exitYear) + ' for ' + cb.multiple + ' times the money in (+' + Math.round(share('chips')) + '%).'});
     if (!out.length) out.push({id: 'defaults', line: 'The airport mostly ran on its defaults. Next time, try a decision that scares you.', evidence: ''});
     out.forEach(function (l) { var i = l.line.indexOf('. '); l.title = i > 0 ? l.line.slice(0, i + 1) : l.line; l.text = i > 0 ? l.line.slice(i + 2) : ''; });
     return out;
@@ -15680,8 +15799,9 @@ requestAnimationFrame(frame);
       answer: cities ? cities + ' cities signed in ' + cal(CH4.year) + (collapsed ? '; the bank came back at about 60% after ' + NM.feeder + ' stopped.' : ', still feeding at the handback.') : 'None signed: every airline flew its own timetable.'});
     out.push({q: 'Durability: will this still be your market in year 60?', mark: mk(rivalWon === false),
       answer: rivalWon == null ? 'Not tested: the concession ended first.' : rivalWon ? poss(NM.rival) + ' Hyderabad hub took some of your banks: your network was thin.' : poss(NM.rival) + ' Hyderabad hub never filled its banks.'});
-    out.push({q: 'Secret: did you act on something few believed?', mark: mk(cities && dests && dec['ch5-hold'] === 'hold'),
-      answer: net === 'cut' ? 'You cut charges, the obvious move, and Dubai matched it within a year.' : cities && dests && dec['ch5-hold'] === 'hold' ? 'You built banks and paid to hold connections when cutting charges was the obvious move.' : 'You built a bank, but stopped short of holding it together.'});
+    var cb = chipsBet(state), chipPaid = cb && cb.outcome === 'grows';
+    out.push({q: 'Secret: did you act on something few believed?', mark: mk((cities && dests && dec['ch5-hold'] === 'hold') || chipPaid),
+      answer: chipPaid ? 'You backed chips in Nagpur when few did: ' + cb.pct + '% of the MIHAN plant, bought for ' + cr(cb.cr) + ' and sold for ' + cb.multiple + ' times that in ' + cal(cb.exitYear) + '.' : net === 'cut' ? 'You cut charges, the obvious move, and Dubai matched it within a year.' : cities && dests && dec['ch5-hold'] === 'hold' ? 'You built banks and paid to hold connections when cutting charges was the obvious move.' : 'You built a bank, but stopped short of holding it together.'});
     return out;
   }
   // the four pages as ZMMoney.debrief takes them: {return, attribution, papers, profile, thiel} (design/debrief.md §6)
@@ -15727,7 +15847,7 @@ requestAnimationFrame(frame);
 
   ch5.chapter = 5; ch5.eras = CH_ERAS[5].slice();
   var API = {
-    ch3: ch3, ch4: ch4, ch5: ch5, ch6: ch6, ch7: ch7, chapters: {3: ch3, 4: ch4, 5: ch5, 6: ch6, 7: ch7}, bridge: bridge, debrief: debrief, cliffhanger: cliffhanger, actBreak: actBreak,
+    ch3: ch3, ch4: ch4, ch5: ch5, ch6: ch6, ch7: ch7, chapters: {3: ch3, 4: ch4, 5: ch5, 6: ch6, 7: ch7}, chips: chips, bridge: bridge, debrief: debrief, cliffhanger: cliffhanger, actBreak: actBreak,
     data: function (md) { load(md); _closeCache = {}; return API; },
     capexCr: capexCr, phase1Options: phase1Options, stateLoanOpt: stateLoanOpt, lenders: lenderOptions, partners: partners, bidTypes: bidTypes,
     previewBid: previewBid, previewClose: previewClose, bidOpening: bidOpening, bidRivals: bidRivals, privateHouses: privateHouses, pitchPrivate: pitchPrivate, _tender: {BIDDERS: BIDDERS, reset: function () { _ceil = null; }, ceilings: function () { return rivalCeilings(); }},
@@ -18826,10 +18946,90 @@ function s0Mock(kind){mountS();
     return Promise.resolve();});}
 M._s0Mock=s0Mock;
 
+/* ZMMoney.prospectus(opts) → Promise<{choice, signedOn}>. opts = VSIEra.chips.prospectus(state) (design/ideas/chip-bet.md):
+   {docId, title, date, lead, body:[typed paragraphs], map:{plant, apron, km, dests:[3]}, choices:[{id, label, terms,
+    slip:{outWords, saleWords, cargoWords, line}}] (big, small, pass), stamps:{[id]: word}, slipQuestion, slipNote, sources:[],
+    parties:{plant, signatory:{name, title}}}; optional founder, parent, signature, pile.
+   The plant's invitation to co-invest, with a drafting-ink map: the plant, 2 km of road to VSI's cargo apron, and the
+   dotted air routes beyond. The slip compares the three lines; signing brings down the stamp and files the paper. */
+const CSS_PX=`
+.zpx .zdk-doc{padding:26px 46px 22px}
+.zpx .zpx-lead{margin:0 0 10px;font-family:var(--fd);font-style:italic;font-size:17.5px;line-height:1.35;color:#1d2024}
+.zpx .zpx-map{display:block;width:100%;height:auto;margin:2px 0 8px;border-top:1px solid #c9ccc8;border-bottom:1px solid #c9ccc8}
+.zpx .zpx-map text{font-family:var(--ft);font-size:11px;fill:#55595e}
+.zpx .zpx-map text.k{fill:#1d2024;font-weight:700}
+.zpx .zpx-map .rd{stroke:#1d2024;stroke-width:1.8;fill:none}
+.zpx .zpx-map .air{stroke:#3b3f44;stroke-width:1.5;fill:none;stroke-dasharray:1.5 5;stroke-linecap:round}
+.zpx .zpx-src{margin:10px 0 0;padding-top:6px;border-top:1px solid #d6d8d4;font-family:var(--ft);font-size:10.5px;line-height:1.45;color:var(--zpe)}
+.zpx .zdk-note .z5-sl span{font-size:14.5px}
+.zpx .zdk-note .zpx-nb{font-size:13.5px;color:var(--zpe);margin-top:10px}
+@media (max-width:1280px){.zpx .zdk-doc{padding:22px 36px 20px}.zpx .zpx-lead{font-size:16.5px}}`;
+let cssPx=false;
+function zpxMap(m){m=m||{};const d=(m.dests||['Singapore','Frankfurt','Dallas']).slice(0,3),Y=[34,74,116],X=[452,500,440];
+  return `<svg class="zpx-map" viewBox="0 0 560 150" role="img" aria-label="${esc((m.plant||'The plant')+', '+(m.km||2)+' km by road to '+(m.apron||'the cargo apron')+', then by air to '+d.join(', '))}">
+    <g><rect x="22" y="62" width="58" height="34" fill="#fcfcf9" stroke="#1d2024" stroke-width="1.6"/><path d="M28 90l12-12M38 90l12-12M48 90l12-12M58 90l12-12M68 90l8-8" stroke="#676c71" stroke-width=".8"/>
+      <text class="k" x="22" y="114">${esc(m.plant||'MIHAN chip plant')}</text></g>
+    <path class="rd" d="M80 79 C 110 79, 120 76, 150 76"/><path d="M106 70v-6M126 70v-6M106 67h20" stroke="#676c71" stroke-width=".8"/><text x="107" y="60">${esc(String(m.km||2))} km</text>
+    <g><path d="M150 64 L206 64 L214 92 L158 92 Z" fill="#eef0ec" stroke="#1d2024" stroke-width="1.6"/><path d="M164 70h34M166 78h36M168 86h38" stroke="#9aa0a5" stroke-width=".7"/>
+      <text class="k" x="150" y="110">${esc(m.apron||'VSI cargo apron')}</text></g>
+    ${d.map((n,i)=>`<path class="air" d="M214 ${76+i*2} C 300 ${76+i*2}, ${X[i]-110} ${Y[i]}, ${X[i]} ${Y[i]}"/><circle cx="${X[i]}" cy="${Y[i]}" r="3" fill="#1d2024"/><text x="${X[i]+8}" y="${Y[i]+4}">${esc(n)}</text>`).join('')}
+    <text x="236" y="138">road</text><path d="M268 134h22" class="rd" stroke-width="1.4"/><text x="300" y="138">air</text><path d="M322 134h22" class="air"/>
+  </svg>`;}
+M.prospectus=function(o){o=o||{};mount5();if(!cssPx){cssPx=true;const c=document.createElement('style');c.id='zmmCssPx';c.textContent=CSS_PX;document.head.appendChild(c);}
+  return new Promise(res=>{
+  const ch=o.choices||[],pa=o.parties||{},sg=Object.assign({hand:{font:'La Belle Aurore',size:30,adv:.46,slant:2,rot:-4,ink:'#14161a',weight:.2,flourish:'under'}},pa.signatory||{});
+  const pile=o.pile||PILE,now=new Date(),sd=dayOf(o.date),dateTxt=sd?longDay(sd):(hd(o.date)||longDay(now));
+  let pick=null,done=false;
+  const sh=desk5('z5-dec zpx',`<header class="zdk-top"><div class="zdk-mark">${vsiLogo(30)}<span>${esc(M.cfg.airportName)}</span></div></header>
+    <div class="zdk-pile" id="zdkPile" aria-label="Documents on file">${pileCards(pile)}</div>
+    <main class="zdk-main"><div class="zdk-col"><article class="zdk-doc arrive" id="zdkDoc">
+      <div class="zdk-dh">${vsiLogo(22)}<span>Prospectus · ${esc(o.docId||'')}</span><span class="dt">${esc(dateTxt)}</span></div>
+      <h2>${esc(o.title||'An invitation to co-invest')}</h2>
+      <p class="zpx-lead">${esc(o.lead||'')}</p>
+      ${zpxMap(o.map)}
+      ${paras(o.body).map(p=>`<p class="t">${esc(p)}</p>`).join('')}
+      <div class="zdk-ticks" role="radiogroup" aria-label="VSIAL's answer">${ch.map(c=>`<button role="radio" aria-checked="false" data-id="${esc(c.id)}"><i></i><span>${esc(c.label)}</span>${c.terms?`<small>${esc(c.terms)}</small>`:''}</button>`).join('')}</div>
+      <div class="zdk-sigs"><div class="s"><div class="ink">${signSvg(sg)}</div><span><b>${esc(sg.name||'')}</b><br>${esc(sg.title||'Authorised signatory')}</span><small>for ${esc(pa.plant||'the plant')}</small></div>
+        <div class="s" id="z5Me"><div class="ink"></div><span><b>${esc(o.founder||'Director')}</b><br>Director${o.parent?', for '+esc(o.parent):''}</span><small>for ${esc(M.cfg.spvShort)}</small></div></div>
+      ${(o.sources||[]).length?`<p class="zpx-src">Sources: ${o.sources.map(esc).join('; ')}.</p>`:''}
+    </article><div class="zdk-acts"><button class="zdk-go" id="z5Sign" disabled>Tick one line first</button></div></div>
+    <aside class="zdk-note arrive" id="zdkNote" aria-live="polite"></aside></main>`);
+  wirePile(sh,pile);
+  const doc=sh.querySelector('#zdkDoc'),note=sh.querySelector('#zdkNote'),go=sh.querySelector('#z5Sign');
+  const actOf=c=>c.act||(c.id==='pass'?'Decline the invitation':'Sign for '+String(c.label||'').replace(/^Co-invest \w+: /,''));
+  const slipNow=()=>{const c=ch.find(x=>x.id===pick);
+    note.innerHTML=`<h3>${esc(o.slipQuestion||'What each line does')}</h3>${ch.map(x=>{const s=x.slip||{};return `<div class="z5-sl${x.id===pick?' on':''}"><b>${esc(String(x.label||'').split(':')[0])}</b>${[s.outWords,s.saleWords,s.cargoWords].filter(Boolean).map(t=>`<span>${esc(t)}</span>`).join('')}</div>`;}).join('')}${o.slipNote?`<p class="zpx-nb">${esc(o.slipNote)}</p>`:''}${c&&c.slip&&c.slip.line?`<p>${esc(c.slip.line)}</p>`:''}`;};
+  slipNow();
+  sh.querySelectorAll('.zdk-ticks button').forEach(b=>b.onclick=()=>{if(done)return;pick=b.dataset.id;sh.querySelectorAll('.zdk-ticks button').forEach(x=>x.setAttribute('aria-checked',x===b?'true':'false'));
+    go.disabled=false;go.textContent=actOf(ch.find(x=>x.id===pick));slipNow();});
+  go.onclick=()=>{if(done||!pick)return;done=true;go.disabled=true;
+    const me=sh.querySelector('#z5Me .ink'),sgs=sh.querySelector('.zdk-sigs');if(sgs&&doc.scrollHeight>doc.clientHeight)doc.scrollTo({top:doc.scrollHeight,behavior:reduced()?'auto':'smooth'});
+    me.innerHTML=o.signature?`<img src="${esc(o.signature)}" alt="Your signature">`:H(o.founder||M.cfg.spvShort);M.sfx('sign');
+    const word=(o.stamps||{})[pick]||(pick==='pass'?'Declined':'Signed');
+    (sgs||doc).insertAdjacentHTML('beforeend',stampHtml(word,'down',sd));doc.classList.remove('arrive');
+    const fin=()=>{close();res({choice:pick,signedOn:isoDay(sd||now)});};
+    if(reduced()){setTimeout(fin,700);return;}
+    setTimeout(()=>{const p=sh.querySelector('#zdkPile'),n=Math.min(5,p.children.length),cd=document.createElement('div');cd.className='zdk-card';cd.style.setProperty('--i',n);cd.style.setProperty('--r','-3deg');
+      cd.innerHTML=`<span>${esc(o.title||'Prospectus')}</span><i></i><i></i><i class="s"></i>${stampHtml(word,'mini',sd)}`;doc.classList.add('leave');note.style.opacity='0';setTimeout(()=>p.appendChild(cd),380);},900);
+    setTimeout(fin,2100);};
+});};
+/* ?moneymock=prospectus: the chip plant's invitation with the engine's figures for the sample company (no cargo terminal) */
+const PX_SAMPLE={docId:'chips-2035',title:'MIHAN Semiconductor Park: an invitation to co-invest',date:'2035-04-01',founder:'Asha Rao',parent:'Meridian Infra',
+  lead:'MIHAN Semiconductor Park: chip assembly and test, 2 km from your cargo apron. Co-investors wanted.',
+  body:['The plant will assemble and test chips for export, beside VSI in MIHAN. It opens in 2039 and wants patient co-investors for 25 years, until the stake is sold in 2060.','This year\'s cash is going into the new terminals, so the money would be called from the shareholders: Meridian Infra pays its 64%.','VSI has no cargo terminal of its own yet, so about half the chips would go by road to Mumbai.'],
+  map:{plant:'MIHAN chip plant',apron:'VSI cargo apron',km:2,dests:['Singapore','Frankfurt','Dallas']},slipQuestion:'What each line puts in, and what it could bring back',slipNote:'All in today\'s money, if the plant grows as planned. A plant like this can also struggle, or close.',
+  choices:[{id:'big',label:'Co-invest big: ₹1,500 cr for 10% of the plant',terms:'A seat on the plant\'s board. The plant flies all its chips through VSI.',slip:{outWords:'Money out now: ₹1,500 cr',saleWords:'Your stake on the 25-year sale: about ₹9,000 cr',cargoWords:'Chip cargo from 2050: about ₹120 cr a year',line:'The bigger bet: more cargo, and more to lose if the plant fails.'}},
+    {id:'small',label:'Co-invest small: ₹500 cr for 3% of the plant',terms:'A minority stake. The plant flies part of its chips through VSI; the rest goes by road.',slip:{outWords:'Money out now: ₹500 cr',saleWords:'Your stake on the 25-year sale: about ₹3,000 cr',cargoWords:'Chip cargo from 2050: about ₹48 cr a year',line:'A smaller cheque, a smaller share of the cargo.'}},
+    {id:'pass',label:'Pass',terms:'VSIAL does not invest. The park looks for backers elsewhere, and its chips go by road to Mumbai.',slip:{outWords:'Money out now: nothing',saleWords:'Your stake on the 25-year sale: none',cargoWords:'Chip cargo from 2050: none at VSI',line:'No risk, and no part in it.'}}],
+  stamps:{big:'CO-INVESTED',small:'CO-INVESTED',pass:'DECLINED'},sources:['Micron\'s chip assembly-and-test plant at Sanand, Gujarat, approved by the Union Cabinet in June 2023 (PIB, 6 Dec 2023)','Tata Electronics\' chip fab at Dholera, Gujarat, approved on 29 February 2024 (PIB)'],
+  parties:{plant:'MIHAN Semiconductor Park',signatory:{name:'The Chief Financial Officer',title:'MIHAN Semiconductor Park'}}};
+M._pxSample=PX_SAMPLE;
+
 /* ---------- auto-mount, and a mock driver for screenshots: ?moneymock ---------- */
 function boot(){M.mount();if(!/[?&]moneymock\b/.test(location.search))return;
   {const k=(location.search.match(/[?&]moneymock=(frontpage|decision|briefing|tags|pins|bill|card)\b/)||[])[1];if(k){ch5Mock(k).then(r=>{window.__zmmResult=r;});return;}}
   {const k=(location.search.match(/[?&]moneymock=(file0|file|tear)\b/)||[])[1];if(k){fileMock(k);}}
+  if(/[?&]moneymock=prospectus\b/.test(location.search)){M.prospectus(PX_SAMPLE).then(r=>{window.__zmmResult=r;});return;}
   {const k=(location.search.match(/[?&]moneymock=(strip|flaps|cliff|tie|minutes|letter|stepin|debrief[1-4]?)(?![\w-])/)||[])[1];if(k){s0Mock(k).then(r=>{window.__zmmResult=r===undefined?'done':r;});return;}}
   M.enable(true);let total=0;const hs=[];
   setInterval(()=>{const d=(Math.random()-0.28)*0.9;total+=d;hs.push(total);M.setDay({total,ratePerHr:total/Math.max(1,hs.length)*60,history:hs});

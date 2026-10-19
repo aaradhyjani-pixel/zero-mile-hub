@@ -3080,6 +3080,12 @@ const FL_BOT={
     pick:{3:'bigbang',4:'cut',5:'decline',6:'refuse',7:{district:false,phase2:false,l5:false}},radar:false,hold:'go',
     shift:{3:{stars:1,otp:0.7,cx:0.8,made:300,missed:200,incidents:{belt:'ignored',stands:'taxi'}},4:{stars:1,otp:0.72,cx:0.8,made:120,missed:60,incidents:{ramp:'meter'}},
       6:{stars:1,otp:0.74,cx:0.82},7:{stars:1,otp:0.74,cx:0.82}}}};
+// the chip bet (design/ideas/chip-bet.md): after Climb's bill, the 2035 fundraising board's prospectus, once (VSIEra.chips).
+// Bots: 'smart' co-invests small (on the banks' loan VSI has no cargo terminal, so half the chips would truck to Mumbai), 'blind' passes.
+async function flChipBet(st){const B=CAMP.E().chips;if(!B||!B.offered||!B.offered(st)||!ZMMoney.prospectus)return false;
+  const p=B.prospectus(st),dflt=FL.bot?{choice:FL.bot.mode==='smart'?'small':'pass'}:null;
+  const r=FL.bot&&!FL.bot.papers?(FL.log.push({n:4,kind:'chips',at:Date.now(),lead:p.title,pick:dflt.choice}),dflt):await FL.show('chips',p,()=>ZMMoney.prospectus(FL.who(st,p)),dflt);
+  const ns=B.apply(st,(r&&r.choice)||'pass');ns.flight=st.flight;CAMP.st=ns;FL.save();return true;}
 const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
   on(){return !FLIGHT_LEGACY&&FL.ok();},
   ok(){const E=CAMP.E();return !!(CAMP.ready()&&E&&E.chapters&&E.bridge&&E.cliffhanger&&E.debrief&&E.debrief.pages&&E.chapters[3]&&ZMMoney.frontPage&&ZMMoney.decision&&ZMMoney.bill);},
@@ -3166,6 +3172,7 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
             const ns=E.chapters[4].applyBudget(st,r==='cta');ns.flight=Object.assign({},f,{step:'card'});CAMP.st=ns;FL.save();continue;}
           await FL.show('bill',b,()=>Z.bill(b),null);}
         f.step='card';FL.save();continue;}
+      if(f.step==='card'&&n===4&&await flChipBet(st))continue;   // the chip bet, once, before Climb's card
       if(f.step==='card'){const card=f.out&&f.out.card;if(card)await FL.show('card',card,()=>Z.whatHappened(card),null);
         FL.pastAdd(f,st,n);delete f.out;delete f.stub;
         if(st.over&&st.over.reason==='handback')f.step='handback';

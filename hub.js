@@ -2472,7 +2472,7 @@ const CAMP={active:false,st:null,
   save(){if(CAMP.st)store.set('zm_campaign',CAMP.st);},
   async newGame(){const E=CAMP.E();$('#overlay').hidden=true;let r=null;
     // every figure on the desk comes from era.js: phase 1's size and cost, the State's loan, who lends, and the bank-sized split
-    try{r=await ZMMoney.onboarding({capexCr:E.capexCr(),phase1:E.phase1Options(),stateLoan:E.stateLoanOpt(),lenders:E.lenders(),partners:E.partners(),bidTypes:E.bidTypes(),gearing:{min:60,max:80,def:70},previewBid:b=>E.previewBid(b),previewClose:c=>E.previewClose(c)});}catch(e){console.warn('onboarding',e);}
+    try{r=await ZMMoney.onboarding({capexCr:E.capexCr(),phase1:E.phase1Options(),stateLoan:E.stateLoanOpt(),lenders:E.lenders(),partners:E.partners(),bidTypes:E.bidTypes(),gearing:{min:60,max:75,def:70},previewBid:b=>E.previewBid(b),previewClose:c=>E.previewClose(c)});}catch(e){console.warn('onboarding',e);}
     if(!r){menu('concession');return;}
     CAMP.st=E.newCampaign(r,(Date.now()%100000)+1);CAMP.save();CAMP.build();},
   // the construction years (years 1-4) between signing and opening day; "Not now" (null) saves and returns to the menu.

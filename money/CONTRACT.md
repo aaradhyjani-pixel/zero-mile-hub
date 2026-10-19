@@ -85,14 +85,7 @@ The defaults are:
   | new, optional: `pile[]` | `[{title, stamp}]` | documents already on file (default: the agreement and earlier minutes) |
 
   It resolves `{bought:[ids], appeal, dividendCr, prepayCr, approvedOn}`. `approvedOn` (YYYY-MM-DD) is new; the rest is unchanged. There is no cancel: the board always decides.
-- **`ZMMoney.incomeStatement(opts)`** works for a shift, an era or the 60-year handback. It resolves `'cta'` or `'cta2'`. `opts` takes:
-  - `{band, title}`
-  - `hero` (HTML string)
-  - `sections:[{title, rows:[{label, amount (number or string), kind:'rev'|'cost'|'total'|'good'|'bad'}]}]`
-  - `compare:[{name, value, me}]`, `compareLabel`
-  - `moments:[text]`
-  - `cta`, `cta2`
-
+- **`ZMMoney.incomeStatement(opts)`** is now a wrapper around `ZMMoney.bill`, so the old dark yellow-banded sheet can never appear again. It takes the old shape (`band`, `title`, `hero` (HTML; its text becomes the lead), `sections:[{title, rows:[{label, amount (number or string), kind, period?}]}]`, `compare`, `compareLabel`, `moments`, `cta`, `cta2`) plus any `bill` field (`paragraph`, `cover`, `stake`, `margin`, `year`), and resolves `'cta'` or `'cta2'`. Use `bill` directly in new code.
 - **`ZMMoney.handback(opts)`** is the year-60 handover certificate on duty paper (DESIGN.md §10). The player's day-one signature sits beside an empty pad, and they sign again. A "60 years" stamp and the VSIAL seal come down. Try it with `?moneymock=handback`, or open `money/test_handback.html` (a standalone harness, served from the repo root).
 
   | opts field | Meaning |
@@ -140,7 +133,7 @@ It resolves `{choices:{[eventId]: optionId}, finishedOn, slipMonths}`. `finished
 
 
 ## Chapter 5, "Take on the Gulf" (prompt-campaign.md §7)
-Every figure comes in from `VSIEra.ch5`; ui.js invents no numbers. Mocks: `?moneymock=bill|frontpage|decision|briefing|tags|card` (briefing and tags over the live game in site/index.html; the rest also in `money/test_ch5_ui.html`).
+Every figure comes in from `VSIEra.ch5`; ui.js invents no numbers. Mocks: `?moneymock=bill|frontpage|decision|briefing|tags|pins|card` (briefing and tags over the live game in site/index.html; the rest also in `money/test_ch5_ui.html`).
 - `ZMMoney.frontPage(VSIEra.ch5.frontPage(state))` → Promise. Newsprint dropped on the desk; "Turn it over" resolves. Optional `company`, `founder`, `signature` (PNG data URL) print a "from our files" signature line; `edition`, `price` fill the ears.
 - `ZMMoney.decision(VSIEra.ch5.decision(state))` → Promise<{choice, signedOn}>. The deal-desk document: tick a line, the adviser's slip shows `slip.big/money/line`, sign, the stamp lands (`stamps[id]`) with a short thud. Optional `founder`, `parent`, `signature`, `date`, `docId`, `docType`.
 - `ZMMoney.briefing(VSIEra.ch5.briefing(state))` → Promise. A torn notepad sheet pinned top-left over the live game, not a modal. `lines:[{text, doc}]` (doc = a document title in the pile, or `docId`), `watch`, `autoStartSec` (the countdown pauses while a document is open). Resolves after the countdown or on a click.
@@ -151,3 +144,32 @@ Every figure comes in from `VSIEra.ch5`; ui.js invents no numbers. Mocks: `?mone
 - `ZMMoney.setConnections({made, missed})`: the one line under the money chip (replaces the rate line from then on).
 - `ZMMoney.bill(bill)` → Promise. One annual-report page: paragraph, the Earned/Spent/Connections table, "Can the airport pay the banks?" with `cover.words` on a pencil scale (`cover.light` optional; else red under 1.1, amber under 1.3), the stake line and one handwritten margin note.
 - `ZMMoney.whatHappened(card)` → Promise. A small index card: 2–3 sentences, numbered sources in small type.
+
+- `ZMMoney.bill` rows (new, optional): `{head}` is a section heading; `{label, text}` prints a string; `kind:'cost'|'total'|'good'|'bad'` (costs print negative); `period` labels the row's period in small type ("this afternoon", "a year", "2040–43"), so every money figure on the page is either in the same period or labelled. `head` replaces the "VSIAL · Annual report" header line, `list:{title, items}` adds a short list under the table, `cta2` adds a second button. It now resolves `'cta'` or `'cta2'`.
+- `ZMMoney.setConnections({made, missed})` should be called every time a passenger makes or misses a connection, not only when a departure settles; the chip line reprints at once. `setConnections(null)` ends it: the rate line comes back on the next `setDay`. (The CONNECTIONS box in the top strip, `#kCnx`, belongs to hub.js.)
+
+## Dates
+`ZMMoney.fmtDate(iso)` turns `'2039-04-01'` (or a Date) into "1 April 2039". Anything else passes through unchanged. Every screen in ui.js writes dates this way, and an ISO day inside any text passed in (paragraphs, briefing dates, tag lines, margin notes) is rewritten the same way. Stamps keep "01 APR 2039".
+
+## Margin pins: tags never cover a runway, a taxiway or the terminal (F7, Stage 0 fix d)
+- `ZMMoney.tag(x, y, docTitle, line, docId?)` → `{el, move(x, y, cx?, cy?), remove(), flash(), size()}` and the `tag(id, {doc, line, docId})` + `tagAt(id, x, y, cx?, cy?)` + `tagRemove(id)` form both still work. `(x, y)` is now **the spot** (the aircraft, stand or runway point), relative to `#app`; call `move`/`tagAt` every frame.
+- What shows: a **12px pushpin in the margin**, never on the spot, joined to the spot by a **dashed leader**. Open, the pin carries **at most two short lines**: the line (one line, ellipsis) and the document's title in small type. `size()` returns `{w:244, h:38}` (the open size; ui.js always places as if open, so opening never moves the pin).
+- Open and fold: a new tag opens the first time it finds a place; hover opens; a click on the pin opens it, a click on the open lines (or on an open pin) opens the document. **At most two are open at once** (opening a third folds the oldest). Each **folds 6 s after it opened** (hover holds it open; leaving gives it at least 1.5 s more). `tagFlash(id)` pulses the pin and opens it for 6 s.
+- `ZMMoney.tagAvoid(shapes, {region}?)`: hub.js calls it **every frame** with the screen shapes (relative to `#app`) of every runway, **taxiway** and the terminal. A shape is a rectangle (`{l,t,r,b}`, `{left,top,right,bottom}`, `{x,y,w,h}`, `{x0,y0,x1,y1}`, `[x,y,w,h]`) or **a polygon** (`[[x,y],...]`, `[{x,y},...]`, or `{pts|points|poly:[...], kind}`), with an optional `kind` (`'runway'`, `'taxiway'`, `'terminal'`, `'panel'`; `kind:'region'` or `opt.region` is the free map area). Polygons are tested exactly (vertex-in-box, corner-in-polygon, edge crossings), with an 8px gap. Pins are placed again only when the shapes change.
+- Placement order: where the pin already is (if still clear and within 520px of the spot), the `cx, cy` hint from `move`, beside the union of the shapes on the side nearest the spot, then rings around the spot. Every candidate must be clear of the shapes, the HUD panels in the page, the other pins and 12px around the spot. No room for the lines: the pin alone (`pinOnly`; a click opens the document). No room at all: the tag hides until there is room. A pin left of its spot puts its lines on its left (`flip`).
+- Tests: `ZMMoney.tagBox(id)` → `{l,t,r,b,open,pinOnly}` or null; `ZMMoney.tagBoxes()` → every visible one with its `id`; `ZMMoney.tagClashes()` → `[{id, kind}]` for any visible pin touching a shape (must be `[]`); `ZMMoney.tagShapes()` → the shapes in use. `?moneymock=pins` in the live game feeds `tagAvoid` with the real runways, every taxiway segment and each concourse polygon, with four pins (`window.__zmmClash` holds the clashes); `?moneymock=tags` is the older two-tag mock.
+
+## Live connections (Stage 0 fix e)
+- `ZMMoney.setConnections({made, missed})` writes the same live count in **two places**: the line under the money chip and a line under the top strip's CONNECTIONS box (`#kCnx .zmm-cxs`: "2,073 made · 390 missed"). Call it every time a passenger makes or misses a connection. `null` clears both. (hub.js still owns the box's big figure.)
+- `ZMMoney.incomeStatement(opts)` is a wrapper around `ZMMoney.bill`, so the old dark sheet can never appear.
+- `ZMMoney.bill` takes a new optional `period` ("This page covers one year: 1 April 2040 to 31 March 2041."), printed under the title, so the paragraph and the table are read as the same period; rows can still carry their own `period`.
+
+## The concession file (the Concession tab's saved game)
+- **`ZMMoney.concessionFile(container, opts)`** renders the saved concession into the Concession tab's container (no modal) and returns its root element. `opts = {company, founder, signature (PNG data URL), signedOn ('YYYY-MM-DD'), year, chapter (1–7, or a name; `era` is the fallback), resumable?, stake:{pct, valueCr}, cover:{words, light}, cashCr, docs:[{id, title, date, stamp?, kind?, summary}], record:[...], onContinue(), onNew(arg), onOpenDoc(doc)}`.
+  - It shows the company name and "<founder>, director" with the player's own signature image, "Signed 1 April 2026 · now year 17 of 60 · Chapter 5 · Cruise" (`ZMMoney.chapterName(n)`; `ZMMoney.CHAPTERS` holds the seven names), three numbers (your stake and what it is worth; the banks' light as `cover.words` with "The banks are relaxed / watching closely / warning you" from `cover.light`; cash in hand), the last six documents signed as small cards (a click calls `onOpenDoc(doc)`, or `ZMMoney.openDoc(doc)` if none is given), and two buttons: "Continue as <Company>" (`onContinue()`) and "Start a new concession".
+  - "Start a new concession" asks once with `confirmTear(company)` and calls `onNew({confirmed:true})` only after "Tear it up and start again". hub.js then moves the torn concession to `zm_record`, clears `zm_campaign`, and opens the deal desk. (If hub.js calls `confirmTear` again inside `onNew`, it resolves `true` at once without asking a second time.)
+  - **Resumable** only if `ZMMoney.fileResumable(opts)`: company, founder, signature and signedOn all present and `resumable !== false` (hub.js sets `resumable:false` for an older save version). Otherwise the file shows only "Start the concession" (with one line, "<Company>'s file is from an older version of the game and can't be continued.", when there was a company). Mocks and fixtures never write `zm_campaign`.
+  - `opts` null, or without `company`: only the "Start the concession" button, which calls `opts.onNew({confirmed:false})` (always open the deal desk). Pass `{onNew, record}` to list the earlier concessions under it.
+  - `record` (oldest first; the file shows the last four, newest on top): `[{company, founder, signature, years, ended:'handback'|'banks'|'torn', returnPct, endedOn}]`, one line each under **Earlier concessions**, with the signature: "Meridian Infra · Asha Rao · 17 years · torn up in 2026 · returned 9.6% a year".
+- **`ZMMoney.confirmTear(company)`** → `Promise<boolean>`. A paper memo over the menu: "This tears up <Company>'s concession. Start again?" with [Tear it up and start again] and [Keep it] (focused; Escape and a click outside keep it). On "Tear it up" the memo tears in two and falls apart, then it resolves `true`.
+- Mocks: `money/test_file.html?moneymock=file` (a saved company, three documents, two earlier concessions), `?moneymock=file0` (no save) and `?moneymock=tear` (the memo; "Tear it up" moves the company to the record and opens the deal desk). The same mocks run in the game page and render into `#tConc` when the Concession tab is open.

@@ -14344,8 +14344,11 @@ const CSS5=`
 @keyframes z5Away{to{opacity:0;transform:translate(-30vw,60px) rotate(-9deg) scale(calc(var(--s)*.5))}}
 /* 7.2 the decision: a route agreement on white bond */
 .z5-dec .zdk-main{grid-template-columns:minmax(230px,1fr) minmax(600px,680px) minmax(250px,1fr)}
-.z5-dec .zdk-doc{padding:34px 50px 34px}
-.z5-dec .zdk-ticks button{padding:7px 0}
+.z5-dec .zdk-doc{padding:30px 50px 28px}
+.z5-dec .zdk-doc .t{line-height:1.5;margin:0 0 10px}
+.z5-dec .zdk-doc h2{margin-bottom:10px}
+.z5-dec .zdk-ticks button{padding:4px 0}
+.z5-dec .zdk-sigs .zdk-stamp{top:-6px;right:6px}
 .z5-dec .zdk-ticks small{font-size:12.5px;line-height:1.45}
 .z5-dec .zdk-sigs{grid-template-columns:repeat(2,minmax(0,1fr))}
 .z5-dec .zdk-sigs .ink img{height:50px;max-width:100%;object-fit:contain;object-position:left bottom}
@@ -14524,9 +14527,9 @@ M.decision=function(o){o=o||{};return new Promise(res=>{
   sh.querySelectorAll('.zdk-ticks button').forEach(b=>b.onclick=()=>{if(done)return;pick=b.dataset.id;sh.querySelectorAll('.zdk-ticks button').forEach(x=>x.setAttribute('aria-checked',x===b?'true':'false'));
     const c=ch.find(x=>x.id===pick);go.disabled=false;go.textContent=actOf(c);slipNow();});
   go.onclick=()=>{if(done||!pick)return;done=true;go.disabled=true;
-    const me=sh.querySelector('#z5Me .ink');me.innerHTML=o.signature?`<img src="${esc(o.signature)}" alt="Your signature">`:H(o.founder||M.cfg.spvShort);
+    const me=sh.querySelector('#z5Me .ink');const sgs=sh.querySelector('.zdk-sigs');if(sgs&&doc.scrollHeight>doc.clientHeight)doc.scrollTo({top:doc.scrollHeight,behavior:reduced()?'auto':'smooth'});me.innerHTML=o.signature?`<img src="${esc(o.signature)}" alt="Your signature">`:H(o.founder||M.cfg.spvShort);
     const word=(o.stamps||{})[pick]||(pick==='decline'?'Declined':'Signed');
-    doc.insertAdjacentHTML('beforeend',stampHtml(word,'down'));doc.classList.remove('arrive');if(!reduced())thud();
+    const sd=o.date?new Date(o.date):null;(sgs||doc).insertAdjacentHTML('beforeend',stampHtml(word,'down',sd&&isFinite(sd)?sd:undefined));doc.classList.remove('arrive');if(!reduced())thud();
     const fin=()=>{close();res({choice:pick,signedOn:isoDay(now)});};
     if(reduced()){setTimeout(fin,700);return;}
     setTimeout(()=>{const p=sh.querySelector('#zdkPile'),n=Math.min(5,p.children.length),cd=document.createElement('div');cd.className='zdk-card';cd.style.setProperty('--i',n);cd.style.setProperty('--r','-3deg');

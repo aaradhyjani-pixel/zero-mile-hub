@@ -2465,19 +2465,29 @@ function mnySet(on){on=!!on&&!!MNY;if(MNY)MNY.on=on;try{if(window.ZMMoney&&!/mon
 const CAMP={active:false,st:null,
   E(){const E=window.VSIEra;if(E&&!CAMP._d&&E.data&&window.MONEY_DATA){try{E.data(window.MONEY_DATA);}catch(e){console.warn('era data',e);}CAMP._d=true;}return E;},
   ready(){return !!(MNY&&window.ZMMoney&&ZMMoney.onboarding&&window.VSIEra&&window.MONEY_DATA);},
-  // the State's interest-free loan is the gap between the cost and the banks plus the shareholders: pass it, so the agreement adds up
-  close(E,c){const q=E.previewClose(c);if(q&&q.stateLoanCr==null)q.stateLoanCr=Math.max(0,Math.round(E.capexCr()-q.debtCr-q.equityCr));return q;},
   load(){const o=store.get('zm_campaign');return o&&o.version&&o.s?o:null;},   // (no .s: an old save from the stand-in era module)
   save(){if(CAMP.st)store.set('zm_campaign',CAMP.st);},
   async newGame(){const E=CAMP.E();$('#overlay').hidden=true;let r=null;
-    try{r=await ZMMoney.onboarding({capexCr:E.capexCr(),partners:E.partners(),bidTypes:E.bidTypes(),gearing:{min:60,max:80,def:70},previewBid:b=>E.previewBid(b),previewClose:c=>CAMP.close(E,c)});}catch(e){console.warn('onboarding',e);}
+    // every figure on the desk comes from era.js: phase 1's size and cost, the State's loan, who lends, and the bank-sized split
+    try{r=await ZMMoney.onboarding({capexCr:E.capexCr(),phase1:E.phase1Options(),stateLoan:E.stateLoanOpt(),lenders:E.lenders(),partners:E.partners(),bidTypes:E.bidTypes(),gearing:{min:60,max:80,def:70},previewBid:b=>E.previewBid(b),previewClose:c=>E.previewClose(c)});}catch(e){console.warn('onboarding',e);}
     if(!r){menu('concession');return;}
-    CAMP.st=E.newCampaign(r,(Date.now()%100000)+1);CAMP.save();CAMP.play();},
+    CAMP.st=E.newCampaign(r,(Date.now()%100000)+1);CAMP.save();CAMP.build();},
+  // the construction years (years 1-4) between signing and opening day; "Not now" (null) saves and returns to the menu.
+  // Without the construction screen in this build, the airport is built as planned and era 1 starts.
+  async build(){const E=CAMP.E();$('#overlay').hidden=true;
+    if(window.ZMMoney&&ZMMoney.construction){let r=null;try{r=await ZMMoney.construction(E.constructionOpts(CAMP.st));}catch(e){console.warn('construction',e);}
+      if(!r){CAMP.save();menu('concession');return;}
+      CAMP.st=E.applyConstruction(CAMP.st,r);}
+    else CAMP.st=E.applyConstruction(CAMP.st,null);
+    CAMP.save();CAMP.play();},
   resume(){const st=CAMP.load();if(!st||!st.s){menu('concession');return;}CAMP.st=st;CAMP.play();},   // (no .s: a save from the stand-in era module, which cannot be resumed)
-  // before every shift: a concession that has ended (banks, or year 60) goes to its last page, never to another shift
-  play(){const E=CAMP.E();if(E.isOver(CAMP.st)){CAMP.end();return;}CAMP.active=true;startLevel(E.levelFor(CAMP.st));},
-  async end(){const E=CAMP.E();$('#overlay').hidden=true;CAMP.active=false;try{await ZMMoney.incomeStatement(E.handbackOpts(CAMP.st));}catch(e){}
-    store.set('zm_campaign_last',CAMP.st);try{localStorage.removeItem('zm_campaign');}catch(e){}CAMP.st=null;menu('concession');},
+  // before every shift: a concession that has ended (banks, or year 60) goes to its last page, never to another shift;
+  // one still being built goes back to the construction years
+  play(){const E=CAMP.E();if(E.isOver(CAMP.st)){CAMP.end();return;}if(E.needsConstruction&&E.needsConstruction(CAMP.st)){CAMP.build();return;}CAMP.active=true;startLevel(E.levelFor(CAMP.st));},
+  async end(){const E=CAMP.E(),st=CAMP.st;$('#overlay').hidden=true;CAMP.active=false;try{await ZMMoney.incomeStatement(E.endOpts(st));}catch(e){}
+    // year 60: the handback certificate, signed beside the day-one signature
+    if(st.over&&st.over.reason==='handback'&&window.ZMMoney&&ZMMoney.handback){try{const h=await ZMMoney.handback(E.handbackOpts(st));if(h)st.handback=h;}catch(e){console.warn('handback',e);}}
+    store.set('zm_campaign_last',st);try{localStorage.removeItem('zm_campaign');}catch(e){}CAMP.st=null;menu('concession');},
   // called at the end of finish(): the score sheet stays, but the way on is through the books, not "next level"
   finished(res){const E=CAMP.E(),h=CAMP.st.history||[];const a=$('#again'),n=$('#nextL');if(a)a.remove();if(n)n.remove();
     const b=document.createElement('button');b.className='go';b.id='books';b.textContent='Close the books for this period ›';const m=$('#toMenu');m.parentNode.insertBefore(b,m);m.textContent='Save and leave';
@@ -2490,14 +2500,14 @@ const CAMP={active:false,st:null,
       is.sections=[{title:'Your shift today',rows:[{label:'Earned',amount:m.revenueCr||0,kind:'rev'},{label:'Spent',amount:m.costCr||0,kind:'cost'},{label:'Today\'s money',amount:(m.revenueCr||0)-(m.costCr||0),kind:'total'}]}].concat(is.sections||[]);
       try{await ZMMoney.incomeStatement(is);}catch(e){console.warn('income',e);}}
     if(!out.report||E.isOver(CAMP.st)){await CAMP.end();return;}
-    const bo=Object.assign({founder:CAMP.st.founder||'',year:CAMP.st.year,stakeValueCr:out.report.stakeValueCr},E.boardOptions(CAMP.st));
+    const bo=E.boardOptions(CAMP.st);   // founder, partners, year, stake value, Airport City, the pile: all from era.js
     let d=null;try{d=await ZMMoney.boardMeeting(bo);}catch(e){console.warn('board',e);}
     CAMP.st=E.applyBoard(CAMP.st,d||{});CAMP.save();CAMP.play();},
   // the Concession tab in the menu
   html(){const st=CAMP.load(),z=window.ZMMoney&&ZMMoney.cfg||{};
     if(!CAMP.ready())return '<p>The concession is not available in this build.</p>';
     return `<h1>Run the airport for ${z.years||60} years</h1><p>Win the concession, raise the money, sign, and then run ${z.airportName||SPEC.name} shift by shift. Every few years you see the books and meet your board. Good operations are good money.</p>
-     ${st?`<p><b>${st.parent||'Your company'}</b>: years ${st.year||1} onwards${st.signedOn?`, signed on ${st.signedOn}`:''}.</p><button class="go" id="campGo">Continue the concession</button> `:''}
+     ${st?`<p><b>${st.parent||'Your company'}</b>: ${st.building?'the airport is being built':`years ${st.year||1} onwards`}${st.signedOn?`, signed on ${st.signedOn}`:''}.</p><button class="go" id="campGo">Continue the concession</button> `:''}
      <button class="go${st?' ghost':''}" id="campNew">${st?'Start a new concession':'Start the concession'}</button>
      ${st?'<p class="src" id="campWarn" hidden>Starting again replaces the saved concession. Press again to confirm.</p>':''}`;},
   wire(){const g=$('#campGo'),n=$('#campNew');if(g)g.onclick=()=>CAMP.resume();

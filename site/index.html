@@ -4053,19 +4053,29 @@ function mnySet(on){on=!!on&&!!MNY;if(MNY)MNY.on=on;try{if(window.ZMMoney&&!/mon
 const CAMP={active:false,st:null,
   E(){const E=window.VSIEra;if(E&&!CAMP._d&&E.data&&window.MONEY_DATA){try{E.data(window.MONEY_DATA);}catch(e){console.warn('era data',e);}CAMP._d=true;}return E;},
   ready(){return !!(MNY&&window.ZMMoney&&ZMMoney.onboarding&&window.VSIEra&&window.MONEY_DATA);},
-  // the State's interest-free loan is the gap between the cost and the banks plus the shareholders: pass it, so the agreement adds up
-  close(E,c){const q=E.previewClose(c);if(q&&q.stateLoanCr==null)q.stateLoanCr=Math.max(0,Math.round(E.capexCr()-q.debtCr-q.equityCr));return q;},
   load(){const o=store.get('zm_campaign');return o&&o.version&&o.s?o:null;},   // (no .s: an old save from the stand-in era module)
   save(){if(CAMP.st)store.set('zm_campaign',CAMP.st);},
   async newGame(){const E=CAMP.E();$('#overlay').hidden=true;let r=null;
-    try{r=await ZMMoney.onboarding({capexCr:E.capexCr(),partners:E.partners(),bidTypes:E.bidTypes(),gearing:{min:60,max:80,def:70},previewBid:b=>E.previewBid(b),previewClose:c=>CAMP.close(E,c)});}catch(e){console.warn('onboarding',e);}
+    // every figure on the desk comes from era.js: phase 1's size and cost, the State's loan, who lends, and the bank-sized split
+    try{r=await ZMMoney.onboarding({capexCr:E.capexCr(),phase1:E.phase1Options(),stateLoan:E.stateLoanOpt(),lenders:E.lenders(),partners:E.partners(),bidTypes:E.bidTypes(),gearing:{min:60,max:80,def:70},previewBid:b=>E.previewBid(b),previewClose:c=>E.previewClose(c)});}catch(e){console.warn('onboarding',e);}
     if(!r){menu('concession');return;}
-    CAMP.st=E.newCampaign(r,(Date.now()%100000)+1);CAMP.save();CAMP.play();},
+    CAMP.st=E.newCampaign(r,(Date.now()%100000)+1);CAMP.save();CAMP.build();},
+  // the construction years (years 1-4) between signing and opening day; "Not now" (null) saves and returns to the menu.
+  // Without the construction screen in this build, the airport is built as planned and era 1 starts.
+  async build(){const E=CAMP.E();$('#overlay').hidden=true;
+    if(window.ZMMoney&&ZMMoney.construction){let r=null;try{r=await ZMMoney.construction(E.constructionOpts(CAMP.st));}catch(e){console.warn('construction',e);}
+      if(!r){CAMP.save();menu('concession');return;}
+      CAMP.st=E.applyConstruction(CAMP.st,r);}
+    else CAMP.st=E.applyConstruction(CAMP.st,null);
+    CAMP.save();CAMP.play();},
   resume(){const st=CAMP.load();if(!st||!st.s){menu('concession');return;}CAMP.st=st;CAMP.play();},   // (no .s: a save from the stand-in era module, which cannot be resumed)
-  // before every shift: a concession that has ended (banks, or year 60) goes to its last page, never to another shift
-  play(){const E=CAMP.E();if(E.isOver(CAMP.st)){CAMP.end();return;}CAMP.active=true;startLevel(E.levelFor(CAMP.st));},
-  async end(){const E=CAMP.E();$('#overlay').hidden=true;CAMP.active=false;try{await ZMMoney.incomeStatement(E.handbackOpts(CAMP.st));}catch(e){}
-    store.set('zm_campaign_last',CAMP.st);try{localStorage.removeItem('zm_campaign');}catch(e){}CAMP.st=null;menu('concession');},
+  // before every shift: a concession that has ended (banks, or year 60) goes to its last page, never to another shift;
+  // one still being built goes back to the construction years
+  play(){const E=CAMP.E();if(E.isOver(CAMP.st)){CAMP.end();return;}if(E.needsConstruction&&E.needsConstruction(CAMP.st)){CAMP.build();return;}CAMP.active=true;startLevel(E.levelFor(CAMP.st));},
+  async end(){const E=CAMP.E(),st=CAMP.st;$('#overlay').hidden=true;CAMP.active=false;try{await ZMMoney.incomeStatement(E.endOpts(st));}catch(e){}
+    // year 60: the handback certificate, signed beside the day-one signature
+    if(st.over&&st.over.reason==='handback'&&window.ZMMoney&&ZMMoney.handback){try{const h=await ZMMoney.handback(E.handbackOpts(st));if(h)st.handback=h;}catch(e){console.warn('handback',e);}}
+    store.set('zm_campaign_last',st);try{localStorage.removeItem('zm_campaign');}catch(e){}CAMP.st=null;menu('concession');},
   // called at the end of finish(): the score sheet stays, but the way on is through the books, not "next level"
   finished(res){const E=CAMP.E(),h=CAMP.st.history||[];const a=$('#again'),n=$('#nextL');if(a)a.remove();if(n)n.remove();
     const b=document.createElement('button');b.className='go';b.id='books';b.textContent='Close the books for this period ›';const m=$('#toMenu');m.parentNode.insertBefore(b,m);m.textContent='Save and leave';
@@ -4078,14 +4088,14 @@ const CAMP={active:false,st:null,
       is.sections=[{title:'Your shift today',rows:[{label:'Earned',amount:m.revenueCr||0,kind:'rev'},{label:'Spent',amount:m.costCr||0,kind:'cost'},{label:'Today\'s money',amount:(m.revenueCr||0)-(m.costCr||0),kind:'total'}]}].concat(is.sections||[]);
       try{await ZMMoney.incomeStatement(is);}catch(e){console.warn('income',e);}}
     if(!out.report||E.isOver(CAMP.st)){await CAMP.end();return;}
-    const bo=Object.assign({founder:CAMP.st.founder||'',year:CAMP.st.year,stakeValueCr:out.report.stakeValueCr},E.boardOptions(CAMP.st));
+    const bo=E.boardOptions(CAMP.st);   // founder, partners, year, stake value, Airport City, the pile: all from era.js
     let d=null;try{d=await ZMMoney.boardMeeting(bo);}catch(e){console.warn('board',e);}
     CAMP.st=E.applyBoard(CAMP.st,d||{});CAMP.save();CAMP.play();},
   // the Concession tab in the menu
   html(){const st=CAMP.load(),z=window.ZMMoney&&ZMMoney.cfg||{};
     if(!CAMP.ready())return '<p>The concession is not available in this build.</p>';
     return `<h1>Run the airport for ${z.years||60} years</h1><p>Win the concession, raise the money, sign, and then run ${z.airportName||SPEC.name} shift by shift. Every few years you see the books and meet your board. Good operations are good money.</p>
-     ${st?`<p><b>${st.parent||'Your company'}</b>: years ${st.year||1} onwards${st.signedOn?`, signed on ${st.signedOn}`:''}.</p><button class="go" id="campGo">Continue the concession</button> `:''}
+     ${st?`<p><b>${st.parent||'Your company'}</b>: ${st.building?'the airport is being built':`years ${st.year||1} onwards`}${st.signedOn?`, signed on ${st.signedOn}`:''}.</p><button class="go" id="campGo">Continue the concession</button> `:''}
      <button class="go${st?' ghost':''}" id="campNew">${st?'Start a new concession':'Start the concession'}</button>
      ${st?'<p class="src" id="campWarn" hidden>Starting again replaces the saved concession. Press again to confirm.</p>':''}`;},
   wire(){const g=$('#campGo'),n=$('#campNew');if(g)g.onclick=()=>CAMP.resume();
@@ -11797,7 +11807,7 @@ requestAnimationFrame(frame);
   // Fitted at run time by tools/concession_model.py calibrate() on BIAL's FY2009-26 path (python3 tools/concession_model.py vsi).
   var CAL = {opex_fixed_per_mppa: 9.444550191956685, opex_per_pax: 134.21063291652203, open_k_greenfield: 1.6656841982117774,
     open_k_expansion: 1.6656841982117774, dep_life: 29.3, tax_share: 0.040170560075339416, aero_opex_share: 0.6569614218431498};
-  var DEF = {"cpi_forward": 0.04, "tax_rate": 0.2517, "loss_carry_years": 8, "demand_elasticity": 0.8, "avg_fare": 5200, "yield_market_norm": 606, "airline_relations_drag": -0.01, "push_hard_disallowance": 0.1352, "tariff_shock_carry": 0.139, "soft_push_carry": 0.25, "aera_order_lag": 0.458, "renewal_share": {"start": 0.25, "full": 1.0}, "state_loan_terms": {"share_of_built_cost": 0.1417, "cost": 0.0, "instalments": 20, "first_year_after_close": 11, "deferral_years": 10, "defer_from_year": 9}, "notional_debt_share_wacc": 0.48, "coe": 15.05, "dsra_quarters": 2, "lbc_dscr_target": 1.3, "lbc_moratorium_cover": 1.2, "refi": {"rate": 8.15, "moratorium": 2, "tenor": 15, "stable_years": 3, "stable_dscr": 1.2}, "opening_cost": {"greenfield_year2_share": 0.5}, "ops_profiles": {"base": {"Q": [0.95, 0.95, 0.95, 0.95, 0.95], "dis": [60, 60, 60, 60, 60], "sq": [0.01, 0.01, 0.01, 0.01, 0.01], "star": [0.0, 0.0, 0.0, 0.0, 0.0], "opex": [1.0, 1.0, 1.0, 1.0, 1.0]}, "expert": {"Q": [0.95, 0.95, 0.95, 0.95, 0.95], "dis": [60, 60, 60, 60, 60], "sq": [-0.0125, -0.0125, -0.0125, -0.0125, -0.0125], "star": [0.015, 0.015, 0.015, 0.015, 0.015], "opex": [1.0, 1.0, 1.0, 1.0, 1.0]}, "poor": {"Q": [0.92, 0.86, 0.85, 0.8, 0.78], "dis": [70, 115, 120, 150, 160], "sq": [0.01, 0.02, 0.03, 0.04, 0.04], "star": [0.0, -0.005, -0.01, -0.01, -0.01], "opex": [1.0, 1.02, 1.04, 1.06, 1.06]}, "lazy": {"Q": [0.85, 0.82, 0.8, 0.78, 0.78], "dis": [150, 150, 160, 180, 180], "sq": [0.03, 0.04, 0.05, 0.05, 0.05], "star": [-0.01, -0.03, -0.03, -0.03, -0.03], "opex": [1.04, 1.05, 1.05, 1.06, 1.06]}}, "vsi_ppm": {"1": 160.6, "2": 165.7, "3": 175.9, "4": 178.4}, "vsi_move_years": {"1": 5, "2": 8, "3": 11, "4": 14}, "capacity_headroom": 1.1, "nar_convergence": 0.3, "vsi_stages": {"1A_lean": {"cost": 36000, "spend": {"1": 0.25, "2": 0.25, "3": 0.25, "4": 0.25}, "cod": 5, "cap": 45}, "1A_big": {"cost": 56000, "spend": {"1": 0.25, "2": 0.25, "3": 0.25, "4": 0.25}, "cod": 5, "cap": 70}, "1B_lean": {"cost": 20000, "spend": {"6": 0.5, "7": 0.5}, "cod": 8, "cap": 95}, "1B_big": {"cost": 6875, "spend": {"6": 0.5, "7": 0.5}, "cod": 8, "cap": 95}, "1C": {"cost": 24000, "spend": {"9": 0.5, "10": 0.5}, "cod": 11, "cap": 150}, "1D": {"cost": 24000, "spend": {"11": 0.3333333333333333, "12": 0.3333333333333333, "13": 0.3333333333333333}, "cod": 14, "cap": 209}, "P2": {"cost": 14025, "spend": {"19": 0.5, "20": 0.5}, "cod": 21, "cap": 260}}, "vsi_loan_terms": {"1A": {"mor": 2, "years": 14, "rate": 9.5}, "1B": {"mor": 1, "years": 15, "rate": 9.5}, "T2": {"debt_share": 0.8, "rep_start": 15, "years": 10, "rate": 9.5}, "P2": {"debt_share": 0.8, "mor": 1, "years": 10, "rate": 9.5}}, "idc_constr_rate": 10.5, "aero_asset_share": 0.8766, "cash_yield": 5.5};
+  var DEF = {"cpi_forward": 0.04, "tax_rate": 0.2517, "loss_carry_years": 8, "demand_elasticity": 0.8, "avg_fare": 5200, "yield_market_norm": 606, "airline_relations_drag": -0.01, "push_hard_disallowance": 0.1352, "tariff_shock_carry": 0.139, "soft_push_carry": 0.25, "aera_order_lag": 0.458, "renewal_share": {"start": 0.25, "full": 1.0}, "state_loan_terms": {"share_of_built_cost": 0.1417, "cost": 0.0, "instalments": 20, "first_year_after_close": 11, "deferral_years": 10, "defer_from_year": 9}, "notional_debt_share_wacc": 0.48, "coe": 15.05, "dsra_quarters": 2, "lbc_dscr_target": 1.3, "lbc_moratorium_cover": 1.2, "refi": {"rate": 8.15, "moratorium": 2, "tenor": 15, "stable_years": 3, "stable_dscr": 1.2}, "opening_cost": {"greenfield_year2_share": 0.5}, "ops_profiles": {"base": {"Q": [0.95, 0.95, 0.95, 0.95, 0.95], "dis": [60, 60, 60, 60, 60], "sq": [0.01, 0.01, 0.01, 0.01, 0.01], "star": [0.0, 0.0, 0.0, 0.0, 0.0], "opex": [1.0, 1.0, 1.0, 1.0, 1.0]}, "expert": {"Q": [0.95, 0.95, 0.95, 0.95, 0.95], "dis": [60, 60, 60, 60, 60], "sq": [-0.0125, -0.0125, -0.0125, -0.0125, -0.0125], "star": [0.015, 0.015, 0.015, 0.015, 0.015], "opex": [1.0, 1.0, 1.0, 1.0, 1.0]}, "poor": {"Q": [0.92, 0.86, 0.85, 0.8, 0.78], "dis": [70, 115, 120, 150, 160], "sq": [0.01, 0.02, 0.03, 0.04, 0.04], "star": [0.0, -0.005, -0.01, -0.01, -0.01], "opex": [1.0, 1.02, 1.04, 1.06, 1.06]}, "lazy": {"Q": [0.85, 0.82, 0.8, 0.78, 0.78], "dis": [150, 150, 160, 180, 180], "sq": [0.03, 0.04, 0.05, 0.05, 0.05], "star": [-0.01, -0.03, -0.03, -0.03, -0.03], "opex": [1.04, 1.05, 1.05, 1.06, 1.06]}}, "vsi_ppm": {"1": 160.6, "2": 165.7, "3": 175.9, "4": 178.4}, "vsi_move_years": {"1": 5, "2": 8, "3": 11, "4": 14}, "capacity_headroom": 1.1, "nar_convergence": 0.3, "vsi_stages": {"1A_lean": {"cost": 60000, "spend": {"1": 0.1, "2": 0.2, "3": 0.3, "4": 0.4}, "cod": 5, "cap": 45}, "1A_big": {"cost": 85000, "spend": {"1": 0.1, "2": 0.2, "3": 0.3, "4": 0.4}, "cod": 5, "cap": 70}, "1B_lean": {"cost": 32000, "spend": {"6": 0.4, "7": 0.6}, "cod": 8, "cap": 95}, "1B_big": {"cost": 16000, "spend": {"6": 0.4, "7": 0.6}, "cod": 8, "cap": 95}, "1C": {"cost": 38000, "spend": {"9": 0.4, "10": 0.6}, "cod": 11, "cap": 150}, "1D": {"cost": 38000, "spend": {"11": 0.2, "12": 0.3, "13": 0.5}, "cod": 14, "cap": 209}, "P2": {"cost": 32000, "spend": {"15": 0.4, "16": 0.6}, "cod": 17, "cap": 260}}, "vsi_loan_terms": {"1A": {"mor": 2, "years": 14, "rate": 9.5}, "1B": {"mor": 1, "years": 15, "rate": 9.5}, "T2": {"debt_share": 0.8, "rep_start": 15, "years": 10, "rate": 9.5}, "P2": {"debt_share": 0.8, "mor": 1, "years": 10, "rate": 9.5}}, "idc_constr_rate": 10.5, "aero_asset_share": 0.8766, "cash_yield": 5.5};
   var P = null;   // resolved parameters
 
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
@@ -11830,7 +11840,7 @@ requestAnimationFrame(frame);
     P.dd = J('game.design_day_movements_by_level', {1: 837, 2: 1744, 3: 2780, 4: 4194});
     P.growth = J('world.game_traffic_growth', {cagr_by_era: [0.07, 0.065, 0.06, 0.055, 0.05, 0.045, 0.04, 0.035, 0.03, 0.0275, 0.025, 0.025], intl_share_start: 0.19, intl_share_step_per_era: 0.02, intl_share_cap: 0.35});
     P.p2a = J('game.peak_day_to_annual', 311);
-    P.gcap = J('world.game_capacity', {full_mppa: 209, phase2_mppa: 260, phase2_cost_cr: 14025, ramp: [0.55, 0.85, 1.0]});
+    P.gcap = J('world.game_capacity', {full_mppa: 209, phase2_mppa: 260, phase2_cost_cr: 32000, ramp: [0.55, 0.85, 1.0]});
     P.till = J('till.hybrid_till_nar_share', 0.3);
     P.nar0 = J('nonaero.zmi_per_pax_start', 250); P.nar1 = J('nonaero.zmi_per_pax_mature', 450);
     P.fee_base = J('bial.ca.concession_fee', 0.04);
@@ -11844,6 +11854,20 @@ requestAnimationFrame(frame);
     P.ppf = J('ppp.ppf_bid_range', {low: 115, high: 400.97});
     P.ppf_aai = J('ppp.ppf_aai_2019', {AMD: 177});
     P.ppf_noida = J('ppp.ppf_noida', 400.97);
+    // Airport City (money.json airport_city; tools/concession_model.py vsi_build): plots on 5% of the site, paid with equity
+    P.ac = {phases: J('airport_city.phases', [{name: 'AC1', build: [14, 15], opens: 16, acres: 292}, {name: 'AC2', build: [19, 20], opens: 21, acres: 292}, {name: 'AC3', build: [24, 25], opens: 26, acres: 293}]),
+      infra: J('airport_city.infra_cost_cr_per_acre', 4.0), lic: J('airport_city.licence_cr_per_acre_year', 3.0), ramp: J('airport_city.ramp_years', 5),
+      opex_share: J('airport_city.opex_share', 0.25), first_board_era: 3};
+    // who lends at close (phase 1: stages 1A and 1B). money.json finance.lenders, else these (est.)
+    P.lenders = J('finance.lenders', {
+      banks: {rate_delta: 0, years_add: 0},
+      dollar: {rate_delta: -2.0, years_add: 0, fx: {year: 12, fall: 0.15}},
+      infra: {rate_delta: 0.5, years_add: 6, spread: true}});   // spread: repaid over the whole tenor, not as fast as the forecast allows
+    // construction years (design/onboarding.md S5, re-priced for the ₹60,000 cr phase 1); game.construction_events, else these (est.)
+    P.con = J('game.construction_events', {
+      monsoon: {year: 2, pay_cr: 600, slip_months: 4},
+      overrun: {year: 3, pay_cr: 3000, slip_months: 8},
+      trials: {year: 4, full_cr: 400, short_dis: 200}});
     return P;
   }
   function ensure() { if (!P) load(); }
@@ -11996,7 +12020,7 @@ requestAnimationFrame(frame);
       if (amt > 0) this.prov.push(new Vintage(amt, amt * P.aero_asset_share, t + 1, null));
     }
     var v = 1 / (1 + wacc / 100), arr = [], paxf = [], nars = [], parts = {};
-    for (k = 0; k < n; k++) { t = t0 + k; var pf = c.fc_pax(t); paxf.push(pf); nars.push(c.nar_bench(t) * pf / 10); }
+    for (k = 0; k < n; k++) { t = t0 + k; var pf = c.fc_pax(t); paxf.push(pf); nars.push(c.nar_bench(t) * pf / 10 + (c.nar_extra ? c.nar_extra(t) : 0)); }
     for (k = 0; k < n; k++) {
       t = t0 + k;
       var opex_allow = CAL.aero_opex_share * c.opex_bench(t, c.cap(t), paxf[k]);
@@ -12059,11 +12083,23 @@ requestAnimationFrame(frame);
       var y = this.yields[t] || 0, demand = c.demand(t), f = 1;
       if (demand > 0 && y > 0) { var norm = P.yield_market_norm * pr, fare = P.avg_fare * pr; f = Math.min(1, Math.pow(1 + (y - norm) / fare, -P.demand_elasticity)); }
       var pax = demand > 0 ? Math.min(demand * f, P.capacity_headroom * cap) : 0;
-      var billed = y * pax / 10, aero = billed * (1 - ops.sq), nar = c.nar(t) * pax / 10;
+      if (c.pax_factor) pax *= c.pax_factor(t);   // a part-year opening (construction slip of under 12 months)
+      var acI = c.nar_extra ? c.nar_extra(t) : 0;   // Airport City income (non-aero)
+      var billed = y * pax / 10, aero = billed * (1 - ops.sq), nar = c.nar(t) * pax / 10 + acI;
       var opex_b = c.opex_bench(t, cap, pax);
       var dis = Math.max(0, ops.dis - c.dis_in_opex);
       var opening = c.opening_cost(t);
-      var opex = pax > 0 ? opex_b * ops.opex + dis * pr * pax / 10 + opening : 0;
+      var opex = pax > 0 ? opex_b * ops.opex + dis * pr * pax / 10 + opening + P.ac.opex_share * acI : 0;
+      // dollar bonds: the rupee falls, so what is owed (in rupees) grows by the fall
+      if (c.fx && t === c.fx.t) {
+        var hit = 0;
+        c.tranches.forEach(function (tr) {
+          if (c.fx.names.indexOf(tr.name) < 0 || tr.out <= 0) return;
+          var add = tr.out * c.fx.fall; tr.out += add; hit += add;
+          if (tr.sched) Object.keys(tr.sched).forEach(function (k) { if (+k >= t) tr.sched[k] *= 1 + c.fx.fall; });
+        });
+        if (hit > 0) this.events.push({t: t, k: 'fx', amt: hit, fall: c.fx.fall});
+      }
       var oi = aero + nar;
       var fee = c.feeShare(t) * oi + c.feePpf(t, pax);
       var ebitda = oi - opex - fee;
@@ -12216,8 +12252,18 @@ requestAnimationFrame(frame);
   }
   function build(s, gear, scheds, base, withP2, sizingW) {
     var cpi = P.cpi_forward, pr = function (t) { return Math.pow(1 + cpi, t); };
-    var st = stagesFor(s), lt = P.vsi_loan_terms, names = stageNames(s, withP2);
-    var opsYear = opsFn(s, base), ops = function (t) { return opsYear(t + 1); };
+    var st = stagesFor(s), names = stageNames(s, withP2);
+    // construction years (not in the bank's base case, which it sized on time): a slip moves 1A's opening; interest
+    // still falls due from the planned opening (model: delay). Under 12 months the first year runs for part of the year.
+    var con = (!base && s.construction) || null, slipM = con ? (con.slipMonths || 0) : 0;
+    var delay = Math.floor(slipM / 12 + 1e-9), frac = (slipM - 12 * delay) / 12;
+    var planned1 = st[names[0]].cod;
+    if (delay) st[names[0]].cod += delay;
+    var yOpen = st[names[0]].cod;
+    var opsYear0 = opsFn(s, base), opsYear = opsYear0;
+    if (con && con.trials === 'short') opsYear = function (year) {   // short trials: a rough first year (penalties and passenger care)
+      var o = opsYear0(year); if (year !== yOpen) return o; o = Object.assign({}, o); o.dis += P.con.trials.short_dis; return o; };
+    var ops = function (t) { return opsYear(t + 1); };
     var hardAt = function (year) { return !base && stanceAt(s, year) === 'hard'; };
     var D = demandFn(opsYear, function (y) { return y >= 5 && hardAt(y) ? P.airline_relations_drag : 0; });
     var Dbase = demandFn(function (y) { return opsProfile('base', y); }, null);
@@ -12237,14 +12283,15 @@ requestAnimationFrame(frame);
     function opx(t, cc, pax) { if (cc <= 0 || t < 4) return 0; return pr(t) * (a_fix * cc + b_var * pax / 10); }
     function opening(t) {
       var y = t + 1;
-      if (y < 5) return 0;
-      var new_g = y === 5 ? capYear(5) : y === 6 ? capYear(5) * P.opening_cost.greenfield_year2_share : 0, new_e = 0;
-      for (var k = 0; k < 2; k++) if (y - k > 5) new_e += Math.max(0, capYear(y - k) - capYear(y - k - 1));
+      if (y < yOpen) return 0;
+      var new_g = y === yOpen ? capYear(yOpen) : y === yOpen + 1 ? capYear(yOpen) * P.opening_cost.greenfield_year2_share : 0, new_e = 0;
+      for (var k = 0; k < 2; k++) if (y - k > yOpen) new_e += Math.max(0, capYear(y - k) - capYear(y - k - 1));
       return pr(t) * a_fix * (CAL.open_k_greenfield * new_g + CAL.open_k_expansion * new_e);
     }
     var vintages = [], tranches = [], equity_need = {}, stage_list = [], sl_amt = 0, slt = P.state_loan_terms;
     names.forEach(function (n) {
-      var sd = st[n], g = gear[n], rc = P.idc_constr_rate / 100, out = 0, total = 0, draws = {}, idc_tot = 0;
+      var terms = termsFor(s, n);
+      var sd = st[n], g = gear[n], rc = (P.idc_constr_rate + terms.idc_delta) / 100, out = 0, total = 0, draws = {}, idc_tot = 0;
       var sl_share = (s.state_loan && n.indexOf('1A_') === 0) ? slt.share_of_built_cost : 0;
       Object.keys(sd.spend).map(Number).sort(function (a, b) { return a - b; }).forEach(function (y) {
         var t = y - 1, spend = sd.cost * sd.spend[y] * pr(t), sl = spend * sl_share;
@@ -12257,12 +12304,13 @@ requestAnimationFrame(frame);
       var hardCod = hardAt(sd.cod);
       vintages.push(new Vintage(total, total * P.aero_asset_share * (1 - (hardCod ? P.push_hard_disallowance : 0)), cod_t, Math.min(CAL.dep_life, 60 - cod_t), n));
       stage_list.push({name: n, cost: total, idc: idc_tot, debt: out, gearing: g, cod: sd.cod});
-      var terms = lt[stageKey(n)];
-      var rep_start = terms.rep_start != null ? terms.rep_start - 1 : cod_t + terms.mor;
+      var late = delay && n === names[0];   // late: interest falls due, and repayment starts, from the planned opening
+      var rep_start = terms.rep_start != null ? terms.rep_start - 1 : (late ? planned1 - 1 : cod_t) + terms.mor;
+      var cap_t = late ? planned1 - 1 : cod_t;
       var tr;
-      if (scheds && scheds[n]) tr = new Tranche({name: n, rate: terms.rate, draws: draws, cap_until: cod_t, rep_start: rep_start, rep_years: terms.years, profile: 'fixed', sched: scheds[n]});
-      else tr = new Tranche({name: n, rate: terms.rate, draws: draws, cap_until: cod_t, rep_start: rep_start, rep_years: terms.years,
-        profile: s.profile, weights: (sizingW && sizingW[n]) || function () { return 1; }, target_mode: !!(sizingW && sizingW[n] && n !== 'P2')});
+      if (scheds && scheds[n]) tr = new Tranche({name: n, rate: terms.rate, draws: draws, cap_until: cap_t, rep_start: rep_start, rep_years: terms.years, profile: 'fixed', sched: scheds[n]});
+      else tr = new Tranche({name: n, rate: terms.rate, draws: draws, cap_until: cap_t, rep_start: rep_start, rep_years: terms.years,
+        profile: s.profile, weights: (sizingW && sizingW[n]) || function () { return 1; }, target_mode: !!(sizingW && sizingW[n] && n !== 'P2' && !terms.spread)});
       tr.out_planned = out; tr.cod_t = cod_t;
       tranches.push(tr);
     });
@@ -12271,6 +12319,28 @@ requestAnimationFrame(frame);
     var last = maxKey(t1a.draws);
     t1a.draws[last] += g1a * dsra0;
     equity_need[last] = (equity_need[last] || 0) + (1 - g1a) * dsra0;
+    // what the shareholders paid during construction (pumps, the steel overrun, full trials): equity, in 1A's asset base
+    if (con && con.pay && con.pay.length) {
+      var gx = 0;
+      con.pay.forEach(function (p) { var t = p.year - 1, a = p.cr * pr(t); equity_need[t] = (equity_need[t] || 0) + a; gx += a; });
+      vintages.push(new Vintage(gx, gx * P.aero_asset_share, yOpen - 1, Math.min(CAL.dep_life, 60 - yOpen + 1), names[0] + '+'));
+    }
+    // Airport City: ordered at a board (s.ac_year), built on money.json's plan, never before its planned first year
+    var acInc = null, acPhases = [];
+    if (!base && s.ac_year) {
+      var AC = P.ac, sh = Math.max(0, s.ac_year + 1 - AC.phases[0].build[0]);
+      acPhases = AC.phases.map(function (ph) { return {build: ph.build.map(function (y) { return y + sh; }), opens: ph.opens + sh, acres: ph.acres}; });
+      acPhases.forEach(function (ph) {
+        var gross = 0;
+        ph.build.forEach(function (y) { var t = y - 1, sp = ph.acres * AC.infra / ph.build.length * pr(t); equity_need[t] = (equity_need[t] || 0) + sp; gross += sp; });
+        vintages.push(new Vintage(gross, 0, ph.opens - 1, Math.min(CAL.dep_life, 60 - ph.opens + 1)));   // taxed, not in AERA's asset base
+      });
+      acInc = function (t) {
+        var y = t + 1, v = 0;
+        acPhases.forEach(function (ph) { if (y >= ph.opens) v += ph.acres * AC.lic * Math.min(1, (y - ph.opens + 1) / AC.ramp) * pr(t); });
+        return v;
+      };
+    }
     var state_loan = sl_amt > 0 ? {amount: sl_amt, n: slt.instalments, first_t: slt.first_year_after_close - 1, defer: slt.deferral_years, defer_from: slt.defer_from_year - 1} : null;
     function capexTo(t) { var s2 = 0; stage_list.forEach(function (sg) { if (sg.cod - 1 <= t) s2 += sg.cost; }); return s2; }
     function wacc(eng, t) {
@@ -12312,9 +12382,11 @@ requestAnimationFrame(frame);
       opex_bench: opx, opening_cost: opening, feeShare: feeShare, feePpf: feePpf, wacc: wacc,
       equity_need: equity_need, era: function (t) { return eraOf(t + 1); }, state_loan: state_loan, stage_list: stage_list,
       renewal_share: renewal, first_cod_t: st[names[0]].cod - 1, dis_in_opex: P.ops_profiles.base.dis[0], forecast: !!base,
+      nar_extra: acInc, pax_factor: frac > 0 ? function (t) { return t + 1 === yOpen ? 1 - frac : 1; } : null,
+      fx: (!base && lenderOf(s).fx) ? {t: lenderOf(s).fx.year - 1, fall: lenderOf(s).fx.fall, names: names.filter(function (n) { var k = stageKey(n); return k === '1A' || k === '1B'; })} : null,
       lever: function (t, key) {
         if (base) return key === 'cure' || (key === 'defer_state_loan' && !!s.defer_state_loan);
-        if (key === 'cure') return leverAt(s.cure, t + 1);
+        if (key === 'cure') return (slipM > 0 && t + 1 <= yOpen) || leverAt(s.cure, t + 1);   // a late opening: the shareholders pay the interest
         if (key === 'defer_state_loan') return !!s.defer_state_loan;
         if (key === 'refi') return leverAt(s.refi, t + 1);
         return false;
@@ -12338,7 +12410,15 @@ requestAnimationFrame(frame);
     c.refi_weights = function () { return 1; };
     var eng = new Engine(c);
     eng.dsra = dsra0; eng.dsra0 = dsra0; eng.names = names; eng.stage_list = stage_list; eng.sl_amt = sl_amt; eng.gear = gear;
+    eng.yOpen = yOpen; eng.acInc = acInc || function () { return 0; }; eng.acPhases = acPhases;
     return eng;
+  }
+  function lenderOf(s) { return P.lenders[s.lender] || P.lenders.banks; }
+  // loan terms for a stage: the close lender's rate and tenor on phase 1 (1A, 1B); later closes are with Indian banks
+  function termsFor(s, n) {
+    var k = stageKey(n), t = clone(P.vsi_loan_terms[k]); t.idc_delta = 0;
+    if (k === '1A' || k === '1B') { var L = lenderOf(s); t.rate += L.rate_delta || 0; t.idc_delta = L.rate_delta || 0; t.years += L.years_add || 0; t.spread = !!L.spread; }
+    return t;
   }
   function zeros(n) { var a = []; for (var i = 0; i < n; i++) a.push(0); return a; }
   function leverAt(v, year) {   // a lever is a boolean or a list of {from, on}
@@ -12496,11 +12576,34 @@ requestAnimationFrame(frame);
     o = o || {};
     var bid = o.bid || {type: 'share', value: 15};
     var g = o.gearing != null ? o.gearing : 70; if (g > 1) g /= 100;
-    return {gearing: g, phase1: o.phase1 || 'lean', state_loan: o.state_loan !== false, defer_state_loan: o.defer_state_loan !== false,
+    var sl = o.state_loan != null ? o.state_loan : o.stateLoan;   // onboarding hands back stateLoan
+    return {gearing: g, phase1: o.phase1 === 'big' ? 'big' : 'lean', state_loan: sl !== false, defer_state_loan: o.defer_state_loan !== false,
+      lender: P.lenders[o.lender] ? o.lender : 'banks', construction: null, ac_year: null,
       profile: (o.repayment === 'equal' || o.profile === 'equal') ? 'equal' : 'sculpt', bid: {type: bid.type === 'ppf' ? 'ppf' : 'share', value: +bid.value},
       stance0: o.aera === 'hard' ? 'hard' : 'normal', refi: o.refi !== false, cure: !!o.cure, p2year: o.p2year || null, eraOps: {}, boards: {}, appeals: []};
   }
-  function capexCr() { ensure(); return P.vsi_stages['1A_lean'].cost; }
+  // phase 1's cost in today's money (FY2026 prices): lean 45 or big 70 million passengers a year (money.json capex.stages)
+  function capexCr(phase1) { ensure(); return P.vsi_stages['1A_' + (phase1 === 'big' ? 'big' : 'lean')].cost; }
+  function phase1Options() {
+    ensure();
+    var L = P.vsi_stages['1A_lean'], B = P.vsi_stages['1A_big'];
+    return {def: 'lean', options: [
+      {id: 'lean', label: L.cap + ' million passengers a year', small: 'build more when Mumbai and Delhi move in', capexCr: L.cost},
+      {id: 'big', label: B.cap + ' million passengers a year', small: 'build more now: ' + cr(B.cost - L.cost) + ' more up front', capexCr: B.cost}]};
+  }
+  function stateLoanOpt() {
+    ensure();
+    var t = P.state_loan_terms;
+    return {pct: Math.round(t.share_of_built_cost * 10000) / 100, def: true, text: 'interest-free, repaid in ' + t.instalments + ' yearly parts from year ' + t.first_year_after_close};
+  }
+  function lenderOptions() {
+    ensure();
+    var r = P.rate, a = P.vsi_loan_terms['1A'], d = P.lenders.dollar || {}, n = P.lenders.infra || {};
+    return {def: 'banks', options: [
+      {id: 'banks', who: 'Indian banks', label: 'Indian banks, in rupees', small: r + '% interest, repaid over ' + a.years + ' years'},
+      {id: 'dollar', who: 'bondholders abroad', label: 'dollar bonds sold abroad', small: (r + (d.rate_delta || 0)) + '% interest, but if the rupee falls, every repayment grows'},
+      {id: 'infra', who: 'India\'s infrastructure bank', label: 'India\'s infrastructure bank', small: 'about ' + (r + (n.rate_delta || 0)) + '%, repaid over ' + (a.years + (n.years_add || 0)) + ' years, so each payment is smaller'}]};
+  }
   // share-equivalent of a bid: the fee over base-case gross revenue (per-passenger bids converted at the base case)
   function shareEquiv(bid) {
     if (bid.type === 'share') return bid.value / 100;
@@ -12521,26 +12624,37 @@ requestAnimationFrame(frame);
     return {winPct: winPct, note: note};
   }
   var _closeCache = {};
+  function closeFigures(s, sz) {   // phase 1's split, in today's money so it adds up to the price on the agreement
+    var eng = build(s, sz.gear, s.profile === 'equal' ? {} : sz.scheds, true, false, null);
+    var sg = eng.stage_list[0], today = capexCr(s.phase1), f = today / sg.cost;
+    var debt = sg.debt * f, sl = eng.sl_amt * f, equity = today - debt - sl;
+    return {today: today, nominal: sg.cost, debtCr: Math.round(debt), stateLoanCr: Math.round(sl), equityCr: Math.round(equity), parentCr: Math.round(equity * 0.64),
+      debtNomCr: Math.round(sg.debt), eng: eng};
+  }
+  function sized(s) {
+    var key = JSON.stringify([s.gearing, s.profile, s.bid, s.phase1, s.state_loan, s.lender]);
+    if (!_closeCache[key]) _closeCache[key] = sizeDebt(s);
+    return _closeCache[key];
+  }
   function previewClose(o) {
     ensure();
-    var s = scenarioFrom(o), key = JSON.stringify([s.gearing, s.profile, s.bid]);
-    if (!_closeCache[key]) _closeCache[key] = sizeDebt(s);
-    var sz = _closeCache[key], cost = capexCr();
-    var eng = build(s, sz.gear, s.profile === 'equal' ? {} : sz.scheds, true, false, null);
-    var sl1a = eng.sl_amt, sg = eng.stage_list[0];
-    var debt = sg.debt, equity = sg.cost - debt - sl1a, parent = equity * 0.64;
+    var s = scenarioFrom(o), sz = sized(s), q = closeFigures(s, sz);
     var asked = s.gearing, got = sz.gear[stageNames(s, false)[0]];
     var note = got < asked - 0.005 ? 'The banks will lend only ' + Math.round(got * 100) + '% of the cost on these numbers, not the ' + Math.round(asked * 100) + '% you asked for: the rest is your money.' :
       'The banks lend ' + Math.round(got * 100) + '% of the cost. More borrowing means a bigger return on your money, and less room in a bad year.';
     if (s.profile === 'equal') note += ' Equal payments are heaviest in the early years, so the banks lend less.';
-    return {debtCr: Math.round(debt), equityCr: Math.round(equity), parentCr: Math.round(parent), minDscr: sz.minBase != null ? Math.round(sz.minBase * 100) / 100 : null, note: note};
+    if (s.lender === 'dollar') note += ' Dollar bonds cost less interest, but if the rupee falls, every repayment grows.';
+    if (s.lender === 'infra') note += ' The infrastructure bank gives you longer to repay, so each year\'s payment is smaller.';
+    note += ' Paid as it is spent, with rising prices and interest while it is built, the bill comes to about ' + cr(q.nominal) + '.';
+    return {debtCr: q.debtCr, equityCr: q.equityCr, parentCr: q.parentCr, stateLoanCr: q.stateLoanCr, capexCr: q.today,
+      minDscr: sz.minBase != null ? Math.round(sz.minBase * 100) / 100 : null, note: note};
   }
   function newCampaign(ob, seed) {
     ensure();
     ob = ob || {};
     var s = scenarioFrom(ob);
-    s.sizing = sizeDebt(s);
-    var st = {version: 1, parent: ob.parent || 'Meridian Infra', founder: ob.founder || '', signature: ob.signature || null,
+    s.sizing = clone(sized(s));
+    var st = {version: 1, building: true, phase1: s.phase1, lender: s.lender, stateLoan: s.state_loan, parent: ob.parent || 'Meridian Infra', founder: ob.founder || '', signature: ob.signature || null,
       signedOn: ob.signedOn || null, endsOn: ob.endsOn || null, quick: !!ob.quick, seed: seed == null ? 1 : seed,
       bid: s.bid, gearing: s.gearing, repayment: s.profile === 'equal' ? 'equal' : 'sculpted',
       era: 1, year: 5, cash: 0, debt: [], stake: 64, history: [], over: false, s: s};
@@ -12591,6 +12705,7 @@ requestAnimationFrame(frame);
     }
     eng.events.forEach(function (ev) {
       var y = ev.t + 1; if (y < ys[1] || y > ys[2]) return;
+      if (ev.k === 'fx') sentences.push('The rupee fell ' + Math.round(ev.fall * 100) + '% against the dollar in ' + (2025 + y) + ', so every repayment on your dollar bonds grew by as much: ' + cr(ev.amt) + ' more to repay.');
       if (ev.k === 'refi') sentences.push('A stable record let you refinance ' + cr(ev.amt) + ' of loans at ' + P.refi.rate + '%, with two years before repayments start.');
       if (ev.k === 'cure_era' || ev.k === 'cure_ds') sentences.push('Your company put in ' + cr(ev.amt) + ' of fresh money to keep the banks from taking control.');
     });
@@ -12649,7 +12764,9 @@ requestAnimationFrame(frame);
     state.history.push({era: e, level: shift && shift.level, stars: shift && shift.stars, otp: shift && shift.otp, cx: shift && shift.cx, safety: shift && shift.safety,
       light: rep.light, cover: rep.coverWorst, cashCr: rep.cashCr, stakeValueCr: rep.stakeValueCr, debtCr: rep.debtCr, sentences: rep.sentences});
     state.year = ys[2];
-    state.lastReport = {light: rep.light, cover: rep.coverWorst, payoutShare: rep.payoutShare, debtCr: rep.debtCr, worstYear: rep.worstYear};
+    var so = 0, sr = 0; eng.c.tranches.forEach(function (x) { if (x.out > 0.5) { so += x.out; sr += x.out * x.rate; } });
+    state.lastReport = {light: rep.light, cover: rep.coverWorst, payoutShare: rep.payoutShare, debtCr: rep.debtCr, worstYear: rep.worstYear,
+      stakeValueCr: rep.stakeValueCr, ratePct: so > 0 ? Math.round(sr / so * 10) / 10 : null};
     if (rep.banksTookControl || ys[2] >= 60) {
       state.over = rep.banksTookControl ? {reason: 'banks', year: eng.step_in.t + 1} : {reason: 'handback', year: 60};
       state.final = finalOf(state, eng);
@@ -12662,8 +12779,13 @@ requestAnimationFrame(frame);
     if (!eng.step_in && lastRow) flows[flows.length - 1] += Math.max(0, eng.cash + eng.dsra - lastRow.debt - eng.sl_out);
     var inv = 0, ret = 0; flows.forEach(function (f) { if (f < 0) inv -= f; else ret += f; });
     var r = eng.step_in ? null : irr(flows);
+    var paxM = 0, fees = 0, repaidYear = null;
+    eng.rows.forEach(function (rw) { paxM += rw.pax; fees += rw.fee; if (repaidYear == null && rw.t >= 4 && rw.debt < 1) repaidYear = rw.year; });
+    var residual = eng.step_in || !lastRow ? 0 : Math.max(0, eng.cash + eng.dsra - lastRow.debt - eng.sl_out);
     return {irr: r, investedCr: Math.round(inv * state.stake / 100), returnedCr: Math.round(ret * state.stake / 100), dividendsCr: Math.round(eng.divs * state.stake / 100),
-      debtRepaid: !eng.step_in && lastRow && lastRow.debt < 1, banks: !!eng.step_in};
+      debtRepaid: !eng.step_in && lastRow && lastRow.debt < 1, banks: !!eng.step_in,
+      paxTotalM: Math.round(paxM), paidToStateCr: Math.round(fees), residualCr: Math.round(residual * state.stake / 100), repaidYear: repaidYear,
+      p2: !!state.s.p2year, ac: !!state.s.ac_year};
   }
 
   function boardOptions(state) {
@@ -12676,6 +12798,13 @@ requestAnimationFrame(frame);
       var cost = Math.round((P.vsi_stages.P2.cost || P.gcap.phase2_cost_cr) * Math.pow(1 + P.cpi_forward, p2b - 1));
       invest.push({id: 'phase2', name: 'Build phase 2 (satellites G and H)', costCr: 0, opens: p2open, effect: 'Room for ' + (P.gcap.phase2_mppa - P.gcap.full_mppa) + ' million more passengers a year, open from ' + (2025 + p2open) + '.',
         why: 'Costs about ' + cr(cost) + ', 80% lent by the banks; the rest comes from cash, then from the shareholders. Full terminals turn passengers away; it pays back as the new piers fill.', payback: ''});
+    }
+    if (!s.ac_year && e >= P.ac.first_board_era && nextStart + (P.ac.phases[P.ac.phases.length - 1].opens - P.ac.phases[0].build[0]) + P.ac.ramp <= 60) {
+      var ac = acPlan(nextStart - 1), till = P.till;
+      invest.push({id: 'airport_city', name: 'Build Airport City: hotels, offices and shops on airport land', costCr: 0, opens: ac.opens,
+        effect: 'Developers build and pay rent; the first plots open in ' + (2025 + ac.opens) + ', the last in ' + (2025 + ac.lastOpens) + '.',
+        why: 'Roads, power and water for the plots cost about ' + cr(ac.costCr) + ' over the years, paid by the shareholders, not the banks.', payback: '',
+        land: {earnCr: Math.round(ac.earnCr), aeraCr: Math.round(till * ac.earnCr), year: ac.fullYear}});
     }
     var cureOn = leverAt(s.cure, nextStart);
     invest.push({id: cureOn ? 'cure_off' : 'cure_on', name: cureOn ? 'Stop promising the banks fresh money' : 'Promise the banks fresh money if the airport falls short',
@@ -12691,13 +12820,23 @@ requestAnimationFrame(frame);
         'AERA sets your passenger fees for the next five years from what you have built and a fair return. Anything it under-pays now comes back later with interest.',
       canAppeal: true,
       appealText: 'Fight for fees now. AERA may then disallow part of your building costs, freeze fees for five years, and airlines will grow more slowly.'};
+    aera.acceptText = hold ? 'AERA pays the held-back fees later, with interest; until then the banks see thinner years.' : 'Your fees are set for five years, and the airlines stay on your side.';
+    aera.orderNo = 'AERA/VSI/' + (2025 + Math.max(cpNext, nextStart));
     var cash = Math.max(0, state.cash || 0);
     var payout = lr.payoutShare != null ? lr.payoutShare : 0;
     var nx = eraYears(e + 1) || [e + 1, nextStart, Math.min(60, nextStart + 4)];
-    return {era: e + 1, years: (2025 + nx[1]) + '–' + (2025 + nx[2]), year: nextStart, parent: state.parent, parentPct: state.stake, cashCr: cash, debtCr: lr.debtCr || 0,
+    var lastDiv = s.boards[e - 1] ? s.boards[e - 1].dividendCr || 0 : 0;
+    var div = {maxCr: Math.floor(cash * payout), lastCr: lastDiv || undefined};
+    if (cash >= 1 && payout <= 0) { div.blocked = true; div.reason = 'The banks hold back dividends while the airport earns under ₹' + Math.round(P.lockup.nil_below * 100) + ' for every ₹100 due.'; }
+    var pr = partners(); pr[0] = Object.assign({}, pr[0], {name: state.parent || pr[0].name, pct: state.stake});
+    var pile = [{title: 'Concession Agreement', stamp: 'Executed'}];
+    if (state.construction) pile.push({title: 'Construction record', stamp: 'Filed'});
+    for (var k = 2; k <= e; k++) pile.push({title: 'Board minutes, era ' + k, stamp: 'Approved'});
+    return {era: e + 1, years: (2025 + nx[1]) + '–' + (2025 + nx[2]), year: nextStart, parent: state.parent, parentPct: state.stake, founder: state.founder || undefined,
+      partners: pr.map(function (x) { return {name: x.name, pct: x.pct}; }), stakeValueCr: lr.stakeValueCr, cashCr: cash, debtCr: lr.debtCr || 0,
       dscr: lr.cover != null ? {value: lr.cover, warn: P.thr.warning, covenant: P.thr.covenant} : null,
       aera: aera, appealNow: stance === 'hard', investments: invest,
-      dividend: {maxCr: Math.floor(cash * payout)}, prepay: {maxCr: Math.floor(cash)}};
+      dividend: div, prepay: {maxCr: Math.floor(cash), savesPct: lr.ratePct || undefined}, pile: pile};
   }
   function applyBoard(state, d) {
     ensure();
@@ -12712,12 +12851,13 @@ requestAnimationFrame(frame);
     }
     if (bought.indexOf('refi_on') >= 0) { if (!Array.isArray(s.refi)) s.refi = [{from: 1, on: !!s.refi}]; s.refi.push({from: from, on: true}); }
     if (bought.indexOf('phase2') >= 0 && !s.p2year) { s.p2year = ys[2]; s.sizing = sizeDebt(s); }
+    if (bought.indexOf('airport_city') >= 0 && !s.ac_year) s.ac_year = ys[2];   // not lent on by the banks: no re-sizing
     state.history.push({era: e, board: {dividendCr: s.boards[e].dividendCr, prepayCr: s.boards[e].prepayCr, appeal: !!d.appeal, bought: bought}});
     state.era = e + 1; state.year = from;
     return state;
   }
   function isOver(state) { return state.over || false; }
-  function handbackOpts(state) {
+  function endOpts(state) {   // the closing statement (income statement format): the banks' ending, or before the certificate
     var f = state.final || {}, o = state.over || {};
     var banks = o.reason === 'banks';
     var line = banks ? state.parent + ' lost Vikram Sarabhai International to its banks in ' + (2025 + (o.year || 0)) + '. ₹' + Math.round(f.investedCr || 0).toLocaleString('en-IN') + ' crore invested.' :
@@ -12731,11 +12871,150 @@ requestAnimationFrame(frame);
       moments: [], cta: 'Back to the menu'};
   }
 
+
+  // Airport City ordered at the board after game year y: its plan, cost and what the land earns once full (model: print_airport_city)
+  function acPlan(y) {
+    ensure();
+    var AC = P.ac, sh = Math.max(0, y + 1 - AC.phases[0].build[0]), cost = 0, pr = function (t) { return Math.pow(1 + P.cpi_forward, t); };
+    var ph = AC.phases.map(function (p) { return {build: p.build.map(function (b) { return b + sh; }), opens: p.opens + sh, acres: p.acres}; });
+    ph.forEach(function (p) { p.build.forEach(function (b) { cost += p.acres * AC.infra / p.build.length * pr(b - 1); }); });
+    var last = ph[ph.length - 1].opens, full = Math.min(60, last + AC.ramp - 1), earn = 0;
+    ph.forEach(function (p) { if (full >= p.opens) earn += p.acres * AC.lic * Math.min(1, (full - p.opens + 1) / AC.ramp) * pr(full - 1); });
+    return {opens: ph[0].opens, lastOpens: last, fullYear: full, costCr: cost, earnCr: earn};
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // The construction years (E0, years 1-4): ZMMoney.construction(opts) → {choices:{eventId: optionId}, finishedOn}
+  // ---------------------------------------------------------------------------------------------
+  var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  function addMonths(iso, m) {
+    var d = iso ? new Date(iso + 'T12:00:00Z') : new Date(Date.UTC(2026, 3, 1, 12));
+    if (isNaN(d)) d = new Date(Date.UTC(2026, 3, 1, 12));
+    d.setUTCMonth(d.getUTCMonth() + m);
+    return d.toISOString().slice(0, 10);
+  }
+  function monthName(iso) { var d = new Date(iso + 'T12:00:00Z'); return MONTHS[d.getUTCMonth()] + ' ' + d.getUTCFullYear(); }
+  function conFrom(ch) {
+    var C = P.con, con = {monsoon: ch.monsoon || null, overrun: ch.overrun || null, trials: ch.trials || null, slipMonths: 0, pay: []};
+    if (con.monsoon === 'slip') con.slipMonths += C.monsoon.slip_months; else if (con.monsoon === 'pay') con.pay.push({year: C.monsoon.year, cr: C.monsoon.pay_cr});
+    if (con.overrun === 'slip') con.slipMonths += C.overrun.slip_months; else if (con.overrun === 'pay') con.pay.push({year: C.overrun.year, cr: C.overrun.pay_cr});
+    if (con.trials === 'full') con.pay.push({year: C.trials.year, cr: C.trials.full_cr});
+    return con;
+  }
+  function conRun(state, ch) {   // era 1 on the bank's forecast, with these construction choices
+    var s = clone(state.s); s.construction = ch ? conFrom(ch) : null;
+    var eng = simulate(s, 7), put = 0, earned = 0, first = null;
+    for (var t = 0; t < 7; t++) put -= Math.min(0, eng.eq_flows[t] || 0);
+    eng.rows.forEach(function (r) { if (r.year >= 5) { earned += r.ebitda; if (first == null && r.dscr != null) first = r; } });
+    return {put: put, earned: earned, first: first, dis: eng.rows.reduce(function (a, r) { return a + r.dis; }, 0)};
+  }
+  function constructionOpts(state) {
+    ensure();
+    var s = state.s, q = closeFigures(s, s.sizing), C = P.con, stake = state.stake || 64;
+    var signedOn = state.signedOn || addMonths(null, 0), opensOn = addMonths(signedOn, 48);
+    var pr = function (t) { return Math.pow(1 + P.cpi_forward, t); };
+    // money drawn each year: the banks (with interest while building), the shareholders, the State's loan
+    var b = simulate(Object.assign(clone(s), {construction: null}), 4), years = [], cum = 0, sd = P.vsi_stages['1A_' + s.phase1];
+    var slTot = b.sl_amt, spW = 0; Object.keys(sd.spend).forEach(function (y) { spW += sd.spend[y] * pr(+y - 1); });
+    for (var y = 1; y <= 4; y++) {
+      var t = y - 1, bank = 0;
+      b.c.tranches.forEach(function (tr) { bank += tr.draws[t] || 0; });
+      var eq = b.c.equity_need[t] || 0, st = slTot * (sd.spend[y] || 0) * pr(t) / (spW || 1), d = bank + eq + st;
+      cum += d;
+      years.push({year: y, drawnCr: Math.round(d), cumDrawnCr: Math.round(cum),
+        line: (2025 + y) + ': ' + cr(d) + ' spent: ' + cr(bank) + ' from ' + (lenderName(s)) + ', ' + cr(eq) + ' from the shareholders' + (st >= 1 ? ', ' + cr(st) + ' from the State' : '') + '.'});
+    }
+    // the decisions, each priced on the bank's forecast for era 1 (model: delay sensitivity)
+    var base = conRun(state, {}), share = function (v) { return cr(v * stake / 100); };
+    function slipEffect(id, months) {
+      var ch = {}; ch[id] = 'slip';
+      var r = conRun(state, ch), lost = base.earned - r.earned, extra = r.put - base.put;
+      return 'The airport opens ' + months + ' months late, in ' + monthName(addMonths(opensOn, months)) + ': about ' + cr(lost) + ' less earned in its first three years' +
+        (extra >= 5 ? ', and the shareholders put in about ' + cr(extra) + ' more (your share ' + share(extra) + ') to pay the loan interest while it is shut.' : '.');
+    }
+    var mp = C.monsoon.pay_cr * pr(C.monsoon.year - 1), op = C.overrun.pay_cr * pr(C.overrun.year - 1), tp = C.trials.full_cr * pr(C.trials.year - 1);
+    var sh = conRun(state, {trials: 'short'}), shortCost = sh.dis - base.dis;
+    var events = [
+      {id: 'monsoon', year: C.monsoon.year, title: 'The monsoon floods the runway site',
+        text: 'Three weeks of rain have filled the earthworks for runway 2. The contractor can pump it dry and work nights, or wait for the dry season.',
+        options: [{id: 'pay', label: 'Pay for pumps and night shifts', effect: 'The shareholders put in ' + cr(mp) + ' now (your share ' + share(mp) + '), and the airport opens on time.'},
+          {id: 'slip', label: 'Wait for the dry season', effect: slipEffect('monsoon', C.monsoon.slip_months)}]},
+      {id: 'overrun', year: C.overrun.year, title: 'The Hall roof steel costs more than the contract',
+        text: 'Steel prices have risen and the roof contractor wants more money to keep its crews on site. If you also waited out the monsoon, the two delays add up to ' + (C.monsoon.slip_months + C.overrun.slip_months) + ' months.',
+        options: [{id: 'pay', label: 'Pay the contractor now', effect: 'The shareholders put in ' + cr(op) + ' now (your share ' + share(op) + '); the airport opens on time and earns it back through its fees over the years.'},
+          {id: 'slip', label: 'Renegotiate and slip', effect: slipEffect('overrun', C.overrun.slip_months)}]},
+      {id: 'trials', year: C.trials.year, title: 'Trial operations before opening day',
+        text: 'Before the licence, airlines, ground staff and volunteers rehearse check-in, baggage, gates and emergencies with real aircraft.',
+        options: [{id: 'full', label: 'Full trials, three months', effect: 'Costs ' + cr(tp) + ' (your share ' + share(tp) + '), and opening day runs as rehearsed.'},
+          {id: 'short', label: 'Short trials, three weeks', effect: 'Saves ' + cr(tp) + ', but the first year costs about ' + cr(shortCost) + ' in penalties to airlines and passenger care as teething problems hit.'}]}];
+    var o = {signedOn: signedOn, opensOn: opensOn, capexCr: q.today, debtCr: q.debtCr, equityCr: q.equityCr, stateLoanCr: q.stateLoanCr || undefined, lenderName: lenderName(s),
+      works: [
+        {id: 'land', name: 'Land and resettlement', start: 0, end: 0.75, note: 'Villages moved to new homes with MADC, before the first digger arrives.'},
+        {id: 'earth', name: 'Earthworks and drainage', start: 0.25, end: 1.75, note: 'The site levelled and drained for the monsoon.'},
+        {id: 'runways', name: 'Runways 1 and 2', start: 1, end: 3, note: 'Two parallel runways, so one can close without closing the airport.'},
+        {id: 'hall', name: 'Terminal and the Hall roof', start: 1, end: 3.5, note: 'The one roof that cannot be built in stages.'},
+        {id: 'concourses', name: 'Concourses A and B', start: 1.5, end: 3.5, note: 'The first two piers of gates.'},
+        {id: 'mover', name: 'People mover', start: 2, end: 3.5, note: 'The train under the Hall to the piers.'},
+        {id: 'tower', name: 'Zero Mile Tower and radar', start: 1.5, end: 3, note: 'Air traffic control, commissioned with the Airports Authority.'},
+        {id: 'power', name: 'Power and the fuel farm', start: 1, end: 3, note: 'Two grid feeds and the fuel tanks and pipes to the stands.'},
+        {id: 'trials', name: 'Trial operations with the airlines', start: 3.25, end: 3.9, note: 'Rehearsals with real aircraft and volunteer passengers.'},
+        {id: 'licence', name: 'Aerodrome licence from DGCA', start: 3.75, end: 4, note: 'The regulator inspects and licenses the airport to open.'}],
+      years: years, events: events,
+      numbers: {todayCr: 0, light: 'green', coverWords: 'No loan payments due until the airport opens', stakePct: stake, stakeValueCr: Math.round(q.equityCr * stake / 100)}};
+    if (state.founder) o.founder = state.founder;
+    if (state.parent) o.parent = state.parent;
+    return o;
+  }
+  function lenderName(s) { var o = lenderOptions().options.filter(function (x) { return x.id === s.lender; })[0]; return o ? o.who : 'Indian banks'; }
+  function applyConstruction(state, result) {
+    ensure();
+    state = clone(state);
+    var ch = (result && result.choices) || {}, con = conFrom(ch);
+    state.s.construction = con;
+    state.construction = {overrun: con.overrun, monsoon: con.monsoon, trials: con.trials, slipMonths: con.slipMonths, finishedOn: (result && result.finishedOn) || null};
+    state.building = false;
+    state.opensOn = addMonths(state.signedOn, 48 + con.slipMonths);
+    var eng = simulate(state.s, 4);
+    state.debt = eng.c.tranches.map(function (tr) { return {name: tr.name, outCr: Math.round(tr.out)}; });
+    state.cash = Math.round(eng.cash);
+    state.history.push({era: 0, construction: state.construction});
+    return state;
+  }
+  function needsConstruction(state) { return !!(state && state.building && !state.over); }
+
+  // ---------------------------------------------------------------------------------------------
+  // Year 60: ZMMoney.handback(opts), the certificate
+  // ---------------------------------------------------------------------------------------------
+  function handbackOpts(state) {
+    ensure();
+    var f = state.final || {}, s = state.s || {}, h = state.history || [];
+    var stars = h.filter(function (x) { return x.stars != null; }).map(function (x) { return x.stars; });
+    var avg = stars.length ? stars.reduce(function (a, b) { return a + b; }, 0) / stars.length : 2;
+    var assets = ['six runways', 'the Hall under one roof', 'concourses A to F', 'the people mover', 'Zero Mile Tower'];
+    if (f.p2) assets.splice(3, 0, 'satellites G and H');
+    if (f.ac) assets.push('Airport City');
+    var pr = partners(); pr[0] = Object.assign({}, pr[0], {name: state.parent || pr[0].name, pct: state.stake});
+    var lines = [];
+    if (f.paxTotalM) lines.push('Over sixty years the airport served ' + (f.paxTotalM >= 1000 ? (f.paxTotalM / 1000).toFixed(1) + ' billion' : f.paxTotalM.toLocaleString('en-IN') + ' million') + ' passengers.');
+    if (f.repaidYear) lines.push('The bank loans were fully repaid in ' + (2025 + f.repaidYear) + '.');
+    lines.push('Your company put in ' + cr(f.investedCr || 0) + ' and received ' + cr(f.dividendsCr || 0) + ' in dividends.');
+    if (state.construction && state.construction.slipMonths) lines.push('It opened ' + state.construction.slipMonths + ' months late, in ' + monthName(state.opensOn || addMonths(state.signedOn, 48)) + '.');
+    var o = {signature: state.signature || undefined, signedOn: state.signedOn || undefined, endsOn: state.endsOn || undefined,
+      stakePct: state.stake, stakeValueCr: f.residualCr != null ? f.residualCr : undefined, returnPct: f.irr == null ? undefined : Math.round(f.irr * 1000) / 10,
+      paxTotalM: f.paxTotalM, paidToStateCr: f.paidToStateCr, condition: avg >= 2.5 ? 'excellent' : avg >= 1.5 ? 'good' : 'poor',
+      assets: assets, owners: pr.map(function (x) { return {name: x.name, pct: x.pct}; }), lines: lines};
+    if (state.founder) o.founder = state.founder;
+    if (state.parent) o.parent = state.parent;
+    return o;
+  }
+
   var API = {
     data: function (md) { load(md); _closeCache = {}; return API; },
-    capexCr: capexCr, partners: partners, bidTypes: bidTypes, previewBid: previewBid, previewClose: previewClose,
-    newCampaign: newCampaign, levelFor: levelFor, applyShift: applyShift, boardOptions: boardOptions, applyBoard: applyBoard,
-    isOver: isOver, handbackOpts: handbackOpts,
+    capexCr: capexCr, phase1Options: phase1Options, stateLoanOpt: stateLoanOpt, lenders: lenderOptions, partners: partners, bidTypes: bidTypes,
+    previewBid: previewBid, previewClose: previewClose,
+    newCampaign: newCampaign, needsConstruction: needsConstruction, constructionOpts: constructionOpts, applyConstruction: applyConstruction,
+    levelFor: levelFor, applyShift: applyShift, boardOptions: boardOptions, applyBoard: applyBoard,
+    isOver: isOver, endOpts: endOpts, handbackOpts: handbackOpts, acPlan: acPlan,
     // for tests and bots
     _internal: {simulate: simulate, sizeDebt: sizeDebt, shiftOps: shiftOps, opsProfile: function (n, y) { ensure(); return opsProfile(n, y); }, eraYears: eraYears, irr: irr, P: function () { ensure(); return P; }}
   };

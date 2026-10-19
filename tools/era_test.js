@@ -40,9 +40,14 @@ function pyRow(label) {
 
 // ---- playing a concession through the public API ----
 const fl = v => Math.floor(v * 100 + 1e-9) / 100;
-function play(ob, shiftFor, boardFor) {
+function play(ob, shiftFor, boardFor, conChoices) {
   let st = E.newCampaign(ob, 1);
   const cells = [], reports = [], texts = [];
+  if (E.needsConstruction(st)) {
+    const co = E.constructionOpts(st);
+    texts.push(...co.years.map(y => y.line), ...co.works.map(w => w.name + ' ' + w.note), ...co.events.map(e => e.title + ' ' + e.text + ' ' + e.options.map(o => o.label + ' ' + o.effect).join(' ')), co.numbers.coverWords);
+    st = E.applyConstruction(JSON.parse(JSON.stringify(st)), conChoices ? {choices: conChoices, finishedOn: '2030-01-01'} : null);
+  }
   for (let k = 0; k < 12; k++) {
     st = JSON.parse(JSON.stringify(st));              // the save is plain JSON
     const e = st.era, L = E.levelFor(st);
@@ -54,19 +59,19 @@ function play(ob, shiftFor, boardFor) {
     cells.push(rep.coverWorst == null ? 'repaid' : rep.coverWorstExact);
     if (E.isOver(st)) break;
     const bo = E.boardOptions(st);
-    texts.push(bo.aera.title, bo.aera.text, bo.aera.appealText, ...bo.investments.map(i => i.name + ' ' + i.effect + ' ' + i.why));
+    texts.push(bo.aera.title, bo.aera.text, bo.aera.appealText, bo.aera.acceptText, bo.dividend.reason || '', ...bo.investments.map(i => i.name + ' ' + i.effect + ' ' + i.why));
     st = E.applyBoard(st, boardFor(e, bo));
   }
   while (cells.length < 12) cells.push(null);
-  texts.push(JSON.stringify(E.handbackOpts(st)));
+  texts.push(JSON.stringify(E.endOpts(st)), JSON.stringify(E.handbackOpts(st)));
   const over = E.isOver(st), f = st.final || {};
   return {cells, reports, texts, st, outcome: over.reason === 'banks' ? 'banks ' + over.year : (f.debtRepaid ? 'debt repaid' : 'debt left'),
     irr: over.reason === 'banks' || f.irr == null ? null : f.irr * 100};
 }
 const profileShift = prof => (e, L) => ({level: L, stars: 3, ops: I.opsProfile(prof, I.eraYears(e)[1])});
-const board = ({appeal = false, phase2 = false} = {}) => (e, bo) => ({
+const board = ({appeal = false, phase2 = false, city = false} = {}) => (e, bo) => ({
   appeal, dividendCr: bo.dividend.maxCr, prepayCr: 0,
-  bought: bo.investments.filter(i => phase2 && i.id === 'phase2').map(i => i.id)});
+  bought: bo.investments.filter(i => (phase2 && i.id === 'phase2') || (city && i.id === 'airport_city')).map(i => i.id)});
 const TERMS = {
   EXPERT: {bid: {type: 'share', value: 4}, gearing: 75, repayment: 'sculpted', cure: true},
   BAD: {bid: {type: 'share', value: 4}, gearing: 75, repayment: 'sculpted', state_loan: false, defer_state_loan: false, aera: 'hard', refi: false, cure: false},
@@ -113,6 +118,43 @@ compare('LAZY', A.LAZY, pyRow('LAZY'), TOL_A, TOL_A_IRR);
 compare('EXPERT at a 14.49% bid', A.NAGPUR, pyRow('EXPERT, Nagpur-level fee 14.49%'), TOL_A, TOL_A_IRR);
 console.log('\n(' + msA + ' ms for four 12-era concessions, bank sizing included)\n');
 
+// ---- Part A2: Airport City (ordered at the first board that offers it, after era 3) ----
+console.log('## Part A2: Airport City, bought at the era-3 board\n');
+console.log(HEAD);
+const AC = {
+  EXPERT: play(ob('EXPERT'), profileShift('expert'), board({phase2: true, city: true})),
+  BAD: play(ob('BAD'), profileShift('poor'), board({appeal: true, city: true})),
+  LAZY: play(ob('LAZY'), profileShift('lazy'), board({city: true}))};
+compare('EXPERT, builds Airport City', AC.EXPERT, pyRow('EXPERT, builds Airport City'), TOL_A, TOL_A_IRR);
+compare('BAD, builds Airport City', AC.BAD, pyRow('BAD, builds Airport City'), TOL_A, TOL_A_IRR);
+compare('LAZY, builds Airport City', AC.LAZY, pyRow('LAZY, builds Airport City'), TOL_A, TOL_A_IRR);
+const acHist = AC.EXPERT.st.history.find(h => h.board && h.board.bought.indexOf('airport_city') >= 0);
+if (!acHist || acHist.era !== 3) fail('Airport City was not bought at the era-3 board (got ' + (acHist ? acHist.era : 'none') + ')');
+const ac30 = E.acPlan(13);
+console.log('\n- board line: "Your land earns ' + Math.round(ac30.earnCr).toLocaleString('en-IN') + ' cr a year; AERA counts ' + Math.round(0.3 * ac30.earnCr).toLocaleString('en-IN') + ' of it" (year ' + ac30.fullYear + ')');
+const pyAc = /Your land earns ₹([\d,]+) cr a year/.exec(py);
+if (pyAc && Math.abs(+pyAc[1].replace(/,/g, '') - ac30.earnCr) > 2) fail('Airport City income ' + Math.round(ac30.earnCr) + ' vs python ' + pyAc[1]);
+
+// ---- Part A3: construction years, a 12-month slip (monsoon 4 + steel 8) against the model's delay row ----
+console.log('\n## Part A3: construction slip, 12 months (python: "EXPERT, phase 1 opens 12 months late")\n');
+function pyDelay(label) {
+  const line = py.split('\n').find(l => l.startsWith('| ' + label + ' |'));
+  const c = line.split('|').slice(1, -1).map(x => x.trim());
+  return {eras: c.slice(1, 5).map(x => parseFloat(x)), cure: +c[5].replace(/,/g, ''), irr: parseFloat(c[7])};
+}
+const SL = play(ob('EXPERT'), profileShift('expert'), board({phase2: true}), {monsoon: 'slip', overrun: 'slip'});
+const pd = pyDelay('EXPERT, phase 1 opens 12 months late');
+const slEng = I.simulate(SL.st.s, 60);
+const slCells = SL.cells.slice(0, 4).map(c => c === 'repaid' ? c : fl(c));
+console.log('| Run | E1 | E2 | E3 | E4 | Shareholders top up ₹ cr | Return |\n|---|---|---|---|---|---|---|');
+console.log('| 12 months late (era.js) | ' + slCells.map(c => c.toFixed(2)).join(' | ') + ' | ' + Math.round(slEng.cures).toLocaleString('en-IN') + ' | ' + SL.irr.toFixed(1) + '% |');
+console.log('| 12 months late (python) | ' + pd.eras.map(c => c.toFixed(2)).join(' | ') + ' | ' + pd.cure.toLocaleString('en-IN') + ' | ' + pd.irr.toFixed(1) + '% |');
+slCells.forEach((c, i) => { if (Math.abs(c - pd.eras[i]) > TOL_A + 1e-9) fail('slip E' + (i + 1) + ' ' + c + ' vs ' + pd.eras[i]); });
+if (Math.abs(slEng.cures - pd.cure) > 25) fail('slip top-up ' + Math.round(slEng.cures) + ' vs ' + pd.cure);
+if (Math.abs(SL.irr - pd.irr) > TOL_A_IRR) fail('slip return ' + SL.irr.toFixed(2) + ' vs ' + pd.irr);
+if (SL.st.construction.slipMonths !== 12) fail('slip months ' + SL.st.construction.slipMonths);
+
+
 // ---- Part B ----
 console.log('## Part B: the shift mapping (shift summaries, not profiles)\n');
 const EXPERT_SHIFTS = {1: {stars: 3, otp: 0.88, cx: 0.93, safety: 100}, 2: {stars: 3, otp: 0.94, cx: 0.95, safety: 100},
@@ -139,7 +181,9 @@ compare('BAD-like shifts', B.BAD, pyRow('BAD'), TOL_B, TOL_B_IRR);
 // ---- Part C ----
 console.log('\n## Part C: plain words, determinism, stable history\n');
 const BANNED = /\b(DSCR|RAB|WACC|true-?ups?|EBITDA|IRR|SLA|UDF|covenants?|step-?in)\b/i;
-const texts = [].concat(...Object.values(A).map(r => r.texts), ...Object.values(B).map(r => r.texts));
+const texts = [].concat(...Object.values(A).map(r => r.texts), ...Object.values(B).map(r => r.texts), ...Object.values(AC).map(r => r.texts), SL.texts);
+['banks', 'dollar', 'infra'].forEach(l => texts.push(E.previewClose({gearing: 70, repayment: 'sculpted', bid: {type: 'share', value: 15}, lender: l, phase1: 'big', stateLoan: false}).note));
+texts.push(JSON.stringify(E.lenders()), JSON.stringify(E.phase1Options()), JSON.stringify(E.stateLoanOpt()));
 texts.push(E.previewBid({type: 'share', value: 15}).note, E.previewBid({type: 'ppf', value: 180}).note,
   E.previewClose({gearing: 75, repayment: 'equal', bid: {type: 'share', value: 15}}).note,
   E.previewClose({gearing: 70, repayment: 'sculpted', bid: {type: 'share', value: 15}}).note);

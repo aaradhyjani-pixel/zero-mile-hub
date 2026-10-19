@@ -204,3 +204,13 @@ The certificate reuses the duty paper, ticks, signature pad, seal and stamp from
 The construction choices are a real trade-off on the expert's return: none 12.45%, monsoon pay 12.40 / slip 12.38, steel pay 12.25 / slip 12.32 (but year 5 at ₹7 for every ₹100 due), both slips 11.93, short trials 12.37. Lenders on the expert: banks 12.5%, dollar bonds 13.1% (eras 3–4 fall to ₹104–106 after the rupee falls), infrastructure bank 13.0% (eras 2–4 at ₹173/141/127): the banks are the weakest choice; a balance call for the user.
 
 **Open:** Python has no lenders yet (era.js only; the test checks them for plain words, not against the model). A slip under 12 months is a part-year opening in era.js only (the model has whole years). Eras 5–12 still play Level 4.
+
+**Money-off gate (expert fastbot, one at a time, nice -n 10):**
+| Level | Result | Baseline | Stars | Errors |
+|---|---|---|---|---|
+| L1 | 123/88 | 123/88 | ★★★ | 0 |
+| L2 | 234/93 | 234/93 | ★★★ | 0 |
+| L3 | 480/74, rerun 480/73 | 480/72 | ★★★ | 0 |
+| L4 | 744/80 | 744/80 | ★★★ | 0 |
+
+L3's on-time figure moves by 1–2 points from run to run: the previous commit (6883a78, before this lane) also gives 480/73 on the same bot, so it is not from this change (quick play never reaches era.js or CAMP). Browser smoke (`/tmp/zmw/smoke.py`): the desk's agreement reads "Phase 1 (45 million passengers a year) costs ₹60,000 cr: ₹30,938 cr from Indian banks, ₹7,843 cr as an interest-free loan from the State, and ₹21,220 cr from shareholders"; no ₹56,000 / ₹36,960 anywhere; signing with no construction screen in this build goes straight to era 1 on Level 1; 0 page errors.

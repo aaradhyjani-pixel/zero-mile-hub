@@ -2604,7 +2604,7 @@ M.stepIn=function(o){mountS();o=o||{};return new Promise(res=>{
    opts: {company, founder, start (1–4: open at that page, skipping the casing)}. The casing opens on "open it"; each page pulls out
    of it; "Close the Black Box" resolves. --rec orange appears here and nowhere else. */
 const BX_TITLES=['','The return','What made the return','What happened','How you work'];
-function bxRuler(p){const bs=(p.benchmarks||[]).map(b=>({label:b.label,source:b.source,lo:Array.isArray(b.pct)?+b.pct[0]:+b.pct,hi:Array.isArray(b.pct)?+b.pct[1]:b.pctHi!=null?+b.pctHi:+b.pct})).filter(b=>isFinite(b.lo));
+function bxRuler(p){const bs=(p.benchmarks||[]).map(b=>({label:b.label,source:b.cite||b.source,lo:Array.isArray(b.pct)?+b.pct[0]:+b.pct,hi:Array.isArray(b.pct)?+b.pct[1]:b.pctHi!=null?+b.pctHi:+b.pct})).filter(b=>isFinite(b.lo));
   const r=+p.returnPct,vals=bs.flatMap(b=>[b.lo,b.hi]).concat(isFinite(r)?[r]:[]);
   const mn=Math.min(0,Math.floor(Math.min(...vals)/5)*5),mx=Math.max(20,Math.ceil((Math.max(...vals)+1)/5)*5),sp=mx-mn,X=v=>(v-mn)/sp*100;
   const ticks=[];for(let k=0;k<=sp;k++)ticks.push(`<line x1="${k/sp*100}%" x2="${k/sp*100}%" y1="0" y2="${k%5===0?13:6}"/>`);

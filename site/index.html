@@ -15021,7 +15021,7 @@ requestAnimationFrame(frame);
     var l5Now = 100 - st.stake - 20, l5After = l5Now + (st.stake - m);
     return choiceDoc(st, {year: CH6.year, docType: 'banks-letter', docId: 'banks-letter-' + cal(CH6.year), title: 'Letter from the banks to ' + VSIAL,
       parties: {from: lenderName(st.s) + ' and the State Bank consortium', to: VSIAL + ', for ' + who, signatory: {name: 'The lenders\' agent', title: 'For the banks'}},
-      body: ['The crisis means the airport will earn ' + (need.worst != null ? coverWords(need.worst) : 'too little for its loan payments') + ' in ' + cal(need.worstYear || CH6.year) + '.',
+      body: ['The crisis means the airport will earn ' + (need.worst != null ? coverWords(need.worst).replace(' earned', '') : 'too little for its loan payments') + ' in ' + cal(need.worstYear || CH6.year) + '.',
         'The banks ask the owners to put in ' + cr(X) + ' of fresh money this year, enough to bring the hardest year back to ₹110 earned for every ₹100 due.',
         'If no money comes, the banks will take control of the airport and its owners\' shares will be lost.'],
       choices: [
@@ -15346,6 +15346,10 @@ requestAnimationFrame(frame);
     if (dcf.discount_rate) out.push({id: 'fairfax', label: 'What Fairfax\'s own valuation of Bengaluru\'s airport assumes it earns', lowPct: dcf.discount_rate[0] * 100, highPct: dcf.discount_rate[1] * 100, pct: [Math.round(dcf.discount_rate[0] * 1000) / 10, Math.round(dcf.discount_rate[1] * 1000) / 10], year: 2025, source: src('bial.owners.dcf_inputs'), key: 'bial.owners.dcf_inputs'});
     if (roe != null) out.push({id: 'aera', label: 'What AERA allows Delhi\'s airport on its shareholders\' money', pct: roe, source: src('till.fair_return_on_equity'), key: 'till.fair_return_on_equity'});
     if (cod != null) out.push({id: 'banks', label: 'What the banks charged', pct: cod, source: src('till.efficient_cost_of_debt'), key: 'till.efficient_cost_of_debt'});
+    var CITE = {fairfax: 'Fairfax India Holdings, Annual Report 2025: the discount rates in its valuation of Bangalore International Airport.',
+      aera: 'AERA consultation paper on Delhi airport (aera.gov.in), para 7.2.3 and Table 238: the fair return on shareholders\' money.',
+      banks: 'AERA, the same consultation paper, paras 7.2.7 to 7.2.10: the efficient cost of Delhi airport\'s debt.'};
+    out.forEach(function (b) { b.cite = CITE[b.id] || b.label; });   // readable citations: the browser build strips money.json's source fields
     return out;
   }
   function npvRate() { var b = benchmarks().filter(function (x) { return x.id === 'fairfax'; })[0]; return b ? b.lowPct / 100 : 0.122; }
@@ -15505,7 +15509,7 @@ requestAnimationFrame(frame);
     var p1 = {returnPct: rp.returnPct, words: rp.words, moneyInCr: rp.investedCr, moneyOutCr: rp.returnedCr, valueCr: rp.valueCr, line: rp.line, company: rp.company,
       ended: banks ? 'banks' : 'handback', endedYear: banks ? cal(o.year || state.year || 1) : cal(60),
       endedOn: banks ? cal(o.year || state.year || 1) + String(state.signedOn || '2026-04-01').slice(4) : (state.endsOn || null), endedWords: rp.ending,
-      benchmarks: rp.benchmarks.map(function (b) { return {id: b.id, label: b.label, pct: b.pct, year: b.year, source: b.source, key: b.key}; })};
+      benchmarks: rp.benchmarks.map(function (b) { return {id: b.id, label: b.label, pct: b.pct, year: b.year, source: b.source, url: b.source, cite: b.cite, key: b.key}; })};
     a.bars = a.barsWithWords;
     var p2 = {method: a.method, words: a.words, bars: a.bars.map(function (b) { return {decision: b.group, label: b.label, chosen: b.chosen, npvCr: b.npvCr, sharePct: b.sharePct, sentence: b.sentence}; }),
       everythingElsePct: a.everythingElse.sharePct, everythingElseCr: a.everythingElse.npvCr, closing: a.powerLaw, sentences: a.sentences, totalCr: a.totalCr, checkSum: a.checkSum, groups: a.groups};
@@ -18163,7 +18167,7 @@ M.stepIn=function(o){mountS();o=o||{};return new Promise(res=>{
    opts: {company, founder, start (1–4: open at that page, skipping the casing)}. The casing opens on "open it"; each page pulls out
    of it; "Close the Black Box" resolves. --rec orange appears here and nowhere else. */
 const BX_TITLES=['','The return','What made the return','What happened','How you work'];
-function bxRuler(p){const bs=(p.benchmarks||[]).map(b=>({label:b.label,source:b.source,lo:Array.isArray(b.pct)?+b.pct[0]:+b.pct,hi:Array.isArray(b.pct)?+b.pct[1]:b.pctHi!=null?+b.pctHi:+b.pct})).filter(b=>isFinite(b.lo));
+function bxRuler(p){const bs=(p.benchmarks||[]).map(b=>({label:b.label,source:b.cite||b.source,lo:Array.isArray(b.pct)?+b.pct[0]:+b.pct,hi:Array.isArray(b.pct)?+b.pct[1]:b.pctHi!=null?+b.pctHi:+b.pct})).filter(b=>isFinite(b.lo));
   const r=+p.returnPct,vals=bs.flatMap(b=>[b.lo,b.hi]).concat(isFinite(r)?[r]:[]);
   const mn=Math.min(0,Math.floor(Math.min(...vals)/5)*5),mx=Math.max(20,Math.ceil((Math.max(...vals)+1)/5)*5),sp=mx-mn,X=v=>(v-mn)/sp*100;
   const ticks=[];for(let k=0;k<=sp;k++)ticks.push(`<line x1="${k/sp*100}%" x2="${k/sp*100}%" y1="0" y2="${k%5===0?13:6}"/>`);

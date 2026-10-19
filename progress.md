@@ -120,3 +120,9 @@ Shipped in this pass:
 
 - 2026-10-19 · Ownership at financial close confirmed by the user: parent 64%, L5 Capital 16%, AAI 10%, MADC 10%; the player can grow to 80% by buying L5 Capital out (4% an era from the year-14 board). The wiring passes `partners` 64/16/10/10 to `ZMMoney.onboarding(opts)`, so money/ui.js needs no change (its 80/10/10 is only the mock default). Review note #1 (80/10/10) is superseded by the user's decision.
 - 2026-10-19 · Merged main (rename to Vikram Sarabhai International, VSI) into money and swept the money docs (ZMI→VSI, ZMIAL→VSIAL). Merged assist/money-ui d82a98f (VSI/VSIAL defaults). **For the review session:** money/ui.js's SPV step still says "owns 80%" in its copy; the user confirmed 64% at close growing to 80%, so that sentence should read from the `partners` passed in (the wiring passes 64/16/10/10).
+- 2026-10-19 · **Checkpoint 1: research, design, BIAL-calibrated model.**
+  - `tools/concession_model.py` is finished from the WIP. Every audit finding (A1–F3) is fixed or stated as left, in `design/finance.md` §8.
+  - Results: the expert's worst year is 1.16 (amber at 1C/1D, from AERA's 13.9% carry, not the debt's shape), then it recovers to 2.3+, with an IRR of 13.5%. Bad play and lazy play are both taken over under the two-era rule (years 13 and 10).
+  - The Delhi card gives −0.30 to 0.23 on the expert's debt.
+  - `money-design.md` is rewritten: "BIAL, scaled", what the player sees (three numbers; two or three decisions an era; no true-up, RAB, WACC or sculpting as inputs), the side-by-side and DSCR-by-era tables. `design/finance.md` is new.
+  - The PARAMS numbers are moved to new `money.json` keys.

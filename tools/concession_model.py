@@ -884,12 +884,15 @@ def fit_opex():
     xs = [a * sum(bial_new_capacity(fy)) for fy in years]
     rs = [ox[fy] / PI[fy] - base(fy) for fy in years]
     kg = ke = sum(x * r for x, r in zip(xs, rs)) / sum(x * x for x in xs)
+    g0 = oc['fit_years_greenfield']            # the alternative: a greenfield term on FY2009 alone (one estimated point)
+    kg_alone = sum(a * bial_new_capacity(fy)[0] * (ox[fy] / PI[fy] - base(fy)) for fy in g0) / sum((a * bial_new_capacity(fy)[0]) ** 2 for fy in g0)
     resid = {}
     for fy, o in ox.items():
         g, e = bial_new_capacity(fy)
         mod = base(fy) + a * (kg * g + ke * e)
         tag = 'in' if fy not in oc['out_of_sample'] else 'out'
         resid[fy] = (mod / (o / PI[fy]) - 1, tag)
+    CALIB['open_k_greenfield_alone'] = kg_alone
     return a, b * 10, kg, ke, resid      # a: crore per mppa; b: Rs per pax
 
 
@@ -1192,7 +1195,8 @@ def vsi_build(s, gear, scheds, base, with_p2, sizing_weights=None, label='?'):
         for k in (0, 1) if not (s.get('no_expansion_opening') and not base) else ():
             if y - k > 5:
                 new_e += max(0.0, cap_year(y - k) - cap_year(y - k - 1))
-        return pr(t) * a_fix * (CALIB['open_k_greenfield'] * new_g + CALIB['open_k_expansion'] * new_e)
+        kg = CALIB['open_k_greenfield_alone'] if s.get('greenfield_alone') else CALIB['open_k_greenfield']
+        return pr(t) * a_fix * (kg * new_g + CALIB['open_k_expansion'] * new_e)
     # stage financing with IDC (closed form per year) and the state loan on 1A
     vintages, tranches, equity_need, stage_list = [], [], {}, []
     sl_amt = 0.0
@@ -1776,6 +1780,21 @@ def print_warning_source(ex):
     print()
 
 
+def print_opening_options(ex):
+    alt = vsi_engine(dict(SCEN['EXPERT'], greenfield_alone=True), 'x')
+    print('### The opening year: two honest fits\n')
+    print(f"BIAL's opening year (FY2009) had a 44% margin. One opening term fitted on all three BIAL openings (k = {CALIB['open_k_greenfield']:.2f}, the default) "
+          f"under-fits it; a greenfield term fitted on FY2009 alone (k = {CALIB['open_k_greenfield_alone']:.2f}) fits it exactly but rests on one estimated point.\n")
+    print('| Opening term | VSI margin, years 5 / 6 / 7 | Bank gearing on 1A | E1 worst year | Expert lowest year | Expert IRR |')
+    print('|---|---|---|---|---|---|')
+    for lab, e in (('one term, three openings (default)', ex), ('greenfield term on FY2009 alone', alt)):
+        m = ' / '.join(f"{e.rows[y]['margin'] * 100:.0f}%" for y in (4, 5, 6))
+        c = era_cells(e)
+        low = min((r['dscr'], r['t'] + 1) for r in e.rows if r['dscr'] is not None and r['ds'] > 0.02 * r['ebitda'])
+        print(f"| {lab} | {m} | {e.gear[e.names[0]]:.0%} | {c[0]} | {fl(low[0])} (year {low[1]}) | {irr_txt(e)} |")
+    print()
+
+
 def print_scale(ex):
     print('### Scale factor\n')
     pax_r = [(2008 + n, ex.rows[n + 3]['pax'] / PAX[2008 + n]) for n in range(1, 19) if n + 3 < len(ex.rows)]
@@ -1825,6 +1844,7 @@ def main():
         sengs = [vsi_engine(s, n) for n, s in sens]
         print_eras([engs[0]] + sengs, 'Lever sensitivities (one change from EXPERT each)', note=False)
         print_warning_source(engs[0])
+        print_opening_options(engs[0])
         print_irr_basis(engs[:3] + sengs)
         for e in engs[:3]:
             last = e.step_in[0] + 1 if e.step_in else 30

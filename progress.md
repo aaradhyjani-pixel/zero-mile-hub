@@ -274,3 +274,80 @@ Thiel
 **Money-off gate** (expert fastbot, one at a time, nice -n 10): L1 124/89 (final build rerun 123/88), L2 234/93, L3 480/72, L4 744/80, all ★★★, 0 errors.
 
 **Open:** Frankfurt is margin text only (no later chapter flies it); hub income stops growing after 2043; Doha has no counter-offer mechanic; connections per destination are additive; the cover can't visibly move (Skyward is ~1% of income). Skyward's London widebody shows as B789 in the at-risk list (CH5_TYPE doesn't read 'A388').
+
+## Engine requests
+(for lane E, the cloud session; the Mac does not edit money/era.js, money.json or tools/era_test.js. Logged 19 October 2026, 18:55)
+
+### 1. The test agent's era.js changes (fixes run, on money since 4793937; not committed by the Mac, please port each with a test)
+Full diff (`git diff 4793937 -- money/era.js`):
+```diff
+diff --git a/money/era.js b/money/era.js
+index 9390e4b..c168910 100644
+--- a/money/era.js
++++ b/money/era.js
+@@ -1098,10 +1098,12 @@
+     var div = {maxCr: Math.floor(cash * payout), lastCr: lastDiv || undefined};
+     if (cash >= 1 && payout <= 0) { div.blocked = true; div.reason = 'The banks hold back dividends while the airport earns under ₹' + Math.round(P.lockup.nil_below * 100) + ' for every ₹100 due.'; }
+     var pr = partners(); pr[0] = Object.assign({}, pr[0], {name: state.parent || pr[0].name, pct: state.stake});
+-    var pile = [{title: 'Concession Agreement', stamp: 'Executed'}];
+-    if (state.construction) pile.push({title: 'Construction record', stamp: 'Filed'});
+-    for (var k = 2; k <= e; k++) pile.push({title: 'Board minutes, era ' + k, stamp: 'Approved'});
+-    return {era: e + 1, years: (2025 + nx[1]) + '–' + (2025 + nx[2]), year: nextStart, parent: state.parent, parentPct: state.stake, founder: state.founder || undefined,
++    // dated in the game: the meeting sits on the last day of the era just run, on the signing day's month and day
++    var md = String(state.signedOn || '2026-04-01').slice(4), meet = cal(ys[2]) + md, con = (state.history || []).filter(function (h) { return h.construction; })[0];
++    var pile = [{title: 'Concession Agreement', stamp: 'Executed', date: state.signedOn || undefined}];
++    if (state.construction) pile.push({title: 'Construction record', stamp: 'Filed', date: (con && con.construction.finishedOn) || state.opensOn || undefined});
++    for (var k = 2; k <= e; k++) pile.push({title: 'Board minutes, ' + cal(eraYears(k - 1)[2]), stamp: 'Approved', date: cal(eraYears(k - 1)[2]) + md});
++    return {era: e + 1, years: (2025 + nx[1]) + '–' + (2025 + nx[2]), year: nextStart, date: meet, parent: state.parent, parentPct: state.stake, founder: state.founder || undefined,
+       partners: pr.map(function (x) { return {name: x.name, pct: x.pct}; }), stakeValueCr: lr.stakeValueCr, cashCr: cash, debtCr: lr.debtCr || 0,
+       dscr: lr.cover != null ? {value: lr.cover, warn: P.thr.warning, covenant: P.thr.covenant} : null,
+       aera: aera, appealNow: stance === 'hard', investments: invest,
+@@ -1186,7 +1188,7 @@
+       diffPct: Math.round((implied - valueCr) / valueCr * 1000) / 10};
+   }
+   function stakeSentence(company, pct, valueCr, chk, when) {   // the stake line every bill uses, with its reconciliation
+-    var w = (company || 'Your company') + '\'s ' + pct + '% is worth about ' + stakeWords(valueCr) + (when ? ' ' + when : '') + '.';
++    var w = poss(company || 'Your company') + ' ' + pct + '% is worth about ' + stakeWords(valueCr) + (when ? ' ' + when : '') + '.';
+     if (!chk) return w;
+     return w + ' ' + (company ? 'It has' : 'You have') + ' put in ' + stakeWords(chk.moneyInCr) + ' since ' + chk.fromYear +
+       (chk.dividendsCr >= 1 ? ' and taken out ' + stakeWords(chk.dividendsCr) + ' in dividends' : '') +
+@@ -1252,10 +1254,14 @@
+       director: (state.founder || 'The founder') + ', director', chapter: ch, resumable: resumable(state).ok,
+       line: 'Signed ' + fmtDate(state.signedOn || '2026-04-01') + ' · now year ' + yr + ' of 60 · ' + (ch.n <= 7 ? 'Chapter ' + ch.n + ', ' : '') + ch.name,
+       year: state.year || 1, calYear: cal(state.year || 1), era: state.era || 1, building: !!state.building,
+-      stake: {pct: state.stake || 0, valueCr: lr.stakeValueCr != null ? lr.stakeValueCr : null},
++      stake: {pct: state.stake || 0, valueCr: lr.stakeValueCr != null ? lr.stakeValueCr : null, inCr: lr.stakeValueCr != null ? null : putIn(state)},
+       cover: {words: state.building ? 'No loan payments due until the airport opens' : coverWords(cov), light: lr.light || 'green'},
+       cashCr: h.cashCr != null ? h.cashCr : Math.round(state.cash || 0), docs: campaignDocs(state)};
+   }
++  // the player's share of what the shareholders have put in so far (the file card's stake before the first books close)
++  function putIn(state) {
++    try { var q = closeFigures(state.s, state.s.sizing); return Math.round(q.equityCr * (state.stake || 64) / 100); } catch (e) { return null; }
++  }
+   // The save (zm_campaign). A concession is resumable only if it is the player's own: signed (signature, founder and
+   // signing day), from this version of the game, not the sample company, and not over. VSIEra.resumable(save) → {ok, why}
+   var SAVE_VERSION = 2;
+@@ -1283,7 +1289,7 @@
+       yearsRun: yearsRun, how: how,
+       howWords: how === 'handback' ? 'Handed back after 60 years' : how === 'banks' ? 'The banks took control in ' + cal(o.year || state.year || 1) : 'Torn up in year ' + (state.year || 1),
+       finalReturnPct: ret, stakeValueCr: how === 'banks' ? 0 : (lr.stakeValueCr != null ? lr.stakeValueCr : null),
+-      endedOn: how === 'handback' ? (state.endsOn || null) : null};
++      endedOn: how === 'handback' ? (state.endsOn || null) : cal(o.year || state.year || 1) + String(state.signedOn || '2026-04-01').slice(4)};
+   }
+   function addMonths(iso, m) {
+     var d = iso ? new Date(iso + 'T12:00:00Z') : new Date(Date.UTC(2026, 3, 1, 12));
+```
+One line per change:
+1. `boardOptions` (~line 1098): the board meeting and every document in its pile now carry an in-game date. The meeting is the last day of the era just run, on the signing day's month and day; the Concession Agreement is dated signedOn; the construction record is dated finishedOn/opensOn; each "Board minutes, era k" is dated its era's end. **Why:** the pile's stamps showed the real date (19 OCT 2026) instead of the game's (fix e, human dates).
+2. `stakeSentence` (~line 1188): uses `poss(company)` for the possessive instead of appending `'s`. **Why:** names that end in "s" read wrong ("Haversine Airways's"). **If `poss` doesn't exist in s0-engine, port the helper too.**
+3. File card stake (~line 1254) plus the new `putIn(state)`: before the first books close, when `stakeValueCr` is null, the card shows the player's share of the equity put in so far (`stake.inCr`). **Why:** the concession file card showed an empty stake during the building years (fix b).
+4. `recordEntry` (~line 1289): `endedOn` is now set for a concession the banks took or the player tore up (the calendar year plus the signing month and day). Before, only a handback had one. **Why:** "Earlier concessions" showed no date for torn-up and taken concessions (fix b, spec 4).
+None of these is a debug log. `tools/era_test.js` has one change: the test label "declines Skyward" became "declines Haversine Airways" (the rename, fix a). `money.json` has no change.
+
+### 2. Field names that still differ from lane U's screens (checked on 959a15e against money/CONTRACT.md on s0b-ui)
+Please rename these, or add the screen's names alongside your own:
+- **`bridge(state, n).lines`** should be the **per-year headlines, oldest first**, which is what the split-flap riffles. Today they are in `headlines` and `lines` holds the three summary lines. Move the summary to `summary[]`. (`fromYear`/`toYear` ✓. `frontPage` is not needed; lane H passes `chapters[n].frontPage`.)
+- **`debrief.pages().p1`**: `investedCr` → `moneyInCr`; `returnedCr` → `moneyOutCr`; `banks`/`ending` → `ended: 'handback' | 'banks'` plus `endedYear` and `endedOn`; `benchmarks[].lowPct`/`highPct` → `benchmarks[].pct` (a number, or `[low, high]` for a range). `valueCr` ✓.
+- **`p2`**: `method` should be `'leave-one-out'` or `'shapley'` (today `'quick'`); `everythingElse.sharePct` → `everythingElsePct`; `powerLaw` → `closing`; `bars[].group` → `bars[].decision` (`sentence` ✓, `label` ✓, `sharePct` ✓).
+- **`p3`**: `papers` → `frontPages`, with each item's `calYear` → `year` (keep `chapter`, `lead`, `line`, `light`); `moment` → `once`.
+- **`p4`**: `profile` → `lines`, each `{title, line, evidence}`. Today `line` holds the title plus the text, so use `text` as `line`. `thiel` ✓.

@@ -2908,11 +2908,11 @@ window.addEventListener('load',()=>setTimeout(()=>{try{
 /* ============ The flight (design/chapters.md, money/DESIGN.md Part II): the whole concession on the player's OWN save ============
    Clearance (the deal desk) → Pushback (the construction register) → Takeoff (ch3) → Climb (ch4, with the 2034 budget tick on its
    bill) → Cruise (ch5, the real hub shift) → Turbulence (ch6: the banks' letter; refusing ends the concession) → Landing (ch7: the
-   board minutes, then the handover certificate) → the Black Box (VSIEra.debrief.all, four pages).
+   board minutes, then the handover certificate) → the Black Box (VSIEra.debrief.pages: p1-p4).
    Each chapter: front page → decision → shift → bill → card. Between chapters the years-later split-flap (VSIEra.bridge) lands on
    the next front page; the end of Act I (after Takeoff) and Act II (after Cruise) is a cliffhanger front page that offers, never
    forces, closing the file for tonight.
-   The save is the concession itself (zm_campaign, save v2) with st.flight = {n, step, out?, past[], shiftYear?, moments?, left?},
+   The save is the concession itself (zm_campaign, save v2) with st.flight = {n, step, out?, past[], left?},
    written after every step, so a reload comes back to the same step (a shift restarts from its briefing). Stub chapters (3, 4,
    6, 7 in Stage 0) are flown by the duty team: shiftPlan(state).auto goes straight to applyShift, and the bill says so.
    Fixtures (?chapterN= test URLs) never come here: the flight only runs on a resumable save, and never writes a sample.
@@ -2933,7 +2933,7 @@ const FL_BOT={
       6:{stars:1,otp:0.74,cx:0.82},7:{stars:1,otp:0.74,cx:0.82}}}};
 const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
   on(){return !FLIGHT_LEGACY&&FL.ok();},
-  ok(){const E=CAMP.E();return !!(CAMP.ready()&&E&&E.chapters&&E.bridge&&E.debrief&&E.chapters[3]&&ZMMoney.frontPage&&ZMMoney.decision&&ZMMoney.bill);},
+  ok(){const E=CAMP.E();return !!(CAMP.ready()&&E&&E.chapters&&E.bridge&&E.cliffhanger&&E.debrief&&E.debrief.pages&&E.chapters[3]&&ZMMoney.frontPage&&ZMMoney.decision&&ZMMoney.bill);},
   // the player's own concession, resumable; or one that ended inside the flight with pages still to read (the bill, the
   // handover, the Black Box). Never a sample.
   load(){const own=CAMP.load();if(own)return own;const o=store.get('zm_campaign');
@@ -2985,11 +2985,13 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
         const b=E.bridge(st,n);let ns=b.state;
         if(ns.over){ns.flight=Object.assign({},f,{step:'ended'});CAMP.st=ns;FL.save();continue;}
         ns=C.start(ns)||ns;const fp=FL.who(ns,C.frontPage(ns));
-        const fromY=f.shiftYear?2025+f.shiftYear:+b.from,toY=+((String(fp.dateLine||'').match(/\b(\d{4})\b/)||[])[1])||+b.to;
-        const fl=Object.assign({},b,{state:undefined,fromYear:Math.min(fromY,toY),toYear:toY,lines:(f.moments||[]).concat(b.lines||[]).filter(Boolean),summary:b.lines,frontPage:fp,chapter:n});
+        // the engine's split-flap (fromYear, toYear, lines: one headline a year), landing on the front page's own year
+        // (bridge(st,6).toYear is 2044 while Chapter 6's front page is dated 2046: engine request)
+        const toY=+((String(fp.dateLine||'').match(/\b(\d{4})\b/)||[])[1])||+b.toYear;
+        const fl=Object.assign({},b,{state:undefined,fromYear:Math.min(+b.fromYear,toY),toYear:toY,frontPage:fp,chapter:n});
         FL.pile(ns);
         await FL.show('flaps',fp,()=>Z.flaps?Z.flaps(fl):FL.flapsPaper(fl),null);
-        ns.flight=Object.assign({},f,{step:'decision',doc:null,moments:null});CAMP.st=ns;FL.save();continue;}
+        ns.flight=Object.assign({},f,{step:'decision',doc:null});CAMP.st=ns;FL.save();continue;}
       if(f.step==='front'){const fp=FL.who(st,C.frontPage(st));await FL.show('front',fp,()=>Z.frontPage(fp),null);f.step='decision';FL.save();continue;}
       if(f.step==='decision'){const d=C.decision(st);let pick;
         if(n===6)pick=await FL.letter(st,d);else if(n===7)pick=await FL.minutes(st,d);else pick=await FL.decide(st,d,n);
@@ -2998,7 +3000,7 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
         ns.flight=Object.assign({},f,{doc:{title:doc?doc.title:d.title,stamp:doc&&doc.stamp||'Signed'},pick});
         if(ns.over)ns.flight.step=FL._noticeShown?'box':'notice';else ns.flight.step='shift';
         FL._noticeShown=false;CAMP.st=ns;FL.save();continue;}
-      if(f.step==='shift'){const plan=C.shiftPlan(st);f.shiftYear=plan.year||FL_CH[n].years[0];
+      if(f.step==='shift'){const plan=C.shiftPlan(st);
         if(n===5){FL.cruise(st,plan);return;}   // the real hub shift: it calls FL.run again when the day ends
         let res=plan.auto;if(FL.bot){const x=FL_BOT[FL.bot.mode].shift[n];if(x)res=Object.assign({},plan.auto,x,{auto:false});}
         FL.log.push({n,kind:'shift',stub:true,stars:res.stars,otp:res.otp});
@@ -3012,13 +3014,13 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
           await FL.show('bill',b,()=>Z.bill(b),null);}
         f.step='card';FL.save();continue;}
       if(f.step==='card'){const card=f.out&&f.out.card;if(card)await FL.show('card',card,()=>Z.whatHappened(card),null);
-        const bill=f.out&&f.out.bill;f.moments=bill&&bill.moments||null;f.lastBill=bill?{cover:bill.cover||null,stake:bill.stake||null}:null;FL.pastAdd(f,st,n);delete f.out;delete f.stub;
+        FL.pastAdd(f,st,n);delete f.out;delete f.stub;
         if(st.over&&st.over.reason==='handback')f.step='handback';
         else if(st.over)f.step='ended';
         else if(n===3||n===5)f.step='cliff';
         else {f.n=n+1;f.step='flaps';f.doc=null;}
         FL.save();continue;}
-      if(f.step==='cliff'){const act=n===3?2:3,fp=FL.who(st,FL.cliffPage(st,act-1));
+      if(f.step==='cliff'){const act=n===3?2:3,fp=FL.who(st,E.cliffhanger(st,act-1));   // the act just finished: 1 after Takeoff, 2 after Cruise
         const r=await FL.show('cliff',fp,()=>Z.cliffhanger?Z.cliffhanger(fp,{act,actName:FL_ACT[act],file:FL.cover(st)}):FL.cliffPaper(fp,act),'turn');
         f.n=n+1;f.step='flaps';f.doc=null;
         if(r==='close'){f.left=true;FL.save();FL.live=false;FL.busy=false;window.__flightStep='closed';menu('concession');return;}
@@ -3097,44 +3099,14 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
     return r==='cta2'?'close':'turn';},
   cover(st){const f=st.flight||{},c=FL_CH[f.n]||FL_CH[3];return {company:st.parent,founder:st.founder,signature:st.signature,signedOn:st.signedOn,year:st.year,act:c.act,chapter:f.n,record:CAMP.rec()};},
 
-  // the cliffhanger front pages, written from the player's state (the Late City edition). (Engine request: VSIEra.cliffhanger.)
-  cliffPage(st,act){const who=st.parent||'Your company',md=(st.signedOn||'2026-04-01').slice(4),f=st.flight||{},bill=f.lastBill||(act===1?st.ch3&&st.ch3.bill:null)||{},cov=bill.cover&&bill.cover.words;
-    const base={masthead:'The Zero Mile Times',edition:'Late City edition',price:'₹12'};
-    if(act===1){const t=st.s&&st.s.plateauTrust!=null?st.s.plateauTrust:0.75,good=t>=0.7,y=2025+7;
-      return Object.assign(base,{dateLine:ZMMoney.fmtDate(y+'-12-30')+' · Nagpur',lead:'AIRLINES ASK: WILL VSI BECOME INDIA\'S CONNECTING HUB?',
-        deck:'Three years after opening day, the airport is full in the mornings and quiet after lunch. Sutradhar Air says it can fill the afternoon, if VSI will build around it.',
-        sub:{head:good?'Plateau Air stays, and wants more':'Plateau Air is not sure',body:(good?'Plateau Air moved its Bengaluru connecting bank to VSI and kept it. Its chief says the airport "opened like an airport that had been open for years".':'Plateau Air moved its Bengaluru bank to VSI, but its chief says the first morning "had its moments", and it will think hard before moving more flights here.')+
-          '\n\nSutradhar Air, which flies to twelve smaller Indian cities, is talking to '+who+' about timing all twelve into one afternoon bank.'},
-        columns:[{head:'The banks',body:cov?'In its hardest year so far, VSI earned '+cov.replace(/ earned/,'')+'.':'VSIAL has begun paying back its banks.'},{head:'The Gulf',body:'Dubai and Doha cut their transfer charges again this month. Most Indians who change planes still do it there.'}],
-        photo:{kind:'feeder-bank',caption:'The domestic pier at three in the afternoon. Drawn by our staff artist.'}});}
-    const k=CAMP.E().ch6.pick(st),y=2025+18,share=st.s&&st.s.anchorShare?Math.round(st.s.anchorShare*100):74;
-    const P={rupee:{lead:'A STORM IS COMING: RUPEE AT RECORD LOW',deck:'The rupee has fallen for six months running. Airlines buy fuel and lease their jets in dollars, and so does part of VSI\'s debt.',
-        sub:{head:'Borrowed in dollars',body:who+' borrowed in dollars when it signed in 2026, because the money was cheaper. Every fall in the rupee makes those repayments bigger.'}},
-      airline:{lead:'SUTRADHAR AIR PAYS ITS CREWS LATE',deck:'Sutradhar Air, which carries about '+share+'% of the passengers who change planes at VSI, paid its pilots ten days late this month.',
-        sub:{head:'One airline, one afternoon',body:who+' built VSI\'s afternoon bank around Sutradhar Air in 2033. If the airline stops flying, the bank stops with it.'}},
-      pandemic:{lead:'A NEW FEVER IN THREE CITIES: AIRLINES WATCH THE BOOKINGS',deck:'Doctors in three cities report a fast-spreading fever. Airlines say next month\'s bookings are already down.',
-        sub:{head:'Nobody plans for this',body:'No airport can plan for a pandemic. What matters is how much room it has when one comes, and who will put money in if the banks ask.'}}}[k];
-    return Object.assign(base,P,{dateLine:ZMMoney.fmtDate(y+'-12-30')+' · Nagpur',
-      columns:[{head:'The banks',body:cov?'In its hardest recent year, VSI earned '+cov.replace(/ earned/,'')+'.':'The banks are watching.'},{head:'The owners',body:bill.stake&&bill.stake.words||(who+' holds '+st.stake+'% of VSIAL.')}],
-      photo:{kind:'aerial',caption:'VSI from the air at dusk. Drawn by our staff artist.'}});},
-
-  // ---- the Black Box (design/debrief.md): VSIEra.debrief.all, four pages ----
-  pages(st){const E=CAMP.E(),all=E.debrief.all(st),r=all.returnPage,a=all.attribution,o=st.over||{};
-    const sent={};(a.bars||[]).slice(0,2).forEach((b,i)=>{sent[b.group]=(a.sentences||[])[i];});
-    return {raw:all,
-      p1:{returnPct:r.returnPct,words:r.words,line:r.line,moneyInCr:r.investedCr,moneyOutCr:r.returnedCr,valueCr:st.final&&st.final.stakeValueCr!=null?st.final.stakeValueCr:null,
-        benchmarks:(r.benchmarks||[]).map(b=>({label:b.label,pct:b.pct!=null?b.pct:[b.lowPct,b.highPct],source:b.source})),ended:r.banks?'banks':'handback',lost:!!r.banks,endedYear:o.year||null,ending:r.ending},
-      p2:{method:a.method==='exact'?'shapley':'leave-one-out',bars:(a.bars||[]).map(b=>({decision:b.group,label:b.label,chosen:b.chosen,sharePct:b.sharePct,npvCr:b.npvCr,sentence:sent[b.group]||''})),
-        everythingElsePct:a.everythingElse?a.everythingElse.sharePct:0,closing:a.powerLaw,words:a.words},
-      p3:{frontPages:(all.papers||[]).map(p=>({year:p.calYear,chapter:p.chapter,lead:p.lead,line:p.line,light:p.light})),
-        once:'Every moment happened once: opening day, the banks\' letter and the handover can\'t be played again inside a concession.'},
-      p4:{lines:(all.profile||[]).map(l=>{const i=l.line.indexOf('. ');return {id:l.id,title:i>0?l.line.slice(0,i+1):l.line,line:i>0?l.line.slice(i+2):'',evidence:l.evidence};})}};},
+  // ---- the Black Box (design/debrief.md): VSIEra.debrief.pages, four pages {p1, p2, p3, p4} as ZMMoney.debrief takes them ----
+  pages(st){return CAMP.E().debrief.pages(st);},
   async box(st){const Z=window.ZMMoney;let P=null;try{P=FL.pages(st);}catch(e){FL.err('debrief',e);}
     FL.lastPages=P;if(!P)return;window.__flightBox=P;
     if(Z.debrief){await FL.show('box',P.p1,()=>Z.debrief(P,{company:st.parent,founder:st.founder,start:FL.bot?1:undefined}),null);return;}
     const pc=v=>(v>=0?'+':'−')+Math.abs(Math.round(v))+'%',bm=b=>Array.isArray(b.pct)?b.pct[0]+'–'+b.pct[1]+'% a year':b.pct+'% a year';
     const pages=[
-      {title:'1 · The return',lead:P.p1.words,paragraph:[P.p1.line,P.p1.ending],table:[{head:'Against the sourced marks'}].concat(P.p1.benchmarks.map(b=>({label:b.label,text:bm(b)})))},
+      {title:'1 · The return',lead:P.p1.words,paragraph:[P.p1.line,P.p1.endedWords],table:[{head:'Against the sourced marks'}].concat(P.p1.benchmarks.map(b=>({label:b.label,text:bm(b)})))},
       {title:'2 · What made the return',lead:P.p2.words||'Each decision weighed against every other.',paragraph:P.p2.bars.map(b=>b.sentence).filter(Boolean).concat([P.p2.closing]),
         table:P.p2.bars.map(b=>({label:b.label+(b.chosen?' ('+b.chosen+')':''),text:pc(b.sharePct)})).concat([{label:'Everything else',text:pc(P.p2.everythingElsePct)}])},
       {title:'3 · What happened',paragraph:[P.p3.once],list:{title:'Your front pages',items:P.p3.frontPages.map(p=>p.year+': '+p.lead+'. '+p.line)}},

@@ -294,7 +294,7 @@ function toastRoom(){const el=$('#toast'),app=$('#app'),a=app.getBoundingClientR
   HUDR.length=0;
   for(const s of HUD_FLOAT){const e=document.querySelector(s);if(!e||e.hidden)continue;const r=e.getBoundingClientRect(),cs=getComputedStyle(e);if(r.width>0&&r.height>0&&+cs.opacity>0.05&&cs.visibility!=='hidden')HUDR.push({l:r.left-a.left,t:r.top-a.top,r:r.right-a.left,b:r.bottom-a.top});}}
 function coach(t,d,alarm){coachItems.unshift({t,d,at:clk(T)});$('#coachList').innerHTML=coachItems.map(c=>`<div class="ci"><div class="tm">${c.at}</div><h4>${c.t}</h4>${c.d.startsWith('<')?c.d:`<p>${c.d}</p>`}</div>`).join('');
-  let inCh=!!CH5;try{inCh=inCh||CAMP.active||CH5F.live;}catch(e){}if(inCh)return;   // every chapter: the handover sheet briefs the shift, so tips (and alarms, which also go on the radio and the log) stay in the Coach tab and never cover the map
+  let inCh=!!CH5||!!CHL;try{inCh=inCh||CAMP.active||CH5F.live;}catch(e){}if(inCh)return;   // every chapter: the handover sheet briefs the shift, so tips (and alarms, which also go on the radio and the log) stay in the Coach tab and never cover the map
   showToast(t,d);$('#toast').classList.toggle('alarm',!!alarm);}
 function explain(k){if(seen.has(k))return;seen.add(k);const g=GL[k];if(g)coach(g.t,g.d);}
 // some lessons only need teaching once ever, not once per level
@@ -578,7 +578,7 @@ function opsTick(dt){
 // What reaches you is either a consequence of your runway plan (a stack that grew too big, a heavy jet sent to a
 // short runway in the heat) or a real two-sided call. Each card says what ops does if you leave it, so ignoring a
 // card is allowed; it just isn't always the best call.
-const ICON={medical:{g:'+',c:'#ff4d3f'},fuel:{g:'F',c:'#ffae3b'},heavy:{g:'H',c:'#ff7a3f'},nogate:{g:'G',c:'#6aa3ff'},connex:{g:'C',c:'#b48cff'},hubhold:{g:'C',c:'#b48cff'},strike:{g:'B',c:'#ff7a3f'},vvip:{g:'V',c:'#f4c430'},summitOrder:{g:'V',c:'#ff9933'},lights:{g:'L',c:'#ffae3b'},lane:{g:'T',c:'#ffae3b'},shear:{g:'W',c:'#ff7a3f'}};
+const ICON={medical:{g:'+',c:'#ff4d3f'},fuel:{g:'F',c:'#ffae3b'},heavy:{g:'H',c:'#ff7a3f'},nogate:{g:'G',c:'#6aa3ff'},connex:{g:'C',c:'#b48cff'},hubhold:{g:'C',c:'#b48cff'},strike:{g:'B',c:'#ff7a3f'},vvip:{g:'V',c:'#f4c430'},summitOrder:{g:'V',c:'#ff9933'},lights:{g:'L',c:'#ffae3b'},lane:{g:'T',c:'#ffae3b'},shear:{g:'W',c:'#ff7a3f'},chap:{g:'!',c:'#f29a2e'}};
 const CFG=Object.assign({inc:'std'},store.get('zm_cfg')||{});
 const SCRIPTED=new Set(['medical','strike','vvip','lights','lane','shear','summit']);
 const STORY={};const MAXOPEN=3;let lastCnx=-1e9;
@@ -600,6 +600,11 @@ function spawnInc(type,target,extra){
   const I={id:++INC,type,born:T,left:0,total:40,def:null,defText:''};let ok=true;
   switch(type){
   case 'summit':{if(SUM||!startSummit()){ok=false;break;}return true;}
+  case 'chap':{const ci=extra.inc;if(!CHL||!ci){ok=false;break;}const a=ch5Anchor({anchor:CHL_ANCHOR[ci.id]||'stands'}),last=ci.options.length-1;
+    Object.assign(I,{x:a.x,y:a.y,total:70,icon:CHL_ICON[ci.id]||ICON.chap,title:ci.title,text:ci.text+' '+ci.options.map(o=>o.label+': '+(o.effect||'')).join(' '),def:last,defText:ci.options[last].label,
+      acts:ci.options.map((o,k)=>({l:o.label,pri:k===0?1:0,fn(){chlAnswer(ci,o);resolve(I,true,`${o.label}.`);}}))});
+    radio('AOCC',ci.text);const doc=(CHL.hooks.docTitle&&CHL.hooks.docTitle(ci.docId))||ci.docId;
+    chlTag('inc-'+ci.id,{doc,line:ci.title,docId:ci.docId},{x:a.x,y:a.y});break;}
   case 'medical':{const f=target||flights.filter(o=>['inbound','holding'].includes(o.state)&&!o.prio&&!incidents.some(i=>i.f===o)).sort((a,b)=>a.eta-b.eta)[0];if(!f){ok=false;break;}const w=estWait(f);
     Object.assign(I,{f,title:`Medical emergency on ${fl(f)}`,text:`A passenger in cardiac distress on the ${f.A.name} from ${f.from}. Priority sends it straight to the nearest runway; anyone it cuts in front of goes around. In sequence it lands in about ${w} min.`,def:1,defText:`it lands in sequence, about ${w} min. A wait over 8 min costs safety.`,
       acts:[{l:'Priority landing',pri:1,fn(){const m=priorityLand(f);resolve(I,true,`${fl(f)} cleared straight in for the medical. ${m}`);}},{l:'Land in sequence',fn(){f.medSince=I.born;resolve(I,true,`${fl(f)} lands in sequence with its medical.`);}}]});explain('stack');break;}
@@ -2216,7 +2221,7 @@ function tick(dt){
   opsTick(dt);
   incSpawner(dt);
   if(T>=S.tlNext&&T>=0){S.tlNext=T+60;recordShift();}
-  summitTick();specialTick();storyTick();if(CH5)ch5Tick();else if(CAMP.active)campLive();
+  summitTick();specialTick();storyTick();if(CH5)ch5Tick();else if(CHL)chlTick();else if(CAMP.active)campLive();
   if(!ended&&endDue())finish();
 }
 // the level ends at LEN; a level with windDown:true runs on (at most 30 minutes, LEN+WIND) until every departure there is
@@ -2312,7 +2317,7 @@ const starLines=L=>Object.assign({otp2:87,cx2:88,otp3:90,cx3:92},L.starsAt||{});
 function stars(L,s){let n=0;const k=starLines(L),otp=s.dep+s.arr?(s.depOnTime+s.arrOnTime)/(s.dep+s.arr)*100:0,ct=s.cnxMade+s.cnxMiss,cx=ct?s.cnxMade/ct*100:100;if(s.safety>=70)n=1;if(n>=1&&s.moves>=L.target&&otp>=k.otp2&&cx>=k.cx2)n=2;if(n>=2&&otp>=k.otp3&&cx>=k.cx3&&s.safety>=90)n=3;return n;}
 function starStr(n){return '<b>'+'★'.repeat(n)+'</b>'+'★'.repeat(3-n);}
 function startLevel(n,o){
-  if(!o)ch5Clear();   // quick play (and the concession eras) never carry Chapter 5's state
+  if(!o){ch5Clear();chlClear();}   // quick play (and the concession eras) never carry Chapter 5's state
   LV=Object.assign({},o&&o.lv||LEVELS[n-1]);LV.script=LV.script.map(s=>s.slice());T0C=+LV.clock.split(':')[0]*3600+ +LV.clock.split(':')[1]*60;
   resetState();onceSet.clear();
   // which runways and concourses open
@@ -2336,6 +2341,7 @@ function finish(){
   const left=flights.filter(f=>f.kind==='dep'&&['at_gate','taxi_out','hp','push','start','stuck'].includes(f.state)&&T>f.std+1500).length;
   for(const f of flights)if(f.links&&f.kind==='dep'&&f.state==='at_gate'&&T>f.std){for(const l of f.links){const ok=l.live!=null?l.live:l.arr.inBlock!=null&&l.arr.inBlock+l.x<=T;if(ok){if(l.live==null)S.cnxMade+=l.n;MNY&&MNY.cnx(l,true,f);}else{if(l.live==null)S.cnxMiss+=l.n;MNY&&MNY.cnx(l,false,f);}}}
   if(CH5){ch5End();return;}
+  if(CHL){chlEnd();return;}
   const st=stars(LV,S);const best=store.get('zm_stars')||{};if(!CAMP.active&&(best[LV.n]||0)<st){best[LV.n]=st;store.set('zm_stars',best);}   // concession shifts don't touch quick-play stars
   const otp=S.dep+S.arr?Math.round((S.depOnTime+S.arrOnTime)/(S.dep+S.arr)*100):0,otpA=S.arr?Math.round(S.arrOnTime/S.arr*100):0,otpD=S.dep?Math.round(S.depOnTime/S.dep*100):0,ct=S.cnxMade+S.cnxMiss,cx=ct?Math.round(S.cnxMade/ct*100):100;
   const verdict=st===3?'Flawless. The hub never noticed it was under pressure.':st===2?'Good shift. The waves came through and the hub kept its promises.':st===1?'The hub survived, but passengers will remember this one.':'Safety fell below 70. A real hub would stop operations and investigate.';
@@ -2573,7 +2579,7 @@ MNY=(()=>{
   const isSafe=f=>!!(f&&(f.mayday||f.minFuel||f.medSince!=null||M.safe.has(f.id)));
   const isFM=()=>!!(SUM||dustNow||fogF>0.3||(HOLDDEP&&T<HOLDDEP.until)||STO.some(o=>o.k==='delhisummit'));
   const add=(k,amt,f,label)=>{if(!amt)return;M.lines[k]=(M.lines[k]||0)+amt;
-    if(f&&!CH5&&amt>=5000&&!isSafe(f)&&f.sx!=null&&window.ZMMoney&&ZMMoney.float)try{const rv=REV.includes(k);ZMMoney.float(f.sx,f.sy+(rv?0:22),(rv?1:-1)*cr(amt),{label});}catch(e){}};   // costs sit just below the earnings; nothing under ₹5,000 floats
+    if(f&&!CH5&&!CHL&&amt>=5000&&!isSafe(f)&&f.sx!=null&&window.ZMMoney&&ZMMoney.float)try{const rv=REV.includes(k);ZMMoney.float(f.sx,f.sy+(rv?0:22),(rv?1:-1)*cr(amt),{label});}catch(e){}};   // costs sit just below the earnings; nothing under ₹5,000 floats
   const g=fn=>function(){if(!M.on)return;try{return fn.apply(null,arguments);}catch(e){if(!M.err){M.err=String(e);console.warn('money ledger',e);}}};
   const totals=()=>{let r=0,c=0;for(const k of REV)r+=M.lines[k]||0;for(const k of COST)c+=M.lines[k]||0;return {rev:r,cost:c,net:r-c};};
   const plLines=()=>REV.map(k=>({key:k,label:LBL[k],kind:'rev',amount:cr(M.lines[k]||0),why:WHY[k]})).concat(COST.map(k=>({key:k,label:LBL[k],kind:'cost',amount:cr(M.lines[k]||0),why:WHY[k]})));
@@ -2995,6 +3001,73 @@ function ch5End(){const P=CH5.plan;
   for(const id in CH5.tags)ch5TagOff(id);
   const h=CH5.hooks;try{if(h.onEnd){h.onEnd(res);return;}}catch(e){console.warn('onEnd',e);}
   menu('concession');}
+/* LIVE CHAPTERS: Takeoff (3), Climb (4), Turbulence (6) and Landing (7) are played on the map, like Cruise. Each runs its base
+   level's airfield and traffic (scaled by the plan's volume, with quick play's set pieces removed) over the plan's window,
+   about 9 minutes at 1x. The chapter's incidents fire live at their clock time: a radio call, the incident ring on the map,
+   2-3 choices with a visible effect, and a paper pin naming the document that caused it. Incidents about documents (a
+   letter, a contract) stay on paper and are answered on the desk before the shift. Quick play never sets CHL. */
+let CHL=null;
+const CHL_PAPER=new Set(['london']);
+const CHL_ANCHOR={belt:'transfer',stands:'stands',ramp:'stands',tight:'transfer',screening:'transfer',pier:'intl-pier',road:'transfer'};
+const CHL_NAME={3:'TAKEOFF',4:'CLIMB',6:'TURBULENCE',7:'LANDING'};
+const CHL_ICON={belt:{g:'B',c:'#f29a2e'},stands:{g:'S',c:'#6aa3ff'},ramp:{g:'P',c:'#f29a2e'},tight:{g:'C',c:'#b48cff'},screening:{g:'Q',c:'#ffae3b'},pier:{g:'J',c:'#ff7a3f'},road:{g:'R',c:'#ffae3b'}};
+function chlHM(s){const p=String(s||'0:0').split(':').map(Number);return p[0]*3600+(p[1]||0)*60;}
+function chlClock(t){t=((t%86400)+86400)%86400;return String(Math.floor(t/3600)).padStart(2,'0')+':'+String(Math.floor(t%3600/60)).padStart(2,'0');}
+function chlClear(){if(!CHL)return;for(const id in CHL.tags)chlTagOff(id);CHL=null;}
+function startChapterLive(n,plan,hooks){
+  if(!plan)return false;ch5Clear();chlClear();hooks=hooks||{};
+  const live=(plan.incidents||[]).filter(i=>!CHL_PAPER.has(i.id));
+  const w=plan.window||{from:'12:00',to:'15:00'};let t0=chlHM(w.from),t1=chlHM(w.to);
+  for(const i of live){const a=chlHM(i.at);t0=Math.min(t0,a-40*60);t1=Math.max(t1,a+50*60);}
+  t0-=t0%300;if(t1-t0<9000)t1=t0+9000;if(t1-t0>10800)t1=t0+10800;
+  const base=LEVELS[(plan.level||1)-1],vol=plan.volume||1;
+  const lv=Object.assign({},base,{clock:chlClock(t0),len:t1-t0,windDown:false,taper:null,fog:null,dust:null,evening:null,lateDeps:null,charters:null,
+    script:[],last:null,arr:Math.max(8,Math.round(base.arr*vol)),dep:Math.max(8,Math.round(base.dep*vol))});
+  CHL={n,plan,hooks,live,fired:{},answers:Object.assign({},hooks.paperAnswers||{}),tags:{},effects:[],reopen:[]};
+  const keep=CHL;startLevel(lv.n,{lv});CHL=keep;mnySet(true);
+  $('#lvCode').textContent='CHAPTER '+n+' · '+(CHL_NAME[n]||'');$('#lvName').textContent=hooks.sub||plan.title||base.name;
+  for(const t of plan.tags||[])chlTag('plan-'+(t.docId||t.doc),t,{anchor:t.anchor==='margin'?'stands':(t.anchor||'stands')});
+  if(hooks.briefing&&window.ZMMoney&&ZMMoney.briefing){paused=true;setSpeed(1,true);Promise.resolve(ZMMoney.briefing(hooks.briefing)).catch(e=>console.warn('briefing',e)).then(()=>{if(CHL===keep&&running&&!ended){paused=false;setSpeed(1);}});}
+  return true;}
+function chlTag(id,opts,where){if(!CHL||CHL.tags[id])return;const t=CHL.tags[id]=Object.assign({id,opts:{doc:opts.doc,line:opts.line,docId:opts.docId}},where);
+  const a=ch5Anchor(t),p=ch5Scr(a.x,a.y,a.h)||{X:-999,Y:-999};
+  try{if(window.ZMMoney&&ZMMoney.tag)t.h=ZMMoney.tag(p.X,p.Y,t.opts.doc,t.opts.line,t.opts.docId);}catch(e){console.warn('tag',e);}
+  logE(`${opts.doc}: ${opts.line}`);}
+function chlTagOff(id){if(!CHL||!CHL.tags[id])return;const t=CHL.tags[id];delete CHL.tags[id];try{if(t.h&&t.h.remove)t.h.remove();}catch(e){}}
+function chlFrame(){if(!CHL)return;const R=cam.region||{L:0,R:VW,Tp:0,B:VH};
+  if(window.ZMMoney&&ZMMoney.tagAvoid){try{ZMMoney.tagAvoid(tagAvoidRects(true).filter(q=>q.kind!=='hud'),{region:{l:R.L,t:R.Tp,r:R.R,b:R.B}});}catch(e){console.warn('tagAvoid',e);}}
+  for(const id in CHL.tags){const t=CHL.tags[id],a=ch5Anchor(t),p=ch5Scr(a.x,a.y,a.h),off=!p||p.X<R.L||p.X>R.R||p.Y<R.Tp||p.Y>R.B;try{if(t.h&&t.h.move)off?t.h.move(NaN,NaN):t.h.move(p.X,p.Y);}catch(e){}}}
+function chlTick(){if(!CHL)return;const now=T0C+T;
+  for(const i of CHL.live)if(!CHL.fired[i.id]&&now>=chlHM(i.at)){CHL.fired[i.id]=true;spawnInc('chap',null,{inc:i});}
+  for(const r of CHL.reopen.slice())if(T>=r.until){for(const g of r.gates)g.open=true;CHL.reopen.splice(CHL.reopen.indexOf(r),1);}}
+// the visible effect of each answer (the money is the engine's: applyShift reads result.incidents)
+function chlHold(k,secs,why){const fs=flights.filter(f=>f.kind==='dep'&&f.state==='at_gate'&&!f.held).sort((a,b)=>a.std-b.std).slice(0,k);
+  for(const f of fs){f.held=true;f.holdUntil=T+secs;f.heldFor=0;}if(fs.length)logE(`${fs.map(fl).join(', ')} held: ${why}.`);return fs.length;}
+function chlSlow(secs,why){let n=0;for(const f of flights)if(f.kind==='dep'&&f.state==='at_gate'&&f.readyAt>T){f.readyAt+=secs;n++;}if(n)logE(`${n} turnarounds slower: ${why}.`);return n;}
+function chlShut(k,secs,why){const gs=GATES.filter(g=>g.open&&!g.occ&&!g.res&&!g.remote).slice(0,k);for(const g of gs)g.open=false;if(gs.length){CHL.reopen.push({until:T+secs,gates:gs});logE(`${gs.length} stands blocked: ${why}.`);}return gs.length;}
+const CHL_FX={
+  'belt:carry':()=>chlSlow(240,'bags carried by hand'),'belt:hold':()=>chlHold(3,900,'waiting for belt 3'),
+  'stands:tow':()=>chlSlow(180,'a tow and a bus'),'stands:taxi':()=>chlHold(1,600,'waiting on the taxiway for its stand'),
+  'ramp:remote':()=>chlSlow(120,'buses to the remote stands'),'ramp:meter':()=>chlHold(6,480,'one push-back at a time'),
+  'tight:hold':()=>chlHold(2,900,'holding for Indore\'s connecting passengers'),'tight:go':()=>0,
+  'screening:hall':()=>0,'screening:one':()=>chlSlow(360,'one screening hall'),
+  'pier:tow':()=>0,'pier:leave':()=>chlShut(4,1500,'unpaid jets parked on the pier'),
+  'road:buses':()=>0,'road:delay':()=>chlHold(8,1200,'crews stuck on the access road')};
+function chlAnswer(ci,o){if(!CHL)return;CHL.answers[ci.id]=o.id;try{(CHL_FX[ci.id+':'+o.id]||(()=>0))();}catch(e){console.warn('chl fx',e);}
+  radio('AOCC',`${o.label}. ${o.effect||''}`.trim());}
+function chlEnd(){const P=CHL.plan,st=stars(LV,S),otp=S.dep+S.arr?(S.depOnTime+S.arrOnTime)/(S.dep+S.arr):(P.auto&&P.auto.otp)||0.85;
+  for(const i of CHL.live)if(!CHL.answers[i.id])CHL.answers[i.id]=i.options[i.options.length-1].id;   // a call that never came: ops' default
+  const cn=(S.cnxMade||0)+(S.cnxMiss||0),m=MNY&&MNY.on?MNY.close():null;
+  const res=Object.assign({},P.auto||{},{auto:false,live:true,stars:st,otp:+otp.toFixed(3),cx:cn?+((S.cnxMade||0)/cn).toFixed(3):(P.auto&&P.auto.cx)||0.9,
+    safety:Math.round(S.safety),moves:S.moves,incidents:Object.assign({},CHL.answers),money:{lines:m?m.lines:[]}});
+  // the live shift's connection RATE, applied to the engine's own volume for this chapter (the level's traffic is a sample of the day)
+  const au=P.auto||{},tot=(au.made||0)+(au.missed||0);
+  if(tot){res.made=Math.round(tot*res.cx);res.missed=tot-res.made;}else{delete res.made;delete res.missed;}
+  res.liveMade=S.cnxMade||0;res.liveMissed=S.cnxMiss||0;
+  window.__hubResult=Object.assign({level:LV.n,chapter:CHL.n,target:LV.target},res);
+  for(const id in CHL.tags)chlTagOff(id);
+  const h=CHL.hooks;CHL=null;try{if(h.onEnd){h.onEnd(res);return;}}catch(e){console.warn('onEnd',e);}
+  menu('concession');}
 /* Chapter 5's playtest flow (the Concession tab's "Chapter 5 · Take on the Gulf (playtest)", or ?chapter5):
    VSIEra.ch5.fixture → ZMMoney.frontPage → ZMMoney.decision → applyDecision → ZMMoney.briefing pinned over the live ops
    view → the shift → applyShift → ZMMoney.bill → ZMMoney.whatHappened → the menu. Saved in localStorage zm_ch5
@@ -3075,7 +3148,7 @@ const FL_ACT=[null,'The Deal','The Network','The Long Game'];
 // build-plan.md §3: the smart and blind columns, for HUB.flight.auto (the deal desk's terms as VSIEra.newCampaign reads them)
 const FL_BOT={
   smart:{terms:{phase1:'lean',bid:{type:'share',value:15},gearing:70,repayment:'sculpted',lender:'banks',stateLoan:true,cure:true},con:{monsoon:'pay',overrun:'pay',trials:'full'},
-    pick:{3:'phased',4:'two',5:'three',6:'own',7:{district:true,phase2:true,l5:true}},radar:true,hold:'hold',shift:{}},
+    pick:{3:'phased',4:'two',5:'three',6:'own',7:{district:true,phase2:true,l5:true}},radar:true,hold:'hold',shift:{3:{incidents:{belt:'carry',stands:'tow'}},4:{incidents:{tight:'hold',ramp:'remote'}},6:{incidents:{screening:'hall',pier:'tow',london:'discount'}},7:{incidents:{road:'buses'}}}},
   blind:{terms:{phase1:'lean',bid:{type:'share',value:30},gearing:75,repayment:'sculpted',lender:'dollar',stateLoan:false,cure:true},con:{monsoon:'slip',overrun:'slip',trials:'short'},
     pick:{3:'bigbang',4:'cut',5:'decline',6:'refuse',7:{district:false,phase2:false,l5:false}},radar:false,hold:'go',
     shift:{3:{stars:1,otp:0.7,cx:0.8,made:300,missed:200,incidents:{belt:'ignored',stands:'taxi'}},4:{stars:1,otp:0.72,cx:0.8,made:120,missed:60,incidents:{ramp:'meter'}},
@@ -3086,6 +3159,7 @@ async function flChipBet(st){const B=CAMP.E().chips;if(!B||!B.offered||!B.offere
   const p=B.prospectus(st),dflt=FL.bot?{choice:FL.bot.mode==='smart'?'small':'pass'}:null;
   const r=FL.bot&&!FL.bot.papers?(FL.log.push({n:4,kind:'chips',at:Date.now(),lead:p.title,pick:dflt.choice}),dflt):await FL.show('chips',p,()=>ZMMoney.prospectus(FL.who(st,p)),dflt);
   const ns=B.apply(st,(r&&r.choice)||'pass');ns.flight=st.flight;CAMP.st=ns;FL.save();return true;}
+const FL_LIVE=new Set([3,4,6,7]);
 const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
   on(){return !FLIGHT_LEGACY&&FL.ok();},
   ok(){const E=CAMP.E();return !!(CAMP.ready()&&E&&E.chapters&&E.bridge&&E.cliffhanger&&E.debrief&&E.debrief.pages&&E.chapters[3]&&ZMMoney.frontPage&&ZMMoney.decision&&ZMMoney.bill);},
@@ -3161,6 +3235,7 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
         FL._noticeShown=false;CAMP.st=ns;FL.save();continue;}
       if(f.step==='shift'){const plan=C.shiftPlan(st);
         if(n===5){FL.cruise(st,plan);return;}   // the real hub shift: it calls FL.run again when the day ends
+        if(FL_LIVE.has(n)&&!(FL.bot&&FL.bot.stub)){FL.liveShift(st,plan,n);return;}   // Takeoff, Climb, Turbulence, Landing: played on the map
         let res=plan.auto;if(FL.bot){const x=FL_BOT[FL.bot.mode].shift[n];if(x)res=Object.assign({},plan.auto,x,{auto:false});}
         FL.log.push({n,kind:'shift',stub:true,stars:res.stars,otp:res.otp});
         FL.shiftDone(st,C.applyShift(st,res),true);continue;}
@@ -3234,6 +3309,30 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
       const x=await FL.show('minutes',doc,()=>Z.decision(doc),bot?{choice:bot[r.id]?'adopt':'reject'}:null);out[r.id]=!!(x&&x.choice==='adopt');}
     return out;},
 
+  // ---- Takeoff, Climb, Turbulence and Landing: live shifts (startChapterLive). Paper incidents are answered on the desk first ----
+  async liveShift(st,plan,n){const E=CAMP.E(),C=E.chapters[n],Z=window.ZMMoney,botT=FL.bot&&FL_BOT[FL.bot.mode].shift[n],paper={};
+    window.__flightStep=n+':shift';FL.pile(st);
+    for(const ci of (plan.incidents||[]).filter(i=>CHL_PAPER.has(i.id))){
+      const d={docType:'letter',docId:ci.docId,title:ci.title,date:plan.year?String(plan.year):'',body:[ci.text],
+        choices:ci.options.map(o=>({id:o.id,label:o.label,terms:o.effect||'',slip:{big:o.label,money:o.effect||'',line:''}})),stamps:Object.fromEntries(ci.options.map(o=>[o.id,'ANSWERED']))};
+      const dflt=botT&&botT.incidents&&botT.incidents[ci.id]||ci.options[ci.options.length-1].id;
+      const r=await FL.show('incident',d,()=>Z.decision(FL.who(st,d)),FL.bot?{choice:dflt}:null);
+      paper[ci.id]=(r&&r.choice&&ci.options.some(o=>o.id===r.choice))?r.choice:dflt;}
+    const docTitle=id=>{const d=(st.docs||[]).find(x=>x.id===id);return d?d.title:String(id||'').replace(/-/g,' ').replace(/^./,c=>c.toUpperCase());};
+    startChapterLive(n,plan,{paperAnswers:paper,docTitle,sub:C.briefing&&FL.bot&&!FL.bot.papers?null:undefined,briefing:FL.bot&&!FL.bot.papers?null:(C.briefing?C.briefing(st):null),
+      onEnd:res=>{FL.nightOff();const r=JSON.parse(JSON.stringify(res));delete r.money;
+        FL.log.push({n,kind:'shift',live:true,stars:r.stars,otp:r.otp,made:r.made,missed:r.missed,incidents:r.incidents});
+        try{FL.shiftDone(CAMP.st,C.applyShift(CAMP.st,r),false);}catch(e){FL.err('live '+n,e);}
+        FL.run();}});
+    try{FL.night=FL.nightOn();}catch(e){}
+    if(FL.bot&&!FL.bot.papers)FL.liveBot(n);},
+  liveBot(n){const want=(FL_BOT[FL.bot.mode].shift[n]||{}).incidents||{};
+    const step=()=>{if(!CHL||ended)return;try{for(const I of incidents.slice()){let a=null;
+        if(I.type==='chap'){const ci=CHL.live.find(x=>I.title===x.title);const k=ci?ci.options.findIndex(o=>o.id===want[ci.id]):-1;a=I.acts[k>=0?k:I.def];}
+        else a=I.botPick!=null?I.acts[I.botPick]:I.acts.find(a=>!(a.dis&&a.dis()));if(a)a.fn();}
+      window.HUB.ff(20);}catch(e){FL.err('liveBot',e);return;}
+      if(CHL&&!ended)setTimeout(step,0);};
+    setTimeout(step,30);},
   // ---- Chapter 5, Cruise: the real hub shift (startChapter5), as CH5F runs it, on the flight's state ----
   cruise(st,plan){const C=CAMP.E().ch5,Z=window.ZMMoney;FL.pile(st);window.__flightStep='5:shift';
     startChapter5(plan,{briefing:FL.bot&&!FL.bot.papers?null:C.briefing(st),onEnd:res=>{FL.nightOff();
@@ -3317,6 +3416,7 @@ window.addEventListener('load',()=>setTimeout(()=>{try{
 window.HUB={startChapter5,
   // the flight (design/chapters.md): auto(mode, opts) for bots; step()/state() for checks; pages() the last Black Box
   flight:{auto:(m,o)=>FL.auto(m,o),cruiseStep:(s,m)=>FL.cruiseStep(s,m),screen:()=>window.__flightScreen,step:()=>window.__flightStep,state:()=>CAMP.st&&CAMP.st.flight,save:()=>FL.load(),resume:()=>FL.resume(),log:()=>FL.log.slice(),errors:()=>FL.errors.slice(),pages:()=>FL.lastPages,result:()=>window.__flightResult,run:FL,legacy:FLIGHT_LEGACY},
+  chapterLive:(n,plan,hooks)=>startChapterLive(n,plan,hooks),liveState:()=>CHL&&{n:CHL.n,fired:Object.keys(CHL.fired),answers:Object.assign({},CHL.answers)},
   ch5:{answer:k=>ch5Answer(k),get plan(){return CH5&&CH5.plan;},state:()=>CH5&&{made:CH5.made,missed:CH5.missed,byDest:CH5.byDest,held:CH5.held,hubAsked:CH5.hubAsked,hubAnswer:CH5.hubAnswer,trail:CH5.trail,tags:Object.keys(CH5.tags),hubEta:CH5.hubEta,lonStd:CH5.lonStd,firstStd:CH5.firstStd},result:()=>CH5&&CH5.result,flow:CH5F},money:()=>MNY&&MNY.snapshot(),moneyOn:on=>{MONEY_ON=!!on;mnySet(on);},moneyOff:()=>{MONEY_ON=false;mnySet(false);},campaign:()=>CAMP.st,era:()=>CAMP.E(),camp:CAMP,get T(){return T;},get S(){return S;},get LV(){return LV;},flights:()=>flights,RW,incidents:()=>incidents,setMode:(id,m)=>{const r=RW.find(x=>x.id===id||x.short===id);if(r)setMode(r,m);},startLevel,capNow,forceIncursion:()=>{const c=STO.find(o=>o.k==='fog');if(c&&c.sc)c.sc.go=true;},resolveAll:()=>{for(const I of incidents.slice()){const a=I.botPick!=null?I.acts[I.botPick]:I.acts.find(a=>!(a.dis&&a.dis()));if(a)a.fn();}},speed:s=>setSpeed(s),ops:()=>ops,cfg:CFG,
   // test hooks: run the sim forward synchronously, and point the camera
   ff:secs=>{VQ.length=0;FFING=true;try{for(let i=0;i<secs&&!ended;i++){tick(1);if(CINE&&CINE.o.until==null){const ms=1000/BASE/Math.max(0.25,speed);CINE.t0-=ms;if(CINE.landAt)CINE.landAt-=ms;}}}finally{FFING=false;}puffs.length=0;hud();drawWave();},look:(x,y,z)=>{camT.s=cam.fit*z;camT.anchor=null;camT.x=x-((cam.region.L+cam.region.R)/2)/camT.s;camT.y=y-((cam.region.Tp+cam.region.B)/2)/camT.s;clampCam(camT);Object.assign(cam,{x:camT.x,y:camT.y,s:camT.s});},spawn:(t,x)=>spawnInc(t,x),opsSpawn:(k,x)=>opsSpawn(k,x),pause:()=>{paused=true;},
@@ -3355,6 +3455,7 @@ function frame(ms){
   if(pf)PERFM.p1=performance.now();
   if(V3.on){try{draw3D(ms/1000,dtR);}catch(err){console.error(err);if(!window.__v3err&&typeof v3ErrBanner==='function')v3ErrBanner(err);}}else{try{draw(ms/1000);}catch(err){console.error(err);}}
   if(CH5)try{ch5Frame();}catch(err){console.error(err);}
+  if(CHL)try{chlFrame();}catch(err){console.error(err);}
   if(pf)PERFM.p2=performance.now();
   // (toastRoom reads layout, so it goes first, while the page is still laid out from the last frame; hud() then writes)
   hudT+=dtR;if(hudT>0.25&&LV){hudT=0;try{toastRoom();hud();}catch(err){console.error(err);}try{drawWave();}catch(err){console.error(err);}}

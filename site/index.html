@@ -248,7 +248,7 @@ body.v3 #toast{right:auto;left:max(14px,env(safe-area-inset-left,0px));width:var
 }
 @media (prefers-reduced-motion:reduce){.inc,#toast.flash{animation:none}}
 </style>
-<script>(function(){var B='224ad06d69b4',K=['zm_campaign','zm_ch5'];window.__BUILD=B;function cancel(){try{K.forEach(function(x){localStorage.removeItem(x);});sessionStorage.setItem('zm_updated','1');}catch(e){}}try{var o=localStorage.getItem('zm_build');if(o&&o!==B)cancel();localStorage.setItem('zm_build',B);}catch(e){}if(location.protocol.indexOf('http')===0)setInterval(function(){fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(v){if(v&&v.build&&v.build!==B){cancel();try{localStorage.setItem('zm_build',v.build);}catch(e){}location.reload();}}).catch(function(){});},30000);document.addEventListener('DOMContentLoaded',function(){try{if(sessionStorage.getItem('zm_updated')){sessionStorage.removeItem('zm_updated');var n=document.createElement('div');n.textContent='A new version of VSI is live. Games in progress were closed; start again from the menu.';n.style.cssText='position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:99999;background:#1d2024;color:#fff7ea;padding:10px 16px;font:14px Barlow Condensed,sans-serif;letter-spacing:.02em;border-radius:3px;box-shadow:0 6px 18px rgba(0,0,0,.4)';document.body.appendChild(n);setTimeout(function(){n.remove();},7000);}}catch(e){}});})();</script>
+<script>(function(){var B='ac72c5a4633e',K=['zm_campaign','zm_ch5'];window.__BUILD=B;function cancel(){try{K.forEach(function(x){localStorage.removeItem(x);});sessionStorage.setItem('zm_updated','1');}catch(e){}}try{var o=localStorage.getItem('zm_build');if(o&&o!==B)cancel();localStorage.setItem('zm_build',B);}catch(e){}if(location.protocol.indexOf('http')===0)setInterval(function(){fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(v){if(v&&v.build&&v.build!==B){cancel();try{localStorage.setItem('zm_build',v.build);}catch(e){}location.reload();}}).catch(function(){});},30000);document.addEventListener('DOMContentLoaded',function(){try{if(sessionStorage.getItem('zm_updated')){sessionStorage.removeItem('zm_updated');var n=document.createElement('div');n.textContent='A new version of VSI is live. Games in progress were closed; start again from the menu.';n.style.cssText='position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:99999;background:#1d2024;color:#fff7ea;padding:10px 16px;font:14px Barlow Condensed,sans-serif;letter-spacing:.02em;border-radius:3px;box-shadow:0 6px 18px rgba(0,0,0,.4)';document.body.appendChild(n);setTimeout(function(){n.remove();},7000);}}catch(e){}});})();</script>
 <div id="app">
   <div id="zoomBox" class="hud panel" role="group" aria-label="Map zoom"><button id="zIn" title="Zoom in (+)">+</button><button id="zOut" title="Zoom out (−)">−</button><button id="zFit" title="Show the whole airport (F)">Fit</button></div>
   <canvas id="map" aria-label="Live map of the hub: six parallel runways, the terminal and concourses, and every aircraft"></canvas>
@@ -1639,7 +1639,7 @@ function toastRoom(){const el=$('#toast'),app=$('#app'),a=app.getBoundingClientR
   HUDR.length=0;
   for(const s of HUD_FLOAT){const e=document.querySelector(s);if(!e||e.hidden)continue;const r=e.getBoundingClientRect(),cs=getComputedStyle(e);if(r.width>0&&r.height>0&&+cs.opacity>0.05&&cs.visibility!=='hidden')HUDR.push({l:r.left-a.left,t:r.top-a.top,r:r.right-a.left,b:r.bottom-a.top});}}
 function coach(t,d,alarm){coachItems.unshift({t,d,at:clk(T)});$('#coachList').innerHTML=coachItems.map(c=>`<div class="ci"><div class="tm">${c.at}</div><h4>${c.t}</h4>${c.d.startsWith('<')?c.d:`<p>${c.d}</p>`}</div>`).join('');
-  let inCh=!!CH5;try{inCh=inCh||CAMP.active||CH5F.live;}catch(e){}if(inCh)return;   // every chapter: the handover sheet briefs the shift, so tips (and alarms, which also go on the radio and the log) stay in the Coach tab and never cover the map
+  let inCh=!!CH5||!!CHL;try{inCh=inCh||CAMP.active||CH5F.live;}catch(e){}if(inCh)return;   // every chapter: the handover sheet briefs the shift, so tips (and alarms, which also go on the radio and the log) stay in the Coach tab and never cover the map
   showToast(t,d);$('#toast').classList.toggle('alarm',!!alarm);}
 function explain(k){if(seen.has(k))return;seen.add(k);const g=GL[k];if(g)coach(g.t,g.d);}
 // some lessons only need teaching once ever, not once per level
@@ -1923,7 +1923,7 @@ function opsTick(dt){
 // What reaches you is either a consequence of your runway plan (a stack that grew too big, a heavy jet sent to a
 // short runway in the heat) or a real two-sided call. Each card says what ops does if you leave it, so ignoring a
 // card is allowed; it just isn't always the best call.
-const ICON={medical:{g:'+',c:'#ff4d3f'},fuel:{g:'F',c:'#ffae3b'},heavy:{g:'H',c:'#ff7a3f'},nogate:{g:'G',c:'#6aa3ff'},connex:{g:'C',c:'#b48cff'},hubhold:{g:'C',c:'#b48cff'},strike:{g:'B',c:'#ff7a3f'},vvip:{g:'V',c:'#f4c430'},summitOrder:{g:'V',c:'#ff9933'},lights:{g:'L',c:'#ffae3b'},lane:{g:'T',c:'#ffae3b'},shear:{g:'W',c:'#ff7a3f'}};
+const ICON={medical:{g:'+',c:'#ff4d3f'},fuel:{g:'F',c:'#ffae3b'},heavy:{g:'H',c:'#ff7a3f'},nogate:{g:'G',c:'#6aa3ff'},connex:{g:'C',c:'#b48cff'},hubhold:{g:'C',c:'#b48cff'},strike:{g:'B',c:'#ff7a3f'},vvip:{g:'V',c:'#f4c430'},summitOrder:{g:'V',c:'#ff9933'},lights:{g:'L',c:'#ffae3b'},lane:{g:'T',c:'#ffae3b'},shear:{g:'W',c:'#ff7a3f'},chap:{g:'!',c:'#f29a2e'}};
 const CFG=Object.assign({inc:'std'},store.get('zm_cfg')||{});
 const SCRIPTED=new Set(['medical','strike','vvip','lights','lane','shear','summit']);
 const STORY={};const MAXOPEN=3;let lastCnx=-1e9;
@@ -1945,6 +1945,11 @@ function spawnInc(type,target,extra){
   const I={id:++INC,type,born:T,left:0,total:40,def:null,defText:''};let ok=true;
   switch(type){
   case 'summit':{if(SUM||!startSummit()){ok=false;break;}return true;}
+  case 'chap':{const ci=extra.inc;if(!CHL||!ci){ok=false;break;}const a=ch5Anchor({anchor:CHL_ANCHOR[ci.id]||'stands'}),last=ci.options.length-1;
+    Object.assign(I,{x:a.x,y:a.y,total:70,icon:CHL_ICON[ci.id]||ICON.chap,title:ci.title,text:ci.text+' '+ci.options.map(o=>o.label+': '+(o.effect||'')).join(' '),def:last,defText:ci.options[last].label,
+      acts:ci.options.map((o,k)=>({l:o.label,pri:k===0?1:0,fn(){chlAnswer(ci,o);resolve(I,true,`${o.label}.`);}}))});
+    radio('AOCC',ci.text);const doc=(CHL.hooks.docTitle&&CHL.hooks.docTitle(ci.docId))||ci.docId;
+    chlTag('inc-'+ci.id,{doc,line:ci.title,docId:ci.docId},{x:a.x,y:a.y});break;}
   case 'medical':{const f=target||flights.filter(o=>['inbound','holding'].includes(o.state)&&!o.prio&&!incidents.some(i=>i.f===o)).sort((a,b)=>a.eta-b.eta)[0];if(!f){ok=false;break;}const w=estWait(f);
     Object.assign(I,{f,title:`Medical emergency on ${fl(f)}`,text:`A passenger in cardiac distress on the ${f.A.name} from ${f.from}. Priority sends it straight to the nearest runway; anyone it cuts in front of goes around. In sequence it lands in about ${w} min.`,def:1,defText:`it lands in sequence, about ${w} min. A wait over 8 min costs safety.`,
       acts:[{l:'Priority landing',pri:1,fn(){const m=priorityLand(f);resolve(I,true,`${fl(f)} cleared straight in for the medical. ${m}`);}},{l:'Land in sequence',fn(){f.medSince=I.born;resolve(I,true,`${fl(f)} lands in sequence with its medical.`);}}]});explain('stack');break;}
@@ -3804,7 +3809,7 @@ function tick(dt){
   opsTick(dt);
   incSpawner(dt);
   if(T>=S.tlNext&&T>=0){S.tlNext=T+60;recordShift();}
-  summitTick();specialTick();storyTick();if(CH5)ch5Tick();else if(CAMP.active)campLive();
+  summitTick();specialTick();storyTick();if(CH5)ch5Tick();else if(CHL)chlTick();else if(CAMP.active)campLive();
   if(!ended&&endDue())finish();
 }
 // the level ends at LEN; a level with windDown:true runs on (at most 30 minutes, LEN+WIND) until every departure there is
@@ -3900,7 +3905,7 @@ const starLines=L=>Object.assign({otp2:87,cx2:88,otp3:90,cx3:92},L.starsAt||{});
 function stars(L,s){let n=0;const k=starLines(L),otp=s.dep+s.arr?(s.depOnTime+s.arrOnTime)/(s.dep+s.arr)*100:0,ct=s.cnxMade+s.cnxMiss,cx=ct?s.cnxMade/ct*100:100;if(s.safety>=70)n=1;if(n>=1&&s.moves>=L.target&&otp>=k.otp2&&cx>=k.cx2)n=2;if(n>=2&&otp>=k.otp3&&cx>=k.cx3&&s.safety>=90)n=3;return n;}
 function starStr(n){return '<b>'+'★'.repeat(n)+'</b>'+'★'.repeat(3-n);}
 function startLevel(n,o){
-  if(!o)ch5Clear();   // quick play (and the concession eras) never carry Chapter 5's state
+  if(!o){ch5Clear();chlClear();}   // quick play (and the concession eras) never carry Chapter 5's state
   LV=Object.assign({},o&&o.lv||LEVELS[n-1]);LV.script=LV.script.map(s=>s.slice());T0C=+LV.clock.split(':')[0]*3600+ +LV.clock.split(':')[1]*60;
   resetState();onceSet.clear();
   // which runways and concourses open
@@ -3924,6 +3929,7 @@ function finish(){
   const left=flights.filter(f=>f.kind==='dep'&&['at_gate','taxi_out','hp','push','start','stuck'].includes(f.state)&&T>f.std+1500).length;
   for(const f of flights)if(f.links&&f.kind==='dep'&&f.state==='at_gate'&&T>f.std){for(const l of f.links){const ok=l.live!=null?l.live:l.arr.inBlock!=null&&l.arr.inBlock+l.x<=T;if(ok){if(l.live==null)S.cnxMade+=l.n;MNY&&MNY.cnx(l,true,f);}else{if(l.live==null)S.cnxMiss+=l.n;MNY&&MNY.cnx(l,false,f);}}}
   if(CH5){ch5End();return;}
+  if(CHL){chlEnd();return;}
   const st=stars(LV,S);const best=store.get('zm_stars')||{};if(!CAMP.active&&(best[LV.n]||0)<st){best[LV.n]=st;store.set('zm_stars',best);}   // concession shifts don't touch quick-play stars
   const otp=S.dep+S.arr?Math.round((S.depOnTime+S.arrOnTime)/(S.dep+S.arr)*100):0,otpA=S.arr?Math.round(S.arrOnTime/S.arr*100):0,otpD=S.dep?Math.round(S.depOnTime/S.dep*100):0,ct=S.cnxMade+S.cnxMiss,cx=ct?Math.round(S.cnxMade/ct*100):100;
   const verdict=st===3?'Flawless. The hub never noticed it was under pressure.':st===2?'Good shift. The waves came through and the hub kept its promises.':st===1?'The hub survived, but passengers will remember this one.':'Safety fell below 70. A real hub would stop operations and investigate.';
@@ -4161,7 +4167,7 @@ MNY=(()=>{
   const isSafe=f=>!!(f&&(f.mayday||f.minFuel||f.medSince!=null||M.safe.has(f.id)));
   const isFM=()=>!!(SUM||dustNow||fogF>0.3||(HOLDDEP&&T<HOLDDEP.until)||STO.some(o=>o.k==='delhisummit'));
   const add=(k,amt,f,label)=>{if(!amt)return;M.lines[k]=(M.lines[k]||0)+amt;
-    if(f&&!CH5&&amt>=5000&&!isSafe(f)&&f.sx!=null&&window.ZMMoney&&ZMMoney.float)try{const rv=REV.includes(k);ZMMoney.float(f.sx,f.sy+(rv?0:22),(rv?1:-1)*cr(amt),{label});}catch(e){}};   // costs sit just below the earnings; nothing under ₹5,000 floats
+    if(f&&!CH5&&!CHL&&amt>=5000&&!isSafe(f)&&f.sx!=null&&window.ZMMoney&&ZMMoney.float)try{const rv=REV.includes(k);ZMMoney.float(f.sx,f.sy+(rv?0:22),(rv?1:-1)*cr(amt),{label});}catch(e){}};   // costs sit just below the earnings; nothing under ₹5,000 floats
   const g=fn=>function(){if(!M.on)return;try{return fn.apply(null,arguments);}catch(e){if(!M.err){M.err=String(e);console.warn('money ledger',e);}}};
   const totals=()=>{let r=0,c=0;for(const k of REV)r+=M.lines[k]||0;for(const k of COST)c+=M.lines[k]||0;return {rev:r,cost:c,net:r-c};};
   const plLines=()=>REV.map(k=>({key:k,label:LBL[k],kind:'rev',amount:cr(M.lines[k]||0),why:WHY[k]})).concat(COST.map(k=>({key:k,label:LBL[k],kind:'cost',amount:cr(M.lines[k]||0),why:WHY[k]})));
@@ -4583,6 +4589,73 @@ function ch5End(){const P=CH5.plan;
   for(const id in CH5.tags)ch5TagOff(id);
   const h=CH5.hooks;try{if(h.onEnd){h.onEnd(res);return;}}catch(e){console.warn('onEnd',e);}
   menu('concession');}
+/* LIVE CHAPTERS: Takeoff (3), Climb (4), Turbulence (6) and Landing (7) are played on the map, like Cruise. Each runs its base
+   level's airfield and traffic (scaled by the plan's volume, with quick play's set pieces removed) over the plan's window,
+   about 9 minutes at 1x. The chapter's incidents fire live at their clock time: a radio call, the incident ring on the map,
+   2-3 choices with a visible effect, and a paper pin naming the document that caused it. Incidents about documents (a
+   letter, a contract) stay on paper and are answered on the desk before the shift. Quick play never sets CHL. */
+let CHL=null;
+const CHL_PAPER=new Set(['london']);
+const CHL_ANCHOR={belt:'transfer',stands:'stands',ramp:'stands',tight:'transfer',screening:'transfer',pier:'intl-pier',road:'transfer'};
+const CHL_NAME={3:'TAKEOFF',4:'CLIMB',6:'TURBULENCE',7:'LANDING'};
+const CHL_ICON={belt:{g:'B',c:'#f29a2e'},stands:{g:'S',c:'#6aa3ff'},ramp:{g:'P',c:'#f29a2e'},tight:{g:'C',c:'#b48cff'},screening:{g:'Q',c:'#ffae3b'},pier:{g:'J',c:'#ff7a3f'},road:{g:'R',c:'#ffae3b'}};
+function chlHM(s){const p=String(s||'0:0').split(':').map(Number);return p[0]*3600+(p[1]||0)*60;}
+function chlClock(t){t=((t%86400)+86400)%86400;return String(Math.floor(t/3600)).padStart(2,'0')+':'+String(Math.floor(t%3600/60)).padStart(2,'0');}
+function chlClear(){if(!CHL)return;for(const id in CHL.tags)chlTagOff(id);CHL=null;}
+function startChapterLive(n,plan,hooks){
+  if(!plan)return false;ch5Clear();chlClear();hooks=hooks||{};
+  const live=(plan.incidents||[]).filter(i=>!CHL_PAPER.has(i.id));
+  const w=plan.window||{from:'12:00',to:'15:00'};let t0=chlHM(w.from),t1=chlHM(w.to);
+  for(const i of live){const a=chlHM(i.at);t0=Math.min(t0,a-40*60);t1=Math.max(t1,a+50*60);}
+  t0-=t0%300;if(t1-t0<9000)t1=t0+9000;if(t1-t0>10800)t1=t0+10800;
+  const base=LEVELS[(plan.level||1)-1],vol=plan.volume||1;
+  const lv=Object.assign({},base,{clock:chlClock(t0),len:t1-t0,windDown:false,taper:null,fog:null,dust:null,evening:null,lateDeps:null,charters:null,
+    script:[],last:null,arr:Math.max(8,Math.round(base.arr*vol)),dep:Math.max(8,Math.round(base.dep*vol))});
+  CHL={n,plan,hooks,live,fired:{},answers:Object.assign({},hooks.paperAnswers||{}),tags:{},effects:[],reopen:[]};
+  const keep=CHL;startLevel(lv.n,{lv});CHL=keep;mnySet(true);
+  $('#lvCode').textContent='CHAPTER '+n+' · '+(CHL_NAME[n]||'');$('#lvName').textContent=hooks.sub||plan.title||base.name;
+  for(const t of plan.tags||[])chlTag('plan-'+(t.docId||t.doc),t,{anchor:t.anchor==='margin'?'stands':(t.anchor||'stands')});
+  if(hooks.briefing&&window.ZMMoney&&ZMMoney.briefing){paused=true;setSpeed(1,true);Promise.resolve(ZMMoney.briefing(hooks.briefing)).catch(e=>console.warn('briefing',e)).then(()=>{if(CHL===keep&&running&&!ended){paused=false;setSpeed(1);}});}
+  return true;}
+function chlTag(id,opts,where){if(!CHL||CHL.tags[id])return;const t=CHL.tags[id]=Object.assign({id,opts:{doc:opts.doc,line:opts.line,docId:opts.docId}},where);
+  const a=ch5Anchor(t),p=ch5Scr(a.x,a.y,a.h)||{X:-999,Y:-999};
+  try{if(window.ZMMoney&&ZMMoney.tag)t.h=ZMMoney.tag(p.X,p.Y,t.opts.doc,t.opts.line,t.opts.docId);}catch(e){console.warn('tag',e);}
+  logE(`${opts.doc}: ${opts.line}`);}
+function chlTagOff(id){if(!CHL||!CHL.tags[id])return;const t=CHL.tags[id];delete CHL.tags[id];try{if(t.h&&t.h.remove)t.h.remove();}catch(e){}}
+function chlFrame(){if(!CHL)return;const R=cam.region||{L:0,R:VW,Tp:0,B:VH};
+  if(window.ZMMoney&&ZMMoney.tagAvoid){try{ZMMoney.tagAvoid(tagAvoidRects(true).filter(q=>q.kind!=='hud'),{region:{l:R.L,t:R.Tp,r:R.R,b:R.B}});}catch(e){console.warn('tagAvoid',e);}}
+  for(const id in CHL.tags){const t=CHL.tags[id],a=ch5Anchor(t),p=ch5Scr(a.x,a.y,a.h),off=!p||p.X<R.L||p.X>R.R||p.Y<R.Tp||p.Y>R.B;try{if(t.h&&t.h.move)off?t.h.move(NaN,NaN):t.h.move(p.X,p.Y);}catch(e){}}}
+function chlTick(){if(!CHL)return;const now=T0C+T;
+  for(const i of CHL.live)if(!CHL.fired[i.id]&&now>=chlHM(i.at)){CHL.fired[i.id]=true;spawnInc('chap',null,{inc:i});}
+  for(const r of CHL.reopen.slice())if(T>=r.until){for(const g of r.gates)g.open=true;CHL.reopen.splice(CHL.reopen.indexOf(r),1);}}
+// the visible effect of each answer (the money is the engine's: applyShift reads result.incidents)
+function chlHold(k,secs,why){const fs=flights.filter(f=>f.kind==='dep'&&f.state==='at_gate'&&!f.held).sort((a,b)=>a.std-b.std).slice(0,k);
+  for(const f of fs){f.held=true;f.holdUntil=T+secs;f.heldFor=0;}if(fs.length)logE(`${fs.map(fl).join(', ')} held: ${why}.`);return fs.length;}
+function chlSlow(secs,why){let n=0;for(const f of flights)if(f.kind==='dep'&&f.state==='at_gate'&&f.readyAt>T){f.readyAt+=secs;n++;}if(n)logE(`${n} turnarounds slower: ${why}.`);return n;}
+function chlShut(k,secs,why){const gs=GATES.filter(g=>g.open&&!g.occ&&!g.res&&!g.remote).slice(0,k);for(const g of gs)g.open=false;if(gs.length){CHL.reopen.push({until:T+secs,gates:gs});logE(`${gs.length} stands blocked: ${why}.`);}return gs.length;}
+const CHL_FX={
+  'belt:carry':()=>chlSlow(240,'bags carried by hand'),'belt:hold':()=>chlHold(3,900,'waiting for belt 3'),
+  'stands:tow':()=>chlSlow(180,'a tow and a bus'),'stands:taxi':()=>chlHold(1,600,'waiting on the taxiway for its stand'),
+  'ramp:remote':()=>chlSlow(120,'buses to the remote stands'),'ramp:meter':()=>chlHold(6,480,'one push-back at a time'),
+  'tight:hold':()=>chlHold(2,900,'holding for Indore\'s connecting passengers'),'tight:go':()=>0,
+  'screening:hall':()=>0,'screening:one':()=>chlSlow(360,'one screening hall'),
+  'pier:tow':()=>0,'pier:leave':()=>chlShut(4,1500,'unpaid jets parked on the pier'),
+  'road:buses':()=>0,'road:delay':()=>chlHold(8,1200,'crews stuck on the access road')};
+function chlAnswer(ci,o){if(!CHL)return;CHL.answers[ci.id]=o.id;try{(CHL_FX[ci.id+':'+o.id]||(()=>0))();}catch(e){console.warn('chl fx',e);}
+  radio('AOCC',`${o.label}. ${o.effect||''}`.trim());}
+function chlEnd(){const P=CHL.plan,st=stars(LV,S),otp=S.dep+S.arr?(S.depOnTime+S.arrOnTime)/(S.dep+S.arr):(P.auto&&P.auto.otp)||0.85;
+  for(const i of CHL.live)if(!CHL.answers[i.id])CHL.answers[i.id]=i.options[i.options.length-1].id;   // a call that never came: ops' default
+  const cn=(S.cnxMade||0)+(S.cnxMiss||0),m=MNY&&MNY.on?MNY.close():null;
+  const res=Object.assign({},P.auto||{},{auto:false,live:true,stars:st,otp:+otp.toFixed(3),cx:cn?+((S.cnxMade||0)/cn).toFixed(3):(P.auto&&P.auto.cx)||0.9,
+    safety:Math.round(S.safety),moves:S.moves,incidents:Object.assign({},CHL.answers),money:{lines:m?m.lines:[]}});
+  // the live shift's connection RATE, applied to the engine's own volume for this chapter (the level's traffic is a sample of the day)
+  const au=P.auto||{},tot=(au.made||0)+(au.missed||0);
+  if(tot){res.made=Math.round(tot*res.cx);res.missed=tot-res.made;}else{delete res.made;delete res.missed;}
+  res.liveMade=S.cnxMade||0;res.liveMissed=S.cnxMiss||0;
+  window.__hubResult=Object.assign({level:LV.n,chapter:CHL.n,target:LV.target},res);
+  for(const id in CHL.tags)chlTagOff(id);
+  const h=CHL.hooks;CHL=null;try{if(h.onEnd){h.onEnd(res);return;}}catch(e){console.warn('onEnd',e);}
+  menu('concession');}
 /* Chapter 5's playtest flow (the Concession tab's "Chapter 5 · Take on the Gulf (playtest)", or ?chapter5):
    VSIEra.ch5.fixture → ZMMoney.frontPage → ZMMoney.decision → applyDecision → ZMMoney.briefing pinned over the live ops
    view → the shift → applyShift → ZMMoney.bill → ZMMoney.whatHappened → the menu. Saved in localStorage zm_ch5
@@ -4663,7 +4736,7 @@ const FL_ACT=[null,'The Deal','The Network','The Long Game'];
 // build-plan.md §3: the smart and blind columns, for HUB.flight.auto (the deal desk's terms as VSIEra.newCampaign reads them)
 const FL_BOT={
   smart:{terms:{phase1:'lean',bid:{type:'share',value:15},gearing:70,repayment:'sculpted',lender:'banks',stateLoan:true,cure:true},con:{monsoon:'pay',overrun:'pay',trials:'full'},
-    pick:{3:'phased',4:'two',5:'three',6:'own',7:{district:true,phase2:true,l5:true}},radar:true,hold:'hold',shift:{}},
+    pick:{3:'phased',4:'two',5:'three',6:'own',7:{district:true,phase2:true,l5:true}},radar:true,hold:'hold',shift:{3:{incidents:{belt:'carry',stands:'tow'}},4:{incidents:{tight:'hold',ramp:'remote'}},6:{incidents:{screening:'hall',pier:'tow',london:'discount'}},7:{incidents:{road:'buses'}}}},
   blind:{terms:{phase1:'lean',bid:{type:'share',value:30},gearing:75,repayment:'sculpted',lender:'dollar',stateLoan:false,cure:true},con:{monsoon:'slip',overrun:'slip',trials:'short'},
     pick:{3:'bigbang',4:'cut',5:'decline',6:'refuse',7:{district:false,phase2:false,l5:false}},radar:false,hold:'go',
     shift:{3:{stars:1,otp:0.7,cx:0.8,made:300,missed:200,incidents:{belt:'ignored',stands:'taxi'}},4:{stars:1,otp:0.72,cx:0.8,made:120,missed:60,incidents:{ramp:'meter'}},
@@ -4674,6 +4747,7 @@ async function flChipBet(st){const B=CAMP.E().chips;if(!B||!B.offered||!B.offere
   const p=B.prospectus(st),dflt=FL.bot?{choice:FL.bot.mode==='smart'?'small':'pass'}:null;
   const r=FL.bot&&!FL.bot.papers?(FL.log.push({n:4,kind:'chips',at:Date.now(),lead:p.title,pick:dflt.choice}),dflt):await FL.show('chips',p,()=>ZMMoney.prospectus(FL.who(st,p)),dflt);
   const ns=B.apply(st,(r&&r.choice)||'pass');ns.flight=st.flight;CAMP.st=ns;FL.save();return true;}
+const FL_LIVE=new Set([3,4,6,7]);
 const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
   on(){return !FLIGHT_LEGACY&&FL.ok();},
   ok(){const E=CAMP.E();return !!(CAMP.ready()&&E&&E.chapters&&E.bridge&&E.cliffhanger&&E.debrief&&E.debrief.pages&&E.chapters[3]&&ZMMoney.frontPage&&ZMMoney.decision&&ZMMoney.bill);},
@@ -4749,6 +4823,7 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
         FL._noticeShown=false;CAMP.st=ns;FL.save();continue;}
       if(f.step==='shift'){const plan=C.shiftPlan(st);
         if(n===5){FL.cruise(st,plan);return;}   // the real hub shift: it calls FL.run again when the day ends
+        if(FL_LIVE.has(n)&&!(FL.bot&&FL.bot.stub)){FL.liveShift(st,plan,n);return;}   // Takeoff, Climb, Turbulence, Landing: played on the map
         let res=plan.auto;if(FL.bot){const x=FL_BOT[FL.bot.mode].shift[n];if(x)res=Object.assign({},plan.auto,x,{auto:false});}
         FL.log.push({n,kind:'shift',stub:true,stars:res.stars,otp:res.otp});
         FL.shiftDone(st,C.applyShift(st,res),true);continue;}
@@ -4822,6 +4897,30 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
       const x=await FL.show('minutes',doc,()=>Z.decision(doc),bot?{choice:bot[r.id]?'adopt':'reject'}:null);out[r.id]=!!(x&&x.choice==='adopt');}
     return out;},
 
+  // ---- Takeoff, Climb, Turbulence and Landing: live shifts (startChapterLive). Paper incidents are answered on the desk first ----
+  async liveShift(st,plan,n){const E=CAMP.E(),C=E.chapters[n],Z=window.ZMMoney,botT=FL.bot&&FL_BOT[FL.bot.mode].shift[n],paper={};
+    window.__flightStep=n+':shift';FL.pile(st);
+    for(const ci of (plan.incidents||[]).filter(i=>CHL_PAPER.has(i.id))){
+      const d={docType:'letter',docId:ci.docId,title:ci.title,date:plan.year?String(plan.year):'',body:[ci.text],
+        choices:ci.options.map(o=>({id:o.id,label:o.label,terms:o.effect||'',slip:{big:o.label,money:o.effect||'',line:''}})),stamps:Object.fromEntries(ci.options.map(o=>[o.id,'ANSWERED']))};
+      const dflt=botT&&botT.incidents&&botT.incidents[ci.id]||ci.options[ci.options.length-1].id;
+      const r=await FL.show('incident',d,()=>Z.decision(FL.who(st,d)),FL.bot?{choice:dflt}:null);
+      paper[ci.id]=(r&&r.choice&&ci.options.some(o=>o.id===r.choice))?r.choice:dflt;}
+    const docTitle=id=>{const d=(st.docs||[]).find(x=>x.id===id);return d?d.title:String(id||'').replace(/-/g,' ').replace(/^./,c=>c.toUpperCase());};
+    startChapterLive(n,plan,{paperAnswers:paper,docTitle,sub:C.briefing&&FL.bot&&!FL.bot.papers?null:undefined,briefing:FL.bot&&!FL.bot.papers?null:(C.briefing?C.briefing(st):null),
+      onEnd:res=>{FL.nightOff();const r=JSON.parse(JSON.stringify(res));delete r.money;
+        FL.log.push({n,kind:'shift',live:true,stars:r.stars,otp:r.otp,made:r.made,missed:r.missed,incidents:r.incidents});
+        try{FL.shiftDone(CAMP.st,C.applyShift(CAMP.st,r),false);}catch(e){FL.err('live '+n,e);}
+        FL.run();}});
+    try{FL.night=FL.nightOn();}catch(e){}
+    if(FL.bot&&!FL.bot.papers)FL.liveBot(n);},
+  liveBot(n){const want=(FL_BOT[FL.bot.mode].shift[n]||{}).incidents||{};
+    const step=()=>{if(!CHL||ended)return;try{for(const I of incidents.slice()){let a=null;
+        if(I.type==='chap'){const ci=CHL.live.find(x=>I.title===x.title);const k=ci?ci.options.findIndex(o=>o.id===want[ci.id]):-1;a=I.acts[k>=0?k:I.def];}
+        else a=I.botPick!=null?I.acts[I.botPick]:I.acts.find(a=>!(a.dis&&a.dis()));if(a)a.fn();}
+      window.HUB.ff(20);}catch(e){FL.err('liveBot',e);return;}
+      if(CHL&&!ended)setTimeout(step,0);};
+    setTimeout(step,30);},
   // ---- Chapter 5, Cruise: the real hub shift (startChapter5), as CH5F runs it, on the flight's state ----
   cruise(st,plan){const C=CAMP.E().ch5,Z=window.ZMMoney;FL.pile(st);window.__flightStep='5:shift';
     startChapter5(plan,{briefing:FL.bot&&!FL.bot.papers?null:C.briefing(st),onEnd:res=>{FL.nightOff();
@@ -4905,6 +5004,7 @@ window.addEventListener('load',()=>setTimeout(()=>{try{
 window.HUB={startChapter5,
   // the flight (design/chapters.md): auto(mode, opts) for bots; step()/state() for checks; pages() the last Black Box
   flight:{auto:(m,o)=>FL.auto(m,o),cruiseStep:(s,m)=>FL.cruiseStep(s,m),screen:()=>window.__flightScreen,step:()=>window.__flightStep,state:()=>CAMP.st&&CAMP.st.flight,save:()=>FL.load(),resume:()=>FL.resume(),log:()=>FL.log.slice(),errors:()=>FL.errors.slice(),pages:()=>FL.lastPages,result:()=>window.__flightResult,run:FL,legacy:FLIGHT_LEGACY},
+  chapterLive:(n,plan,hooks)=>startChapterLive(n,plan,hooks),liveState:()=>CHL&&{n:CHL.n,fired:Object.keys(CHL.fired),answers:Object.assign({},CHL.answers)},
   ch5:{answer:k=>ch5Answer(k),get plan(){return CH5&&CH5.plan;},state:()=>CH5&&{made:CH5.made,missed:CH5.missed,byDest:CH5.byDest,held:CH5.held,hubAsked:CH5.hubAsked,hubAnswer:CH5.hubAnswer,trail:CH5.trail,tags:Object.keys(CH5.tags),hubEta:CH5.hubEta,lonStd:CH5.lonStd,firstStd:CH5.firstStd},result:()=>CH5&&CH5.result,flow:CH5F},money:()=>MNY&&MNY.snapshot(),moneyOn:on=>{MONEY_ON=!!on;mnySet(on);},moneyOff:()=>{MONEY_ON=false;mnySet(false);},campaign:()=>CAMP.st,era:()=>CAMP.E(),camp:CAMP,get T(){return T;},get S(){return S;},get LV(){return LV;},flights:()=>flights,RW,incidents:()=>incidents,setMode:(id,m)=>{const r=RW.find(x=>x.id===id||x.short===id);if(r)setMode(r,m);},startLevel,capNow,forceIncursion:()=>{const c=STO.find(o=>o.k==='fog');if(c&&c.sc)c.sc.go=true;},resolveAll:()=>{for(const I of incidents.slice()){const a=I.botPick!=null?I.acts[I.botPick]:I.acts.find(a=>!(a.dis&&a.dis()));if(a)a.fn();}},speed:s=>setSpeed(s),ops:()=>ops,cfg:CFG,
   // test hooks: run the sim forward synchronously, and point the camera
   ff:secs=>{VQ.length=0;FFING=true;try{for(let i=0;i<secs&&!ended;i++){tick(1);if(CINE&&CINE.o.until==null){const ms=1000/BASE/Math.max(0.25,speed);CINE.t0-=ms;if(CINE.landAt)CINE.landAt-=ms;}}}finally{FFING=false;}puffs.length=0;hud();drawWave();},look:(x,y,z)=>{camT.s=cam.fit*z;camT.anchor=null;camT.x=x-((cam.region.L+cam.region.R)/2)/camT.s;camT.y=y-((cam.region.Tp+cam.region.B)/2)/camT.s;clampCam(camT);Object.assign(cam,{x:camT.x,y:camT.y,s:camT.s});},spawn:(t,x)=>spawnInc(t,x),opsSpawn:(k,x)=>opsSpawn(k,x),pause:()=>{paused=true;},
@@ -12563,6 +12663,7 @@ function frame(ms){
   if(pf)PERFM.p1=performance.now();
   if(V3.on){try{draw3D(ms/1000,dtR);}catch(err){console.error(err);if(!window.__v3err&&typeof v3ErrBanner==='function')v3ErrBanner(err);}}else{try{draw(ms/1000);}catch(err){console.error(err);}}
   if(CH5)try{ch5Frame();}catch(err){console.error(err);}
+  if(CHL)try{chlFrame();}catch(err){console.error(err);}
   if(pf)PERFM.p2=performance.now();
   // (toastRoom reads layout, so it goes first, while the page is still laid out from the last frame; hud() then writes)
   hudT+=dtR;if(hudT>0.25&&LV){hudT=0;try{toastRoom();hud();}catch(err){console.error(err);}try{drawWave();}catch(err){console.error(err);}}
@@ -12574,6 +12675,288 @@ menu('levels');
 if(V3.want)init3D();
 requestAnimationFrame(frame);
 })();
+
+</script>
+<script>
+/* money/cert.js: the Certificate of Concession, a one-page PDF (A4 landscape) written in the browser.
+   No library and no network: a small PDF writer (base-14 Helvetica and Times, WinAnsi text, line and curve operators for the
+   border, the rosettes and the seal) and the player's day-one signature embedded as a JPEG (/DCTDecode).
+
+   window.ZMCert (and module.exports, for node):
+     ZMCert.pdf(cert, opts?) → Promise<Uint8Array>      cert = VSIEra.certificate(state): {ok, founder, company, signedOn, endsOn,
+                                                         years, big, lines:{putIn, cameBack, made, perYear, today}, delivered:[{sentence}],
+                                                         signature (PNG data URL)}
+     ZMCert.download(cert, opts?) → Promise<{ok, why?, name?, bytes?}>   saves "VSI certificate, <founder>.pdf"
+     ZMCert.build(cert, jpeg?) → Uint8Array             synchronous; jpeg = {bytes: Uint8Array, w, h} (node tests)
+   Every figure comes from the engine; this file only lays it out. Base-14 fonts have no ₹, so ₹ is written "Rs". */
+(function (root) {
+  'use strict';
+  var W = 842, H = 595;   // A4 landscape, in points
+  var PAPER = [0.988, 0.988, 0.976], INK = [0.114, 0.125, 0.141], BLUE = [0.122, 0.227, 0.541], RED = [0.761, 0.165, 0.180],
+    GREEN = [0.169, 0.420, 0.294], PALE = [0.62, 0.74, 0.64], PENCIL = [0.404, 0.424, 0.443];
+  var AIRPORT = 'Vikram Sarabhai International Airport', SPV = 'Vikram Sarabhai International Airport Limited', SPVS = 'VSIAL';
+  var MON = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+  // ---- font metrics (Adobe AFM widths, characters 32-126) ----
+  function tab(s) { var a = []; s.split(',').forEach(function (x) { var m = /^(\d+)x(\d+)$/.exec(x); if (m) for (var i = 0; i < +m[2]; i++) a.push(+m[1]); else a.push(+x); }); return a; }
+  var HV = tab('278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556x10,278,278,584,584,584,556,1015,' +
+    '667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,' +
+    '556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584');
+  var HB = tab('278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556x10,333,333,584,584,584,611,975,' +
+    '722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,' +
+    '556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584');
+  var TR = tab('250,333,408,500,500,833,778,180,333,333,500,564,250,333,250,278,500x10,278,278,564,564,564,444,921,' +
+    '722,667,667,722,611,556,722,722,333,389,722,611,889,722,722,556,722,667,556,611,722,722,944,722,722,611,333,278,333,469,500,333,' +
+    '444,500,444,500,444,333,500,500,278,278,500,278,778,500,500,500,500,333,389,278,500,500,722,500,500,444,480,200,480,541');
+  var TB = tab('250,333,555,500,500,1000,833,278,333,333,500,570,250,333,250,278,500x10,333,333,570,570,570,500,930,' +
+    '722,667,722,722,667,611,778,778,389,500,778,667,944,722,778,611,778,722,556,667,722,722,1000,722,722,667,333,278,333,581,500,333,' +
+    '500,556,444,556,444,333,500,556,278,333,556,278,833,556,500,556,556,444,389,333,556,500,722,500,500,444,394,220,394,520');
+  var TI = tab('250,333,420,500,500,833,778,214,333,333,500,675,250,333,250,278,500x10,333,333,675,675,675,500,920,' +
+    '611,611,667,722,611,611,722,722,333,444,667,556,833,667,722,611,722,611,500,556,722,611,833,611,556,556,389,278,389,422,500,333,' +
+    '500,500,444,500,444,278,500,500,278,278,444,278,722,500,500,500,500,389,389,278,500,444,667,444,444,389,400,275,400,541');
+  var FONTS = {F1: ['Helvetica', HV], F2: ['Helvetica-Bold', HB], F3: ['Times-Roman', TR], F4: ['Times-Bold', TB], F5: ['Times-Italic', TI], F6: ['Helvetica-Oblique', HV]};
+
+  // ---- text: to WinAnsi bytes (₹ → "Rs", typographic marks → their nearest), escaped for a PDF string ----
+  function ansi(s) {
+    s = String(s == null ? '' : s).replace(/₹\s?/g, 'Rs ').replace(/[‘’ʼ]/g, '\'').replace(/[“”]/g, '"').replace(/[–—−]/g, '-').replace(/…/g, '...')
+      .replace(/×/g, 'x').replace(/✓/g, '').replace(/ /g, ' ');
+    var o = '';
+    for (var i = 0; i < s.length; i++) { var c = s.charCodeAt(i); o += c >= 32 && c < 127 ? s[i] : c >= 160 && c < 256 ? s[i] : '?'; }
+    return o;
+  }
+  function pstr(s) {
+    var o = '(';
+    for (var i = 0; i < s.length; i++) {
+      var c = s.charCodeAt(i), ch = s[i];
+      o += ch === '(' || ch === ')' || ch === '\\' ? '\\' + ch : c < 127 ? ch : '\\' + ('00' + c.toString(8)).slice(-3);
+    }
+    return o + ')';
+  }
+  function width(s, f, size) {   // s already WinAnsi
+    var t = FONTS[f][1], times = /^Times/.test(FONTS[f][0]), w = 0;
+    for (var i = 0; i < s.length; i++) { var c = s.charCodeAt(i); w += c >= 32 && c < 127 ? t[c - 32] : c === 183 ? (times ? 250 : 278) : times ? 500 : 556; }
+    return w * size / 1000;
+  }
+  function wrap(s, f, size, max) {
+    var words = ansi(s).split(/\s+/).filter(Boolean), lines = [], cur = '';
+    words.forEach(function (w) { var t = cur ? cur + ' ' + w : w; if (cur && width(t, f, size) > max) { lines.push(cur); cur = w; } else cur = t; });
+    if (cur) lines.push(cur);
+    return lines;
+  }
+  function n(v) { return (Math.round(v * 100) / 100).toString(); }
+  function rgb(c, stroke) { return c.map(n).join(' ') + (stroke ? ' RG' : ' rg'); }
+
+  // ---- the page, as a content stream ----
+  function Page() { this.o = []; }
+  Page.prototype = {
+    raw: function (s) { this.o.push(s); return this; },
+    text: function (s, x, y, f, size, col, opt) {
+      opt = opt || {}; s = ansi(s); var cs = opt.cs || 0, w = width(s, f, size) + cs * Math.max(0, s.length - 1);
+      if (opt.align === 'center') x -= w / 2; else if (opt.align === 'right') x -= w;
+      this.o.push('BT /' + f + ' ' + n(size) + ' Tf ' + rgb(col || INK) + (cs ? ' ' + n(cs) + ' Tc' : '') + ' ' + n(x) + ' ' + n(y) + ' Td ' + pstr(s) + ' Tj' + (cs ? ' 0 Tc' : '') + ' ET');
+      return w;
+    },
+    // a paragraph, wrapped to max; returns the y under it
+    para: function (s, x, y, f, size, max, lead, col, align) {
+      var self = this, ls = wrap(s, f, size, max);
+      ls.forEach(function (l, i) { self.text(l, align === 'center' ? x + max / 2 : x, y - i * lead, f, size, col, {align: align}); });
+      return y - ls.length * lead;
+    },
+    line: function (x1, y1, x2, y2, w, col) { this.o.push(rgb(col || INK, true) + ' ' + n(w) + ' w ' + n(x1) + ' ' + n(y1) + ' m ' + n(x2) + ' ' + n(y2) + ' l S'); },
+    rect: function (x, y, w, h, lw, col, fill) { this.o.push(fill ? rgb(fill) + ' ' + n(x) + ' ' + n(y) + ' ' + n(w) + ' ' + n(h) + ' re f' : rgb(col, true) + ' ' + n(lw) + ' w ' + n(x) + ' ' + n(y) + ' ' + n(w) + ' ' + n(h) + ' re S'); },
+    // a circle (or ellipse) from four Bézier arcs
+    ell: function (cx, cy, rx, ry) {
+      var k = 0.5523;
+      this.o.push(n(cx + rx) + ' ' + n(cy) + ' m ' + n(cx + rx) + ' ' + n(cy + ry * k) + ' ' + n(cx + rx * k) + ' ' + n(cy + ry) + ' ' + n(cx) + ' ' + n(cy + ry) + ' c ' +
+        n(cx - rx * k) + ' ' + n(cy + ry) + ' ' + n(cx - rx) + ' ' + n(cy + ry * k) + ' ' + n(cx - rx) + ' ' + n(cy) + ' c ' +
+        n(cx - rx) + ' ' + n(cy - ry * k) + ' ' + n(cx - rx * k) + ' ' + n(cy - ry) + ' ' + n(cx) + ' ' + n(cy - ry) + ' c ' +
+        n(cx + rx * k) + ' ' + n(cy - ry) + ' ' + n(cx + rx) + ' ' + n(cy - ry * k) + ' ' + n(cx + rx) + ' ' + n(cy) + ' c');
+    },
+    circle: function (cx, cy, r, w, col, fill) { this.ell(cx, cy, r, r); this.o.push(fill ? rgb(fill) + ' f' : rgb(col, true) + ' ' + n(w) + ' w S'); },
+    poly: function (pts, w, col) {
+      var s = n(pts[0][0]) + ' ' + n(pts[0][1]) + ' m';
+      for (var i = 1; i < pts.length; i++) s += ' ' + n(pts[i][0]) + ' ' + n(pts[i][1]) + ' l';
+      this.o.push(rgb(col, true) + ' ' + n(w) + ' w ' + s + ' S');
+    },
+    // text set on a circle, each letter turned to the tangent; top: reads clockwise over the top, letters upright outward
+    // bottom: reads left to right under the foot, letters upright inward. The size shrinks until the text fits maxArc (radians).
+    arcText: function (s, cx, cy, r, bottom, f, size, col, spacing, maxArc) {
+      s = ansi(s); var tot = function () { return width(s, f, size) + spacing * (s.length - 1); };
+      while (maxArc && tot() / r > maxArc && size > 3) { size -= 0.1; spacing *= 0.98; }
+      var mid = bottom ? -Math.PI / 2 : Math.PI / 2, dirn = bottom ? 1 : -1, th = mid - dirn * tot() / r / 2, self = this;
+      for (var i = 0; i < s.length; i++) {
+        var w = width(s[i], f, size), tc = th + dirn * w / 2 / r, phi = tc + dirn * Math.PI / 2, c = Math.cos(phi), sn = Math.sin(phi);
+        var x = cx + r * Math.cos(tc) - c * w / 2, y = cy + r * Math.sin(tc) - sn * w / 2;
+        self.o.push('BT /' + f + ' ' + n(size) + ' Tf ' + rgb(col) + ' ' + [c, sn, -sn, c].map(function (v) { return v.toFixed(4); }).join(' ') + ' ' + n(x) + ' ' + n(y) + ' Tm ' + pstr(s[i]) + ' Tj ET');
+        th += dirn * (w + spacing) / r;
+      }
+    },
+    out: function () { return this.o.join('\n'); }
+  };
+
+  // the hypotrochoid rosette of the duty paper (ui.js rosette()), as a polyline
+  function rosette(cx, cy, R0) {
+    var R = 10, r = 3, d = 7.2, k = R0 / (R - r + d), pts = [];
+    for (var i = 0; i <= 420; i++) { var t = i / 420 * Math.PI * 6; pts.push([cx + ((R - r) * Math.cos(t) + d * Math.cos((R - r) / r * t)) * k, cy - ((R - r) * Math.sin(t) - d * Math.sin((R - r) / r * t)) * k]); }
+    return pts;
+  }
+  // the VSI mark (ui.js vsiLogo): a ring, an orbit and a satellite around a V, drawn in its own 48-unit box, y down
+  function logo(pg, x, y, size, col) {
+    var s = size / 48;
+    pg.raw('q ' + n(s) + ' 0 0 ' + n(-s) + ' ' + n(x) + ' ' + n(y + size) + ' cm 1 J 1 j');
+    pg.circle(24, 24, 15, 2.4, col);
+    pg.raw('q 1 0 0 1 24 24 cm ' + [Math.cos(-28 * Math.PI / 180), Math.sin(-28 * Math.PI / 180), -Math.sin(-28 * Math.PI / 180), Math.cos(-28 * Math.PI / 180)].map(function (v) { return v.toFixed(4); }).join(' ') + ' 0 0 cm');
+    pg.ell(0, 0, 22, 8); pg.raw(rgb(col, true) + ' 1.6 w S Q');
+    pg.circle(41.6, 14.2, 3, 0, null, col);
+    pg.raw(rgb(col, true) + ' 2.6 w 17 18 m 24 32 l 31 18 l S Q');
+  }
+  function guilloche(pg) {   // two interleaved waves between the double rules, all round the sheet
+    var a = 24, b = 36, mid = (a + b) / 2, amp = (b - a) / 2 - 1.2, edge = function (x0, y0, x1, y1, ph) {
+      var L = Math.hypot(x1 - x0, y1 - y0), ux = (x1 - x0) / L, uy = (y1 - y0) / L, pts = [], N = Math.round(L / 2.5);
+      for (var i = 0; i <= N; i++) { var t = i / N * L, o = amp * Math.sin(t / 7 + ph); pts.push([x0 + ux * t - uy * o, y0 + uy * t + ux * o]); }
+      return pts;
+    };
+    [[mid, mid, W - mid, mid], [W - mid, mid, W - mid, H - mid], [W - mid, H - mid, mid, H - mid], [mid, H - mid, mid, mid]].forEach(function (e) {
+      pg.poly(edge(e[0], e[1], e[2], e[3], 0), 0.45, PALE); pg.poly(edge(e[0], e[1], e[2], e[3], Math.PI), 0.45, PALE);
+    });
+    pg.rect(a, a, W - 2 * a, H - 2 * a, 1.6, GREEN); pg.rect(b, b, W - 2 * b, H - 2 * b, 0.6, GREEN);
+    pg.rect(a - 5, a - 5, W - 2 * a + 10, H - 2 * a + 10, 0.4, GREEN);
+    [[mid, mid], [W - mid, mid], [mid, H - mid], [W - mid, H - mid]].forEach(function (c) { pg.circle(c[0], c[1], 15, 0, null, PAPER); pg.poly(rosette(c[0], c[1], 13), 0.5, GREEN); pg.circle(c[0], c[1], 14.5, 0.6, GREEN); });
+  }
+  function seal(pg, cx, cy, r, yearWord) {
+    pg.raw('q');
+    var rot = -8 * Math.PI / 180, c = Math.cos(rot), s = Math.sin(rot);
+    pg.raw([c, s, -s, c].map(function (v) { return v.toFixed(4); }).join(' ') + ' ' + n(cx - c * cx + s * cy) + ' ' + n(cy - s * cx - c * cy) + ' cm');
+    pg.circle(cx, cy, r, 2.2, RED); pg.circle(cx, cy, r - 3.2, 0.6, RED); pg.circle(cx, cy, r * 0.62, 1, RED);
+    var inner = r * 0.62, outer = r - 3.2, cap = 4.6;
+    pg.arcText('VIKRAM SARABHAI INTERNATIONAL', cx, cy, inner + (outer - inner - cap) / 2, false, 'F2', 6.6, RED, 0.6, 2.55);
+    pg.arcText('AIRPORT LIMITED · COMMON SEAL', cx, cy, outer - (outer - inner - cap) / 2, true, 'F2', 6.6, RED, 0.6, 2.1);
+    pg.circle(cx - inner - (outer - inner) / 2, cy, 1.3, 0, null, RED); pg.circle(cx + inner + (outer - inner) / 2, cy, 1.3, 0, null, RED);
+    logo(pg, cx - r * 0.22, cy - r * 0.02, r * 0.44, RED);
+    pg.text('HANDED BACK', cx, cy - r * 0.17, 'F2', 4.6, RED, {align: 'center', cs: 0.5});
+    pg.text(yearWord, cx, cy - r * 0.34, 'F4', 8, RED, {align: 'center', cs: 0.4});
+    pg.raw('Q');
+  }
+  function dLong(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); return m ? (+m[3]) + ' ' + MON[+m[2] - 1] + ' ' + m[1] : ''; }
+
+  function content(cert, img) {
+    var pg = new Page(), cx = W / 2, yrs = cert.years || 60, L = cert.lines || {};
+    pg.rect(0, 0, W, H, 0, null, PAPER);
+    guilloche(pg);
+    // head: the mark, the airport, the title
+    logo(pg, cx - 17, 512, 34, GREEN);
+    pg.text(AIRPORT.toUpperCase() + '  ·  NAGPUR', cx, 496, 'F1', 9, GREEN, {align: 'center', cs: 1.6});
+    pg.text('Certificate of Concession', cx, 455, 'F4', 36, INK, {align: 'center'});
+    pg.line(cx - 70, 442, cx + 70, 442, 0.7, GREEN);
+    pg.text('This certificate is awarded to', cx, 420, 'F5', 13, PENCIL, {align: 'center'});
+    pg.text(cert.founder || 'The director', cx, 391, 'F4', 27, BLUE, {align: 'center'});
+    pg.text('director, for ' + (cert.company || 'your company'), cx, 371, 'F3', 14, INK, {align: 'center'});
+    var span = dLong(cert.signedOn) && dLong(cert.endsOn) ? ' from ' + dLong(cert.signedOn) + ' and handed it back on ' + dLong(cert.endsOn) : ', and handed it back after ' + yrs + ' years';
+    var y = pg.para('who ran ' + AIRPORT + ', Nagpur, through ' + SPVS + span + '. The airport now belongs to the Airports Authority of India and the State of Maharashtra.',
+      cx - 300, 351, 'F3', 12, 600, 15, INK, 'center');
+    // the return, in big type
+    y -= 30;
+    pg.text(cert.big || (cert.returnPct + '% a year for ' + yrs + ' years'), cx, y, 'F4', 34, BLUE, {align: 'center'});
+    pg.text('the return on every rupee ' + (cert.company || 'your company') + ' put in, counting every rupee that came back', cx, y - 17, 'F5', 11, PENCIL, {align: 'center'});
+    // two columns: the money in plain words, and what delivered it
+    var top = y - 48, lx = 84, lw = 340, rx = 462, rw = 296;
+    pg.text('The money', lx, top, 'F2', 10.5, GREEN, {cs: 0.3});
+    var ly = top - 17;
+    [L.putIn, L.cameBack, L.made, L.perYear].filter(Boolean).forEach(function (s) { ly = pg.para(s, lx, ly, 'F1', 11.5, lw, 15, INK); });
+    if (L.today) ly = pg.para(L.today, lx, ly - 5, 'F6', 8.6, lw, 11, PENCIL);
+    pg.text('What delivered it:', rx, top, 'F2', 10.5, GREEN, {cs: 0.3});
+    var ry = top - 18, dv = (cert.delivered || []).slice(0, 2);
+    if (!dv.length) ry = pg.para(cert.closing || 'No single decision made it: it was many small ones.', rx, ry, 'F3', 12.5, rw, 15.5, INK);
+    dv.forEach(function (d, i) { pg.text((i + 1) + '.', rx, ry, 'F4', 12.5, BLUE); ry = pg.para(d.sentence, rx + 16, ry, 'F3', 12.5, rw - 16, 15.5, INK) - 6; });
+    pg.line(lx + lw + 18, top + 8, lx + lw + 18, Math.min(ly, ry) + 6, 0.4, PALE);
+    // foot: the day-one signature, the issue line, the seal
+    var fy = 86;
+    if (img) {
+      var maxW = 190, maxH = 50, sc = Math.min(maxW / img.w, maxH / img.h), iw = img.w * sc, ih = img.h * sc;
+      pg.raw('q ' + n(iw) + ' 0 0 ' + n(ih) + ' ' + n(84 + (maxW - iw) / 2) + ' ' + n(fy + 4) + ' cm /Im1 Do Q');
+    } else pg.text('(signed on the Concession Agreement)', 84 + 95, fy + 18, 'F5', 10, PENCIL, {align: 'center'});
+    pg.line(84, fy, 84 + 190, fy, 0.7, INK);
+    pg.text((cert.founder || 'The director') + ', director', 84, fy - 12, 'F1', 8.6, INK);
+    pg.text('Signed on day one' + (cert.signedOn ? ', ' + dLong(cert.signedOn) : ''), 84, fy - 23, 'F6', 8, PENCIL);
+    pg.text('Issued at Nagpur' + (cert.endsOn ? ' on ' + dLong(cert.endsOn) : '') + ',', cx + 6, fy + 10, 'F3', 10.5, INK, {align: 'center'});
+    pg.text('the day the airport was handed back.', cx + 6, fy - 3, 'F3', 10.5, INK, {align: 'center'});
+    pg.text('No. VSI/' + yrs + '/' + String(cert.signedOn || '').replace(/-/g, '') + '-C', cx + 6, fy - 19, 'F1', 7.5, PENCIL, {align: 'center', cs: 0.6});
+    seal(pg, W - 124, fy + 8, 56, String(cert.endsOn || '').slice(0, 4));
+    return pg.out();
+  }
+
+  // ---- the file: objects, a cross-reference table, the trailer ----
+  function bytesOf(s) { var b = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) b[i] = s.charCodeAt(i) & 255; return b; }
+  function build(cert, img) {
+    cert = cert || {};
+    var objs = [], add = function (parts) { objs.push(parts); return objs.length; };
+    var fontIds = {};
+    Object.keys(FONTS).forEach(function (k) { fontIds[k] = add(['<< /Type /Font /Subtype /Type1 /BaseFont /' + FONTS[k][0] + ' /Encoding /WinAnsiEncoding >>']); });
+    var imId = img ? add(['<< /Type /XObject /Subtype /Image /Width ' + img.w + ' /Height ' + img.h + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + img.bytes.length + ' >>\nstream\n', img.bytes, '\nendstream']) : 0;
+    var body = content(cert, img), cs = bytesOf(body);
+    var cId = add(['<< /Length ' + cs.length + ' >>\nstream\n', cs, '\nendstream']);
+    var pagesId = objs.length + 2, pageId = add(['<< /Type /Page /Parent ' + pagesId + ' 0 R /MediaBox [0 0 ' + W + ' ' + H + '] /Contents ' + cId + ' 0 R /Resources << /Font << ' +
+      Object.keys(fontIds).map(function (k) { return '/' + k + ' ' + fontIds[k] + ' 0 R'; }).join(' ') + ' >>' + (imId ? ' /XObject << /Im1 ' + imId + ' 0 R >>' : '') + ' >> >>']);
+    add(['<< /Type /Pages /Kids [' + pageId + ' 0 R] /Count 1 >>']);
+    var catId = add(['<< /Type /Catalog /Pages ' + pagesId + ' 0 R >>']);
+    var infoId = add(['<< /Title ' + pstr(ansi('Certificate of Concession, ' + AIRPORT)) + ' /Author ' + pstr(ansi(cert.founder || '')) + ' /Subject ' + pstr(ansi(cert.big || '')) +
+      ' /Creator (Vikram Sarabhai International, the game) /Producer (money/cert.js) >>']);
+    var chunks = [bytesOf('%PDF-1.4\n%âãÏÓ\n')], off = chunks[0].length, xref = [];
+    objs.forEach(function (parts, i) {
+      xref.push(off);
+      [bytesOf((i + 1) + ' 0 obj\n')].concat(parts.map(function (p) { return typeof p === 'string' ? bytesOf(p) : p; }), [bytesOf('\nendobj\n')]).forEach(function (b) { chunks.push(b); off += b.length; });
+    });
+    var x = 'xref\n0 ' + (objs.length + 1) + '\n0000000000 65535 f \n' + xref.map(function (o) { return ('000000000' + o).slice(-10) + ' 00000 n \n'; }).join('') +
+      'trailer\n<< /Size ' + (objs.length + 1) + ' /Root ' + catId + ' 0 R /Info ' + infoId + ' 0 R >>\nstartxref\n' + off + '\n%%EOF\n';
+    chunks.push(bytesOf(x));
+    var len = chunks.reduce(function (a, b) { return a + b.length; }, 0), out = new Uint8Array(len), p = 0;
+    chunks.forEach(function (b) { out.set(b, p); p += b.length; });
+    return out;
+  }
+
+  // ---- the signature: PNG data URL → trimmed to its ink → JPEG on the paper's white, via a canvas ----
+  function jpegOf(dataUrl) {
+    return new Promise(function (res) {
+      if (!dataUrl || typeof document === 'undefined') { res(null); return; }
+      var im = new Image();
+      im.onload = function () {
+        try {
+          var c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
+          var g = c.getContext('2d'); g.drawImage(im, 0, 0);
+          var a = g.getImageData(0, 0, c.width, c.height).data, x0 = c.width, y0 = c.height, x1 = -1, y1 = -1;
+          for (var y = 0; y < c.height; y++) for (var x = 0; x < c.width; x++) if (a[(y * c.width + x) * 4 + 3] > 16) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+          if (x1 < 0) { x0 = 0; y0 = 0; x1 = c.width - 1; y1 = c.height - 1; }
+          var pad = 8; x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad); x1 = Math.min(c.width - 1, x1 + pad); y1 = Math.min(c.height - 1, y1 + pad);
+          var t = document.createElement('canvas'); t.width = x1 - x0 + 1; t.height = y1 - y0 + 1;
+          var h = t.getContext('2d'); h.fillStyle = 'rgb(' + PAPER.map(function (v) { return Math.round(v * 255); }).join(',') + ')'; h.fillRect(0, 0, t.width, t.height);
+          h.drawImage(c, x0, y0, t.width, t.height, 0, 0, t.width, t.height);
+          var url = t.toDataURL('image/jpeg', 0.92), bin = atob(url.slice(url.indexOf(',') + 1)), b = new Uint8Array(bin.length);
+          for (var i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i);
+          res(b[0] === 0xFF && b[1] === 0xD8 ? {bytes: b, w: t.width, h: t.height} : null);
+        } catch (e) { res(null); }
+      };
+      im.onerror = function () { res(null); };
+      im.src = dataUrl;
+    });
+  }
+  function pdf(cert, opts) {
+    opts = opts || {};
+    return jpegOf(opts.signature || (cert && cert.signature)).then(function (img) { return build(cert, img); });
+  }
+  function fileName(cert) { return 'VSI certificate, ' + (ansi((cert && cert.founder) || 'director').replace(/[^\w .-]+/g, '').trim() || 'director') + '.pdf'; }
+  function download(cert, opts) {
+    if (!cert || !cert.ok) return Promise.resolve({ok: false, why: (cert && cert.why) || 'There is no certificate for this concession.'});
+    return pdf(cert, opts).then(function (bytes) {
+      var name = fileName(cert), url = URL.createObjectURL(new Blob([bytes], {type: 'application/pdf'})), a = document.createElement('a');
+      a.href = url; a.download = name; a.style.display = 'none'; document.body.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 5000);
+      return {ok: true, name: name, bytes: bytes.length};
+    });
+  }
+  var API = {pdf: pdf, download: download, build: build, fileName: fileName, _ansi: ansi, _width: width};
+  if (typeof module !== 'undefined' && module.exports) module.exports = API;
+  if (typeof window !== 'undefined') root.ZMCert = API;
+})(typeof window !== 'undefined' ? window : this);
 
 </script>
 <script>
@@ -13845,6 +14228,7 @@ requestAnimationFrame(frame);
     var lastRow = eng.rows[eng.rows.length - 1], s = state.s || {}, def = stakeDef(state);
     var pf = playerFlows(s, companyFlows(eng), def);
     var inv = 0, ret = 0; pf.forEach(function (f) { if (f < 0) inv -= f; else ret += f; });
+    var td = todayOf(pf);
     var r = eng.step_in ? null : irr(pf);
     var paxM = 0, fees = 0, repaidYear = null, divs = 0;
     eng.rows.forEach(function (rw) { paxM += rw.pax; fees += rw.fee; divs += (rw.div || 0) * pctAt(s, rw.year, def) / 100; if (repaidYear == null && rw.t >= 4 && rw.debt < 1) repaidYear = rw.year; });
@@ -13852,7 +14236,14 @@ requestAnimationFrame(frame);
     return {irr: r, investedCr: Math.round(inv), returnedCr: Math.round(ret), dividendsCr: Math.round(divs), stakePct: pctAt(s, 60, def),
       debtRepaid: !eng.step_in && lastRow && lastRow.debt < 1, banks: !!eng.step_in,
       paxTotalM: Math.round(paxM), paidToStateCr: Math.round(fees), residualCr: Math.round(residual * pctAt(s, 60, def) / 100), repaidYear: repaidYear,
-      p2: !!state.s.p2year, ac: !!state.s.ac_year};
+      p2: !!state.s.p2year, ac: !!state.s.ac_year, investedTodayCr: td.inCr, returnedTodayCr: td.outCr};
+  }
+  // the same money in the signing year's rupees (year 1 = 2026), deflated by the game's own price rise (cpi_forward):
+  // the player's flow in year t + 1 is in that year's rupees, worth (1 + cpi)^t of year 1's
+  function todayOf(pf) {
+    var c = P.cpi_forward || 0, a = 0, b = 0;
+    pf.forEach(function (f, t) { var v = f / Math.pow(1 + c, t); if (v < 0) a -= v; else b += v; });
+    return {inCr: Math.round(a), outCr: Math.round(b)};
   }
 
   function boardOptions(state) {
@@ -14220,7 +14611,6 @@ requestAnimationFrame(frame);
     var lines = [];
     if (f.paxTotalM) lines.push('Over sixty years the airport served ' + (f.paxTotalM >= 1000 ? (f.paxTotalM / 1000).toFixed(1) + ' billion' : f.paxTotalM.toLocaleString('en-IN') + ' million') + ' passengers.');
     if (f.repaidYear) lines.push('The bank loans were fully repaid in ' + (2025 + f.repaidYear) + '.');
-    lines.push('Your company put in ' + cr(f.investedCr || 0) + ' and received ' + cr(f.dividendsCr || 0) + ' in dividends.');
     if (state.construction && state.construction.slipMonths) lines.push('It opened ' + state.construction.slipMonths + ' months late, in ' + monthName(state.opensOn || addMonths(state.signedOn, 48)) + '.');
     var o = {signature: state.signature || undefined, signedOn: state.signedOn || undefined, endsOn: state.endsOn || undefined,
       stakePct: state.stake, stakeValueCr: f.residualCr != null ? f.residualCr : undefined, returnPct: f.irr == null ? undefined : Math.round(f.irr * 1000) / 10,
@@ -14228,7 +14618,60 @@ requestAnimationFrame(frame);
       assets: assets, owners: pr.map(function (x) { return {name: x.name, pct: x.pct}; }), lines: lines};
     if (state.founder) o.founder = state.founder;
     if (state.parent) o.parent = state.parent;
+    o.cert = certificate(state);
     return o;
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // The certificate (money/cert.js, ZMCert) and the handover's money in plain words: VSIEra.certificate(state[, attribution]) →
+  //   {ok, why (when ok is false: why there is no certificate, in plain words), founder, company, signature, signedOn, endsOn, years,
+  //    returnPct, inCr, outCr, madeCr, dividendsCr, leftCr, stakePct, baseYear, cpiPct, inTodayCr, outTodayCr, madeTodayCr,
+  //    lines: {putIn, cameBack, made, perYear, split, today} (sentences), big ('10.5% a year for 60 years'),
+  //    delivered: [{group, label, sharePct, sentence}] (the one or two decisions that made most of the return)}
+  // Every figure is the engine's own: state.final (the player's money in and out, in rupees of the year each was paid), the
+  // same flows in the signing year's rupees (todayOf), and the Black Box's attribution.
+  // ---------------------------------------------------------------------------------------------
+  function crFull(v) { return (v < 0 ? '−' : '') + '₹' + Math.round(Math.abs(v)).toLocaleString('en-IN') + ' cr'; }
+  function certificate(state, attr) {
+    ensure();
+    if (!state) return {ok: false, why: 'There is no concession to certify.'};
+    var o = state.over || {}, f = state.final || {}, yrs = 60, company = state.parent || 'Your company';
+    var base = {founder: state.founder || '', company: company, signature: state.signature || null, signedOn: state.signedOn || null, endsOn: state.endsOn || null, years: yrs};
+    if (o.reason === 'banks' || f.banks)
+      return Object.assign(base, {ok: false, why: 'No certificate: the banks took control in ' + cal(o.year || state.year || 1) + ', so ' + company + ' never handed the airport back.'});
+    if (o.reason !== 'handback' || f.investedCr == null)
+      return Object.assign(base, {ok: false, why: 'The certificate comes at the end of the concession, when you hand the airport back in year ' + yrs + '.'});
+    var inn = f.investedCr || 0, out = f.returnedCr || 0, made = out - inn, ret = f.irr == null ? null : Math.round(f.irr * 1000) / 10;
+    var tIn = f.investedTodayCr, tOut = f.returnedTodayCr;
+    if (tIn == null || tOut == null) {   // a game finished before this field: the same 60 years, run again
+      var eng = simulate(state.s, 60), td = todayOf(playerFlows(state.s, companyFlows(eng), stakeDef(state)));
+      tIn = td.inCr; tOut = td.outCr;
+    }
+    var divs = f.dividendsCr || 0, left = f.residualCr || 0, stake = f.stakePct != null ? f.stakePct : state.stake, by = cal(1), cpi = Math.round((P.cpi_forward || 0) * 1000) / 10;
+    var more = function (v, who) { return v >= 0 ? (who || 'You') + ' made ' + crFull(v) + ' more than ' + (who ? 'it' : 'you') + ' put in.' : (who || 'You') + ' got back ' + crFull(-v) + ' less than ' + (who ? 'it' : 'you') + ' put in.'; };
+    var lines = {
+      putIn: (company === 'Your company' ? 'Your company' : 'Your company, ' + company + ',') + ' put in ' + crFull(inn) + '.',
+      cameBack: 'Over ' + yrs + ' years, ' + crFull(out) + ' came back to it.',
+      made: more(made),
+      perYear: ret == null ? '' : 'That is about ' + ret + '% a year.',
+      split: Math.abs(divs + left - out) <= Math.max(2, out * 0.002) && left > 0 ? 'Of what came back, ' + crFull(divs) + ' was dividends paid over the years, and ' + crFull(left) + ' was your ' + stake + '% of the cash left in ' + 'VSIAL on the last day.' : '',
+      today: 'Each amount is in rupees of the year it was paid, and prices rise about ' + cpi + '% a year in this game. In ' + by + ' rupees, ' + company + ' put in ' + crFull(tIn) + ' and ' + crFull(tOut) + ' came back: ' + (tOut - tIn >= 0 ? crFull(tOut - tIn) + ' more than it put in.' : crFull(tIn - tOut) + ' less than it put in.')};
+    // what delivered it: the decisions that made the most of the return (the Black Box's page 2), in one plain sentence each
+    var a = attr || attribution(state), s = state.s || {};
+    var what = function (b) {
+      if (b.group === 'bid') return s.bid && s.bid.type === 'ppf' ? 'Bidding to pay AAI and the State ₹' + s.bid.value + ' a passenger' : 'Bidding to pay AAI and the State ' + (s.bid ? s.bid.value : '') + '% of what the airport earns';
+      if (b.group === 'finance') return 'Borrowing ' + Math.round((s.gearing || 0) * 100) + '% ' + (s.lender === 'dollar' ? 'in dollars' : s.lender === 'infra' ? 'from the infrastructure bank' : s.privateLoan && s.privateLoan.house ? 'from ' + s.privateLoan.house : 'from Indian banks') + ' and building the first phase ' + (s.phase1 === 'big' ? 'big' : 'lean');
+      if (b.group === 'build') { var cn = s.construction || {}, w = [cn.monsoon === 'slip' ? 'waiting out the monsoon' : '', cn.overrun === 'slip' ? 'letting the roof run late' : '', cn.trials === 'short' ? 'running short trials' : ''].filter(Boolean); return w.length ? andList(w).replace(/^./, function (c) { return c.toUpperCase(); }) : 'Paying to open on time'; }
+      if (b.group === 'opening') return /big/i.test(b.chosen || '') ? 'Moving every flight in on opening day' : /soft/i.test(b.chosen || '') ? 'A soft opening, one airline first' : 'Moving the flights in over three weeks';
+      if (b.group === 'shifts') return 'Running your own shifts at the airport';
+      var c = String(b.chosen || b.label || ''); return c.charAt(0).toUpperCase() + c.slice(1);
+    };
+    var delivered = (a.groups || []).filter(function (b) { return b.npvCr > 0 && b.sharePct >= 3; }).slice(0, 2).map(function (b) {
+      return {group: b.group, label: b.label, sharePct: b.sharePct, sentence: what(b) + ' made ' + Math.round(b.sharePct) + '% of your return.'};
+    });
+    return Object.assign(base, {ok: true, why: '', returnPct: ret, big: ret == null ? yrs + ' years, handed back' : ret + '% a year for ' + yrs + ' years',
+      inCr: inn, outCr: out, madeCr: made, dividendsCr: divs, leftCr: left, stakePct: stake, baseYear: by, cpiPct: cpi, inTodayCr: tIn, outTodayCr: tOut, madeTodayCr: tOut - tIn,
+      lines: lines, delivered: delivered, closing: delivered.length ? '' : 'No single decision made it: it was many small ones.'});
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -15820,7 +16263,7 @@ requestAnimationFrame(frame);
       everythingElsePct: a.everythingElse.sharePct, everythingElseCr: a.everythingElse.npvCr, closing: a.powerLaw, sentences: a.sentences, totalCr: a.totalCr, checkSum: a.checkSum, groups: a.groups};
     var p3 = {frontPages: pa.map(function (x) { return {chapter: x.chapter, name: x.name, year: x.calYear, lead: x.lead, dateLine: x.dateLine, line: x.line, light: x.light}; }), once: mo};
     var p4 = {lines: pr.map(function (l) { return {id: l.id, title: l.title, line: l.text, evidence: l.evidence}; }), thiel: th};
-    return {p1: p1, p2: p2, p3: p3, p4: p4,
+    return {p1: p1, p2: p2, p3: p3, p4: p4, cert: certificate(state, a),
       'return': rp, attribution: a, papers: pa, profile: pr, thiel: th, moment: mo,
       company: state.parent || 'Your company', founder: state.founder || '', signature: state.signature || null, signedOn: state.signedOn || null, endsOn: state.endsOn || null};
   }
@@ -15853,7 +16296,7 @@ requestAnimationFrame(frame);
     previewBid: previewBid, previewClose: previewClose, bidOpening: bidOpening, bidRivals: bidRivals, privateHouses: privateHouses, pitchPrivate: pitchPrivate, _tender: {BIDDERS: BIDDERS, reset: function () { _ceil = null; }, ceilings: function () { return rivalCeilings(); }},
     newCampaign: newCampaign, needsConstruction: needsConstruction, constructionOpts: constructionOpts, applyConstruction: applyConstruction,
     levelFor: levelFor, applyShift: applyShift, boardOptions: boardOptions, applyBoard: applyBoard,
-    isOver: isOver, endOpts: endOpts, handbackOpts: handbackOpts, acPlan: acPlan,
+    isOver: isOver, endOpts: endOpts, handbackOpts: handbackOpts, certificate: function (st, a) { return certificate(st, a); }, acPlan: acPlan,
     fmtDate: function (iso) { ensure(); return fmtDate(iso); }, campaignDocs: campaignDocs, fileCard: fileCard, asBill: asBill,
     resumable: resumable, recordOf: recordOf, chapter: chapter, endBill: endBill, advance: advance, SAVE_VERSION: SAVE_VERSION,
     // for tests and bots
@@ -16246,6 +16689,15 @@ const CSS=`
 .zdk-hb .zdk-tab .h.big{font-size:30px}
 .zhb-own{display:flex;justify-content:space-between;gap:12px;padding:1px 0}.zhb-own .h{font-size:19px}
 .zdk-sigs.hb{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 30px}
+.zdk-hb .zdk-note{width:min(300px,calc(100% - 34px))}
+.zdk-hb .zdk-note .zdk-dscr>b{font-size:34px;white-space:nowrap}
+.zdk-hb .zdk-note p.pen{font-family:var(--ft);font-size:12.5px;line-height:1.45;color:var(--zpe)}
+.zdk-hb .zdk-note ol{margin:4px 0 0;padding-left:20px;font-size:16px;line-height:1.35}.zdk-hb .zdk-note ol li+li{margin-top:6px}
+.zdk-hb .zdk-tab td small.split{display:block;margin-top:2px}
+.zdk-acts .zdk-q.cert,.zbx-acts .zdk-q.cert{margin-left:auto;white-space:nowrap}
+.zdk-q.cert[disabled]{text-decoration:none;color:var(--zpe);cursor:default}
+.zdk-q.cert.why{white-space:normal;text-align:left;max-width:440px;line-height:1.4;padding-top:4px;padding-bottom:4px}
+@media (max-width:1280px){.zdk-hb .zdk-note{width:min(260px,calc(100% - 24px))}.zdk-hb .zdk-note .zdk-dscr>b{font-size:29px}.zdk-hb .zdk-note p{font-size:15px}}
 .zdk-sigs.hb .s.then .ink{height:118px;align-items:center}
 .zdk-sigs.hb .s.then img{display:block;max-height:96px;max-width:100%;width:auto}
 .zdk-sigs.hb .s.then em{font-family:var(--fh);font-style:normal;font-size:16px;color:var(--zpe)}
@@ -16871,6 +17323,21 @@ M.incomeStatement=function(o){o=o||{};const txt=h=>{const d=document.createEleme
   for(const k of ['paragraph','cover','stake','margin','adviser','year','page','pile'])if(o[k]!=null)B[k]=o[k];
   return M.bill(Object.assign(B,o.bill||{})).then(r=>r||'cta');};
 
+/* ---------- the Certificate of Concession (money/cert.js, window.ZMCert): one button, on the handover and the Black Box ----------
+   cert = VSIEra.certificate(state). With no certificate (the banks took control), the button is disabled and the reason
+   is written beside it in plain words. */
+function certButton(cert){if(!cert)return '';
+  return cert.ok?`<button class="zdk-q cert" data-cert="1">Download your certificate (PDF)</button>`:`<button class="zdk-q cert why" disabled>${esc(cert.why||'No certificate for this concession.')}</button>`;}
+function certWire(root,cert){const b=root.querySelector('.zdk-q.cert[data-cert]');if(!b||!cert||!cert.ok)return;
+  const label=b.textContent;
+  b.onclick=e=>{e.stopPropagation();if(b.disabled)return;
+    if(!window.ZMCert){b.textContent='The certificate writer is missing from this build';return;}
+    b.disabled=true;b.textContent='Writing your certificate…';
+    ZMCert.download(cert).then(r=>{b.textContent=r&&r.ok?'Saved: '+r.name:(r&&r.why)||'Could not write the certificate';window.__zmmCert=r;})
+      .catch(err=>{console.warn('certificate',err);b.textContent='Could not write the certificate';})
+      .then(()=>setTimeout(()=>{b.textContent=label;b.disabled=false;},3200));};}
+M.certButton=certButton;M.certWire=certWire;
+
 /* ---------- handback (year 60): the handover certificate, on duty paper ----------
    The concession ends. VSIAL hands the airport back to AAI and the State. The certificate records sixty years in plain
    words; the player's day-one signature (from the Concession Agreement) sits beside an empty pad, and they sign again.
@@ -16895,6 +17362,7 @@ M.handback=function(o){o=o||{};
   const COND=[['excellent','in excellent condition','nothing to repair'],['good','in good condition, with ordinary wear','repairs within the handover allowance'],['poor','in poor condition','repairs charged to '+M.cfg.spvShort]];
   const assets=(o.assets||[]).filter(Boolean),list=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' and '+a[a.length-1];
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const C=o.cert&&o.cert.ok?o.cert:null,CL=C?C.lines||{}:{};   // VSIEra.certificate: the money in plain words, and what delivered it
   const GUIL='url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 44 44"><rect width="44" height="44" fill="#dfeadf"/>'+rosette(22,22,19)+'</svg>')+'")';
   const plan=document.getElementById('planTpl');
   const late=new Date(d1.getFullYear()-5,d1.getMonth(),d1.getDate());
@@ -16923,7 +17391,10 @@ M.handback=function(o){o=o||{};
           <tr><td>Passengers served</td><td><span class="h big">${esc(pax(o.paxTotalM))}</span><small>over ${yrs} years</small></td></tr>
           ${assets.length?`<tr><td>Handed over in working order</td><td>${esc(list(assets))}</td></tr>`:''}
           <tr><td>Paid to the State and AAI</td><td><span class="h">${esc(fmt(o.paidToStateCr))}</span><small>over the whole concession</small></td></tr>
-          <tr><td>Your return per year</td><td><span class="h">${esc(pct(o.returnPct))}</span><small>on the money ${esc(parent)} put in</small></td></tr>
+          ${C?`<tr><td>Put in by ${esc(parent)}</td><td><span class="h">${esc(fmt(C.inCr))}</span><small>over the ${yrs} years</small></td></tr>
+          <tr><td>Came back to ${esc(parent)}</td><td><span class="h">${esc(fmt(C.outCr))}</span>${CL.split?`<small class="split">${esc(CL.split)}</small>`:''}</td></tr>
+          <tr><td>Made, more than it put in</td><td><span class="h big">${esc(fmt(C.madeCr))}</span><small>about ${esc(pct(C.returnPct))} a year</small></td></tr>`
+          :`<tr><td>Your return per year</td><td><span class="h">${esc(pct(o.returnPct))}</span><small>on the money ${esc(parent)} put in</small></td></tr>`}
           <tr><td>Condition at handback, as inspected by AAI</td><td><div class="zdk-ticks insp" role="radiogroup" aria-label="Condition at handback">${COND.map(c=>`<button role="radio" aria-checked="${c[0]===cond}" aria-disabled="true" tabindex="-1"><i></i>${esc(c[1])} <small>${esc(c[2])}</small></button>`).join('')}</div></td></tr>
           <tr><td>Owners of ${esc(M.cfg.spvShort)} at handback</td><td>${owners.map((w,k)=>`<div class="zhb-own">${k===0?H(w.name):esc(w.name)}<span>${esc(pct(w.pct))}</span></div>`).join('')}</td></tr>
         </tbody></table>
@@ -16939,11 +17410,15 @@ M.handback=function(o){o=o||{};
             <div class="zdk-seal" id="zhbSeal" aria-hidden="true">${sealSvg()}</div></div>
         </div>
       </article>
-      <div class="zdk-acts"><button class="zdk-go" id="zhbN" disabled>Sign and hand back the airport</button><button class="zdk-q" id="zhbC" disabled>Clear</button></div></div>
-      <aside class="zdk-note${reduce?'':' arrive'}" aria-live="polite">
+      <div class="zdk-acts"><button class="zdk-go" id="zhbN" disabled>Sign and hand back the airport</button><button class="zdk-q" id="zhbC" disabled>Clear</button>${certButton(o.cert)}</div></div>
+      <aside class="zdk-note${reduce?'':' arrive'}" aria-live="polite">${C?`
+        <h3>What your company made</h3><div class="zdk-dscr"><b>${esc(fmt(C.madeCr))}</b></div>
+        <p>${esc([CL.putIn,CL.cameBack,CL.made,CL.perYear].filter(Boolean).join(' '))}</p>
+        ${CL.today?`<p class="pen">${esc(CL.today)}</p>`:''}
+        <h3>What delivered it</h3>${C.delivered&&C.delivered.length?`<ol>${C.delivered.map(d=>`<li>${esc(d.sentence)}</li>`).join('')}</ol>`:`<p>${esc(C.closing||'')}</p>`}`:`
         <h3>Sixty years, in one number</h3><div class="zdk-dscr"><b>${esc(pct(o.returnPct))} <small>a year</small></b></div>
         <p>Your return per year on everything ${esc(parent)} put in, counting every dividend that came back.</p>
-        ${o.stakeValueCr!=null?`<h3>What you walk away with</h3><div class="zdk-dscr"><b>${esc(fmt(o.stakeValueCr))}</b></div><p>Your ${esc(pct(o.stakePct))} of ${esc(M.cfg.spvShort)} on the day you hand back. The airport itself now belongs to the State.</p>`:''}
+        ${o.stakeValueCr!=null?`<h3>What you walk away with</h3><div class="zdk-dscr"><b>${esc(fmt(o.stakeValueCr))}</b></div><p>Your ${esc(pct(o.stakePct))} of ${esc(M.cfg.spvShort)} on the day you hand back. The airport itself now belongs to the State.</p>`:''}`}
       </aside></main>
   </div>`,'zmm-ob');
   const desk=sh.querySelector('.zdk'),docEl=sh.querySelector('#zhbDoc');
@@ -16955,14 +17430,14 @@ M.handback=function(o){o=o||{};
     for(let y=0;y<c.height;y++)for(let x=0;x<c.width;x++)if(a[(y*c.width+x)*4+3]>16){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
     if(x1<0)return;const p=6;x0=Math.max(0,x0-p);y0=Math.max(0,y0-p);x1=Math.min(c.width-1,x1+p);y1=Math.min(c.height-1,y1+p);
     const t=document.createElement('canvas');t.width=x1-x0+1;t.height=y1-y0+1;t.getContext('2d').drawImage(c,x0,y0,t.width,t.height,0,0,t.width,t.height);im.src=t.toDataURL('image/png');}catch(_){}};
-  const go=sh.querySelector('#zhbN'),clr=sh.querySelector('#zhbC');
+  const go=sh.querySelector('#zhbN'),clr=sh.querySelector('#zhbC');certWire(sh,o.cert);
   const pad=sigPad(sh.querySelector('#zhbSig'),ok=>{go.disabled=!ok;clr.disabled=pad.empty();sh.querySelector('#zhbHint').classList.toggle('gone',!pad.empty());sh.querySelector('#zhbFlag').classList.toggle('gone',!pad.empty());});
   // walk the reader down to the two signatures, as a clerk would
   setTimeout(()=>{const t=sh.querySelector('#zhbSigs');if(t&&!finished)docEl.scrollTo({top:Math.max(0,t.offsetTop-150),behavior:reduce?'auto':'smooth'});},reduce?0:1100);
   clr.onclick=()=>pad.clear();
   go.onclick=()=>{
     const result={signature:pad.png(),signedOn:iso(new Date()),handedBackOn:iso(d1)};pad.lock();
-    sh.querySelectorAll('.zdk-acts button,#zhbX').forEach(b=>b.disabled=true);
+    sh.querySelectorAll('.zdk-acts button:not(.cert),#zhbX').forEach(b=>b.disabled=true);
     sh.querySelector('#zhbSeal').classList.add('down');
     const sigs=sh.querySelector('#zhbSigs'),big=()=>sigs.insertAdjacentHTML('beforeend',stamp(yrs+' years','Handed over · '+dStamp(d1),'down big'));
     if(reduce){big();setTimeout(()=>done(result),1400);return;}
@@ -16971,10 +17446,13 @@ M.handback=function(o){o=o||{};
   });
 };
 /* ?moneymock=handback, or window.__zmmHandbackDemo(): the certificate with sample numbers and a drawn day-one signature */
+// the demo's money: a finished concession played through the engine (VSIEra), so even the sample figures are the engine's own
+function hbSampleCert(sig){try{const E=window.VSIEra,c=E&&E.chapters&&E.chapters[7];if(!c)return null;let st=c.fixture();st=c.applyDecision(st,{district:true,phase2:true,l5:true});
+  st=c.applyShift(st,c.shiftPlan(st).auto).state;st.signature=sig;return E.certificate(st);}catch(e){return null;}}
 function hbSampleSig(){return new Promise(r=>{const svg=scribble(53,'#1f3a8a').replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" width="300" height="80" ');
   const i=new Image();i.onload=()=>{const c=document.createElement('canvas');c.width=640;c.height=118;c.getContext('2d').drawImage(i,40,22,300,80);r(c.toDataURL('image/png'));};i.onerror=()=>r(null);
   i.src='data:image/svg+xml,'+encodeURIComponent(svg);});}
-window.__zmmHandbackDemo=o=>hbSampleSig().then(sig=>M.handback(Object.assign({founder:'Asha Rao',parent:'Meridian Infra',signature:sig,signedOn:'2026-10-19',endsOn:'2086-10-18',
+window.__zmmHandbackDemo=o=>hbSampleSig().then(sig=>M.handback(Object.assign({cert:hbSampleCert(sig),founder:'Asha Rao',parent:'Meridian Infra',signature:sig,signedOn:'2026-10-19',endsOn:'2086-10-18',
   stakePct:68,stakeValueCr:21400,returnPct:14.6,paxTotalM:4180,paidToStateCr:198000,condition:'good',
   assets:['four runways','Terminals 1 and 2','Satellites G and H','Zero Mile Tower','the APM train','the airport city'],
   owners:[{name:'Meridian Infra',pct:68},{name:'NIIF',pct:12},{name:'Airports Authority of India',pct:10},{name:'State of Maharashtra, through MADC',pct:10}],
@@ -18374,6 +18852,7 @@ const CSSS=`
 .zbx-th li i{font-style:normal;font-family:var(--fh);font-weight:700;font-size:22px;line-height:1}.zbx-th li i.y{color:var(--zi)}.zbx-th li i.n{color:var(--trace)}
 .zbx-acts{position:absolute;left:300px;right:44px;bottom:26px;z-index:2;display:flex;align-items:center;gap:4px}
 .zbx-acts .zdk-go{margin-right:8px}
+#zbxCert{margin-left:auto;display:flex;align-items:center}#zbxCert[hidden]{display:none}
 @media (max-width:1280px){.zbx-case{left:28px;width:200px;top:110px}.zbx-case .sten{font-size:25px}.zbx-case .sten.s{font-size:16px}.zbx-pg{left:246px;right:24px;top:100px;bottom:88px;padding:20px 30px}.zbx-acts{left:246px;right:24px;bottom:22px}.zbx-big{font-size:50px}.zbx-papers{height:270px}.zbx-pp{height:218px}.zbx-led td.lb{width:220px}}
 @media (prefers-reduced-motion:reduce){.zbx-pg.pull{animation:none}.zbx-case{transition:none}}
 `;
@@ -18872,12 +19351,13 @@ M.debrief=function(P,opt){mountS();P=P||{};opt=opt||{};return new Promise(res=>{
   let n=Math.max(0,Math.min(4,+opt.start||0));
   const sh=desk5('zbx'+(n?'':' shut'),`<div class="zbx-case" id="zbxCase"><span class="slot"></span><span class="sten">Flight<br>recorder</span><span class="sten s">Do not open</span><button class="op" id="zbxOpen">open it</button></div>
     <section class="zbx-pg" id="zbxPg" aria-live="polite"></section>
-    <div class="zbx-acts"><button class="zdk-go" id="zbxNext"></button><button class="zdk-q" id="zbxBack">Back</button></div>`);
+    <div class="zbx-acts"><button class="zdk-go" id="zbxNext"></button><button class="zdk-q" id="zbxBack">Back</button><span id="zbxCert" hidden>${certButton(P.cert)}</span></div>`);
   const desk=sh.querySelector('.zdk'),pg=sh.querySelector('#zbxPg'),nx=sh.querySelector('#zbxNext'),bk=sh.querySelector('#zbxBack'),op=sh.querySelector('#zbxOpen');
   const show=k=>{n=k;desk.classList.remove('shut');pg.innerHTML=bxPage(k,P,opt);pg.scrollTop=0;pg.classList.remove('pull');if(!reduced()){void pg.offsetWidth;pg.classList.add('pull');quiet();}
-    nx.textContent=k<4?'Pull the next page':'Close the Black Box';bk.disabled=k<=1;op.hidden=true;window.__zmmBoxPage=k;
+    nx.textContent=k<4?'Pull the next page':'Close the Black Box';bk.disabled=k<=1;op.hidden=true;window.__zmmBoxPage=k;sh.querySelector('#zbxCert').hidden=k<4;
     if(k===1)bxClear(pg);
     pg.querySelectorAll('.zbx-pp').forEach(b=>b.onclick=()=>{const was=b.classList.contains('open');pg.querySelectorAll('.zbx-pp.open').forEach(x=>x.classList.remove('open'));if(!was)b.classList.add('open');});};
+  certWire(sh,P.cert);
   op.onclick=()=>show(1);sh.querySelector('#zbxCase').onclick=e=>{if(desk.classList.contains('shut')&&e.target!==op)show(1);};
   nx.onclick=()=>{if(n<4)show(n+1);else{close();res();}};bk.onclick=()=>{if(n>1)show(n-1);};
   if(n)show(n);else setTimeout(()=>quietFocus(op),40);
@@ -18942,7 +19422,7 @@ function s0Mock(kind){mountS();
     if(kind==='minutes'){M.setStrip(at(7,{title:'Board minutes, 2059',stamp:null},[34,60]));return M.minutes(Object.assign({signature:sig},S0.minutes));}
     if(kind==='letter'){M.setStrip(at(6,{title:'Letter from the banks',stamp:null},[19,33]));return M.letter(Object.assign({signature:sig},S0.letter));}
     if(kind==='stepin'){M.setStrip(at(6,{title:'Letter from the banks',stamp:'Refused'},[19,33]));return M.stepIn(S0.letter.stepIn);}
-    const m=/^debrief([1-4])?$/.exec(kind);if(m){M.setStrip(null);return M.debrief(S0.debrief,{company:'Meridian Infra',founder:'Asha Rao',start:m[1]?+m[1]:0});}
+    const m=/^debrief([1-4])?$/.exec(kind);if(m){M.setStrip(null);return M.debrief(Object.assign({cert:hbSampleCert(sig)},S0.debrief),{company:'Meridian Infra',founder:'Asha Rao',start:m[1]?+m[1]:0});}
     return Promise.resolve();});}
 M._s0Mock=s0Mock;
 

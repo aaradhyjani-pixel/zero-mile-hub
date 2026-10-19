@@ -24,9 +24,26 @@ js=js.replace('/*@@3D@@*/','\n'.join(parts))
 # the SPG's recorded voice lines (voice/make_voice.py)
 vp=os.path.join(d,'voice','spg_audio.js')
 js=js.replace('/*@@VOICE@@*/',open(vp,encoding='utf-8').read() if os.path.exists(vp) else '')
-# money/*.js: the money layer's self-contained modules (UI first), loaded after the game as separate scripts
-money_js=''.join('\n<script>\n'+open(f,encoding='utf-8').read()+'\n</script>' for f in sorted(glob.glob(os.path.join(d,'money','*.js'))))
-out=head+body+'\n<template id="planTpl">'+plan+'</template>\n<script type="application/json" id="specData">'+json.dumps(spec,separators=(',',':')).replace('</','<\\/')+'</script>\n<script>window.__DESIGN={html:'+json.dumps(design).replace('</','<\\/')+'};</script>\n<script>\n'+js+'\n</script>'+money_js+'\n'
+# money.json, minified for the page: each entry keeps its value (and estimate:true where set); sources and notes stay in the
+# repo. The page reads it as window.MONEY_DATA (hub.js's ledger, money/era.js). No money.json: no MONEY_DATA, and money stays off.
+def _strip(o):
+    if isinstance(o,dict):
+        if 'value' in o: return dict({'value':o['value']},**({'estimate':True} if o.get('estimate') else {}))
+        return {k:_strip(v) for k,v in o.items() if k!='_meta'}
+    return o
+mp=os.path.join(d,'money.json')
+money_data='\n<script>window.MONEY_DATA='+json.dumps(_strip(json.load(open(mp,encoding='utf-8'))),separators=(',',':'),ensure_ascii=False).replace('</','<\\/')+';</script>' if os.path.exists(mp) else ''
+# money/*.js: the money layer's self-contained modules, loaded after the game as separate scripts (era.js, then ui.js).
+# Like the 3D modules, a file that fails a syntax check is left out with a warning.
+mfiles=[]
+for f in sorted(glob.glob(os.path.join(d,'money','*.js'))):
+    if shutil.which('node'):
+        chk=subprocess.run(['node','--check',f],capture_output=True,text=True)
+        if chk.returncode!=0:
+            print('SKIPPED (syntax):',os.path.relpath(f,d),chk.stderr.strip().splitlines()[0] if chk.stderr else ''); continue
+    mfiles.append(f)
+money_js=''.join('\n<script>\n'+open(f,encoding='utf-8').read()+'\n</script>' for f in mfiles)
+out=head+body+'\n<template id="planTpl">'+plan+'</template>\n<script type="application/json" id="specData">'+json.dumps(spec,separators=(',',':')).replace('</','<\\/')+'</script>'+money_data+'\n<script>window.__DESIGN={html:'+json.dumps(design).replace('</','<\\/')+'};</script>\n<script>\n'+js+'\n</script>'+money_js+'\n'
 open(os.path.join(d,'hub.html'),'w',encoding='utf-8').write(out)
 os.makedirs(os.path.join(d,'site'),exist_ok=True);open(os.path.join(d,'site','index.html'),'w',encoding='utf-8').write(out)
 # set-piece music (music/*.mp3, played by music() in hub.js) ships next to the page

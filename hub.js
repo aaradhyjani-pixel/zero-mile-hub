@@ -142,6 +142,7 @@ const LEVELS=[
 
 /* ============ state ============ */
 let flights=[],FID=0,S=null,incidents=[],INC=0,selected=null,hover=null,selRw=null;
+let MNY=null,MONEY_ON=false;   // the money ledger (set up near the end of this file); null when money.json is missing
 const puffs=[],moveLog=[];
 function resetState(){
   SUM=null;STO=[];CINE=null;PACE=null;endDue.cut=false;HOLDDEP=null;MARKS=[];FXV=[];voiceReset();if(typeof ltReset==="function")ltReset();{const kc=$('#kiteChip');if(kc)kc.hidden=true;const wc=$('#wedChip');if(wc)wc.hidden=true;const sb=$('#stopBtn');if(sb)sb.hidden=true;const ft=$('#fogTag');if(ft)ft.hidden=true;fogF=0;}cinema.q=[];specialArr.list=[];flights=[];FID=0;incidents=[];INC=0;selected=null;hover=null;selRw=null;puffs.length=0;moveLog.length=0;ops.length=0;opsClock=0;lastCnx=-1e9;
@@ -152,6 +153,7 @@ function resetState(){
   Object.assign(FX,{chgK:1,chgUntil:-1,pushFreeze:-1,pushSlow:-1,pushSlowS:0});
   CONC.forEach(c=>{c.laneShut=-1;c.slowUntil=-1;});
   RC.clear();SIMR=mulberry(11);
+  MNY&&MNY.reset();
 }
 const cs=f=>f.callsign||f.A.radio+' '+f.num,fl=f=>f.disp||f.al+' '+f.num;
 function logE(t,tone){S.log.push({t:clk(T),text:t,tone:tone||''});}
@@ -448,8 +450,9 @@ function breakOff(f,r){
   alts.sort((a,b)=>Math.abs(a.y-f.y)-Math.abs(b.y-f.y));const o=alts[0],td=Math.max(T+D_APP*0.85,o.lastSchedTd+arrSep(o));
   f.startAlt=f.alt;beginApproach(f,o,td);radio('APP',`${cs(f)}, break off, sidestep to runway ${o.short}.`);
 }
-function goAround(f,why){const r=f.rwy;r.tdList=r.tdList.filter(t=>t!==f.td);f.state='goaround';f.td=null;const st=stackOf(f);setPath(f,[{x:f.x,y:f.y},{x:r.x0-1500,y:r.y},{x:r.x0-3000,y:r.y+(r.y<0?-3000:3000)},{x:st.x,y:st.y}],1400);S.goArounds++;radio('TWR',`${cs(f)}, go around, ${why}.`);}
+function goAround(f,why){const r=f.rwy;r.tdList=r.tdList.filter(t=>t!==f.td);f.state='goaround';f.td=null;const st=stackOf(f);setPath(f,[{x:f.x,y:f.y},{x:r.x0-1500,y:r.y},{x:r.x0-3000,y:r.y+(r.y<0?-3000:3000)},{x:st.x,y:st.y}],1400);S.goArounds++;radio('TWR',`${cs(f)}, go around, ${why}.`);MNY&&MNY.ga(f);}
 function touchdown(f){
+  MNY&&MNY.land(f);
   const r=f.rwy;f.state='rollout';f.alt=0;f.v=68;
   if(f.medSince!=null){const w=(T-f.medSince)/60;if(w>8)hitSafety(4,`The medical on ${fl(f)} waited ${Math.round(w)} min to land.`);else logE(`${fl(f)} landed its medical after ${Math.round(w)} min.`);f.medSince=null;}r.occ=f;r.tdList=r.tdList.filter(t=>t!==f.td);r.ops++;S.moves++;S.arr++;moveLog.push(T);f.landT=T;if(T-f.origEta<=900)S.arrOnTime++;
   const need=f.T.code==='F'?2200:f.T.code==='E'?1900:1300;const tx=r.x1-450;let ex=r.exits.find(e=>tx-e.x>=need)||r.exits[r.exits.length-1];
@@ -462,7 +465,7 @@ function startTaxiIn(f){
   if(f.res){const p=route(f.exitNode,f.res.lane);if(p){setPath(f,[{x:f.x,y:f.y}].concat(p),TAXI_R);f.state='taxi_in';return;}}
   f.state='nogate';f.nogateSince=T;if(!incidents.some(i=>i.f===f))spawnInc('nogate',f);
 }
-function depart(f){const late=(f.rollT-f.std)/60;S.moves++;S.dep++;moveLog.push(f.rollT);if(late<=25){S.depOnTime++;S.combo=(S.combo||0)+1;S.bestCombo=Math.max(S.bestCombo||0,S.combo);if(S.combo>=3)comboPop();}else{if((S.combo||0)>=5)logE(`On-time run of ${S.combo} departures ended by ${fl(f)}.`);S.combo=0;comboPop();}S.delaySum+=Math.max(0,late-10);floater(f.x,f.y,f.alt,'+1','#2fd3c6');}
+function depart(f){const late=(f.rollT-f.std)/60;S.moves++;S.dep++;moveLog.push(f.rollT);if(late<=25){S.depOnTime++;S.combo=(S.combo||0)+1;S.bestCombo=Math.max(S.bestCombo||0,S.combo);if(S.combo>=3)comboPop();}else{if((S.combo||0)>=5)logE(`On-time run of ${S.combo} departures ended by ${fl(f)}.`);S.combo=0;comboPop();}S.delaySum+=Math.max(0,late-10);floater(f.x,f.y,f.alt,'+1','#2fd3c6');MNY&&MNY.lift(f,late);}
 // juice: floating +1s, the on-time combo, a soft sound tick (WebAudio, mutable; off by default on touch screens)
 const FLOATS=[];function floater(x,y,alt,txt,col){if(FLOATS.length<40)FLOATS.push({x,y,alt:alt||0,txt,col,t0:performance.now()/1000});}
 function drawFloats(projector){const now=performance.now()/1000;ctx.font='700 15px Barlow Condensed, sans-serif';ctx.textAlign='center';
@@ -477,13 +480,13 @@ function climbOut(f){
   else{p2={x:p1.x+Math.cos(h)*3000-(h===Math.PI?3000:0),y:p1.y+Math.sin(h)*3000};p3={x:p2.x+Math.cos(h)*14000,y:p2.y+Math.sin(h)*14000};}
   setPath(f,[p0,p1,p2,p3],3200);
 }
-function settleLinks(f){if(!f.links)return;for(const l of f.links){const ok=l.arr.inBlock!=null&&l.arr.inBlock+l.x+(l.arr.gate&&l.arr.gate.remote?300:0)<=f.pushT+(f.heldFor||0);if(ok)S.cnxMade+=l.n;else S.cnxMiss+=l.n;}f.links=null;}
+function settleLinks(f){if(!f.links)return;for(const l of f.links){const ok=l.arr.inBlock!=null&&l.arr.inBlock+l.x+(l.arr.gate&&l.arr.gate.remote?300:0)<=f.pushT+(f.heldFor||0);if(ok){S.cnxMade+=l.n;MNY&&MNY.cnx(l,true,f);}else{S.cnxMiss+=l.n;MNY&&MNY.cnx(l,false,f);}}f.links=null;}
 function laneClear(g){const L=G.get(g.lane);for(const o of movingList){if(o.gate===g)continue;if(Math.abs(o.x-L.x)<130&&Math.abs(o.y-L.y)<130)return false;}return true;}
 function updateFlight(f,dt){
   switch(f.state){
   case 'sched':if(f.kind==='dep'){if(T>=f.appearT){const g=freeGate(f,true);if(g){g.occ=f;f.gate=g;f.x=g.x;f.y=g.y;f.heading=g.a;f.state='at_gate';if(HOLDDEP&&f.std<HOLDDEP.until&&T<HOLDDEP.until)sumHold(f);}else if(T>f.std+1800)f.state='cancelled';else f.appearT=T+60;}break;}if(T>=f.spawnT)spawnInbound(f);break;
   case 'inbound':advance(f,dt,150);f.endurance-=dt/60;f.alt=Math.max(1800,f.alt-dt*2);if(f.pd>=f.plen){f.state='holding';f.holdSince=T;f.hu=SIMR()*6000;}fuelCheck(f);break;
-  case 'holding':{f.hu+=72*dt;const st=f.stack;const mates=flights.filter(o=>o.state==='holding'&&o.stack===st);f.level=Math.max(0,mates.sort((a,b)=>rk(a)-rk(b)).indexOf(f));const p=stackPos(st,f.hu,f.level);f.x=p.x;f.y=p.y;f.heading+=angDiff(f.heading,p.a)*Math.min(1,dt*2);f.alt=2100+f.level*300;f.endurance-=dt/60;S.holdMin+=dt/60;fuelCheck(f);break;}
+  case 'holding':{f.hu+=72*dt;const st=f.stack;const mates=flights.filter(o=>o.state==='holding'&&o.stack===st);f.level=Math.max(0,mates.sort((a,b)=>rk(a)-rk(b)).indexOf(f));const p=stackPos(st,f.hu,f.level);f.x=p.x;f.y=p.y;f.heading+=angDiff(f.heading,p.a)*Math.min(1,dt*2);f.alt=2100+f.level*300;f.endurance-=dt/60;S.holdMin+=dt/60;MNY&&MNY.hold(f,dt);fuelCheck(f);break;}
   case 'approach':{const fr=clamp((T-f.apT0)/(f.td-f.apT0),0,1);f.pd=fr*f.plen;const p=pointAt(f.path,f.pd);f.x=p.x;f.y=p.y;f.heading+=angDiff(f.heading,p.a)*Math.min(1,dt*1.5);
     if(f.pd>=f.finalStart){const k=(f.pd-f.finalStart)/f.finalLen;f.alt=Math.max(0,700*(1-k/0.96));}else f.alt=lerp(f.startAlt,700,clamp(f.pd/Math.max(1,f.finalStart),0,1));
     if(dustNow&&f.td-T<20&&f.td-T>10&&f.gaRoll<(f.rwy.shear?0.3:0.07)&&!f.gaDone){f.gaDone=true;goAround(f,'windshear in the dust');break;}
@@ -492,16 +495,16 @@ function updateFlight(f,dt){
     if(f.rwy.gpsUntil>T&&f.td-T<25&&f.td-T>12&&f.gaRoll<0.3&&!f.gaDone&&!f.vip){f.gaDone=true;floater(f.x,f.y,f.alt,'PULL UP','#ff4d3f');goAround(f,'false TERRAIN PULL UP alarm, GPS spoofing');break;}
     if(T>=f.td)touchdown(f);break;}
   case 'rollout':{f.v=Math.max(f.slowRoll?9:14,f.v-(f.slowRoll?2.6:1.15)*dt);const done=advance(f,dt,f.v);if(f.rwy.occ===f&&f.pd>=f.exitAt){f.rwy.occ=null;f.rwy.arrExit=T;floater(f.x,f.y,0,'+1','#a99cff');}if(done){if(f.rwy.occ===f){f.rwy.occ=null;f.rwy.arrExit=T;}startTaxiIn(f);}break;}
-  case 'nogate':{if(!f.res){const g=freeGate(f);if(g){g.res=f;f.res=g;}}if(f.res){const p=route(f.exitNode,f.res.lane);if(p){setPath(f,[{x:f.x,y:f.y}].concat(p),TAXI_R);f.state='taxi_in';closeIncFor(f,true);}}break;}
+  case 'nogate':{MNY&&MNY.nogate(f,dt);if(!f.res){const g=freeGate(f);if(g){g.res=f;f.res=g;}}if(f.res){const p=route(f.exitNode,f.res.lane);if(p){setPath(f,[{x:f.x,y:f.y}].concat(p),TAXI_R);f.state='taxi_in';closeIncFor(f,true);}}break;}
   case 'taxi_in':if(blocked(f))break;if(advance(f,dt,14)){const g=f.res;setPath(f,[{x:G.get(g.lane).x,y:G.get(g.lane).y},{x:g.x,y:g.y}]);f.state='dock';}break;
-  case 'dock':if(laneShut(f.res))break;if(advance(f,dt,4)){const g=f.res;g.occ=f;g.res=null;f.gate=g;f.res=null;f.heading=g.a;f.inBlock=T;if(f.turn)toDep(f);else{f.state='parked';f.towAt=T+(20+SIMR()*15)*60;}}break;
+  case 'dock':if(laneShut(f.res))break;if(advance(f,dt,4)){const g=f.res;g.occ=f;g.res=null;f.gate=g;f.res=null;f.heading=g.a;f.inBlock=T;MNY&&MNY.inBlock(f);if(f.turn)toDep(f);else{f.state='parked';f.towAt=T+(20+SIMR()*15)*60;}}break;
   case 'parked':if(f.vip)break;if(T>=f.towAt&&laneClear(f.gate)){const g=f.gate;const p=route(g.lane,PARK);g.occ=null;f.state='tow';setPath(f,[{x:g.x,y:g.y}].concat(p||[]),TAXI_R);f.gate=null;}break;
   case 'wedtaxi':if(advance(f,dt,16))f.state='towed';break;
   case 'tow':if(blocked(f))break;if(advance(f,dt,f.pd<90?3:7,f.pd<90))f.state='towed';break;
   case 'at_gate':{
     if(f.std<=T&&f.links&&!f.cnxAsked&&!f.held){const late=f.links.filter(l=>l.arr.inBlock==null&&l.arr.state!=='diverted').reduce((s,l)=>s+l.n,0);if(late>=40&&T-lastCnx>400&&!incidents.some(i=>i.type==='connex')){f.cnxAsked=true;spawnInc('connex',f,{n:late});}}
     const go=Math.max(f.std,f.readyAt);
-    if(T>=go&&!f.held&&T>=FX.pushFreeze&&laneClear(f.gate)&&!laneShut(f.gate)){const pc=CONCI[f.gate.conc];f.pushExtra=(pc&&pc.slowUntil>T?180:0)+(T<FX.pushSlow?FX.pushSlowS:0);f.pushT=T;settleLinks(f);f.state='push';const g=f.gate;setPath(f,[{x:g.x,y:g.y},{x:G.get(g.lane).x,y:G.get(g.lane).y}]);g.occ=null;f.lastGate=g;f.gate=null;f.gateRef=g;}
+    if(T>=go&&!f.held&&T>=FX.pushFreeze&&laneClear(f.gate)&&!laneShut(f.gate)){const pc=CONCI[f.gate.conc];f.pushExtra=(pc&&pc.slowUntil>T?180:0)+(T<FX.pushSlow?FX.pushSlowS:0);f.pushT=T;MNY&&MNY.push(f);settleLinks(f);f.state='push';const g=f.gate;setPath(f,[{x:g.x,y:g.y},{x:G.get(g.lane).x,y:G.get(g.lane).y}]);g.occ=null;f.lastGate=g;f.gate=null;f.gateRef=g;}
     break;}
   case 'push':if(advance(f,dt,3.5,true)){f.state='start';f.startT=T;}break;
   case 'start':if(T>=f.startT+45+(f.pushExtra||0)){f.gate={lane:f.gateRef.lane};const ok=assignDep(f,false);f.gate=null;if(!ok){f.state='start';f.startT=T-35;f.noRwy=true;}}break;
@@ -530,7 +533,7 @@ function fuelCheck(f){
   if(f.endurance<2.5&&['holding','inbound','goaround'].includes(f.state)){hitSafety(6,`${fl(f)} had to divert with almost no fuel left.`);divert(f,'fuel');}
 }
 // o (set pieces): keep: fly on along the path it already has (a go-around already turning away), log: the log line instead
-function divert(f,why,o){o=o||{};if(f.td&&f.rwy)f.rwy.tdList=f.rwy.tdList.filter(t=>t!==f.td);if(f.res){f.res.res=null;f.res=null;}f.state='divert';if(!o.keep)setPath(f,[{x:f.x,y:f.y},{x:f.x+12000,y:f.y<0?-9000:9000}]);S.div++;logE(o.log||`${fl(f)} diverted (${why}).`,o.log?'':'miss');if(!o.log)radio('APP',`${cs(f)} diverting.`);closeIncFor(f,false);}
+function divert(f,why,o){o=o||{};if(f.td&&f.rwy)f.rwy.tdList=f.rwy.tdList.filter(t=>t!==f.td);if(f.res){f.res.res=null;f.res=null;}f.state='divert';if(!o.keep)setPath(f,[{x:f.x,y:f.y},{x:f.x+12000,y:f.y<0?-9000:9000}]);S.div++;logE(o.log||`${fl(f)} diverted (${why}).`,o.log?'':'miss');if(!o.log)radio('APP',`${cs(f)} diverting.`);closeIncFor(f,false);MNY&&MNY.divert(f);}
 function hitSafety(v,msg){S.safety=clamp(S.safety-v,0,100);if(msg){logE(msg,'miss');S.hits.push({t:clk(T),v,msg});}}
 function stackPos(st,u,level){const R=560+level*40,h=1100;const P=4*h+2*Math.PI*R;u=((u%P)+P)%P;const cx=st.x,cy=st.y;
   if(u<2*h)return{x:cx+R,y:cy-h+u,a:Math.PI/2};u-=2*h;const arc=Math.PI*R;if(u<arc){const t=u/R;return{x:cx+R*Math.cos(t),y:cy+h+R*Math.sin(t),a:t+Math.PI/2};}u-=arc;if(u<2*h)return{x:cx-R,y:cy+h-u,a:-Math.PI/2};u-=2*h;const t=Math.PI+u/R;return{x:cx+R*Math.cos(t),y:cy-h+R*Math.sin(t),a:t+Math.PI/2};}
@@ -543,12 +546,12 @@ function pickRunway(){const rs=RW.filter(r=>!r.locked&&r.mode!=='OFF'&&T>=r.clos
 function opsSpawn(kind,target){
   if(kind==='tug'){const f=target||flights.filter(o=>o.state==='taxi_out'&&o.pd>400&&o.plen-o.pd>800).sort(()=>SIMR()-0.5)[0];if(!f)return false;
     f.stuckPrev='taxi_out';f.state='stuck';f.stuckUntil=T+210;const a=f.heading;ops.push({id:++OPN,kind,f,t0:T,dur:210,sx:f.x-Math.cos(a)*700,sy:f.y-Math.sin(a)*700});
-    radio('RAMP',`${cs(f)} stopped with a hydraulic warning. Tug on the way, about 3 minutes.`);logE(`${fl(f)} broke down on the taxiway; the ramp team towed it clear.`);explainOnce('ops');return true;}
+    radio('RAMP',`${cs(f)} stopped with a hydraulic warning. Tug on the way, about 3 minutes.`);logE(`${fl(f)} broke down on the taxiway; the ramp team towed it clear.`);explainOnce('ops');MNY&&MNY.ops('tug');return true;}
   const r=target||pickRunway();if(!r)return false;
   if(kind==='birds'){const side=r.y<0?-1:1,x=lerp(r.x0,r.x1,0.2+SIMR()*0.7);ops.push({id:++OPN,kind,r,x,y:r.y+side*170,t0:T,dur:180,sx:Math.min(r.x1+300,x+900)});
-    if(ops.filter(o=>o.kind==='birds').length===1)radio('WILDLIFE',`Kites over the grass by ${r.short}. Patrol on the way. No effect on the runway.`);explainOnce('ops');return true;}
+    if(ops.filter(o=>o.kind==='birds').length===1)radio('WILDLIFE',`Kites over the grass by ${r.short}. Patrol on the way. No effect on the runway.`);explainOnce('ops');MNY&&MNY.ops('birds');return true;}
   if(kind==='fod'){if(ops.some(o=>o.kind==='fod'&&o.r===r))return false;ops.push({id:++OPN,kind,r,x:lerp(r.x0,r.x1,0.3+SIMR()*0.5),t0:T,phase:'wait'});
-    radio('OPS',`Debris reported on ${r.short}. The sweeper goes at the next gap in traffic.`);explainOnce('ops');return true;}
+    radio('OPS',`Debris reported on ${r.short}. The sweeper goes at the next gap in traffic.`);explainOnce('ops');MNY&&MNY.ops('fod');return true;}
   return false;
 }
 function opsTick(dt){
@@ -601,7 +604,7 @@ function spawnInc(type,target,extra){
       acts:[{l:'Land next',pri:1,fn(){for(const g of I.fs)g.prio=true;resolve(I,true,`${I.fs.map(fl).join(', ')} prioritised on minimum fuel.`);}},{l:'Divert to NAG',fn(){for(const g of I.fs.slice())divert(g,'your call');resolve(I,true,`${I.fs.length} aircraft sent to Nagpur's old airport.`);}}]});I.total=Math.max(4,(f.endurance-6)*60/BASE);explain('fuel');break;}
   case 'heavy':{const f=target;const I0=incidents.find(i=>i.type==='heavy');if(I0){if(!I0.fs.includes(f)){I0.fs.push(f);f.heavyInc=I0;I0.title=`${I0.fs.length} heavy jets can't take off here`;renderInc();}return true;}f.heavyInc=I;
     Object.assign(I,{f,fs:[f],title:`${fl(f)} can't take off here`,text:`At ${LV.n===3?'46':'40'} °C a ${f.T.name} needs the long runway, ${LONGEST.short}, to get airborne. ${T<LONGEST.closedUntil-300?`${LONGEST.short} is closed, so the only way out is to offload 40 passengers to cut weight and go from here.`:`Send it there (${LONGEST.short} must be on DEP or MIX), or offload 40 passengers to cut weight and go from here.`}`,def:1,defText:'ops offloads 40 passengers from each jet; they miss their flight.',
-      acts:[{l:`Taxi to ${LONGEST.short}`,pri:1,dis:()=>!depModeOk(LONGEST)||T<LONGEST.closedUntil-300,fn(){for(const g of I.fs)if(g.state==='hp'||g.state==='taxi_out')sendLong(g);resolve(I,true,`Heavy jets sent to the long runway.`);}},{l:'Offload and go',fn(){for(const g of I.fs){g.offloaded=true;S.cnxMiss+=40;}resolve(I,true,`${I.fs.length*40} passengers offloaded so heavy jets could leave from a short runway.`);}}]});explain('heat');break;}
+      acts:[{l:`Taxi to ${LONGEST.short}`,pri:1,dis:()=>!depModeOk(LONGEST)||T<LONGEST.closedUntil-300,fn(){for(const g of I.fs)if(g.state==='hp'||g.state==='taxi_out')sendLong(g);resolve(I,true,`Heavy jets sent to the long runway.`);}},{l:'Offload and go',fn(){for(const g of I.fs){g.offloaded=true;S.cnxMiss+=40;MNY&&MNY.offload(40);}resolve(I,true,`${I.fs.length*40} passengers offloaded so heavy jets could leave from a short runway.`);}}]});explain('heat');break;}
   case 'nogate':{const f=target;const swing=()=>GATES.filter(g=>!g.remote&&g.open&&!g.occ&&!g.res&&!marsBusy(g)&&CR[g.code]>=CR[f.T.code]).sort((a,b)=>dist(a.x,a.y,f.x,f.y)-dist(b.x,b.y,f.x,f.y))[0];
     Object.assign(I,{f,title:`${fl(f)} has no stand`,text:`Every stand that fits, contact and remote, is taken. It is waiting on the taxiway and blocking traffic behind it. Swing a gate from the other zone, or let it wait for the next free stand.`,def:1,defText:'it waits on the taxiway until a stand frees up.',
       acts:[{l:'Swing a gate',pri:1,dis:()=>!swing(),fn(){const g=swing();if(g){g.zone='swing';g.res=f;f.res=g;resolve(I,true,`Gate ${g.id} swung for ${fl(f)}.`);}}},{l:'Wait',fn(){resolve(I,true,'');}}]});explain('gate');break;}
@@ -626,6 +629,7 @@ function spawnInc(type,target,extra){
       acts:[{l:'Keep landing',pri:1,fn(){r.shear=true;resolve(I,true,`${r.short} kept landing through windshear.`);}},{l:`${r.short} to DEP`,fn(){setMode(r,'DEP');resolve(I,true,`${r.short} switched to departures for the storm.`);}}]});explain('shear');break;}
   }
   if(!ok)return false;
+  MNY&&MNY.inc(type,I);
   S.incTypes[type]=(S.incTypes[type]||0)+1;
   if(CFG.inc==='off'){const a=I.acts[I.offPick!=null?I.offPick:I.def];if(a&&!(a.dis&&a.dis()))a.fn(true);return true;}
   I.left=I.total;incidents.push(I);renderInc();radio('AOCC',I.title+'.');return true;
@@ -2172,6 +2176,7 @@ function hud(){
   const ct=S.cnxMade+S.cnxMiss;const cx=ct?Math.round(S.cnxMade/ct*100):null;kpi('#kCnx',cx==null?'—':cx+'%',cx==null?'':cx>=90?'good':cx>=78?'mid':'bad');
   kpi('#kSafe',Math.round(S.safety),S.safety>=90?'good':S.safety>=70?'mid':'bad');
   rwStatus();incTimers();renderLate();if(popF)renderFlightPop();
+  MNY&&MNY.hud();
 }
 let lastLate='';const LROW=[];
 // the board changes a row or two at a time (a departure's "+12m" ticks over): only the rows whose text changed are rewritten.
@@ -2199,7 +2204,7 @@ function tick(dt){
   if(dustNow)once('dust',()=>{radio('ATC','Dust storm. Visibility 1,500 m and falling. Increased spacing on all runways.');logE('Andhi: dust storm over the field.','miss');explain('dust');});
   if(LV.dust&&T>=LV.dust[1])once('dustend',()=>{radio('ATC','Dust storm passing. Normal spacing resumes.');logE('Dust storm passed.');});
   movingList=flights.filter(f=>MOVING.has(f.state));
-  runways();
+  runways();MNY&&MNY.tick(dt);
   if(T>=rrNext){rrNext=T+RR_EVERY;rrSay(rebalanceDeps(),false);}
   for(const f of flights){if(f.held&&f.holdUntil&&T>=f.holdUntil){f.held=false;f.holdUntil=null;}updateFlight(f,dt);}
   for(const I of incidents.slice())if(I.simFuse){I.fs=I.fs.filter(g=>!g.mayday&&!g.prio&&['inbound','holding','goaround'].includes(g.state));if(!I.fs.length){drop(I);continue;}I.f=I.fs.reduce((a,b)=>a.endurance<b.endurance?a:b);I.left=Math.max(0,(I.f.endurance-6)*60/BASE);}
@@ -2308,7 +2313,7 @@ function startLevel(n){
   // which runways and concourses open
   RW.forEach(r=>{r.locked=true;r.mode='OFF';if(LV.rwOpen[r.id]){r.locked=false;r.mode=LV.rwOpen[r.id];}});
   const openC=new Set(CONC.filter(c=>LV.concs.includes(c.id[0])).map(c=>c.id));CONC.forEach(c=>c.open=openC.has(c.id));GATES.forEach(g=>{g.open=g.remote||openC.has(g.conc);g.zone=g.zone0||(g.zone0=g.zone);});
-  LEN=LV.len||5400;T=-30;buildLevel(LV);
+  LEN=LV.len||5400;T=-30;buildLevel(LV);mnySet(MONEY_ON);MNY&&MNY.begin(LV);
   // warm start: put the first inbound arrivals in the air
   $('#lvCode').textContent=`LEVEL ${LV.n} · ${LV.from}`;$('#lvName').textContent=LV.name;
   renderRw();renderInc();$('#coachList').innerHTML='';coachItems.length=0;seen.clear();comboPop();RATE.v=0;
@@ -2324,7 +2329,7 @@ function finish(){
   // the day is over: nothing may speak, play music or cut away behind the score sheet (late timers find ended set)
   voiceReset();CINE=null;if(cinema.q)cinema.q.length=0;if(SUM){SUM.cine=null;SUM.ann=null;}PACE=null;vipBanner(false);{const sb=$('#stopBtn');if(sb)sb.hidden=true;}
   const left=flights.filter(f=>f.kind==='dep'&&['at_gate','taxi_out','hp','push','start','stuck'].includes(f.state)&&T>f.std+1500).length;
-  for(const f of flights)if(f.links&&f.kind==='dep'&&f.state==='at_gate'&&T>f.std){for(const l of f.links){if(l.arr.inBlock!=null&&l.arr.inBlock+l.x<=T)S.cnxMade+=l.n;else S.cnxMiss+=l.n;}}
+  for(const f of flights)if(f.links&&f.kind==='dep'&&f.state==='at_gate'&&T>f.std){for(const l of f.links){if(l.arr.inBlock!=null&&l.arr.inBlock+l.x<=T){S.cnxMade+=l.n;MNY&&MNY.cnx(l,true,f);}else{S.cnxMiss+=l.n;MNY&&MNY.cnx(l,false,f);}}}
   const st=stars(LV,S);const best=store.get('zm_stars')||{};if((best[LV.n]||0)<st){best[LV.n]=st;store.set('zm_stars',best);}
   const otp=S.dep+S.arr?Math.round((S.depOnTime+S.arrOnTime)/(S.dep+S.arr)*100):0,otpA=S.arr?Math.round(S.arrOnTime/S.arr*100):0,otpD=S.dep?Math.round(S.depOnTime/S.dep*100):0,ct=S.cnxMade+S.cnxMiss,cx=ct?Math.round(S.cnxMade/ct*100):100;
   const verdict=st===3?'Flawless. The hub never noticed it was under pressure.':st===2?'Good shift. The waves came through and the hub kept its promises.':st===1?'The hub survived, but passengers will remember this one.':'Safety fell below 70. A real hub would stop operations and investigate.';
@@ -2375,7 +2380,84 @@ function menu(tab){
   $('#sheet').querySelectorAll('[data-inc]').forEach(b=>b.onclick=()=>{CFG.inc=b.dataset.inc;store.set('zm_cfg',CFG);menu('levels');});
   $('#sheet').querySelectorAll('[data-perf]').forEach(b=>b.onclick=()=>{perfSet(b.dataset.perf==='1');menu('levels');});
 }
-window.HUB={get T(){return T;},get S(){return S;},get LV(){return LV;},flights:()=>flights,RW,incidents:()=>incidents,setMode:(id,m)=>{const r=RW.find(x=>x.id===id||x.short===id);if(r)setMode(r,m);},startLevel,capNow,forceIncursion:()=>{const c=STO.find(o=>o.k==='fog');if(c&&c.sc)c.sc.go=true;},resolveAll:()=>{for(const I of incidents.slice()){const a=I.botPick!=null?I.acts[I.botPick]:I.acts.find(a=>!(a.dis&&a.dis()));if(a)a.fn();}},speed:s=>setSpeed(s),ops:()=>ops,cfg:CFG,
+/* ============ money: the per-shift ledger (record-only) ============
+   OFF unless money is on (Concession mode, ?money in the URL, or HUB.moneyOn(true)). It only RECORDS rupees: it never calls
+   SIMR or Math.random, never writes to S, a flight, a runway, a gate or an incident, and never changes control flow, so with
+   money off (or on) the shift plays exactly the same. Every hook is wrapped in try/catch, so a money bug cannot stop tick().
+   Rates come from money.json (window.MONEY_DATA, embedded by build.py); a missing file leaves the ledger off. */
+MNY=(()=>{
+  const D=window.MONEY_DATA;if(!D)return null;
+  const v=(p,def)=>{try{let o=D;for(const k of p.split('.'))o=o[k];o=o&&o.value!==undefined?o.value:o;return o==null?def:o;}catch(e){return def;}};
+  const AE=v('aero',{}),MT=v('aero.mtow_t',{}),HC=v('fuel.hold_cost_per_min',{A320neo:4125,B777_300ER:12500,A380:20000});
+  const R={
+    land:{dn:v('aero.landing_dom_narrow_per_t',347),dw:v('aero.landing_dom_wide_per_t',564),in:v('aero.landing_intl_narrow_per_t',570),iw:v('aero.landing_intl_wide_per_t',785),min:v('aero.landing_min_per_landing',8000)},
+    park:{contact:v('aero.parking_contact_per_t_hr',36),remote:v('aero.parking_remote_per_t_hr',18),free:v('aero.parking_free_minutes',150)*60},
+    udf:Object.assign({dom_dep:620,intl_dep:1225},v('aero.udf_greenfield_opening_nmia',{})),
+    shop:v('nonaero.zmi_per_pax_start',250),xfer:v('nonaero.transfer_vs_od_spend',0.75),
+    rwy:v('costs.runway_open_per_hour',26000),meal:v('rights.meal_cost_inr',400),deny:(v('rights.denied_boarding_comp_inr',{}).alt_within_24h)||10000,
+    cnxBonus:250,care:1900,burn:{n:1460,w:3225},ops:{tug:20000,birds:8000,fod:15000}};
+  const MTK={A20N:'A320neo',A21N:'A321neo',B38M:'B737MAX8',A359:'A350_900',B789:'B787_9',B788:'B787_8',A333:'A330_300',B77W:'B777_300ER',A388:'A380',B748:'B747_8I',AT76:'ATR72'};
+  const LBL={landing:'Landing fees',parking:'Parking fees',udf:'Passenger fee',shops:'Shops and food',transfer:'Transfer bonus',
+    runway:'Runways open',ops:'Ops teams',penalty:'Penalties to airlines',care:'Passenger care',fuel:'Holding-fuel claims'};
+  const WHY={landing:'Airlines pay to land, by the weight of the aircraft, at the AERA rate.',parking:'Aircraft that stay at a stand beyond the free 2½ hours pay by the hour.',
+    udf:'Every departing passenger pays a passenger fee in the ticket: more for international.',shops:'Calm passengers shop and eat. Stressed or rushed ones spend less.',
+    transfer:'Airlines earn a bonus for each passenger who makes a connection here.',runway:'Each open runway costs lights, crews and fire cover for every hour it is open.',
+    ops:'Tows, bird patrols and runway sweeps by the ops teams.',penalty:'When the airport makes a flight late, you pay the airline for its crew and fuel.',
+    care:'Meals and rebooking for passengers stranded by a missed connection or a long delay.',fuel:'Airlines claim the fuel burnt holding when the stack was the airport\'s fault.'};
+  const REV=['landing','parking','udf','shops','transfer'],COST=['runway','ops','penalty','care','fuel'];
+  const M={on:false,lines:{},pax:0,paxDep:0,made:0,missed:0,sched:0,hist:[],byF:new Map(),safe:new Set(),lastHud:-1e9,lastPL:-1e9,lastHold:new Map()};
+  const cr=r=>r/1e7;
+  const mtow=f=>MT[MTK[f.type]]||(f.T.code==='C'?79:f.T.code==='E'?250:450);
+  const wide=f=>f.T.code!=='C',pays=f=>!f.vip;
+  const isSafe=f=>!!(f&&(f.mayday||f.minFuel||f.medSince!=null||M.safe.has(f.id)));
+  const isFM=()=>!!(SUM||dustNow||fogF>0.3||(HOLDDEP&&T<HOLDDEP.until)||STO.some(o=>o.k==='delhisummit'));
+  const add=(k,amt,f,label)=>{if(!amt)return;M.lines[k]=(M.lines[k]||0)+amt;
+    if(f&&!isSafe(f)&&f.sx!=null&&window.ZMMoney&&ZMMoney.float)try{ZMMoney.float(f.sx,f.sy,(REV.includes(k)?1:-1)*cr(amt),{label});}catch(e){}};
+  const g=fn=>function(){if(!M.on)return;try{return fn.apply(null,arguments);}catch(e){if(!M.err){M.err=String(e);console.warn('money ledger',e);}}};
+  const totals=()=>{let r=0,c=0;for(const k of REV)r+=M.lines[k]||0;for(const k of COST)c+=M.lines[k]||0;return {rev:r,cost:c,net:r-c};};
+  const plLines=()=>REV.map(k=>({key:k,label:LBL[k],kind:'rev',amount:cr(M.lines[k]||0),why:WHY[k]})).concat(COST.map(k=>({key:k,label:LBL[k],kind:'cost',amount:cr(M.lines[k]||0),why:WHY[k]})));
+  Object.assign(M,{
+    reset(){M.lines={};M.pax=0;M.paxDep=0;M.made=0;M.missed=0;M.sched=0;M.hist=[];M.byF=new Map();M.safe=new Set();M.lastHud=-1e9;M.lastPL=-1e9;M.lastHold=new Map();M.err=null;
+      for(const k of REV.concat(COST))M.lines[k]=0;},
+    begin:g(L=>{M.sched=flights.filter(f=>(f.kind==='arr'&&f.eta<=LEN)||(f.kind==='dep'&&f.std<=LEN)).length+flights.filter(f=>f.turn&&f.turn.std<=LEN).length;}),
+    land:g(f=>{if(!pays(f))return;const intl=!!f.intl;if(!intl&&f.type==='AT76')return;
+      const rate=intl?(wide(f)?R.land.iw:R.land.in):(wide(f)?R.land.dw:R.land.dn);add('landing',Math.max(R.land.min,mtow(f)*rate),f,'landing');}),
+    inBlock:g(f=>{if(!pays(f))return;M.pax+=f.pax;add('shops',f.pax*R.shop*0.3,null);M.byF.set(f.id,Object.assign(M.byF.get(f.id)||{},{inT:T}));}),
+    push:g(f=>{if(!pays(f)||!f.gate)return;const b=M.byF.get(f.id);if(!b||b.inT==null)return;const h=Math.max(0,f.pushT-b.inT-R.park.free)/3600;if(h<=0)return;
+      const mult=h<=4?1:h<=12?2:h<=24?4:5;add('parking',h*mtow(f)*(f.gate.remote?R.park.remote:R.park.contact)*mult,null);}),
+    cnx:g((l,ok,f)=>{if(ok){M.made+=l.n;add('transfer',l.n*R.cnxBonus,null);const b=M.byF.get(f.id)||{};b.madeIn=(b.madeIn||0)+l.n;M.byF.set(f.id,b);}
+      else{M.missed+=l.n;add('care',l.n*R.care,f,'missed connections');}}),
+    lift:g((f,late)=>{if(!pays(f))return;const pax=Math.max(0,f.pax-(f.offloaded?40:0)),b=M.byF.get(f.id)||{},made=Math.min(pax,b.madeIn||0);M.pax+=pax;M.paxDep+=pax;
+      add('udf',pax*(f.intl?R.udf.intl_dep:R.udf.dom_dep),f,'lift-off');
+      const mood=late<=15?1:late<=60?1.1:0.8;add('shops',((pax-made)*mood+made*R.xfer)*R.shop,null);
+      if(late>15&&!isFM()){add('penalty',(late-15)*(wide(f)?R.burn.w:R.burn.n),f,'late');if(late>=120)add('care',pax*R.meal,null);}}),
+    hold:g((f,dt)=>{if(isFM()||isSafe(f))return;const hs=M.lastHold.get(f.id);if(hs==null){M.lastHold.set(f.id,T);return;}if(T-hs<300)return;
+      const k=f.T.wake==='J'?'A380':f.T.wake==='H'?'B777_300ER':'A320neo';add('fuel',(HC[k]||4125)*dt/60,null);}),
+    ga:g(f=>{if(isFM())return;const k=f.T.wake==='J'?'A380':f.T.wake==='H'?'B777_300ER':'A320neo';add('fuel',5*(HC[k]||4125),isSafe(f)?null:f,'go-around');}),
+    divert:g(f=>{if(!pays(f))return;add('care',f.pax*R.meal,null);}),
+    nogate:g((f,dt)=>{if(f.nogateSince==null||T-f.nogateSince<300||isFM())return;add('penalty',(wide(f)?R.burn.w:R.burn.n)*dt/60,null);}),
+    tick:g(dt=>{let n=0;for(const r of RW)if(!r.locked&&r.mode!=='OFF')n++;if(n)add('runway',n*R.rwy*dt/3600,null);
+      if(T>=0&&(!M.hist.length||T-M.hist[M.hist.length-1].t>=60))M.hist.push({t:T,v:cr(totals().net)});}),
+    ops:g(kind=>{add('ops',R.ops[kind]||0,null);}),
+    offload:g(n=>{add('care',n*R.deny,null);}),
+    inc:g((type,I)=>{if(type==='medical'||type==='fuel'){for(const f of [I.f].concat(I.fs||[]))if(f)M.safe.add(f.id);}}),
+    hud:g(()=>{if(!window.ZMMoney)return;const now=performance.now();if(now-M.lastHud<250)return;M.lastHud=now;const t=totals(),hrs=Math.max(1/60,(T+30)/3600);
+      ZMMoney.setDay({total:cr(t.net),ratePerHr:cr(t.net/hrs),history:M.hist.map(h=>h.v)});
+      if(now-M.lastPL>2000){M.lastPL=now;ZMMoney.setPL(plLines(),{title:'This shift',note:'Money in and out since the shift began, in today\'s prices.'});}}),
+    close(){const t=totals();return {revenueCr:cr(t.rev),costCr:cr(t.cost),netCr:cr(t.net),lines:plLines().map(l=>({key:l.key,label:l.label,kind:l.kind,amount:l.amount})),
+      pax:M.pax,paxDep:M.paxDep,made:M.made,missed:M.missed,sched:M.sched};},
+    snapshot(){const t=totals();return {on:M.on,lines:Object.assign({},M.lines),rev:t.rev,cost:t.cost,net:t.net,pax:M.pax,made:M.made,missed:M.missed,sched:M.sched,err:M.err||null};}
+  });
+  M.reset();return M;
+})();
+// the glossary entries for the money words (ui.js loads after this script, so they are merged once the page has loaded)
+function mnyTerms(){try{if(window.ZMMoney&&ZMMoney.terms)for(const k in ZMMoney.terms)if(!GL[k])GL[k]=ZMMoney.terms[k];}catch(e){}}   // GL only: the quick-play Terms tab is unchanged
+window.addEventListener('load',mnyTerms);
+// money on/off: off by default in quick play; ?money in the URL (or HUB.moneyOn(true)) turns the ledger and the chip on
+MONEY_ON=/[?&]money(=1|&|$)/.test(location.search);
+function mnySet(on){MONEY_ON=!!on;if(MNY)MNY.on=MONEY_ON;try{if(window.ZMMoney&&!/moneymock/.test(location.search))ZMMoney.enable(MONEY_ON&&!!MNY);}catch(e){}}
+
+window.HUB={money:()=>MNY&&MNY.snapshot(),moneyOn:on=>mnySet(on),moneyOff:()=>mnySet(false),get T(){return T;},get S(){return S;},get LV(){return LV;},flights:()=>flights,RW,incidents:()=>incidents,setMode:(id,m)=>{const r=RW.find(x=>x.id===id||x.short===id);if(r)setMode(r,m);},startLevel,capNow,forceIncursion:()=>{const c=STO.find(o=>o.k==='fog');if(c&&c.sc)c.sc.go=true;},resolveAll:()=>{for(const I of incidents.slice()){const a=I.botPick!=null?I.acts[I.botPick]:I.acts.find(a=>!(a.dis&&a.dis()));if(a)a.fn();}},speed:s=>setSpeed(s),ops:()=>ops,cfg:CFG,
   // test hooks: run the sim forward synchronously, and point the camera
   ff:secs=>{VQ.length=0;FFING=true;try{for(let i=0;i<secs&&!ended;i++){tick(1);if(CINE&&CINE.o.until==null){const ms=1000/BASE/Math.max(0.25,speed);CINE.t0-=ms;if(CINE.landAt)CINE.landAt-=ms;}}}finally{FFING=false;}puffs.length=0;hud();drawWave();},look:(x,y,z)=>{camT.s=cam.fit*z;camT.anchor=null;camT.x=x-((cam.region.L+cam.region.R)/2)/camT.s;camT.y=y-((cam.region.Tp+cam.region.B)/2)/camT.s;clampCam(camT);Object.assign(cam,{x:camT.x,y:camT.y,s:camT.s});},spawn:(t,x)=>spawnInc(t,x),opsSpawn:(k,x)=>opsSpawn(k,x),pause:()=>{paused=true;},
   view:v=>setView(v),ready3d:()=>new Promise(r=>{if(V3.ready||V3.failed)r(V3.ready);else{V3.waiters.push(r);init3D();}}),

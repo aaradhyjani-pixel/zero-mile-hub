@@ -4208,7 +4208,7 @@ const CAMP={active:false,st:null,
   load(){const o=store.get('zm_campaign');return o&&CAMP.ok(o)&&typeof o.signature==='string'&&/^data:image\//.test(o.signature)?o:null;},
   // a save on file that can't be continued (an older version, unsigned): shown on the card as "can't be continued"
   stale(){const o=store.get('zm_campaign');return o&&o.s&&!CAMP.cur()&&!(o.sample||o.test)?o:null;},
-  save(){if(!CAMP.st)return;const E=CAMP.E();if(!CAMP.st.over&&!CAMP.ok(CAMP.st))return;CAMP.st.savedAt=Date.now();try{if(E&&E.campaignDocs)CAMP.st.docs=E.campaignDocs(CAMP.st);}catch(e){}store.set('zm_campaign',CAMP.st);},
+  save(){if(!CAMP.st)return;const E=CAMP.E();if(!CAMP.st.over&&!CAMP.ok(CAMP.st))return;CAMP.st.savedAt=Date.now();store.set('zm_campaign',CAMP.st);},   // (st.docs: the chapter papers; the engine's fileCard(st).docs adds the era papers)
   // the record (zm_record): finished or torn-up concessions, oldest first (the card shows the last four, newest on top)
   rec(){const r=store.get('zm_record');return Array.isArray(r)?r:[];},
   record(st,ended){if(!st||st.sample||st.test)return;const E=CAMP.E();let r=null;try{r=E.recordOf(st,ended==='torn'?'torn-up':ended);}catch(e){console.warn('recordOf',e);}
@@ -4280,10 +4280,9 @@ const CAMP={active:false,st:null,
     return `<h1>Run the airport for ${z.years||60} years</h1><p>Win the concession, raise the money and sign, then run ${z.airportName||SPEC.name} shift by shift. Good operations make good money, and good operations start with good capital allocation: what you build, when you build it, and how you pay for it. Every few years you close the books, and your board decides where the money goes next.</p>
      ${st?`<p><b>${st.parent||'Your company'}</b>: ${st.building?'the airport is being built':`year ${st.year||1} of 60`}${st.signedOn?`, signed ${CAMP.E().fmtDate?CAMP.E().fmtDate(st.signedOn):st.signedOn}`:''}.</p><button class="go" id="campGo">Continue as ${st.parent||'your company'}</button> `:''}
      <button class="go${st?' ghost':''}" id="campNew">${st?'Start a new concession':'Start the concession'}</button>`;},
-  fileOpts(st){const E=CAMP.E(),fc=E.fileCard?E.fileCard(st):{};
-    const f=FL.on()&&st.flight,c=f&&FL_CH[f.n];
-    if(c){const yr=st.building?1:(st.year||1);Object.assign(fc,{chapter:{n:f.n,name:c.name,title:c.title,act:c.act,years:c.years.slice()},act:c.act,resumable:true,
-      line:'Signed '+(CAMP.E().fmtDate?CAMP.E().fmtDate(st.signedOn):st.signedOn)+' · now year '+yr+' of 60 · '+(f.n<=7?'Chapter '+f.n+', ':'')+c.name,docs:(st.docs&&st.docs.length?st.docs:fc.docs||[]).slice(-6)});}
+  // the engine's file card: the chapter (the flight's own, when there is one), the line, the stake and the whole pile
+  fileOpts(st){const E=CAMP.E(),f=FL.on()&&st.flight,fc=(E.fileCard&&E.fileCard(st,f||undefined))||{};
+    if(f)fc.resumable=true;   // (a flight that ended with pages still to read is continued too)
     return Object.assign({},fc,{company:st.parent||'Your company',founder:st.founder,signature:st.signature,signedOn:st.signedOn,record:CAMP.rec(),
       onContinue:()=>CAMP.resume(),onNew:()=>CAMP.fresh(),onOpenDoc:d=>{try{if(ZMMoney.openDoc)ZMMoney.openDoc(d);}catch(e){}}});},
   wire(){const box=$('#campFile');
@@ -4661,13 +4660,11 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
   // handover, the Black Box). Never a sample.
   load(){const own=CAMP.load();if(own)return own;const o=store.get('zm_campaign');
     return o&&o.s&&o.over&&o.flight&&o.flight.step!=='done'&&!o.sample&&!o.test&&o.version>=2&&typeof o.signature==='string'&&/^data:image\//.test(o.signature)?o:null;},
-  // save v2 (CAMP.save's rules), keeping the chapter papers: CAMP.save would replace st.docs with the era papers only
-  save(){const st=CAMP.st,E=CAMP.E();if(!st||st.sample||st.test)return;if(!st.over&&!CAMP.ok(st))return;st.savedAt=Date.now();
-    try{const have=new Set((st.docs||[]).map(d=>d&&d.id));st.docs=(st.docs||[]).concat((E.campaignDocs?E.campaignDocs(st):[]).filter(d=>/^board-/.test(d.id)&&!have.has(d.id)));}catch(e){}
-    store.set('zm_campaign',st);},
+  // save v2 (CAMP.save's rules); a flight that has ended is still written, so its last pages can be read
+  save(){const st=CAMP.st;if(!st||st.sample||st.test)return;if(!st.over&&!CAMP.ok(st))return;st.savedAt=Date.now();store.set('zm_campaign',st);},
   sig(o){return CH5F.sig(o);},
   who(st,o){return FL.sig(Object.assign({founder:st.founder||'Asha Rao',parent:st.parent||'Meridian Infra',company:st.parent,signature:st.signature,pile:undefined},o));},
-  pile(st){try{ZMMoney.setPile&&ZMMoney.setPile(st.docs||[]);}catch(e){}},
+  pile(st){try{ZMMoney.setPile&&ZMMoney.setPile(CAMP.E().fileCard(st).docs||[]);}catch(e){}},   // the whole pile, as the engine files it
   err(where,e){console.error('flight '+where,e);FL.errors.push(where+': '+(e&&e.message||e));},
   // the flight progress strip (DESIGN.md §14.1): the current chapter, its deciding document once signed, and the past strips only
   strip(st){const Z=window.ZMMoney;if(!Z||!Z.setStrip)return;try{const f=st&&st.flight;if(!f){Z.setStrip(null);return;}const c=FL_CH[f.n]||FL_CH[8];
@@ -4715,10 +4712,8 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
         const b=E.bridge(st,n);let ns=b.state;
         if(ns.over){ns.flight=Object.assign({},f,{step:'ended'});CAMP.st=ns;FL.save();continue;}
         ns=C.start(ns)||ns;const fp=FL.who(ns,C.frontPage(ns));
-        // the engine's split-flap (fromYear, toYear, lines: one headline a year), landing on the front page's own year
-        // (bridge(st,6).toYear is 2044 while Chapter 6's front page is dated 2046: engine request)
-        const toY=+((String(fp.dateLine||'').match(/\b(\d{4})\b/)||[])[1])||+b.toYear;
-        const fl=Object.assign({},b,{state:undefined,fromYear:Math.min(+b.fromYear,toY),toYear:toY,frontPage:fp,chapter:n});
+        // the engine's split-flap as it is: fromYear (the last page seen) to toYear (the front page's year), one headline a year
+        const fl=Object.assign({},b,{state:undefined,frontPage:fp});
         FL.pile(ns);
         await FL.show('flaps',fp,()=>Z.flaps?Z.flaps(fl):FL.flapsPaper(fl),null);
         ns.flight=Object.assign({},f,{step:'decision',doc:null});CAMP.st=ns;FL.save();continue;}
@@ -4750,7 +4745,7 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
         else if(n===3||n===5)f.step='cliff';
         else {f.n=n+1;f.step='flaps';f.doc=null;}
         FL.save();continue;}
-      if(f.step==='cliff'){const act=n===3?2:3,fp=FL.who(st,E.cliffhanger(st,act-1));   // the act just finished: 1 after Takeoff, 2 after Cruise
+      if(f.step==='cliff'){const ab=E.actBreak(st)||(n===3?1:2),act=ab+1,fp=FL.who(st,E.cliffhanger(st,ab));   // the act just finished (the engine's actBreak: 1 after Takeoff, 2 after Cruise)
         const r=await FL.show('cliff',fp,()=>Z.cliffhanger?Z.cliffhanger(fp,{act,actName:FL_ACT[act],file:FL.cover(st)}):FL.cliffPaper(fp,act),'turn');
         f.n=n+1;f.step='flaps';f.doc=null;
         if(r==='close'){f.left=true;FL.save();FL.live=false;FL.busy=false;window.__flightStep='closed';menu('concession');return;}
@@ -4836,8 +4831,7 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
   cover(st){const f=st.flight||{},c=FL_CH[f.n]||FL_CH[3];return {company:st.parent,founder:st.founder,signature:st.signature,signedOn:st.signedOn,year:st.year,act:c.act,chapter:f.n,record:CAMP.rec()};},
 
   // ---- the Black Box (design/debrief.md): VSIEra.debrief.pages, four pages {p1, p2, p3, p4} as ZMMoney.debrief takes them ----
-  pages(st){return CAMP.E().debrief.pages(st);},
-  async box(st){const Z=window.ZMMoney;let P=null;try{P=FL.pages(st);}catch(e){FL.err('debrief',e);}
+  async box(st){const Z=window.ZMMoney;let P=null;try{P=CAMP.E().debrief.pages(st);}catch(e){FL.err('debrief',e);}
     FL.lastPages=P;if(!P)return;window.__flightBox=P;
     if(Z.debrief){await FL.show('box',P.p1,()=>Z.debrief(P,{company:st.parent,founder:st.founder,start:FL.bot?1:undefined}),null);return;}
     const pc=v=>(v>=0?'+':'−')+Math.abs(Math.round(v))+'%',bm=b=>Array.isArray(b.pct)?b.pct[0]+'–'+b.pct[1]+'% a year':b.pct+'% a year';

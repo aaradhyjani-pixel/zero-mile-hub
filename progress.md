@@ -513,3 +513,14 @@ bill says "This shift was flown by your duty team." Bots: `HUB.flight.auto('smar
 
    Both give the same books (tested).
 5. **`chapter(state)` between chapters** (the last era's report filed, its board pending) returns the next chapter. `fileCard(state, flight)` takes an optional `{n}` override. One existing test expectation changed: '2,2,3,5' became '2,2,4,5', by design.
+
+### Stand-ins removed (the Mac, on money after cabbca0)
+hub.js now reads lane E's §3 answers directly, with no stand-ins left:
+- the split-flap is `bridge(st, n)` as it is (no front-page year read from `dateLine`, no `fromYear` clamp): 2032→2033, 2034→2039, 2043→2046, 2046→2059;
+- the act break is `VSIEra.actBreak(st)` into `VSIEra.cliffhanger(st, act)` (1 April 2032, 1 April 2043);
+- the pile and the file card are `fileCard(st, st.flight).docs` (the whole pile); `CAMP.save` no longer replaces `st.docs` with the era papers, and `FL.save` no longer adds board minutes to it;
+- the file card's chapter and line are `fileCard(st, st.flight)`'s (hub.js's own chapter/line override is gone);
+- the Black Box is `VSIEra.debrief.pages(st)` (the `FL.pages` wrapper is gone);
+- the 2034 budget stays a tick on the Climb bill: `ch4.applyBudget` after the shift, which now re-files Climb's reports.
+Checked: smart lands a handback (10.5%), blind the banks, 0 flight errors; the paper menu shows the capital-allocation intro above the file card, and "Start the concession" with no save opens the deal desk.
+Note for lane E: `fileCard().docs` holds two annual reports for some years (`report-1` and `report-2032`, `report-4` and `report-2043`): the era paper and the chapter's own.

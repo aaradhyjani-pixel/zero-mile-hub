@@ -530,4 +530,12 @@ Note for lane E: `fileCard().docs` holds two annual reports for some years (`rep
 - 19 October 2026, 21:1x: Black Box page 1 showed empty source footnotes in the browser: build.py embeds money.json values only (no source fields), and debrief.pages() rebuilt each benchmark without a citation. benchmarks() now carries a readable `cite` for its three fixed, sourced marks (Fairfax India Annual Report 2025; AERA consultation paper on Delhi airport, para 7.2.3 / Table 238 and paras 7.2.7 to 7.2.10), pages() passes it through, and ui.js shows `cite` before `source`. era_test: ALL PASS, 0 Stage 0 failures.
 
 ## After deploy
+- Deployed 19 October 2026, 21:21 IST: money 0c3ddf1 → your-airport-private-limited.vercel.app (Vercel CLI, account aaryrobocode-7667, production). main (25a8a83) and zero-mile-hub.vercel.app untouched. Checks on 0c3ddf1: 5 JS scripts clean; era_test ALL PASS (Stage 0: 189 payloads, 0 jargon, 0 failures); money-off gate alone L1 124/89, L2 234/93, L3 480/73, L4 744/80, all 3★, 0 errors; click-through (paper menu → deal desk signed → whole flight, smart) handback at 10.5%/yr, 0 page errors, on the local build and on the live URL; live index.html byte-identical to the verified build.
+- Black Box page 2: "The crisis cure: putting in your own money cost you 46% of your return" reads as if saving the airport was the worst move. Shares are of the small smart-vs-passive gap (own money vs L5 is ~0.1 points of return). Show the cure in points of return, or compare it with refusing, not with L5.
+- Black Box page 1: endedWords says "Handed back in 2085" while the page says 31 March 2086 (year 60 is the financial year 2085–86); use one.
+- The flight run's polish items, stopped at its time limit: the Late City stamp crop on the cliffhanger, and the closed-file reveal timing in WebKit.
+- The bot's flight log (HUB.flight.auto with screens) doesn't expose per-screen steps to an outside driver the way window.__flightStep suggests; the final screenshot pass used the flight run's own driver. Expose a step event for tests.
+- The Jobs/Thiel review of the whole flight: tomorrow, from /tmp/zmh/flight/*.png (142 screenshots, smart and blind).
+- Tablet: start only from main as it is (25a8a83), per prompt-tablet.md (5844e5c): quick play L1–4 only, 2D only.
+
 - Black Box page 1 "What your share was worth at the end" (for example ₹4,34,141 cr) is the player's share of the cash left at handback, in 2086 rupees. It is correct, but it reads huge: label it "in 2086 rupees" or show it in today's rupees too.

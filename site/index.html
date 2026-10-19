@@ -1843,7 +1843,7 @@ function updateFlight(f,dt){
   case 'rollout':{f.v=Math.max(f.slowRoll?9:14,f.v-(f.slowRoll?2.6:1.15)*dt);const done=advance(f,dt,f.v);if(f.rwy.occ===f&&f.pd>=f.exitAt){f.rwy.occ=null;f.rwy.arrExit=T;if(!CH5)floater(f.x,f.y,0,'+1','#a99cff');}if(done){if(f.rwy.occ===f){f.rwy.occ=null;f.rwy.arrExit=T;}startTaxiIn(f);}break;}
   case 'nogate':{MNY&&MNY.nogate(f,dt);if(f.ch5Wait&&T<f.ch5Wait)break;if(!f.res){const g=freeGate(f);if(g){g.res=f;f.res=g;}}if(f.res){const p=route(f.exitNode,f.res.lane);if(p){setPath(f,[{x:f.x,y:f.y}].concat(p),TAXI_R);f.state='taxi_in';closeIncFor(f,true);}}break;}
   case 'taxi_in':if(blocked(f))break;if(advance(f,dt,14)){const g=f.res;setPath(f,[{x:G.get(g.lane).x,y:G.get(g.lane).y},{x:g.x,y:g.y}]);f.state='dock';}break;
-  case 'dock':if(laneShut(f.res))break;if(advance(f,dt,4)){const g=f.res;g.occ=f;g.res=null;f.gate=g;f.res=null;f.heading=g.a;f.inBlock=T;MNY&&MNY.inBlock(f);if(f.turn)toDep(f);else{f.state='parked';f.towAt=T+(20+SIMR()*15)*60;}}break;
+  case 'dock':if(laneShut(f.res))break;if(advance(f,dt,4)){const g=f.res;g.occ=f;g.res=null;f.gate=g;f.res=null;f.heading=g.a;f.inBlock=T;MNY&&MNY.inBlock(f);if(CH5)ch5Stream(f);if(f.turn)toDep(f);else{f.state='parked';f.towAt=T+(20+SIMR()*15)*60;}}break;
   case 'parked':if(f.vip)break;if(T>=f.towAt&&laneClear(f.gate)){const g=f.gate;const p=route(g.lane,PARK);g.occ=null;f.state='tow';setPath(f,[{x:g.x,y:g.y}].concat(p||[]),TAXI_R);f.gate=null;}break;
   case 'wedtaxi':if(advance(f,dt,16))f.state='towed';break;
   case 'tow':if(blocked(f))break;if(advance(f,dt,f.pd<90?3:7,f.pd<90))f.state='towed';break;
@@ -4106,13 +4106,14 @@ const CAMP={active:false,st:null,
 };
 
 /* ============ Chapter 5 "Take on the Gulf": the hub shift (prompt-campaign.md §9, lane A) ============
-   window.HUB.startChapter5(plan, hooks): plan = VSIEra.ch5.shiftPlan(state); hooks = {onTag(id,opts), onConn(sx,sy,data),
+   window.HUB.startChapter5(plan, hooks): plan = VSIEra.ch5.shiftPlan(state); hooks = {onTag(x,y,doc,line)→{move,remove}, onConn(sx,sy,data),
    onIncident(info), onEnd(result), briefing?:opts}. Level 3's airfield and heat, reshaped as one domestic feeder bank
    (plan.feeder) and then one international departure bank (plan.intl), with transfer links from the feeders to each
    international departure. Money comes from connections: the floaters show connections made or missed, never landings
    (the ledger still counts fees quietly). Two calls are scripted and always happen: the late Lucknow feeders with
    plan.hub.pax for London (hold London or let it go), and the paper-trail incident (plan.trail.id: 'stands' or 'birds')
-   in the international bank, with a paper tag pinned where it happens. Quick play never sets CH5. */
+   in the international bank, with a paper tag pinned where it happens. The level entry is CH5_LEVEL (data); the 2D map
+   shows the connection stream (ch5Stream). Quick play never sets CH5. */
 // TODO(lane C): the stand-in plan used only when money/era.js has no VSIEra.ch5 yet (the contract's sample figures)
 const CH5_STUB={level:3,feeder:{airline:'Narmada Air',cities:[{code:'LKO',name:'Lucknow'},{code:'IDR',name:'Indore'},{code:'PAT',name:'Patna'},{code:'RPR',name:'Raipur'},{code:'BBI',name:'Bhubaneswar'},{code:'VNS',name:'Varanasi'},{code:'JAI',name:'Jaipur'},{code:'GAU',name:'Guwahati'},{code:'CJB',name:'Coimbatore'},{code:'VTZ',name:'Visakhapatnam'},{code:'IXC',name:'Chandigarh'},{code:'TRV',name:'Thiruvananthapuram'}],from:'14:10',to:'14:45',flights:24,paxEach:170},
   intl:[{id:'SKW101',dest:'London',code:'LHR',std:'15:35',aircraft:'Boeing 777-300ER',connecting:520},{id:'SKW205',dest:'Singapore',code:'SIN',std:'15:45',aircraft:'Airbus A350-900',connecting:260},{id:'SKW311',dest:'Nairobi',code:'NBO',std:'15:55',aircraft:'Boeing 787-9',connecting:190}],
@@ -4120,6 +4121,14 @@ const CH5_STUB={level:3,feeder:{airline:'Narmada Air',cities:[{code:'LKO',name:'
   hub:{id:'feeder-late',from:'Lucknow',code:'LKO',lateMin:25,dest:'London',pax:380,holdMin:20,holdCostCr:1.9,letGoLostCr:3.2,letGoLine:'Doha wins them'},
   trail:{id:'stands',docId:'phase1',tag:{doc:'Phase 1 plan, 2029',line:'You built lean: no stand for this widebody.'}},
   tags:[{docId:'skyward',doc:'Route agreement, 2044',line:'Skyward\'s London bank: 380 connecting.',anchor:'intl-pier'}]};
+// Chapter 5's level entry: Level 3's airfield (runways, concourses, heat) with its traffic reshaped as two banks. Times and
+// sizes of the banks come from the plan (money/era.js); this entry holds what the level itself fixes.
+const CH5_LEVEL={base:3,ch5:true,name:'Take on the Gulf',sub:'The international bank',from:'CHAPTER 5',windDown:true,
+  taper:null,fog:null,dust:null,evening:null,lateDeps:null,charters:null,a380:0,script:[],last:null,ops:[[1500,'fod'],[3300,'tug']],
+  banks:[{kind:'feeder',plan:'feeder'},{kind:'intl',plan:'intl'}],
+  bgPerHour:36,           // the city's own point-to-point flights, each way, all shift (no connections)
+  xIntMin:40,xDomMin:26,  // minimum connecting times: domestic to international, domestic to domestic
+  starsAt:{otp2:70,cx2:75,otp3:80,cx3:85}};
 const CH5_TYPE=s=>{s=String(s||'');return /380/.test(s)?'A388':/777/.test(s)?'B77W':/787-8/.test(s)?'B788':/787/.test(s)?'B789':/330/.test(s)?'A333':/350/.test(s)?'A359':/321/.test(s)?'A21N':/320/.test(s)?'A20N':/737/.test(s)?'B38M':/ATR|72/.test(s)?'AT76':'B789';};
 const CH5_HM=(hm,clock)=>{const [h,m]=String(hm).split(':').map(Number);let t=(h*3600+m*60)-clock;if(t<-43200)t+=86400;return t;};   // 'HH:MM' → sim seconds from the shift's clock
 // fictional airlines only in a chapter (prompt-campaign.md §0.5): the partner, the feeder airline and the background carrier
@@ -4138,10 +4147,10 @@ function ch5Build(L){
   // 1. the feeder bank: plan.feeder.flights arrivals spread over from..to; each turns round to fly home in the departure bank
   const F=P.feeder,t0=CH5_HM(F.from,clock),t1=CH5_HM(F.to,clock),cities=(F.cities||[]).map(city),nF=Math.max(4,F.flights|0);
   const H=P.hub,hubC=city({code:H.code,name:H.from}),intl=P.intl||[],lon=intl.find(i=>i.dest===H.dest)||null;
-  const nHub=Math.max(1,Math.ceil((H.pax||0)/200));   // 380 people are two narrowbody loads: the Lucknow bank is two flights
-  const lonStd=lon?CH5_HM(lon.std,clock):t1+3000,X_INT=40*60;
+  const nHub=H.pax?Math.max(1,Math.ceil(H.pax/200)):0;   // 380 people are two narrowbody loads: the Lucknow bank is two flights
+  const lonStd=lon?CH5_HM(lon.std,clock):t1+3000,X_INT=CH5_LEVEL.xIntMin*60;
   // the late Lucknow pair lands so that a 20-minute hold just saves the connection and letting London go loses it
-  const hubEta=lonStd+H.holdMin*60-X_INT-8*60-6*60,hubSched=hubEta-H.lateMin*60;
+  const hubEta=lonStd+H.holdMin*60-X_INT-8*60-12*60,hubSched=hubEta-H.lateMin*60;
   const feeders=[];
   for(let i=0;i<nF;i++){const hub=i<nHub,c=hub?hubC:cities.filter(c=>c.code!==hubC.code)[i%Math.max(1,cities.length-1)]||hubC;
     const sched=hub?hubSched+i*150:Math.round(t0+(t1-t0)*(i-nHub+0.5+R()*0.4-0.2)/Math.max(1,nF-nHub));
@@ -4162,9 +4171,9 @@ function ch5Build(L){
     if(d.ch5Dest===H.dest){const hubs=feeders.filter(f=>f.ch5Hub);let left=H.pax|0;hubs.forEach((f,i)=>{const k=i===hubs.length-1?left:Math.round(H.pax/hubs.length);left-=k;links.push({arr:f,n:k,x:X_INT,hub:true});});n-=H.pax|0;}
     const ok=feeders.filter(f=>!f.ch5Hub&&f.eta+X_INT+12*60<=d.std);if(n>0&&ok.length){const per=n/ok.length;let left=n;ok.forEach((f,i)=>{const k=i===ok.length-1?left:Math.max(1,Math.round(per*(0.7+R()*0.6)));left-=k;if(k>0)links.push({arr:f,n:k,x:X_INT});});}}
   // and a few domestic-to-domestic changes between the feeders themselves (Indore to Patna), small numbers
-  for(const a of feeders){if(a.ch5Hub)continue;const cands=feeders.filter(b=>b!==a&&b.turn.std>=a.eta+26*60+600);if(!cands.length)continue;const b=pick(cands);(b.turnLinks=b.turnLinks||[]).push({arr:a,n:6+Math.floor(R()*14),x:26*60});}
+  for(const a of feeders){if(a.ch5Hub)continue;const cands=feeders.filter(b=>b!==a&&b.turn.std>=a.eta+CH5_LEVEL.xDomMin*60+600);if(!cands.length)continue;const b=pick(cands);(b.turnLinks=b.turnLinks||[]).push({arr:a,n:6+Math.floor(R()*14),x:CH5_LEVEL.xDomMin*60});}
   // 3. the city's own traffic: point-to-point domestic flights all shift on the background carrier, no connections
-  const rate=36/3600;let acc=R();for(let t=60;t<LEN-300;t+=10){acc+=rate*10;while(acc>=1){acc-=1;const c=DOMC[Math.floor(R()*DOMC.length)];
+  const rate=CH5_LEVEL.bgPerHour/3600;let acc=R();for(let t=60;t<LEN-300;t+=10){acc+=rate*10;while(acc>=1){acc-=1;const c=DOMC[Math.floor(R()*DOMC.length)];
     const f=add({kind:'arr',state:'sched',al:BG,type:pick(['A20N','A21N','B38M']),intl:false,from:c[0],fromCode:c[1],dir:c[2],eta:t+Math.floor(R()*10),endurance:40+Math.floor(R()*18)});f.origEta=f.eta;f.spawnT=f.eta-D_APP-150;f.num=num(BG,1000,900);}}
   acc=R();const parked=[];for(let t=-600;t<LEN-300;t+=10){acc+=rate*10;while(acc>=1){acc-=1;const c=DOMC[Math.floor(R()*DOMC.length)];
     const f=add({kind:'dep',state:'at_gate',al:BG,type:pick(['A20N','A21N','B38M']),intl:false,to:c[0],toCode:c[1],dir:c[2],std:t+Math.floor(R()*10)});f.origStd=f.std;f.num=num(BG,1000,900);f.readyAt=f.std-120-Math.floor(R()*300);parked.push(f);}}
@@ -4175,17 +4184,23 @@ function ch5Build(L){
     src.slice(0,3).forEach((it,i)=>{const al=intl.length?SK:BG;const f=add({kind:'arr',state:'sched',al,type:CH5_TYPE(it.aircraft),intl:!!intl.length,from:it.dest,fromCode:it.code,dir:/SIN/.test(it.code)?'E':'W',eta:firstStd-1500+i*240,endurance:50});
       f.origEta=f.eta;f.spawnT=f.eta-D_APP-150;f.num=num(al,100,800);f.ch5Stand=true;});}
   flights=flights.filter(f=>!f.dropped);for(const f of flights)if(!f.num)f.num=num(f.al,1000,900);
-  CH5.deps=deps;CH5.feeders=feeders;CH5.lonStd=lonStd;CH5.hubEta=hubEta;CH5.firstStd=deps.length?Math.min(...deps.map(d=>d.std)):lonStd;
+  CH5.byArr=new Map();for(const d of deps)for(const l of d.links)(CH5.byArr.get(l.arr)||CH5.byArr.set(l.arr,[]).get(l.arr)).push({d,l});
+  CH5.deps=deps;CH5.feeders=feeders;CH5.lonStd=lonStd;CH5.hubEta=H.none?null:hubEta;CH5.firstStd=deps.length?Math.min(...deps.map(d=>d.std)):lonStd;
   L.target=Math.round(flights.filter(f=>(f.kind==='arr'&&f.eta<=LEN)||(f.kind==='dep'&&f.std<=LEN)||(f.turn&&f.turn.std<=LEN+1800)).length*0.85);
 }
+// the contract's plan (money/CONTRACT.md: trail {kind, doc, line}; hub may be null when the deal was declined) → the shape used below
+function ch5Norm(plan){plan=Object.assign({},plan);const tr=plan.trail;
+  if(tr)plan.trail=Object.assign({},tr,{id:tr.kind||tr.id,tag:tr.tag||{doc:tr.doc,line:tr.line}});
+  const H=plan.hub;if(!H)plan.hub={none:true,from:'Lucknow',code:'LKO',pax:0,dest:null,lateMin:0,holdMin:0,holdCostCr:0};
+  else if(!H.code){const d=DOMC.find(c=>c[0]===H.from);plan.hub=Object.assign({},H,{code:d?d[1]:'LKO'});}
+  return plan;}
 function startChapter5(plan,hooks){
-  ch5Clear();plan=plan||CH5_STUB;hooks=hooks||{};
+  ch5Clear();plan=ch5Norm(plan||CH5_STUB);hooks=hooks||{};
   const clock=(t=>t-t%300)(CH5_HM(plan.feeder.from,0)-900);   // the shift opens 15 minutes before the first feeder lands
   const lastStd=Math.max(CH5_HM(plan.feeder.to,0)+3600,...(plan.intl||[]).map(i=>CH5_HM(i.std,0)));
   const len=Math.max(4800,lastStd+20*60-clock);
-  const L3=LEVELS[(plan.level||3)-1];
-  const lv=Object.assign({},L3,{name:'Take on the Gulf',sub:'The international bank',from:'CHAPTER 5',clock:`${String(Math.floor(clock/3600)).padStart(2,'0')}:${String(Math.floor(clock%3600/60)).padStart(2,'0')}`,
-    len,windDown:true,taper:null,fog:null,dust:null,evening:null,lateDeps:null,charters:null,a380:0,script:[],ops:[[1500,'fod'],[3300,'tug']],last:null,ch5:true,starsAt:{otp2:70,cx2:75,otp3:80,cx3:85}});
+  const L3=LEVELS[(plan.level||CH5_LEVEL.base)-1];
+  const lv=Object.assign({},L3,CH5_LEVEL,{clock:`${String(Math.floor(clock/3600)).padStart(2,'0')}:${String(Math.floor(clock%3600/60)).padStart(2,'0')}`,len});
   CH5={plan,hooks,tags:{},made:0,missed:0,byDest:{},held:{},holdMin:0,dom:{made:0,missed:0},trail:{happened:false,minutesLost:0,id:plan.trail&&plan.trail.id},
     hubAsked:false,hubAnswer:null,result:null,tagFall:{}};
   CH5.feederAl=ch5Airline(plan.feeder.airline||'Narmada Air',null,'#2d6e5a');CH5.skyAl=ch5Airline(plan.partner||'Skyward','SKYWARD','#16557a');CH5.bgAl=ch5Airline(plan.background||'Deccan Blue','DECCAN BLUE','#3b5e9c');
@@ -4198,25 +4213,27 @@ function startChapter5(plan,hooks){
   if(hooks.briefing&&window.ZMMoney&&ZMMoney.briefing){paused=true;setSpeed(1,true);Promise.resolve(ZMMoney.briefing(hooks.briefing)).catch(e=>console.warn('briefing',e)).then(()=>{if(CH5===keep&&running&&!ended){paused=false;setSpeed(1);}});}
   return true;
 }
-// paper tags: ZMMoney.tag/tagAt/tagRemove (lane B), positioned every frame; without ui.js, a stand-in drawn on the canvas
-function ch5Tag(id,opts,where){if(!CH5||CH5.tags[id])return;CH5.tags[id]=Object.assign({id,opts:{doc:opts.doc,line:opts.line,docId:opts.docId}},where);
-  try{if(CH5.hooks.onTag)CH5.hooks.onTag(id,CH5.tags[id].opts);else if(window.ZMMoney&&ZMMoney.tag)ZMMoney.tag(id,CH5.tags[id].opts);else CH5.tags[id].canvas=true;}catch(e){console.warn('tag',e);CH5.tags[id].canvas=true;}
+// paper tags: ZMMoney.tag(x, y, docTitle, line) → {move(x,y), remove()} (lane B), moved every frame; without ui.js, a stand-in drawn on the canvas
+function ch5Tag(id,opts,where){if(!CH5||CH5.tags[id])return;const t=CH5.tags[id]=Object.assign({id,opts:{doc:opts.doc,line:opts.line,docId:opts.docId}},where);
+  const a=ch5Anchor(t),p=ch5Scr(a.x,a.y,a.h)||{X:-999,Y:-999};
+  try{if(CH5.hooks.onTag)t.h=CH5.hooks.onTag(p.X,p.Y,t.opts.doc,t.opts.line);else if(window.ZMMoney&&ZMMoney.tag)t.h=ZMMoney.tag(p.X,p.Y,t.opts.doc,t.opts.line);}catch(e){console.warn('tag',e);}
+  if(!t.h||typeof t.h.move!=='function')t.canvas=true;
   logE(`${opts.doc}: ${opts.line}`);}
-function ch5TagOff(id){if(!CH5||!CH5.tags[id])return;delete CH5.tags[id];try{if(window.ZMMoney&&ZMMoney.tagRemove)ZMMoney.tagRemove(id);}catch(e){}}
+function ch5TagOff(id){if(!CH5||!CH5.tags[id])return;const t=CH5.tags[id];delete CH5.tags[id];try{if(t.h&&t.h.remove)t.h.remove();}catch(e){}}
 function ch5Anchor(t){if(t.f&&!['gone','towed','cancelled'].includes(t.f.state))return{x:t.f.x,y:t.f.y,h:t.f.alt||0};if(t.x!=null)return{x:t.x,y:t.y,h:0};
   const a=t.anchor;if(a==='runway'){const r=t.r||LONGEST;return{x:lerp(r.x0,r.x1,0.5),y:r.y,h:0};}
   if(a==='transfer')return{x:procC.x,y:procC.y,h:0};
   const ids=a==='stands'?['ES','FS']:['EN','ES'],c=ids.map(i=>CONCI[i]).find(c=>c&&c.open!==false)||CONCI.EN;return c?{x:c.lx,y:c.ly,h:0}:{x:0,y:0,h:0};}
-function ch5Frame(){if(!CH5)return;for(const id in CH5.tags){const t=CH5.tags[id],a=ch5Anchor(t),p=ch5Scr(a.x,a.y,a.h);
+function ch5Frame(){if(!CH5)return;ctx.save();screenT();ch5DrawStream();ctx.restore();screenT();for(const id in CH5.tags){const t=CH5.tags[id],a=ch5Anchor(t),p=ch5Scr(a.x,a.y,a.h);
   if(t.canvas){if(p){ctx.font='600 11px Barlow, sans-serif';const w=Math.max(ctx.measureText(t.opts.doc).width,ctx.measureText(t.opts.line).width)+14;ctx.fillStyle='#fbf5d3';ctx.fillRect(p.X+8,p.Y-44,w,34);ctx.fillStyle='#c22a2e';ctx.beginPath();ctx.arc(p.X+8+w/2,p.Y-44,3,0,7);ctx.fill();ctx.fillStyle='#1d2024';ctx.fillText(t.opts.doc,p.X+15,p.Y-30);ctx.fillStyle='#1f3a8a';ctx.fillText(t.opts.line,p.X+15,p.Y-16);ctx.strokeStyle='#1d2024';ctx.beginPath();ctx.moveTo(p.X,p.Y);ctx.lineTo(p.X+8,p.Y-10);ctx.stroke();}continue;}
-  try{if(window.ZMMoney&&ZMMoney.tagAt)ZMMoney.tagAt(id,p?p.X:NaN,p?p.Y:NaN);}catch(e){}}}
+  try{t.h.move(p?p.X:-999,p?p.Y:-999);}catch(e){}}}
 function ch5ConnHud(){try{if(window.ZMMoney&&ZMMoney.setConnections)ZMMoney.setConnections({made:CH5.made,missed:CH5.missed});}catch(e){}}
 function ch5Float(x,y,h,data){const p=ch5Scr(x,y,h);if(!p)return;
   try{if(CH5.hooks.onConn){CH5.hooks.onConn(p.X,p.Y,data);return;}if(window.ZMMoney&&ZMMoney.connFloat){ZMMoney.connFloat(p.X,p.Y,data);return;}}catch(e){console.warn('connFloat',e);}
   floater(x,y,h,data.made!=null?`+${data.made} connections · ₹${data.cr.toFixed(1)} cr`:`−${data.missed} missed · ${data.rival} wins them`,data.made!=null?'#3ad07f':'#ff6b5f');}
 // called by settleLinks just before the links of departure f settle (same test as settleLinks)
 function ch5Settle(f,at){let made=0,missed=0;const tPush=at!=null?at:f.pushT;
-  for(const l of f.links){const ok=l.arr.inBlock!=null&&l.arr.inBlock+l.x+(l.arr.gate&&l.arr.gate.remote?300:0)<=tPush+(f.heldFor||0);if(ok)made+=l.n;else missed+=l.n;}
+  for(const l of f.links){const ok=l.arr.inBlock!=null&&l.arr.inBlock+l.x+(l.arr.gate&&l.arr.gate.remote?300:0)<=tPush+(f.heldFor||0);l.ok=ok;if(ok)made+=l.n;else missed+=l.n;}f.ch5Done=true;ch5StreamSettle(f);
   CH5.made+=made;CH5.missed+=missed;if(f.ch5Dest){const b=CH5.byDest[f.ch5Dest]||(CH5.byDest[f.ch5Dest]={made:0,missed:0});b.made+=made;b.missed+=missed;}else{CH5.dom.made+=made;CH5.dom.missed+=missed;}
   const P=CH5.plan,rv=(P.rates&&P.rates.rival)||'Doha',g=f.gate||f.gateRef||{x:f.x,y:f.y};
   if(f.ch5Dest){if(made)ch5Float(g.x,g.y,0,{made,cr:made*((P.rates&&P.rates.perConnectionCr)||0)});if(missed)setTimeout(()=>{if(CH5)ch5Float(g.x,g.y+120,0,{missed,rival:rv});},made?500:0);
@@ -4249,6 +4266,28 @@ function ch5Birds(){const P=CH5.plan.trail;const busy=r=>flights.filter(o=>o.rwy
   ops.push({id:++OPN,kind:'birds',r,x:lerp(r.x0,r.x1,0.5),y:r.y+(r.y<0?-1:1)*170,t0:T,dur:mins*60,sx:Math.min(r.x1+300,lerp(r.x0,r.x1,0.5)+900)});
   radio('WILDLIFE',`A flock off the lakes is over ${r.short}. Runway closed, about ${mins} minutes.`);
   ch5Tag('trail',Object.assign({docId:P.docId},P.tag||{doc:'Capital budget, 2034',line:'You skipped the bird radar.'}),{r,anchor:'runway'});}
+/* the connection stream (2D map): when a feeder parks, its connecting passengers walk from its gate along the Mall (the
+   train line on y=0) to each international gate as a thin line of dots. Made: they reach the gate and fade in sign yellow.
+   Missed: they turn red and drift off the left edge toward the rival hub's label. Walking runs on sim time (the minimum
+   connecting time), the fade and the drift on screen time. Purely visual: the counts come from ch5Settle. */
+function ch5Walk(a,b){const ca=CONCI[a.conc],cb=CONCI[b.conc],pa=ca?{x:ca.cx,y:ca.cy}:{x:a.x,y:a.y*0.5},pb=cb?{x:cb.cx,y:cb.cy}:{x:b.x,y:b.y*0.5};
+  const pts=[{x:a.x,y:a.y},pa,{x:pa.x,y:0},{x:pb.x,y:0},pb,{x:b.x,y:b.y}],seg=[];let L=0;for(let i=1;i<pts.length;i++){const d=dist(pts[i-1].x,pts[i-1].y,pts[i].x,pts[i].y);seg.push(d);L+=d;}return{pts,seg,L};}
+function ch5At(w,u){let d=Math.max(0,Math.min(1,u))*w.L;for(let i=0;i<w.seg.length;i++){if(d<=w.seg[i]||i===w.seg.length-1){const k=w.seg[i]?Math.min(1,d/w.seg[i]):1;return{x:lerp(w.pts[i].x,w.pts[i+1].x,k),y:lerp(w.pts[i].y,w.pts[i+1].y,k)};}d-=w.seg[i];}return w.pts[w.pts.length-1];}
+function ch5Stream(f){const L=CH5.byArr&&CH5.byArr.get(f);if(!L||!f.gate)return;CH5.stream=CH5.stream||[];
+  for(const {d,l} of L){if(!d.gate&&!d.gateRef)continue;const w=ch5Walk(f.gate,d.gate||d.gateRef),n=Math.max(4,Math.min(26,Math.round(l.n/10)));
+    const g={d,l,w,t0:T,dur:Math.max(300,l.x*0.8),n,st:'walk',tS:0};if(d.ch5Done){g.st=l.ok?'made':'missed';g.tS=performance.now()/1000+1.6;}CH5.stream.push(g);if(CH5.stream.length>60)CH5.stream.shift();}}
+function ch5StreamSettle(d){if(!CH5.stream)return;const now=performance.now()/1000;for(const g of CH5.stream)if(g.d===d&&g.st==='walk'){g.st=g.l.ok?'made':'missed';g.tS=now;}}
+function ch5DrawStream(){const S5=CH5.stream;if(!S5||!S5.length||(typeof V3!=='undefined'&&V3.on))return;const now=performance.now()/1000,H=VH;
+  const rv=String((CH5.plan.rates&&CH5.plan.rates.rival)||'Doha').toUpperCase(),lbl={X:((cam.region&&cam.region.L)||0)+18,Y:Math.round(H*0.42)};let anyMiss=false;
+  ctx.save();screenT();for(let gi=S5.length-1;gi>=0;gi--){const g=S5[gi],u0=(T-g.t0)/g.dur;let age=g.st==='walk'?0:now-g.tS;if(age<0)age=0;
+    if(g.st==='made'&&age>4){S5.splice(gi,1);continue;}if(g.st==='missed'&&age>6){S5.splice(gi,1);continue;}if(g.st==='missed')anyMiss=true;
+    for(let i=0;i<g.n;i++){const u=u0-i*0.035;if(u<=0)continue;const q=ch5At(g.w,u);let X=sx(q.x),Y=sy(q.y),col='rgba(236,240,244,.92)',r=2.1;
+      if(g.st==='made'){if(u<1)col='rgba(244,196,48,.95)';else{const a=Math.max(0,1-age/4);col=`rgba(244,196,48,${a.toFixed(2)})`;r=2.1+age*0.6;}}
+      else if(g.st==='missed'){const k=Math.min(1,Math.max(0,(age-i*0.06)/4.5)),e=k*k*(3-2*k);X=lerp(X,lbl.X-30,e)+Math.sin(i*1.7+age)*6*e;Y=lerp(Y,lbl.Y+((i%5)-2)*5,e);col=`rgba(255,77,63,${(1-Math.max(0,k-0.85)/0.15).toFixed(2)})`;}
+      ctx.fillStyle=col;ctx.beginPath();ctx.arc(X,Y,r,0,7);ctx.fill();}}
+  if(anyMiss||CH5.missed>0){ctx.font='700 12px Barlow Condensed, sans-serif';ctx.textAlign='left';ctx.fillStyle='rgba(10,13,16,.75)';const w=ctx.measureText(rv).width+22;ctx.fillRect(lbl.X-6,lbl.Y-10,w,20);
+    ctx.fillStyle='#ff4d3f';ctx.fillText('◀ '+rv,lbl.X,lbl.Y+4);}
+  ctx.restore();}
 function ch5Tick(){if(!CH5)return;const P=CH5.plan;
   if(!CH5.hubAsked&&CH5.hubEta!=null&&T>=CH5.hubEta-1200)ch5HubCard();
   if(P.trail&&P.trail.id==='birds'&&!CH5.trail.happened&&T>=CH5.firstStd-900)ch5Birds();
@@ -4267,7 +4306,7 @@ function ch5End(){const P=CH5.plan;
   ch5Stub(res);}
 // a plain stand-in for the bill when lane B's screens are not in the build (never the old dark sheet)
 function ch5Stub(res){$('#sheet').innerHTML=`<div class="in" style="background:#fcfcf9;color:#1d2024;font-family:'Courier Prime',monospace;padding:28px"><h1 style="font-family:'Libre Caslon Text',serif;color:#1d2024">Chapter 5: the shift is over</h1>
-  <p>${res.made} connections made, ${res.missed} missed. ${Object.entries(res.byDest).map(([d,v])=>`${d}: ${v.made} made, ${v.missed} missed.`).join(' ')} ${res.held[CH5.plan.hub.dest]?`You held ${CH5.plan.hub.dest}.`:`You let ${CH5.plan.hub.dest} go.`}</p>
+  <p>${res.made} connections made, ${res.missed} missed. ${Object.entries(res.byDest).map(([d,v])=>`${d}: ${v.made} made, ${v.missed} missed.`).join(' ')} ${CH5.plan.hub.none?'':res.held[CH5.plan.hub.dest]?`You held ${CH5.plan.hub.dest}.`:`You let ${CH5.plan.hub.dest} go.`}</p>
   <p style="color:#676c71">(The bill appears here once money/ui.js has ZMMoney.bill.)</p><button class="go" id="toMenu">Back to the menu</button></div>`;$('#overlay').hidden=false;$('#toMenu').onclick=()=>menu('levels');}
 // the test entry: ?chapter5[=lean|big][&radar=bought|skipped][&choice=three|london|decline] runs fixture → decision → shiftPlan → the shift
 async function ch5Test(){const q=new URLSearchParams(location.search),ph=q.get('chapter5')==='big'?'big':'lean',radar=q.get('radar')==='bought'?'bought':'skipped',choice=q.get('choice')||'three';

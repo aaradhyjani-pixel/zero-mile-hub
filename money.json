@@ -1076,6 +1076,49 @@
    "source": "https://rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=60678",
    "period": "from 2025-10-01",
    "estimate": false
+  },
+  "tax_rate": {
+   "value": 0.2517,
+   "unit": "fraction of PBT",
+   "source": "https://incometaxindia.gov.in/ (Income Tax Act s.115BAA: 22% + 10% surcharge + 4% cess)",
+   "period": "2019-",
+   "estimate": false,
+   "note": "Used by tools/concession_model.py."
+  },
+  "loss_carry_years": {
+   "value": 8,
+   "unit": "years a business loss can be carried forward (unabsorbed depreciation: no limit)",
+   "source": "https://incometaxindia.gov.in/ (Income Tax Act s.72(3) business loss 8 years; s.32(2) unabsorbed depreciation, no limit)",
+   "period": "2001-",
+   "estimate": false,
+   "note": "Brought-forward business loss is set off before unabsorbed depreciation. Used by tools/concession_model.py."
+  },
+  "stage_loan_terms": {
+   "value": {
+    "1A": {
+     "mor": 2,
+     "years": 14
+    },
+    "1B": {
+     "mor": 1,
+     "years": 15
+    },
+    "T2": {
+     "debt_share": 0.8,
+     "rep_start": 15,
+     "years": 10
+    },
+    "P2": {
+     "debt_share": 0.8,
+     "mor": 1,
+     "years": 10
+    }
+   },
+   "unit": "rate % / years",
+   "source": "money.json finance.loan_rate_base; bial.close.moratorium_after_cod_years (2, inferred); bial.t2.financial_close (80:20, 1 + 10 years)",
+   "period": "game",
+   "estimate": true,
+   "note": "1A: 4 years building + 2 moratorium + 14 repaying = 20 years door to door. 1B repays from the year after the DEL COD, as T2 did (COD FY2023, first principal FY2024). Rate for every stage: finance.loan_rate_base. Used by tools/concession_model.py."
   }
  },
  "capex": {
@@ -1210,6 +1253,83 @@
    "period": "2025-26",
    "estimate": true,
    "note": "56,000 + 139 MPPA x 275 (~38,200) + 4 runways x 1,950 (7,800) ~ 1,02,000-1,04,000."
+  },
+  "stages": {
+   "value": {
+    "1A_lean": {
+     "cost": 36000,
+     "spend": {
+      "1": 0.25,
+      "2": 0.25,
+      "3": 0.25,
+      "4": 0.25
+     },
+     "cod": 5,
+     "cap": 45
+    },
+    "1A_big": {
+     "cost": 56000,
+     "spend": {
+      "1": 0.25,
+      "2": 0.25,
+      "3": 0.25,
+      "4": 0.25
+     },
+     "cod": 5,
+     "cap": 70
+    },
+    "1B_lean": {
+     "cost": 20000,
+     "spend": {
+      "6": 0.5,
+      "7": 0.5
+     },
+     "cod": 8,
+     "cap": 95
+    },
+    "1B_big": {
+     "cost": 6875,
+     "spend": {
+      "6": 0.5,
+      "7": 0.5
+     },
+     "cod": 8,
+     "cap": 95
+    },
+    "1C": {
+     "cost": 24000,
+     "spend": {
+      "9": 0.5,
+      "10": 0.5
+     },
+     "cod": 11,
+     "cap": 150
+    },
+    "1D": {
+     "cost": 24000,
+     "spend": {
+      "11": 0.3333333333333333,
+      "12": 0.3333333333333333,
+      "13": 0.3333333333333333
+     },
+     "cod": 14,
+     "cap": 209
+    },
+    "P2": {
+     "cost": 14025,
+     "spend": {
+      "19": 0.5,
+      "20": 0.5
+     },
+     "cod": 21,
+     "cap": 260
+    }
+   },
+   "unit": "INR crore (FY2026 prices) / mppa",
+   "source": "design/eras.md capex.stages; money.json capex.zmi_phase1_capex_cr, capex.brownfield_cr_per_added_mppa, world.game_capacity",
+   "period": "game",
+   "estimate": true,
+   "note": "Names as money-design.md: 1A = BIAL phase 1; 1B (AMD+HYD) = BIAL T1 expansion (FY2014, op year 6); 1C (BOM) + 1D (DEL) = the T2 programme (one close in year 9, 80:20, 1-yr moratorium after completion, 10-yr repayment). Used by tools/concession_model.py."
   }
  },
  "ppp": {
@@ -1543,6 +1663,313 @@
    "period": "era 1",
    "estimate": true,
    "note": "Greenfield UDF precedent (NMIA); AERA resets it each era from RAB x 15.41% RoE (WACC 12.89%) less 30% of non-aero."
+  },
+  "cpi": {
+   "value": 0.04,
+   "unit": "fraction per year",
+   "source": "https://rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx (RBI Act s.45ZA inflation target 4% +/-2)",
+   "period": "game years",
+   "estimate": true,
+   "note": "Same as design/eras.md game.cpi. VSI is modelled in nominal rupees, game year 1 = FY2026 prices. Used by tools/concession_model.py."
+  },
+  "demand_elasticity": {
+   "value": 0.8,
+   "unit": "-(% change in traffic) / (% change in average fare)",
+   "source": "https://www.iata.org/en/iata-repository/publications/economic-reports/estimating-air-travel-demand-elasticities---by-intervistas/ (InterVISTAS for IATA 2007: national-level price elasticity about -0.8)",
+   "period": "2007",
+   "estimate": false,
+   "note": "Applied to the aero charge above the market norm, as a share of the fare. Caps demand at the premise; never raises it. Used by tools/concession_model.py."
+  },
+  "avg_fare": {
+   "value": 5200,
+   "unit": "INR per one-way passenger (FY2026 prices)",
+   "source": "https://www.goindigo.in/information/investor-relations.html (IndiGo FY2025 yield ~Rs 4.96 per RPK x ~1,050 km average stage)",
+   "period": "FY2025",
+   "estimate": true,
+   "note": "Derived: yield x stage length. Used by tools/concession_model.py."
+  },
+  "airline_relations_drag": {
+   "value": -0.01,
+   "unit": "traffic growth per year (fraction) in every year of a control period where the tariff is pushed hard",
+   "source": "design estimate; precedent: IATA, FIA and BAR objections to BIAL CP3/CP4 (https://www.aera.gov.in/uploads/stack_holder/17841244347199.pdf)",
+   "period": "game",
+   "estimate": true,
+   "note": "Airlines add capacity elsewhere when the hub fights for a front-loaded tariff. Compounds into the demand level. Used by tools/concession_model.py."
+  },
+  "soft_push_carry": {
+   "value": 0.25,
+   "unit": "fraction of PV(ARR) carried in the T2-analog CP when the player asks AERA for a gentle tariff",
+   "source": "design estimate (between CP3's 13.9% and a full deferral)",
+   "period": "game",
+   "estimate": true,
+   "note": "Used by tools/concession_model.py."
+  },
+  "renewal_share": {
+   "value": {
+    "start": 0.25,
+    "full": 1.0
+   },
+   "unit": "renewal capex as a share of depreciation; ramps linearly from start at opening to full after one asset life",
+   "source": "design/eras.md game.renewal_share (0.25 at opening); full replacement once assets reach the end of their AERA life (handback standard: money.json world.residual_life_thresholds)",
+   "period": "game",
+   "estimate": true,
+   "note": "Deducted from CFADS and capitalised into RAB. Keeps the asset base from decaying in the late game. Not applied in the back-test (BIAL RAB anchors already include it). Used by tools/concession_model.py."
+  },
+  "lbc_dscr_target": {
+   "value": 1.3,
+   "unit": "x base-case CFADS / debt service the bank sculpts and sizes to",
+   "source": "design/eras.md section 7 (game.lbc_dscr_target); BIAL covenant context: money.json bial.debt.covenants (1.40 cumulative downgrade trigger, 1.5 expected)",
+   "period": "game",
+   "estimate": true,
+   "note": "Used by tools/concession_model.py."
+  },
+  "lbc_interest_only_cover": {
+   "value": 1.2,
+   "unit": "x base-case CFADS / interest the bank requires in interest-only years after COD",
+   "source": "money.json game.dscr_thresholds.warning (1.20): the bank does not close on a base case that sits in its own warning zone; BIAL's opening year ran at about 1.07 (money.json bial.path.dscr FY2009, est.), which its lenders had not foreseen",
+   "period": "game",
+   "estimate": true,
+   "note": "Below this the bank cuts the stage's gearing. Binds only in the opening year, so the expert's later warnings cannot come from the debt's shape. Used by tools/concession_model.py."
+  },
+  "ops_profiles": {
+   "value": {
+    "base": {
+     "Q": [
+      0.95,
+      0.95,
+      0.95,
+      0.95,
+      0.95
+     ],
+     "dis": [
+      60,
+      60,
+      60,
+      60,
+      60
+     ],
+     "sq": [
+      0.01,
+      0.01,
+      0.01,
+      0.01,
+      0.01
+     ],
+     "star": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "opex": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    "expert": {
+     "Q": [
+      0.95,
+      0.95,
+      0.95,
+      0.95,
+      0.95
+     ],
+     "dis": [
+      60,
+      60,
+      60,
+      60,
+      60
+     ],
+     "sq": [
+      -0.0125,
+      -0.0125,
+      -0.0125,
+      -0.0125,
+      -0.0125
+     ],
+     "star": [
+      0.015,
+      0.015,
+      0.015,
+      0.015,
+      0.015
+     ],
+     "opex": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    "poor": {
+     "Q": [
+      0.92,
+      0.86,
+      0.85,
+      0.8,
+      0.78
+     ],
+     "dis": [
+      70,
+      115,
+      120,
+      150,
+      160
+     ],
+     "sq": [
+      0.01,
+      0.02,
+      0.03,
+      0.04,
+      0.04
+     ],
+     "star": [
+      0.0,
+      -0.005,
+      -0.01,
+      -0.01,
+      -0.01
+     ],
+     "opex": [
+      1.0,
+      1.02,
+      1.04,
+      1.06,
+      1.06
+     ]
+    },
+    "lazy": {
+     "Q": [
+      0.85,
+      0.82,
+      0.8,
+      0.78,
+      0.78
+     ],
+     "dis": [
+      150,
+      150,
+      160,
+      180,
+      180
+     ],
+     "sq": [
+      0.03,
+      0.04,
+      0.05,
+      0.05,
+      0.05
+     ],
+     "star": [
+      -0.01,
+      -0.03,
+      -0.03,
+      -0.03,
+      -0.03
+     ],
+     "opex": [
+      1.04,
+      1.05,
+      1.05,
+      1.06,
+      1.06
+     ]
+    }
+   },
+   "unit": "per-level shift outcomes",
+   "source": "design/eras.md (game.lender_base_case, game.star_growth_bonus); money.json till.sq_rebate_max_of_arr",
+   "period": "game",
+   "estimate": true,
+   "note": "Stand-ins for what the sample-day shifts report. Poor and lazy get worse as the levels get harder; their values are hand-set design estimates. Used by tools/concession_model.py."
+  },
+  "pax_per_movement_by_level": {
+   "value": {
+    "1": 160.6,
+    "2": 165.7,
+    "3": 175.9,
+    "4": 178.4
+   },
+   "unit": "passengers per movement by level",
+   "source": "design/eras.md section 3 (game.pax_per_movement x LV wide share)",
+   "period": "game",
+   "estimate": true,
+   "note": "Used by tools/concession_model.py."
+  },
+  "move_in_years": {
+   "value": {
+    "1": 5,
+    "2": 8,
+    "3": 11,
+    "4": 14
+   },
+   "unit": "game year each level's traffic moves in",
+   "source": "design/eras.md section 1",
+   "period": "game",
+   "estimate": false,
+   "note": "Used by tools/concession_model.py."
+  },
+  "capacity_headroom": {
+   "value": 1.1,
+   "unit": "x capacity that can be served",
+   "source": "design/eras.md section 3 (game.capacity_headroom)",
+   "period": "game",
+   "estimate": true,
+   "note": "Used by tools/concession_model.py."
+  },
+  "nar_convergence": {
+   "value": 0.3,
+   "unit": "share of the gap to the mature Mall yield closed per era, x Q",
+   "source": "design/eras.md section 8",
+   "period": "game",
+   "estimate": true,
+   "note": "Used by tools/concession_model.py."
+  },
+  "land_rent": {
+   "value": {
+    "nominal": 0.0,
+    "bial_style_cr_per_year": 153.6
+   },
+   "unit": "INR crore a year (FY2026 prices) paid to the state for the land",
+   "source": "money-design.md (the state leases the land at a nominal rent); money.json bial.ssa.land (BIAL: 4,008 acres; rent recovers the state's site cost, cap raised to Rs 302.15 cr in 2024)",
+   "period": "game",
+   "estimate": true,
+   "note": "Nominal = the design. BIAL-style = BIAL's site-cost cap x the traffic factor 5, recovered over 30 years at 9.5% (est.). Not in the ARR (BIAL's land rent is not an aero cost in the building block, est.). Used by tools/concession_model.py."
+  },
+  "state_loan_defer_from_year": {
+   "value": 9,
+   "unit": "game year of the 1C/1D (T2-style) financial close, from which the state loan may be deferred",
+   "source": "money.json bial.ssa.state_loan (350) / bial.close.project_cost_final (2,470.29); bial.ssa.state_loan_repayment, bial.ssa.state_loan_deferral (from 2018, during the T2 programme), bial.ssa.state_loan_in_wacc",
+   "period": "2005-2028",
+   "estimate": false,
+   "note": "BIAL deferred its state loan at the T2 programme (bial.ssa.state_loan_deferral). Used by tools/concession_model.py."
+  },
+  "refi_trigger": {
+   "value": {
+    "stable_years": 3,
+    "stable_dscr": 1.2
+   },
+   "unit": "years with lender DSCR >= stable_dscr after the last mandatory COD",
+   "source": "money.json bial.debt.refi_2025_ncd",
+   "period": "FY2026",
+   "estimate": true,
+   "note": "BIAL's 2025 AAA NCD: 8.15%, 15 years, 2-year moratorium (finance.refi_rate_after_stability 9.0% is the AA+ class; a project that has met its covenants for 3 years refinances as BIAL did). Trigger: 3 years after the last mandatory COD with no lender warning (DSCR >= 1.20), as BIAL refinanced 2 years after T2. Used by tools/concession_model.py."
+  },
+  "covid_sensitivity_years": {
+   "value": [
+    16,
+    17
+   ],
+   "unit": "game years that take BIAL FY2021 and FY2022 traffic ratios (sensitivity only)",
+   "source": "money.json bial.path.pax_m (FY2021 / FY2020, FY2022 / FY2020); finance.covid_force_majeure (fee excused)",
+   "period": "FY2021-22",
+   "estimate": false,
+   "note": "BIAL's COVID years placed on VSI years 16-17. Sensitivity row only; the lenders' base case does not foresee it. Used by tools/concession_model.py."
   }
  },
  "world": {
@@ -3281,6 +3708,14 @@
    "period": "game",
    "estimate": true,
    "note": "grid buy cost is a game estimate; routine incidents automated per ZMI feedback."
+  },
+  "inr_usd_depreciation": {
+   "value": 0.036,
+   "unit": "fraction per year (INR weakening against USD)",
+   "source": "https://www.rbi.org.in/scripts/ReferenceRateArchive.aspx (RBI reference rate ~65 INR/USD in 2017 to ~86 in 2025)",
+   "period": "2017-2025",
+   "estimate": true,
+   "note": "Recalled, not fetched. Converts Fairfax India's USD return on BIAL to rupees: (1.11 x 1.036) - 1 = 15.0%. Used by tools/concession_model.py."
   }
  },
  "bial": {
@@ -3469,6 +3904,14 @@
     "period": "2005-2068",
     "estimate": false,
     "note": "Rent amount not found; 'token rent' not confirmed. 2024: lease made coterminous with 2068; site-cost cap raised from ~Rs 212 cr to max Rs 302.15 cr; 6% annual rent escalation from May 2038 is unverified. Rent appears to recover the state's land cost. iupindia (2005) said 3,800 acres."
+   },
+   "land_site_cost_cap": {
+    "value": 302.15,
+    "unit": "INR crore (maximum site cost the land rent recovers, 2024)",
+    "source": "https://indianinfrastructure.com/2024/04/05/state-approves-extension-of-concession-agreement-for-bengaluru-kempegowda-airport/ (money.json bial.ssa.land note)",
+    "period": "2024",
+    "estimate": false,
+    "note": "Raised from about Rs 212 cr. Used by tools/concession_model.py for the BIAL-style land-rent sensitivity."
    }
   },
   "ca": {
@@ -4098,6 +4541,56 @@
     "period": "CP3-CP4",
     "estimate": true,
     "note": "Ratios are my arithmetic. Basis for appeal odds."
+   },
+   "cp1_order_building_block": {
+    "value": {
+     "return": 1107.45,
+     "opex": 1399.6,
+     "wc_interest": 19.41,
+     "depreciation": 789.23,
+     "tax": 32.64,
+     "nar_40pct": -367.4,
+     "arr": 2980.94,
+     "pax_m": [
+      12.7,
+      12.0,
+      12.9,
+      14.4,
+      16.0
+     ],
+     "aero_rev_planned": [
+      475.23,
+      463.11,
+      488.19,
+      698.87,
+      824.22
+     ]
+    },
+    "unit": "INR crore over CP1 FY2012-16 / m pax",
+    "source": "https://aera.gov.in/uploads/airports/5b1f90079005ao081415.pdf (Order 08/2014-15, Table 101, p.505)",
+    "period": "CP1 FY2012-FY2016",
+    "estimate": false,
+    "note": "40% shared revenue till. O&M is the whole airport's (the till deducts 40% of non-regulated revenue), unlike CP3's aero-allocated O&M. Used by tools/concession_model.py."
+   },
+   "useful_life_rule": {
+    "value": "assets commissioned from FY2018 depreciate over longer AERA useful lives",
+    "unit": "rule",
+    "source": "AERA Order 35/2017-18 (determination of useful life of airport assets), https://aera.gov.in/",
+    "period": "FY2018-",
+    "estimate": true,
+    "note": "Order number recalled, not re-fetched. The model fits one life to pre-FY2018 assets (CP1 depreciation) and one to later assets (CP3 depreciation). Used by tools/concession_model.py."
+   },
+   "order_lag_months": {
+    "value": {
+     "cp2_months": 5.5,
+     "cp3_months": 6,
+     "cp4_months": 5
+    },
+    "unit": "months of the first CP year billed at the old tariff",
+    "source": "money.json bial.aera.control_periods: CP2 order 31 Aug 2018 effective 16 Sep 2018 (5.5 months); CP3 order 28 Aug 2021 effective Oct 2021 (6); CP4 order 20 Aug 2026 effective 1 Sep 2026 (5)",
+    "period": "CP2-CP4",
+    "estimate": false,
+    "note": "Mean of BIAL's three building-block orders. VSI CP1 is ordered before opening (Navi Mumbai precedent), so CP1 has no lag. Used by tools/concession_model.py."
    }
   },
   "path": {
@@ -4573,6 +5066,26 @@
     "period": "CY2025",
     "estimate": false,
     "note": "Non-aero plus other operating income (incl. real estate) now exceeds aero."
+   },
+   "ebitda_basis": {
+    "value": {
+     "2009": "E",
+     "2014": "R",
+     "2015": "R",
+     "2016": "R",
+     "2017": "R",
+     "2018": "D",
+     "2019": "D",
+     "2023": "D",
+     "2024": "D",
+     "2025": "D",
+     "2026": "D"
+    },
+    "unit": "R reported / D derived from a reported margin x operating income / E estimate",
+    "source": "research/bial.md section 3.1 (basis letters)",
+    "period": "FY2009-26",
+    "estimate": false,
+    "note": "Used by tools/concession_model.py."
    }
   },
   "t2": {
@@ -5180,6 +5693,138 @@
     "period": "game",
     "estimate": true,
     "note": "Opening arc maps year n to n+4; the T2 arc is compressed because BOM/DEL arrive by year 14."
+   }
+  },
+  "cpi_india_fy": {
+   "value": {
+    "2009": 9.1,
+    "2010": 12.4,
+    "2011": 10.4,
+    "2012": 8.4,
+    "2013": 10.2,
+    "2014": 9.4,
+    "2015": 5.9,
+    "2016": 4.9,
+    "2017": 4.5,
+    "2018": 3.6,
+    "2019": 3.4,
+    "2020": 4.8,
+    "2021": 6.2,
+    "2022": 5.5,
+    "2023": 6.7,
+    "2024": 5.4,
+    "2025": 4.6,
+    "2026": 2.5
+   },
+   "unit": "% y/y consumer inflation by fiscal year",
+   "source": "https://www.mospi.gov.in/ (CPI-IW to FY2013, CPI-Combined after); RBI Handbook of Statistics on the Indian Economy, Table \"Consumer Price Index\"",
+   "period": "FY2009-FY2026",
+   "estimate": true,
+   "note": "Recalled, not fetched; used only to put BIAL opex and non-aero per pax in FY2026 rupees. Used by tools/concession_model.py."
+  },
+  "opening_cost_fit": {
+   "value": {
+    "fit_years_greenfield": [
+     2009
+    ],
+    "fit_years_expansion": [
+     2014,
+     2015
+    ],
+    "expansion_new_mppa": 8.6,
+    "out_of_sample": [
+     2023,
+     2024
+    ],
+    "greenfield_year2_share": 0.5
+   },
+   "unit": "which BIAL years fit the opening-cost term",
+   "source": "money.json bial.path (op_income_cr, ebitda_cr), bial.debt.t1_expansion (11.4 -> 20 mppa, FY2014)",
+   "period": "FY2009-FY2024",
+   "estimate": true,
+   "note": "Opening premium = k x the fixed O&M of newly commissioned capacity. Greenfield k fitted to FY2009 (one point; year 2 at half, est., FY2010 opex not published); expansion k fitted to FY2014-15 (T1, years 1 and 2). T2 (FY2023-24) is the out-of-sample check. Used by tools/concession_model.py."
+  },
+  "backtest_inputs": {
+   "t2_draw_shares": {
+    "value": {
+     "2020": 0.2,
+     "2021": 0.3,
+     "2022": 0.3,
+     "2023": 0.2
+    },
+    "unit": "share of the T2 loan drawn by FY",
+    "source": "design estimate; works FY2017-23 (money.json bial.t2.timeline), balance FY2020-23 (bial.t2.funding_split)",
+    "period": "FY2020-23",
+    "estimate": true,
+    "note": "Used by tools/concession_model.py."
+   },
+   "vintage_shares_fy17_21": {
+    "value": {
+     "2017": 0.1,
+     "2018": 0.15,
+     "2019": 0.15,
+     "2020": 0.45,
+     "2021": 0.15
+    },
+    "unit": "share of FY2017-21 aero RAB additions by FY",
+    "source": "design estimate; 45% in FY2020 for the south runway (first landing 19 Mar 2020, money.json bial.t2.timeline)",
+    "period": "FY2017-21",
+    "estimate": true,
+    "note": "The total is solved from AERA's opening FY2022 RAB; only the timing is assumed. Used by tools/concession_model.py."
+   },
+   "fc_fy2021": {
+    "value": 34.0,
+    "unit": "m pax AERA would have forecast for FY2021 before COVID",
+    "source": "design estimate: FY2020 actual 32.36 m x ~1.05",
+    "period": "FY2021",
+    "estimate": true,
+    "note": "Used only in the CP2 plan (ordered Aug 2018, before COVID). Used by tools/concession_model.py."
+   },
+   "forward_growth": {
+    "value": 0.08,
+    "unit": "traffic growth per year after FY2026 in the back-test sculpt weights",
+    "source": "design estimate",
+    "period": "FY2027-",
+    "estimate": true,
+    "note": "Used by tools/concession_model.py."
+   },
+   "p1_repayment": {
+    "value": {
+     "start_fy": 2011,
+     "years": 9
+    },
+    "unit": "phase-1 loan repayment",
+    "source": "money.json bial.close.senior_debt (12-year rupee loan from close, FY2006), bial.path.principal_cr (first principal FY2011)",
+    "period": "FY2011-19",
+    "estimate": true,
+    "note": "12-year tenor less 3 years of construction. Used by tools/concession_model.py."
+   },
+   "cp1_trueup_wacc": {
+    "value": 10.97,
+    "unit": "% at which AERA trued up the pre-control period and CP1",
+    "source": "money.json bial.aera.control_periods (CP1 trueup_note: \"trued up on 30% till at 10.97%\")",
+    "period": "CP1",
+    "estimate": false,
+    "note": "Used by tools/concession_model.py."
+   },
+   "t2_capitalised_months": {
+    "value": 9.5,
+    "unit": "months of FY2023 before T2's COD (interest capitalised)",
+    "source": "money.json bial.t2.timeline (t2_domestic 2023-01-15)",
+    "period": "FY2023",
+    "estimate": false,
+    "note": "1 Apr 2022 to 15 Jan 2023. Used by tools/concession_model.py."
+   },
+   "refi16_early_principal": {
+    "value": {
+     "2019": 6,
+     "2020": 37
+    },
+    "unit": "INR crore principal on the 2016 refinancing before the sculpted profile",
+    "source": "money.json bial.path.principal_cr (FY2019 6, FY2020 37; estimate flag set)",
+    "period": "FY2019-20",
+    "estimate": true,
+    "note": "Used by tools/concession_model.py."
    }
   }
  }

@@ -1,4 +1,6 @@
-# The chip bet (idea #3, design/fun.md)
+# The chip bet: Zero Mile Silicon, a chip foundry (idea #3, design/fun.md)
+
+> 20 October 2026, the user's call: it is a chip **foundry** (not assembly and test), the riskiest bet in the game and the biggest payoff, built with a Taiwanese foundry partner (not named: no real company is put in a fictional role). Outcomes now 45% grows (12x) / 25% struggles (1.5x) / 30% fails in year 8 (0.1x): expected about 5.8x the money in. Amounts unchanged (Rs 1,500 cr for 10%, Rs 500 cr for 3%).
 
 ```
 TITLE:          A chip plant asks VSI to invest

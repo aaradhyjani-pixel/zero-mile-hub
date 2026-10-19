@@ -647,7 +647,7 @@ if (SM && BL) {
   else {
     texts.push(JSON.stringify(px));
     if (px.choices.length !== 3 || px.choices.map(c => c.id).join() !== 'big,small,pass') fail('chips: three choices, big, small and pass');
-    if (!/^MIHAN Semiconductor Park: chip assembly and test, 2 km from your cargo apron\. Co-investors wanted\.$/.test(px.lead)) fail('chips: the prospectus lead: ' + px.lead);
+    if (!/^Zero Mile Silicon: a chip foundry built with a Taiwanese foundry partner, in MIHAN, 2 km from your cargo apron\./.test(px.lead)) fail('chips: the prospectus lead: ' + px.lead);
     if (px.year !== 2035 || px.map.dests.join() !== 'Singapore,Frankfurt,Dallas') fail('chips: dated 2035, routes to Singapore, Frankfurt and Dallas');
     px.choices.slice(0, 2).forEach(c => { if (!/^Money out now: ₹[\d,]+ cr$/.test(c.slip.outWords) || !/^Your stake on the 25-year sale: about ₹[\d,]+ cr$/.test(c.slip.saleWords) || !/^Chip cargo from 2050: about ₹[\d,]+ cr a year$/.test(c.slip.cargoWords)) fail('chips: the slip\'s three numbers in plain words: ' + JSON.stringify(c.slip)); });
     if (!px.sources.some(x => /Micron/.test(x) && /2023/.test(x)) || !px.sources.some(x => /Tata/.test(x) && /2024/.test(x)) || /\(est\.\)/.test(JSON.stringify(px))) fail('chips: sources cite Micron 2023 and Tata 2024; no (est.) on screen');
@@ -658,11 +658,11 @@ if (SM && BL) {
   const N = 6000, cnt = {grows: 0, struggles: 0, fails: 0};
   for (let i = 1; i <= N; i++) cnt[C.outcome({seed: i * 7919 + 3, parent: 'Meridian Infra', founder: 'Asha Rao', signedOn: '2026-04-01', s: {}})]++;
   const sh = k => cnt[k] / N * 100;
-  if (Math.abs(sh('grows') - 60) > 2.5 || Math.abs(sh('struggles') - 25) > 2.5 || Math.abs(sh('fails') - 15) > 2) fail('chips: outcome shares should be about 60/25/15: ' + JSON.stringify(cnt));
+  if (Math.abs(sh('grows') - 45) > 2.5 || Math.abs(sh('struggles') - 25) > 2.5 || Math.abs(sh('fails') - 30) > 2.5) fail('chips: outcome shares should be about 45/25/30: ' + JSON.stringify(cnt));
   const pre = rt(SM.log.ch4start), o1 = C.outcome(pre), same = [1, 2, 3].every(() => C.outcome(rt(pre)) === o1) && JSON.stringify(C.apply(rt(CH.log.ch4start), 'big').s.bets) === JSON.stringify(C.apply(rt(CH.log.ch4start), 'big').s.bets);
   if (!same || CH.st.s.bets.chips.outcome !== C.outcome(CH.st)) fail('chips: the same save must give the same outcome');
   const other = C.outcome(Object.assign(rt(pre), {seed: pre.seed + 1}));
-  console.log('- outcomes over ' + N + ' saves: grows ' + sh('grows').toFixed(1) + '%, struggles ' + sh('struggles').toFixed(1) + '%, fails ' + sh('fails').toFixed(1) + '% (want 60/25/15); the sample save: ' + o1 + ' on every reload (seed + 1: ' + other + ')');
+  console.log('- outcomes over ' + N + ' saves: grows ' + sh('grows').toFixed(1) + '%, struggles ' + sh('struggles').toFixed(1) + '%, fails ' + sh('fails').toFixed(1) + '% (want 45/25/30); the sample save: ' + o1 + ' on every reload (seed + 1: ' + other + ')');
   // money in, the exit and the cargo in the player's flows, for each outcome (forced), against the same concession without it
   const S0s = rt(SM.st.s), def = SM.st.s.stake0 != null ? SM.st.s.stake0 : 64, P_ = I.P(), prY = y => Math.pow(1 + P_.cpi_forward, y - 1);
   const flowsOf = s => I.playerFlows(s, I.companyFlows(I.simulate(s, 60)), def), base = flowsOf(S0s), baseRows = I.simulate(S0s, 60).rows;
@@ -678,7 +678,7 @@ if (SM && BL) {
     const r = 0.122, npv = a => a.reduce((x, f, t) => x + f / Math.pow(1 + r, t), 0); ev[o] = npv(pf) - npv(base);
     console.log('- ' + o + ': ₹' + Math.round(-dIn).toLocaleString('en-IN') + ' cr out of the player\'s flows in ' + (2025 + b.year) + ', ₹' + Math.round(dOut).toLocaleString('en-IN') + ' cr back in ' + (2025 + b.exitYear) + ' (' + b.multiple + '×), chip cargo ' + (firstCargo ? 'from ' + (2025 + firstCargo) + ', ₹' + Math.round(cargo[firstCargo - 1]) + ' cr in its first year' : 'none') + '; worth ₹' + Math.round(ev[o]).toLocaleString('en-IN') + ' cr to the player at the Black Box\'s 12.2%');
   });
-  console.log('- expected value at 12.2% (big, no cargo terminal): ₹' + Math.round(0.6 * ev.grows + 0.25 * ev.struggles + 0.15 * ev.fails).toLocaleString('en-IN') + ' cr; in plain multiples: ' + (0.6 * 6 + 0.25 * 1.5 + 0.15 * 0.3).toFixed(2) + '× the money in, plus the cargo');
+  console.log('- expected value at 12.2% (big, no cargo terminal): ₹' + Math.round(0.45 * ev.grows + 0.25 * ev.struggles + 0.30 * ev.fails).toLocaleString('en-IN') + ' cr; in plain multiples: ' + (0.45 * 12 + 0.25 * 1.5 + 0.30 * 0.1).toFixed(2) + '× the money in, plus the cargo');
   // its own Black Box bar, and the sums still close (leave-one-out on smart, exact Shapley on blind)
   const aC = E.debrief.attribution(CH.st), aS2 = E.debrief.attribution(CS.st), aCB = E.debrief.attribution(CB.st, {exact: true});
   [['smart, big', aC], ['smart, small', aS2], ['blind, big, exact', aCB]].forEach(([n, a]) => {
@@ -692,13 +692,13 @@ if (SM && BL) {
   });
   // the echoes: 2039's front page, 2050 in the years between, 2060's sale, the pile, Thiel
   const fp5 = JSON.stringify(CH.log.ch5fp.columns), b = CH.st.s.bets.chips;
-  if (!/MIHAN chip plant ships its first wafer lots/.test(fp5) || /MIHAN/.test(JSON.stringify(SM.log.ch5fp.columns))) fail('chips: the 2039 front page should carry the plant\'s opening, only for a co-investor');
+  if (!/Zero Mile Silicon ships its first wafers/.test(fp5) || /Zero Mile Silicon/.test(JSON.stringify(SM.log.ch5fp.columns))) fail('chips: the 2039 front page should carry the plant\'s opening, only for a co-investor');
   const h7 = CH.log.bridge7.headlines.join(' | ');
   if (b.outcome !== 'fails' && !/^2050: Nagpur's chips (fly from Mumbai|take off from VSI)/m.test(CH.log.bridge7.headlines.join('\n'))) fail('chips: 2050 should be in the years between Chapters 6 and 7: ' + h7);
   const pdoc = E.fileCard(CH.st).docs.find(d => d.kind === 'prospectus'), pdoc0 = E.fileCard(CH.log.ch7start).docs.find(d => d.kind === 'prospectus');
   if (!pdoc || pdoc.stamp !== 'SOLD' || !pdoc0 || pdoc0.stamp !== (b.outcome === 'fails' ? 'SOLD' : 'CO-INVESTED')) fail('chips: the prospectus in the pile should be stamped SOLD once the stake is sold: ' + [pdoc && pdoc.stamp, pdoc0 && pdoc0.stamp]);
   const yrs = [2039, 2043, 2050, 2059, 2060].map(y => C.news(CH.st, y - 2025)).map((x, i) => x && [2039, 2043, 2050, 2059, 2060][i] + ' ' + x.head).filter(Boolean);
-  if (b.outcome !== 'fails' && !/sold its 10% of the MIHAN chip plant/.test(CH.log.ch7.paragraph)) fail('chips: the closing bill should report the sale');
+  if (b.outcome !== 'fails' && !/sold its 10% of the Zero Mile Silicon foundry/.test(CH.log.ch7.paragraph)) fail('chips: the closing bill should report the sale');
   const th = E.debrief.thiel(CH.st).find(x => /^Secret/.test(x.q));
   if ((b.outcome === 'grows') !== /backed chips in Nagpur/.test(th.answer)) fail('chips: Thiel\'s Secret answer should name the chip bet only if it paid');
   texts.push(...yrs, CH.log.ch7.paragraph, JSON.stringify(E.debrief.pages(CH.st)), JSON.stringify(E.debrief.pages(CB.st)), JSON.stringify(CH.log.ch5fp), JSON.stringify(CH.log.bridge7.headlines), JSON.stringify(E.cliffhanger(CH.log.afterCh5)));

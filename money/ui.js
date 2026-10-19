@@ -3134,13 +3134,13 @@ const CSS_PX=`
 .zpx .zdk-note .zpx-nb{font-size:13.5px;color:var(--zpe);margin-top:10px}
 @media (max-width:1280px){.zpx .zdk-doc{padding:22px 36px 20px}.zpx .zpx-lead{font-size:16.5px}}`;
 let cssPx=false;
-function zpxMap(m){m=m||{};const d=(m.dests||['Singapore','Frankfurt','Dallas']).slice(0,3),Y=[34,74,116],X=[452,500,440];
+function zpxMap(m){m=m||{};const d=(m.dests||['Singapore','Frankfurt','Dallas']).slice(0,3),Y=[34,74,116],X=[440,452,432];   // destination dots: their labels (up to 'Frankfurt', ~70 units) must end inside the 560-wide map
   return `<svg class="zpx-map" viewBox="0 0 560 150" role="img" aria-label="${esc((m.plant||'The plant')+', '+(m.km||2)+' km by road to '+(m.apron||'the cargo apron')+', then by air to '+d.join(', '))}">
     <g><rect x="22" y="62" width="58" height="34" fill="#fcfcf9" stroke="#1d2024" stroke-width="1.6"/><path d="M28 90l12-12M38 90l12-12M48 90l12-12M58 90l12-12M68 90l8-8" stroke="#676c71" stroke-width=".8"/>
-      <text class="k" x="22" y="114">${esc(m.plant||'MIHAN chip plant')}</text></g>
+      <text class="k" x="22" y="114">${esc(m.plant||'Zero Mile Silicon foundry')}</text></g>
     <path class="rd" d="M80 79 C 110 79, 120 76, 150 76"/><path d="M106 70v-6M126 70v-6M106 67h20" stroke="#676c71" stroke-width=".8"/><text x="107" y="60">${esc(String(m.km||2))} km</text>
     <g><path d="M150 64 L206 64 L214 92 L158 92 Z" fill="#eef0ec" stroke="#1d2024" stroke-width="1.6"/><path d="M164 70h34M166 78h36M168 86h38" stroke="#9aa0a5" stroke-width=".7"/>
-      <text class="k" x="150" y="110">${esc(m.apron||'VSI cargo apron')}</text></g>
+      <text class="k" x="150" y="50">${esc(m.apron||'VSI cargo apron')}</text></g>
     ${d.map((n,i)=>`<path class="air" d="M214 ${76+i*2} C 300 ${76+i*2}, ${X[i]-110} ${Y[i]}, ${X[i]} ${Y[i]}"/><circle cx="${X[i]}" cy="${Y[i]}" r="3" fill="#1d2024"/><text x="${X[i]+8}" y="${Y[i]+4}">${esc(n)}</text>`).join('')}
     <text x="236" y="138">road</text><path d="M268 134h22" class="rd" stroke-width="1.4"/><text x="300" y="138">air</text><path d="M322 134h22" class="air"/>
   </svg>`;}
@@ -3183,15 +3183,15 @@ M.prospectus=function(o){o=o||{};mount5();if(!cssPx){cssPx=true;const c=document
     setTimeout(fin,2100);};
 });};
 /* ?moneymock=prospectus: the chip plant's invitation with the engine's figures for the sample company (no cargo terminal) */
-const PX_SAMPLE={docId:'chips-2035',title:'MIHAN Semiconductor Park: an invitation to co-invest',date:'2035-04-01',founder:'Asha Rao',parent:'Meridian Infra',
-  lead:'MIHAN Semiconductor Park: chip assembly and test, 2 km from your cargo apron. Co-investors wanted.',
+const PX_SAMPLE={docId:'chips-2035',title:'Zero Mile Silicon: an invitation to co-invest in a chip foundry',date:'2035-04-01',founder:'Asha Rao',parent:'Meridian Infra',
+  lead:'Zero Mile Silicon: a chip foundry built with a Taiwanese foundry partner, in MIHAN, 2 km from your cargo apron. The riskiest bet on the table, and the biggest if it works.',
   body:['The plant will assemble and test chips for export, beside VSI in MIHAN. It opens in 2039 and wants patient co-investors for 25 years, until the stake is sold in 2060.','This year\'s cash is going into the new terminals, so the money would be called from the shareholders: Meridian Infra pays its 64%.','VSI has no cargo terminal of its own yet, so about half the chips would go by road to Mumbai.'],
-  map:{plant:'MIHAN chip plant',apron:'VSI cargo apron',km:2,dests:['Singapore','Frankfurt','Dallas']},slipQuestion:'What each line puts in, and what it could bring back',slipNote:'All in today\'s money, if the plant grows as planned. A plant like this can also struggle, or close.',
+  map:{plant:'Zero Mile Silicon foundry',apron:'VSI cargo apron',km:2,dests:['Singapore','Frankfurt','Dallas']},slipQuestion:'What each line puts in, and what it could bring back',slipNote:'All in today\'s money, if the plant grows as planned. A plant like this can also struggle, or close.',
   choices:[{id:'big',label:'Co-invest big: ₹1,500 cr for 10% of the plant',terms:'A seat on the plant\'s board. The plant flies all its chips through VSI.',slip:{outWords:'Money out now: ₹1,500 cr',saleWords:'Your stake on the 25-year sale: about ₹9,000 cr',cargoWords:'Chip cargo from 2050: about ₹120 cr a year',line:'The bigger bet: more cargo, and more to lose if the plant fails.'}},
     {id:'small',label:'Co-invest small: ₹500 cr for 3% of the plant',terms:'A minority stake. The plant flies part of its chips through VSI; the rest goes by road.',slip:{outWords:'Money out now: ₹500 cr',saleWords:'Your stake on the 25-year sale: about ₹3,000 cr',cargoWords:'Chip cargo from 2050: about ₹48 cr a year',line:'A smaller cheque, a smaller share of the cargo.'}},
     {id:'pass',label:'Pass',terms:'VSIAL does not invest. The park looks for backers elsewhere, and its chips go by road to Mumbai.',slip:{outWords:'Money out now: nothing',saleWords:'Your stake on the 25-year sale: none',cargoWords:'Chip cargo from 2050: none at VSI',line:'No risk, and no part in it.'}}],
   stamps:{big:'CO-INVESTED',small:'CO-INVESTED',pass:'DECLINED'},sources:['Micron\'s chip assembly-and-test plant at Sanand, Gujarat, approved by the Union Cabinet in June 2023 (PIB, 6 Dec 2023)','Tata Electronics\' chip fab at Dholera, Gujarat, approved on 29 February 2024 (PIB)'],
-  parties:{plant:'MIHAN Semiconductor Park',signatory:{name:'The Chief Financial Officer',title:'MIHAN Semiconductor Park'}}};
+  parties:{plant:'Zero Mile Silicon',signatory:{name:'The Chief Financial Officer',title:'Zero Mile Silicon'}}};
 M._pxSample=PX_SAMPLE;
 
 /* ---------- auto-mount, and a mock driver for screenshots: ?moneymock ---------- */

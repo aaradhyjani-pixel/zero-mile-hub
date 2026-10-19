@@ -117,3 +117,5 @@ Shipped in this pass:
 - Ship B, designed now from money-world: shocks with hybrid correlations and market cycle, stake pricing (EV multiple × life factor, ×1.35 control block), appeals (20% win), mid-level incidents on L5/L6 only, Level 6 "Handback", the handback asset classes and the endgame score weights.
 - Open question for the user: "sixth level". It is L5 here (`LEVELS[4]`), plus L6 "Handback" in Ship B. Confirm the numbering.
 - GitHub checkpoints: C1 design (this), C2 money.json fixes + era.js + node balance table, C3 ledger hooks + chip (gate green), C4 Ship A live (push), C5 Ship B.
+
+- 2026-10-19 · Ownership at financial close confirmed by the user: parent 64%, L5 Capital 16%, AAI 10%, MADC 10%; the player can grow to 80% by buying L5 Capital out (4% an era from the year-14 board). The wiring passes `partners` 64/16/10/10 to `ZMMoney.onboarding(opts)`, so money/ui.js needs no change (its 80/10/10 is only the mock default). Review note #1 (80/10/10) is superseded by the user's decision.

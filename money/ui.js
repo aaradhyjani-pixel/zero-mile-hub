@@ -1351,24 +1351,28 @@ const CSS5=`
 .z5-pad footer{display:flex;align-items:center;gap:10px;margin-top:10px}
 .z5-pad footer button{background:var(--zt);color:#fcfcf9;font-family:var(--f-sign);font-weight:700;font-size:16px;padding:7px 14px;border-radius:2px}
 .z5-pad footer span{font-family:var(--ft);font-size:11.5px;color:var(--zpe)}
-/* the paper trail: tags pinned to the map */
+/* the paper trail: margin pins. A 12px pushpin off the airfield, a dashed leader to the spot, and (open) two short lines */
 #z5Tags{position:absolute;inset:0;z-index:3;pointer-events:none;overflow:hidden}
-.z5-tag{position:absolute;left:0;top:0;width:0;height:0;will-change:transform;--cx:14px;--cy:-74px}
-.z5-tag[hidden]{display:none}
-.z5-tag .an{position:absolute;left:-6px;top:-6px;width:12px;height:12px;border-radius:50%;background:#c22a2e;box-shadow:0 0 0 2px #fcfcf9,0 1px 4px rgba(0,0,0,.6);pointer-events:auto;cursor:pointer}
-.z5-tag .th{position:absolute;left:0;top:0;width:var(--tl,0);height:1.5px;margin-top:-.75px;background:rgba(252,252,249,.8);transform:rotate(var(--ta,0rad));transform-origin:0 50%}
-/* folded: the card shrinks to its first line, off the airfield, joined to the pin by the thread; open: the whole card, in the same place */
-.z5-tag button{position:absolute;left:0;top:0;width:150px;box-sizing:border-box;padding:5px 8px 4px 9px;text-align:left;background:#fcfcf9;color:#1d2024;pointer-events:auto;cursor:pointer;transform:translate(var(--cx),var(--cy)) rotate(-1deg);box-shadow:0 4px 10px rgba(0,0,0,.4),0 1px 2px rgba(0,0,0,.4)}
-.z5-tag b{display:block;font-family:var(--ft);font-weight:700;font-size:10.5px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.z5-tag span{display:none;font-family:var(--fh);font-size:13px;line-height:1.18;color:#2a2d31;margin-top:3px}
-.z5-tag.open button{padding:8px 9px 7px 10px;box-shadow:0 6px 12px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.4)}
-.z5-tag.open b{white-space:normal}.z5-tag.open span{display:block}
-.z5-tag.nobox button,.z5-tag.nobox .th{display:none}
-.z5-tag button:hover b{color:var(--zr)}
-.z5-tag.flash .an{animation:z5Flash .5s ease-in-out 3}
-@keyframes z5Flash{50%{transform:scale(1.9);box-shadow:0 0 0 3px #fcfcf9,0 0 10px 4px rgba(194,42,46,.8)}}
-.z5-tag.pin button{animation:z5Pin .32s cubic-bezier(.3,1.5,.5,1) both}
-@keyframes z5Pin{from{opacity:0;transform:translate(var(--cx),var(--cy)) rotate(-1deg) translateY(-10px) scale(1.15)}to{opacity:1;transform:translate(var(--cx),var(--cy)) rotate(-1deg)}}
+.z5-tag{position:absolute;left:0;top:0;width:0;height:0;will-change:transform;--cx:24px;--cy:-40px;--px:6px;--py:6px}
+.z5-tag[hidden],.z5-tag.nowhere{display:none}
+.z5-tag .sp{position:absolute;left:-3px;top:-3px;width:6px;height:6px;border-radius:50%;box-sizing:border-box;border:1.5px solid #fcfcf9;box-shadow:0 0 2px rgba(0,0,0,.7)}
+.z5-tag .ld{position:absolute;left:0;top:0;width:var(--tl,0);height:0;border-top:1.5px dashed rgba(252,252,249,.85);transform:rotate(var(--ta,0rad));transform-origin:0 0;filter:drop-shadow(0 0 1px rgba(0,0,0,.8))}
+.z5-tag .mp{position:absolute;left:0;top:0;width:var(--bw,244px);height:var(--bh,38px);transform:translate(var(--cx),var(--cy))}
+.z5-tag .pp{position:absolute;left:0;top:3px;width:12px;height:12px;padding:0;pointer-events:auto;cursor:pointer;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.7))}
+.z5-tag .pp svg{display:block;width:12px;height:12px}
+.z5-tag.flip .pp{left:auto;right:0}
+.z5-tag .lb{position:absolute;left:17px;top:0;width:calc(var(--bw,244px) - 17px);box-sizing:border-box;padding:4px 8px 4px 8px;text-align:left;background:#fcfcf9;color:#1d2024;pointer-events:auto;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.4),0 1px 2px rgba(0,0,0,.4);transform:rotate(-.8deg);opacity:0;visibility:hidden;transition:opacity .18s,visibility 0s .18s}
+.z5-tag.flip .lb{left:0}
+.z5-tag .lb b,.z5-tag .lb small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.z5-tag .lb b{font-family:var(--ft);font-weight:600;font-size:12px;line-height:1.3}
+.z5-tag .lb small{font-family:var(--ft);font-size:10.5px;line-height:1.3;color:var(--zpe,#5b6168)}
+.z5-tag.open .lb{opacity:1;visibility:visible;transition:opacity .18s}
+.z5-tag .lb:hover b{color:var(--zr)}
+.z5-tag.pinonly .lb{display:none}
+.z5-tag.flash .pp{animation:z5Flash .5s ease-in-out 3}
+@keyframes z5Flash{50%{transform:scale(1.7);filter:drop-shadow(0 0 5px rgba(194,42,46,.95))}}
+.z5-tag.pin .pp{animation:z5Pin .3s cubic-bezier(.3,1.5,.5,1) both}
+@keyframes z5Pin{from{opacity:0;transform:translateY(-8px) scale(1.4)}to{opacity:1;transform:none}}
 /* a document from the pile, read-only */
 #z5Doc{position:absolute;inset:0;z-index:34;display:flex;align-items:center;justify-content:center;background:rgba(6,9,11,.5)}
 #z5Doc[hidden]{display:none}
@@ -1381,6 +1385,7 @@ const CSS5=`
 .zmm-f.cx{color:#7dffb4;background:rgba(10,40,24,.78);border:1px solid rgba(58,208,127,.5);font-size:12.5px}
 .zmm-f.mx{color:#ffb1a8;background:rgba(48,12,10,.8);border:1px solid rgba(255,77,63,.55);font-size:12.5px}
 .zmm-chip.cx .r b{font-weight:500;color:var(--go)}.zmm-chip.cx .r i{font-style:normal;color:var(--stop)}
+.zmm-cxs{font-family:var(--f-mono);font-size:10px;line-height:1.2;color:var(--ink-3);white-space:nowrap}.zmm-cxs b{font-weight:500;color:var(--go)}.zmm-cxs i{font-style:normal;color:var(--stop)}
 /* 7.4 the bill: one page of the annual report on white bond, with the adviser's margin note */
 .z5-bill .zdk-main{grid-template-columns:minmax(200px,1fr) minmax(720px,800px) minmax(120px,.6fr)}
 .z5-bill .zdk-doc{display:grid;grid-template-columns:1fr 210px;column-gap:30px;padding:34px 34px 30px 50px}
@@ -1396,6 +1401,7 @@ const CSS5=`
 .z5-hl .zdk-dscr .lb{font-family:var(--fh);color:#3b3f44}
 .z5-bill .zdk-tab tr.z5-th td{padding:16px 0 4px;border-top:0;font-family:var(--fd);font-weight:700;font-size:15px}
 .z5-bill .zdk-tab small.z5-per{display:inline;font-size:11.5px;color:var(--zpe)}
+.z5-bill .z5-pd{margin:-4px 0 10px;font-family:var(--ft);font-size:12.5px;color:var(--zpe)}
 .z5-bill .zdk-tab tr.z5-kcost .n{color:#5a2b2b}.z5-bill .zdk-tab tr.z5-ktotal td{font-weight:700}.z5-bill .zdk-tab tr.z5-kgood .n{color:var(--zg)}.z5-bill .zdk-tab tr.z5-kbad .n{color:var(--zr)}
 .z5-bill .zdk-tab tr.z5-me td{font-weight:700;color:var(--zi)}
 .z5 .z5-lh{font-family:var(--fd);font-weight:700;font-size:15px;margin:18px 0 4px}.z5 .z5-ul{margin:0;padding-left:18px;font-family:var(--ft);font-size:13.5px;line-height:1.55}
@@ -1496,7 +1502,7 @@ M.decision=function(o){o=o||{};return new Promise(res=>{
       ${paras(o.body).map(p=>`<p class="t">${esc(p)}</p>`).join('')}
       <p class="t">The parties agree to the line ticked below.</p>
       <div class="zdk-ticks" role="radiogroup" aria-label="The terms">${ch.map(c=>`<button role="radio" aria-checked="false" data-id="${esc(c.id)}"><i></i><span>${esc(c.label)}</span>${c.terms?`<small>${esc(c.terms)}</small>`:''}</button>`).join('')}</div>
-      <div class="zdk-sigs"><div class="s"><div class="ink">${signSvg(sg)}</div><span><b>${esc(sg.name||'')}</b><br>${esc(sg.title||'Authorised signatory')}</span><small>for ${esc(pa.airline||'Skyward')}</small></div>
+      <div class="zdk-sigs"><div class="s"><div class="ink">${signSvg(sg)}</div><span><b>${esc(sg.name||'')}</b><br>${esc(sg.title||'Authorised signatory')}</span><small>for ${esc(pa.airline||'Haversine Airways')}</small></div>
         <div class="s" id="z5Me"><div class="ink"></div><span><b>${esc(o.founder||'Director')}</b><br>Director${o.parent?', for '+esc(o.parent):''}</span><small>for ${esc(M.cfg.spvShort)}</small></div></div>
     </article><div class="zdk-acts"><button class="zdk-go" id="z5Sign" disabled>Tick one line first</button></div></div>
     <aside class="zdk-note arrive" id="zdkNote" aria-live="polite"></aside></main>`);
@@ -1564,23 +1570,38 @@ M.openDoc=function(doc){mount5();if(typeof doc==='string')doc=findDoc(doc)||{tit
   window.dispatchEvent(new CustomEvent('zmm-doc',{detail:{open:true,doc}}));
 });};
 
-/* paper tags on the map: ZMMoney.tag(id, {doc, line, docId}) creates one; ZMMoney.tagAt(id, sx, sy) puts its pin on a
-   screen point relative to #app (call every frame); ZMMoney.tagRemove(id). Clicking a tag opens its document.
-   A tag starts folded: the pin on the aircraft, a thread, and the card's first line. Hovering or clicking opens the whole card.
-   Folded or open, the card sits outside every rectangle from ZMMoney.tagAvoid(rects) (the runways and the terminal), outside
-   the HUD panels and outside the other tags; if no such place exists, only the pin shows (and a click opens the document). */
-const TAGS=new Map();
+/* margin pins (the paper trail on the map): ZMMoney.tag(id, {doc, line, docId}) creates one; ZMMoney.tagAt(id, sx, sy) sets its
+   spot, a screen point relative to #app (call every frame); ZMMoney.tagRemove(id). The pin itself never sits on the spot: a 12px
+   pushpin in the margin, joined to the spot by a dashed leader. Open, it shows at most two short lines (the line, then the
+   document's title); clicking the open lines opens the document. At most two are open at once; each folds 6 s after it opened.
+   The pin and its lines (sized as if open) stay outside every shape from ZMMoney.tagAvoid(shapes) (runways, taxiways, the
+   terminal), the HUD panels and the other pins; if there is room only for the pin, the lines never open on the map (a click opens
+   the document); if there is no room at all, the tag hides until there is. */
+const TAGS=new Map(),TAG_W=244,TAG_H=38,TAG_OPEN_MS=6000,TAG_MAX_OPEN=2;
+const PUSHPIN='<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 7.2 L5.1 11.6 L6.9 11.6 Z" fill="#5b5f63" transform="rotate(18 6 7)"/><circle cx="6" cy="4.6" r="4.2" fill="#c22a2e"/><circle cx="4.7" cy="3.3" r="1.3" fill="#f08a8c"/></svg>';
 function tagLayer(){mount5();let l=$('#z5Tags');if(!l){const app=$('#app');if(!app)return null;l=document.createElement('div');l.id='z5Tags';l.className='z5v';
   const fl=$('#zmmFloat');if(fl)app.insertBefore(l,fl);else app.appendChild(l);}return l;}   // under the floaters
-function tagOpen(t,ms){t.classList.add('open');clearTimeout(t._fold);if(ms!==0&&ms!=null)t._fold=setTimeout(()=>{if(!t.matches(':hover'))t.classList.remove('open');},ms);}
+function tagOpen(t,ms){if(t.classList.contains('pinonly')||t.classList.contains('nowhere'))return;
+  if(!t.classList.contains('open')){const open=[...TAGS.values()].filter(o=>o!==t&&o.classList.contains('open')).sort((u,v)=>u._openAt-v._openAt);
+    while(open.length>=TAG_MAX_OPEN)tagFold(open.shift());   // at most two open: the oldest folds
+    t._openAt=performance.now();t.classList.add('open');}
+  clearTimeout(t._fold);if(ms)t._fold=setTimeout(()=>{if(t.matches(':hover'))return;tagFold(t);},ms);}
 function tagFold(t){clearTimeout(t._fold);t.classList.remove('open');}
-/* the rectangles to keep clear, relative to #app. Any of {l,t,r,b} | {left,top,right,bottom} | {x,y,w,h} | {x0,y0,x1,y1} | [x,y,w,h];
-   kind:'region' (or opt.region) is the free map area the cards must stay inside. */
-const nrect=q=>{if(!q)return null;if(Array.isArray(q))q={x:q[0],y:q[1],w:q[2],h:q[3]};
+/* the shapes to keep clear, relative to #app. A rectangle: {l,t,r,b} | {left,top,right,bottom} | {x,y,w,h} | {x0,y0,x1,y1} | [x,y,w,h].
+   A polygon: [[x,y],...] | [{x,y},...] | {pts|points|poly:[...], kind}. kind:'region' (or opt.region) is the free map area. */
+const nrect=q=>{if(!q)return null;
+  const pl=Array.isArray(q)&&q.length&&typeof q[0]==='object'?q:!Array.isArray(q)&&(q.pts||q.points||q.poly);
+  if(pl){const pts=pl.map(p=>Array.isArray(p)?[+p[0],+p[1]]:[+p.x,+p.y]).filter(p=>isFinite(p[0])&&isFinite(p[1]));if(pts.length<3)return null;
+    const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);return{l:Math.min(...xs),t:Math.min(...ys),r:Math.max(...xs),b:Math.max(...ys),kind:q.kind,pts};}
+  if(Array.isArray(q))q={x:q[0],y:q[1],w:q[2],h:q[3]};
   const l=q.l??q.left??q.x0??q.x,t=q.t??q.top??q.y0??q.y,r=q.r??q.right??q.x1??(q.w!=null&&l!=null?l+q.w:q.width!=null?l+q.width:null),b=q.b??q.bottom??q.y1??(q.h!=null&&t!=null?t+q.h:q.height!=null?t+q.height:null);
   return [l,t,r,b].every(v=>isFinite(v))?{l:Math.min(l,r),t:Math.min(t,b),r:Math.max(l,r),b:Math.max(t,b),kind:q.kind}:null;};
 let AVOID=[],FREE=null,HUDC={at:-1e9,rs:[],W:0,H:0};
-M.tagAvoid=function(rects,opt){const rs=(rects||[]).map(nrect).filter(Boolean);FREE=nrect(opt&&opt.region)||(rs.find(r=>r.kind==='region')||null);const n=AVOID.length;AVOID=rs.filter(r=>r.kind!=='region');if(n!==AVOID.length)for(const [,t] of TAGS)t._box=null;return AVOID.length;};   // new shapes (a view change): place every card again
+M.tagAvoid=function(shapes,opt){const rs=(shapes||[]).map(nrect).filter(Boolean);FREE=nrect(opt&&opt.region)||(rs.find(r=>r.kind==='region')||null);
+  const key=rs.map(r=>`${r.l|0},${r.t|0},${r.r|0},${r.b|0}`).join(';');AVOID=rs.filter(r=>r.kind!=='region');
+  if(key!==M._avoidKey){M._avoidKey=key;for(const [,t] of TAGS)t._box=null;}   // the shapes moved (a view change): place every pin again
+  return AVOID.length;};
+M.tagShapes=()=>AVOID.map(r=>Object.assign({},r));
 // the HUD's own panels, read from the page (at most every 200 ms)
 const HUD_SEL=['#top','#rail','#wave','#zoomBox','#toast','#vipBanner.on','#guard.on','#fogTag','#stopBtn','#kiteChip','#wedChip','#delegChip','#delegLT.on','#camLbl','#pop','#z5Brief','#zmmChip'];
 function hudRects(){const now=performance.now();if(now-HUDC.at<200)return HUDC;const app=$('#app');if(!app)return HUDC;const a=app.getBoundingClientRect(),rs=[];
@@ -1588,16 +1609,20 @@ function hudRects(){const now=performance.now();if(now-HUDC.at<200)return HUDC;c
     rs.push({l:r.left-a.left,t:r.top-a.top,r:r.right-a.left,b:r.bottom-a.top});}
   HUDC={at:now,rs,W:a.width,H:a.height};return HUDC;}
 const hitR=(a,b,p)=>a.l<b.r+p&&a.r>b.l-p&&a.t<b.b+p&&a.b>b.t-p;
-function tagSize(t){const b=t.querySelector('button');if(!b)return{w:150,h:60,hf:22};
-  if(!t._sz||!t._sz.h){const was=t.classList.contains('open');t.classList.add('open');const h=b.offsetHeight;if(!was)t.classList.remove('open');const hf=was?0:b.offsetHeight;
-    if(h)t._sz={w:b.offsetWidth||150,h,hf:hf||22};else return{w:150,h:60,hf:22};}
-  return t._sz;}
-function tagPlace(t,sx,sy,cx,cy){const hc=hudRects(),{w,h}=tagSize(t),M4=4;
+const inPoly=(x,y,P)=>{let c=false;for(let i=0,j=P.length-1;i<P.length;j=i++){const [xi,yi]=P[i],[xj,yj]=P[j];if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)c=!c;}return c;};
+const segX=(a,b,c,d)=>{const o=(p,q,r)=>Math.sign((q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]));return o(a,b,c)!==o(a,b,d)&&o(c,d,a)!==o(c,d,b);};
+// does box a (padded by p) touch shape q (a rectangle or a polygon)?
+function hitS(a,q,p){if(!hitR(a,q,p))return false;if(!q.pts)return true;
+  const L=a.l-p,T=a.t-p,R=a.r+p,B=a.b+p,P=q.pts,C=[[L,T],[R,T],[R,B],[L,B]];
+  if(P.some(([x,y])=>x>L&&x<R&&y>T&&y<B))return true;if(C.some(([x,y])=>inPoly(x,y,P)))return true;
+  for(let i=0,j=P.length-1;i<P.length;j=i++)for(let k=0;k<4;k++)if(segX(P[j],P[i],C[k],C[(k+1)%4]))return true;return false;}
+function tagSize(t){return t.classList.contains('pinonly')?{w:12,h:12}:{w:TAG_W,h:TAG_H};}
+function tagPlace(t,sx,sy,cx,cy,w,h){const hc=hudRects(),M4=4;
   const R=FREE||{l:0,t:0,r:hc.W,b:hc.H};
-  const others=[];for(const [,o] of TAGS){if(o===t||o.hidden)continue;if(o._box)others.push(o._box);if(o._pin)others.push({l:o._pin.x-9,t:o._pin.y-9,r:o._pin.x+9,b:o._pin.y+9});}
-  const ok=bx=>bx.l>=R.l+M4&&bx.r<=R.r-M4&&bx.t>=R.t+M4&&bx.b<=R.b-M4&&!AVOID.some(q=>hitR(bx,q,8))&&!hc.rs.some(q=>hitR(bx,q,6))&&!others.some(q=>hitR(bx,q,6))&&!(sx>bx.l-9&&sx<bx.r+9&&sy>bx.t-9&&sy<bx.b+9);
+  const others=[];for(const [,o] of TAGS){if(o===t||o.hidden||!o._box)continue;others.push(o._box);}
+  const ok=bx=>bx.l>=R.l+M4&&bx.r<=R.r-M4&&bx.t>=R.t+M4&&bx.b<=R.b-M4&&!AVOID.some(q=>hitS(bx,q,8))&&!hc.rs.some(q=>hitR(bx,q,6))&&!others.some(q=>hitR(bx,q,6))&&!(sx>bx.l-12&&sx<bx.r+12&&sy>bx.t-12&&sy<bx.b+12);
   const box=(l,tp)=>({l,t:tp,r:l+w,b:tp+h});
-  // keep the card where it is while that place is still clear and the pin is not far off: a card that jumps is unreadable
+  // keep the pin where it is while that place is still clear and the spot is not far off: a pin that jumps is unreadable
   const pv=t._box&&box(t._box.l,t._box.t);if(pv&&ok(pv)&&Math.hypot((pv.l+pv.r)/2-sx,(pv.t+pv.b)/2-sy)<520)return pv;
   const cands=[];if(isFinite(cx)&&isFinite(cy))cands.push(box(sx+cx,sy+cy));
   const G=16,cl=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -1605,7 +1630,7 @@ function tagPlace(t,sx,sy,cx,cy){const hc=hudRects(),{w,h}=tagSize(t),M4=4;
     const yc=cl(sy-h/2,R.t+M4,R.b-h-M4),xc=cl(sx-w/2,R.l+M4,R.r-w-M4),side=[box(F.r+G,yc),box(F.l-G-w,yc),box(xc,F.t-G-h),box(xc,F.b+G)];
     side.sort((u,v)=>Math.hypot((u.l+u.r)/2-sx,(u.t+u.b)/2-sy)-Math.hypot((v.l+v.r)/2-sx,(v.t+v.b)/2-sy));
     for(const c of side){cands.push(c);for(let k=1;k<6;k++){cands.push(box(c.l,c.t+k*(h+8)));cands.push(box(c.l,c.t-k*(h+8)));}}}
-  for(let rad=36;rad<=760;rad+=36)for(let k=0;k<16;k++){const an=k/16*Math.PI*2-Math.PI/4,x=sx+Math.cos(an)*rad,y=sy+Math.sin(an)*rad;cands.push(box(x-(Math.cos(an)<0?w:0),y-(Math.sin(an)<0?h:0)));}
+  for(let rad=30;rad<=760;rad+=30)for(let k=0;k<16;k++){const an=k/16*Math.PI*2-Math.PI/4,x=sx+Math.cos(an)*rad,y=sy+Math.sin(an)*rad;cands.push(box(x-(Math.cos(an)<0?w:0),y-(Math.sin(an)<0?h:0)));}
   for(const c of cands)if(ok(c))return c;
   return null;}
 let tagN=0;
@@ -1613,28 +1638,39 @@ M.tag=function(id,o){
   if(typeof id==='number'){const x=id,y=o,title=arguments[2],line=arguments[3],docId=arguments[4],k='t'+(++tagN);
     const el=M.tag(k,{doc:title,line,docId:docId||title});M.tagAt(k,x,y);
     return {el,move:(sx,sy,cx,cy)=>M.tagAt(k,sx,sy,cx,cy),remove:()=>M.tagRemove(k),flash:()=>M.tagFlash(k),
-      size:()=>{const s=el?tagSize(el):{w:150,h:60};return{w:s.w,h:s.h};}};}
-  o=o||{};const l=tagLayer();if(!l)return null;let t=TAGS.get(id);
+      size:()=>{const s=el?tagSize(el):{w:TAG_W,h:TAG_H};return{w:s.w,h:s.h};}};}
+  o=o||{};const l=tagLayer();if(!l)return null;let t=TAGS.get(id);const fresh=!t;
   if(!t){t=document.createElement('div');t.className='z5-tag'+(reduced()?'':' pin');t.hidden=true;l.appendChild(t);TAGS.set(id,t);
-    t.addEventListener('mouseenter',()=>tagOpen(t,0));t.addEventListener('mouseleave',()=>tagOpen(t,1200));}
-  t.dataset.id=id;t._sz=null;t.innerHTML=`<i class="th" aria-hidden="true"></i><button title="${esc(o.doc||'')}: ${esc(o.line||'')}"><b>${esc(o.doc||'')}</b><span>${esc(hd(o.line||''))}</span></button><i class="an" title="${esc(o.doc||'')}"></i>`;
+    t.addEventListener('mouseenter',()=>tagOpen(t,0));
+    t.addEventListener('mouseleave',()=>{if(t.classList.contains('open'))tagOpen(t,Math.max(1500,TAG_OPEN_MS-(performance.now()-(t._openAt||0))));});}
+  const line=hd(o.line||''),doc=o.doc||'';
+  t.dataset.id=id;t.innerHTML=`<i class="ld" aria-hidden="true"></i><i class="sp" aria-hidden="true"></i><div class="mp"><button class="pp" aria-label="${esc(doc)}: ${esc(line)}" title="${esc(doc)}">${PUSHPIN}</button><button class="lb" tabindex="-1" title="${esc(line)} (${esc(doc)})"><b>${esc(line||doc)}</b>${line&&doc?`<small>${esc(doc)}</small>`:''}</button></div>`;
   const openDoc=()=>{const d=(o.docId&&findDoc(o.docId))||findDoc(o.doc)||{title:o.doc,summary:o.line};M.openDoc(d);};
-  // folded: a click opens the card; open: a click opens the document
-  t.querySelector('button').onclick=()=>{if(!t.classList.contains('open')){tagOpen(t,6000);return;}openDoc();};
-  t.querySelector('.an').onclick=()=>{if(t.classList.contains('nobox')){openDoc();return;}if(t.classList.contains('open'))tagFold(t);else tagOpen(t,6000);};
-  tagFold(t);
+  // the pin: folded, a click opens the two lines; open (or no room for the lines), a click opens the document. The lines open the document.
+  t.querySelector('.pp').onclick=()=>{if(t.classList.contains('pinonly')||t.classList.contains('open')){openDoc();return;}tagOpen(t,TAG_OPEN_MS);};
+  t.querySelector('.lb').onclick=openDoc;
+  if(fresh)t._new=true;   // opens for 6 s the first time it finds a place
   return t;};
-M.tagAt=function(id,sx,sy,cx,cy){const t=TAGS.get(id);if(!t)return;if(!isFinite(sx)||!isFinite(sy)){t.hidden=true;t._pin=null;return;}t.hidden=false;
+M.tagAt=function(id,sx,sy,cx,cy){const t=TAGS.get(id);if(!t)return;if(!isFinite(sx)||!isFinite(sy)){t.hidden=true;t._pin=null;t._box=null;return;}t.hidden=false;
   t.style.transform=`translate(${Math.round(sx)}px,${Math.round(sy)}px)`;t._pin={x:sx,y:sy};
-  const bx=tagPlace(t,sx,sy,cx,cy);t._box=bx;t.classList.toggle('nobox',!bx);if(!bx)return;
-  const rx=Math.round(bx.l-sx),ry=Math.round(bx.t-sy);
-  if(t._cx!==rx||t._cy!==ry){t._cx=rx;t._cy=ry;t.style.setProperty('--cx',rx+'px');t.style.setProperty('--cy',ry+'px');}
-  // the thread runs from the pin to the nearest point of the card's first line
-  const sz=tagSize(t),ex=Math.max(rx,Math.min(rx+sz.w,0)),ey=Math.max(ry,Math.min(ry+sz.hf,0));
-  t.style.setProperty('--tl',Math.hypot(ex,ey).toFixed(1)+'px');t.style.setProperty('--ta',Math.atan2(ey,ex).toFixed(3)+'rad');};
-M.tagFlash=function(id){const t=TAGS.get(id);if(!t)return;t.classList.remove('flash');void t.offsetWidth;t.classList.add('flash');};
-M.tagOpen=function(id){const t=TAGS.get(id);return !!(t&&t.classList.contains('open'));};
-M.tagBox=function(id){const t=TAGS.get(id);return t&&!t.hidden&&t._box?Object.assign({},t._box):null;};
+  // room for the pin and its two lines; else room for the pin alone; else hide until there is
+  let bx=tagPlace(t,sx,sy,cx,cy,TAG_W,TAG_H),only=false;
+  if(!bx){bx=tagPlace(t,sx,sy,NaN,NaN,12,12);only=!!bx;}
+  t._box=bx;t.classList.toggle('nowhere',!bx);t.classList.toggle('pinonly',only);if(only)tagFold(t);if(!bx){tagFold(t);return;}
+  const rx=Math.round(bx.l-sx),ry=Math.round(bx.t-sy),flip=!only&&bx.r<sx;   // a pin left of its spot puts its lines on the left
+  if(t._cx!==rx||t._cy!==ry||t._fl!==flip){t._cx=rx;t._cy=ry;t._fl=flip;t.style.setProperty('--cx',rx+'px');t.style.setProperty('--cy',ry+'px');t.classList.toggle('flip',flip);
+    t.style.setProperty('--bw',(only?12:TAG_W)+'px');t.style.setProperty('--bh',(only?12:TAG_H)+'px');}
+  // the dashed leader runs from the spot to the pin's needle
+  const ex=rx+(flip?(only?12:TAG_W)-6:6),ey=ry+(only?11:14);
+  t.style.setProperty('--tl',Math.hypot(ex,ey).toFixed(1)+'px');t.style.setProperty('--ta',Math.atan2(ey,ex).toFixed(3)+'rad');
+  if(t._new){t._new=false;if(!only)tagOpen(t,TAG_OPEN_MS);}};
+M.tagFlash=function(id){const t=TAGS.get(id);if(!t)return;t.classList.remove('flash');void t.offsetWidth;t.classList.add('flash');tagOpen(t,TAG_OPEN_MS);};
+M.tagOpen=function(id,on){const t=TAGS.get(id);if(!t)return false;if(on===true)tagOpen(t,TAG_OPEN_MS);else if(on===false)tagFold(t);return t.classList.contains('open');};
+M.tagBox=function(id){const t=TAGS.get(id);return t&&!t.hidden&&t._box?Object.assign({},t._box,{open:t.classList.contains('open'),pinOnly:t.classList.contains('pinonly')}):null;};
+// every visible pin's box and its open state, for tests: [{id, l, t, r, b, open, pinOnly}]
+M.tagBoxes=()=>[...TAGS.keys()].map(id=>{const b=M.tagBox(id);return b&&Object.assign({id},b);}).filter(Boolean);
+// does any visible pin touch a tagAvoid shape? (for tests) → [{id, kind}]
+M.tagClashes=()=>{const out=[];for(const b of M.tagBoxes())for(const q of AVOID)if(hitS(b,q,0))out.push({id:b.id,kind:q.kind||''});return out;};
 M.tagRemove=function(id){const t=TAGS.get(id);if(t){clearTimeout(t._fold);t.remove();TAGS.delete(id);}};
 M.tagClear=function(){for(const id of [...TAGS.keys()])M.tagRemove(id);};
 
@@ -1649,15 +1685,21 @@ M.connFloat=function(sx,sy,d){M.mount();d=d||{};const fl=$('#zmmFloat');if(!fl||
   if(clive.length>=6){const o=clive.shift();o.el.remove();}
   const o={x:sx,y:sy,t:now,miss,n:miss?+d.missed||0:+d.made||0,cr:d.cr!=null?+d.cr:null,rival:d.rival};
   const e=document.createElement('div');e.className='zmm-f '+(miss?'mx':'cx');e.style.left=sx+'px';e.style.top=sy+'px';e.textContent=txt(o);fl.appendChild(e);o.el=e;clive.push(o);setTimeout(()=>e.remove(),1850);};
-/* ZMMoney.setConnections({made, missed}): the one line under the money chip. From then on it replaces the rate line. */
-M.setConnections=function(o){M.mount();let c=$('#zmmChip');
-  if(o==null){if(c&&c.classList.contains('cx')){c.classList.remove('cx');c.querySelector('.r').textContent='';c.title='';}return;}   // the shift is over: the rate line comes back on the next setDay
-  if(!c){buildChip();c=$('#zmmChip');if(!c)return;}
-  c.classList.add('cx');c.querySelector('.r').innerHTML=`<b>${nIN(+o.made||0)}</b> connections · <i>${nIN(+o.missed||0)}</i> missed`;
-  c.title='Money made so far this shift. Under it: passengers who made their onward flight, and those who missed it.';};
+/* ZMMoney.setConnections({made, missed}): the live count, written in two places at once: the one line under the money chip
+   (from then on it replaces the rate line) and a line under the top strip's CONNECTIONS box (#kCnx). Call it every time a
+   passenger makes or misses a connection; null clears both when the shift is over. */
+M.setConnections=function(o){M.mount();let c=$('#zmmChip');const box=$('#kCnx');
+  if(o==null){if(c&&c.classList.contains('cx')){c.classList.remove('cx');c.querySelector('.r').textContent='';c.title='';}const l=box&&box.querySelector('.zmm-cxs');if(l)l.remove();return;}   // the shift is over: the rate line comes back on the next setDay
+  if(!c){buildChip();c=$('#zmmChip');}
+  const made=nIN(+o.made||0),missed=nIN(+o.missed||0);
+  if(c){c.classList.add('cx');const r=c.querySelector('.r'),h=`<b>${made}</b> connections · <i>${missed}</i> missed`;if(r.innerHTML!==h)r.innerHTML=h;
+    c.title='Money made so far this shift. Under it: passengers who made their onward flight, and those who missed it.';}
+  if(box){let l=box.querySelector('.zmm-cxs');if(!l){l=document.createElement('div');l.className='zmm-cxs';box.appendChild(l);}
+    const h=`<b>${made}</b> made · <i>${missed}</i> missed`;if(l.innerHTML!==h)l.innerHTML=h;}
+  M._conn={made:+o.made||0,missed:+o.missed||0};};
 
 /* ZMMoney.bill(opts) → Promise<void>. opts = the bill from VSIEra.ch5.applyShift:
-   {title, year, paragraph, table:[{label:'Earned', cr}, {label:'Spent', cr}, {label:'Connections', made, missed}],
+   {title, year, period, paragraph, table:[{label:'Earned', cr}, {label:'Spent', cr}, {label:'Connections', made, missed}],
     margin, cover:{ratio, words, light}, stake:{pct, valueCr}}. optional: page, adviser (signs the note), cta, pile.
    One page of the annual report on white bond with one handwritten margin note. A reading moment: no stamp. */
 M.bill=function(o){o=o||{};return new Promise(res=>{
@@ -1675,6 +1717,7 @@ M.bill=function(o){o=o||{};return new Promise(res=>{
     <main class="zdk-main"><div class="zdk-col"><article class="zdk-doc arrive" id="zdkDoc">
       <div class="zdk-dh">${vsiLogo(22)}<span>${o.head?esc(o.head):esc(M.cfg.spvShort)+' · Annual report'+(yr?' '+esc(yr):'')}</span><span class="dt">page ${esc(o.page||7)}</span></div>
       <h2>${esc(o.title||'The year in one page')}</h2>
+      ${o.period?`<p class="z5-pd">${esc(hd(o.period))}</p>`:''}
       ${o.lead?`<p class="t z5-ld">${esc(hd(o.lead))}</p>`:''}
       ${paras(o.paragraph).map(p=>`<p class="t">${esc(p)}</p>`).join('')}
       <table class="zdk-tab">${(o.table||[]).map(row).join('')}</table>
@@ -1765,10 +1808,17 @@ function recordHtml(rec){rec=(rec||[]).filter(r=>r&&r.company).slice(-4).reverse
     const bits=[`<b>${esc(r.company)}</b>`,esc(r.founder||''),isFinite(yrs)&&yrs>0?`${Math.round(yrs)} year${Math.round(yrs)===1?'':'s'}`:'',`<span class="end-${esc(r.ended||'')}" title="${esc(r.endedOn?M.fmtDate(r.endedOn):'')}">${esc(ENDED[r.ended]||r.ended||'')}${r.endedOn&&/^\d{4}/.test(r.endedOn)?' in '+esc(String(r.endedOn).slice(0,4)):''}</span>`,
       r.returnPct!=null&&isFinite(r.returnPct)?`returned ${pctTxt(r.returnPct)} a year`:''].filter(Boolean);
     return `<li><span class="sg">${sigOf(r.signature,r.founder)}</span><span>${bits.join(' · ')}</span></li>`;}).join('')}</ol></section>`;}
+/* the seven chapters of the flight (design/chapters.md); ZMMoney.chapterName(5) → "Chapter 5 · Cruise" */
+M.CHAPTERS=['Clearance','Pushback','Takeoff','Climb','Cruise','Turbulence','Landing'];
+M.chapterName=function(c){if(c==null||c==='')return '';if(typeof c==='object')c=c.n!=null?c.n:c.name;
+  if(isFinite(c)&&+c>=1&&+c<=7)return `Chapter ${+c} · ${M.CHAPTERS[+c-1]}`;if(/^black ?box$/i.test(String(c)))return 'The Black Box';return String(c);};
+/* ZMMoney.fileResumable(save) → true only for a save that can be continued: company, founder, signature and signedOn present,
+   and not marked old (save.resumable === false, which hub.js sets for an older save version). */
+M.fileResumable=o=>!!(o&&o.company&&o.founder&&o.signature&&o.signedOn&&o.resumable!==false);
 M.concessionFile=function(el,o){mountF();if(typeof el==='string')el=document.querySelector(el);if(!el)return null;
-  const has=o&&o.company;
+  const has=M.fileResumable(o);
   if(!has){const rec=o&&o.record;
-    el.innerHTML=`<div class="zdk z5v zcf zcf0">${INK_DEFS}<div class="zcf-nil"><button class="zdk-go" id="zcfStart">Start the concession</button>${rec&&rec.length?'<span>No concession on file now.</span>':''}</div>${recordHtml(rec)}</div>`;
+    el.innerHTML=`<div class="zdk z5v zcf zcf0">${INK_DEFS}<div class="zcf-nil"><button class="zdk-go" id="zcfStart">Start the concession</button>${o&&o.company?`<span>${esc(o.company)}’s file is from an older version of the game and can’t be continued.</span>`:rec&&rec.length?'<span>No concession on file now.</span>':''}</div>${recordHtml(rec)}</div>`;
     el.querySelector('#zcfStart').onclick=()=>{if(o&&o.onNew)o.onNew({confirmed:false});};return el.firstElementChild;}
   const yrs=M.cfg.years,st=o.stake||{},cv=o.cover||{},lt=cv.light||'';
   const mood={green:'The banks are relaxed',amber:'The banks are watching closely',red:'The banks are warning you'}[lt]||'';
@@ -1777,7 +1827,7 @@ M.concessionFile=function(el,o){mountF();if(typeof el==='string')el=document.que
     <div class="zdk-dh">${vsiLogo(20)}<span>Concession file · ${esc(M.cfg.spvShort)}</span><span class="dt">${esc(M.cfg.airportName)}</span></div>
     <div class="zcf-who"><div><h2>${esc(o.company)}</h2><p class="zcf-dir">${esc(o.founder||'')}, director</p></div>
       <div class="zcf-sig">${sigOf(o.signature,o.founder)}<small>Signed for ${esc(o.company)}</small></div></div>
-    <p class="zcf-ln">${[o.signedOn?'Signed '+esc(M.fmtDate(o.signedOn)):'',o.year!=null?`now year ${esc(o.year)} of ${yrs}`:'',o.era!=null?`era ${esc(o.era)}`:''].filter(Boolean).join(' · ')}</p>
+    <p class="zcf-ln">${[o.signedOn?'Signed '+esc(M.fmtDate(o.signedOn)):'',o.year!=null?`now year ${esc(o.year)} of ${yrs}`:'',o.chapter!=null?esc(M.chapterName(o.chapter)):o.era!=null?`era ${esc(o.era)}`:''].filter(Boolean).join(' · ')}</p>
     <div class="zcf-n3">
       <div><small>Your stake</small><b>${st.pct!=null?esc(pctTxt(st.pct)):'—'}</b><span>${st.valueCr!=null?'worth about '+fmt(+st.valueCr):''}</span></div>
       <div class="cv ${esc(lt)}"><small>The banks</small><b>${esc(cv.words||'—')}</b><span>${esc(mood)}</span></div>
@@ -1827,7 +1877,7 @@ function sampleSig(seed,ink){return new Promise(r=>{const svg=scribble(seed,ink|
 function fileMock(kind){return Promise.all([sampleSig(53),sampleSig(71,'#14161a'),sampleSig(97)]).then(([s0,s1,s2])=>{
   const record=[{company:'Kestrel Airport Holdings',founder:'Vikram Shah',signature:s1,years:60,ended:'handback',returnPct:14.2,endedOn:'2086-10-18'},
     {company:'Sahyadri Gateway',founder:'Asha Rao',signature:s2,years:23,ended:'banks',returnPct:-3.4,endedOn:'2049-06-30'}];
-  const docs=[{id:'ca',title:'Concession Agreement',date:'2026-10-19',kind:'agreement',summary:'Signed by AAI, the State through MADC, L5 Capital and your company. Sixty years to build and run VSI, then hand it back.'},
+  const docs=[{id:'ca',title:'Concession Agreement',date:'2026-04-01',kind:'agreement',summary:'Signed by AAI, the State through MADC, L5 Capital and your company. Sixty years to build and run VSI, then hand it back.'},
     {id:'lic',title:'Aerodrome licence',date:'2030-11-01',stamp:'Licensed',summary:'DGCA licensed VSI on 1 November 2030. The airport opened the same morning.'},
     {id:'bm2041',title:'Board minutes, 2041',date:'2041-04-01',kind:'minutes',summary:'Approved: the departure planning system and the retail upgrade. Dividend: ₹900 cr.'}];
   const host=()=>{let h=document.getElementById('tConc');if(h)return h;h=document.getElementById('zcfHost');if(h)return h;
@@ -1835,7 +1885,7 @@ function fileMock(kind){return Promise.all([sampleSig(53),sampleSig(71,'#14161a'
   M.setPile(docs);
   const draw=k=>{const h=host();
     if(k==='file0')return M.concessionFile(h,null);
-    return M.concessionFile(h,{company:'Meridian Infra',founder:'Asha Rao',signature:s0,signedOn:'2026-10-19',year:17,era:3,stake:{pct:64,valueCr:23600},
+    return M.concessionFile(h,{company:'Meridian Infra',founder:'Asha Rao',signature:s0,signedOn:'2026-04-01',year:17,chapter:5,stake:{pct:64,valueCr:23600},
       cover:{words:'₹118 earned for every ₹100 due',light:'green'},cashCr:14800,docs,record:kind==='file'||k==='file'?record:record.slice(0,1),
       onContinue:()=>{window.__zmmResult='continue';},onNew:a=>{window.__zmmResult={onNew:a};
         // as hub.js does: the torn concession joins the record, then the deal desk opens
@@ -1846,47 +1896,50 @@ function fileMock(kind){return Promise.all([sampleSig(53),sampleSig(71,'#14161a'
   return root;});}
 M._fileMock=fileMock;
 
-/* sample Chapter 5 data for ?moneymock=frontpage|decision|briefing|tags|bill|card. The real figures come from VSIEra.ch5. */
+/* sample Chapter 5 data for ?moneymock=frontpage|decision|briefing|tags|pins|bill|card. The real figures come from VSIEra.ch5. */
 const CH5={
   docs:[{id:'ca',title:'Concession Agreement',year:2026,kind:'agreement',summary:'Signed by AAI, the State through MADC, L5 Capital and your company. Sixty years to build and run VSI, then hand it back.'},
     {id:'p1',title:'Phase 1: the lean build',year:2027,kind:'choice',summary:'You built phase 1 for 45 million passengers a year: ₹60,000 cr. Piers A to D only. No widebody stands on the international side until phase 1B.'},
     {id:'cb2034',title:'Capital budget, 2034',year:2034,kind:'budget',summary:'Approved: the departure planning system and the retail upgrade. Not approved: the bird radar (₹180 cr). The lakes south of the field stay unwatched.'},
-    {id:'ra2040',title:'Route agreement with Skyward',year:2040,kind:'route-agreement',summary:'Skyward flies a daily evening bank from VSI to London, Singapore and Nairobi, fed by the domestic bank from Lucknow, Indore, Patna and Bhopal.'}],
+    {id:'ra2040',title:'Route agreement with Haversine Airways',year:2040,kind:'route-agreement',summary:'Haversine Airways flies a daily evening bank from VSI to London, Singapore and Nairobi, fed by the domestic bank from Lucknow, Indore, Patna and Bhopal.'}],
   front:{masthead:'The Zero Mile Times',dateLine:'Nagpur, Monday 15 October 2040',price:'₹12',edition:'Nagpur edition',
     lead:'DUBAI, DOHA OR NAGPUR? THE RACE FOR INDIA\'S TRAVELLERS',
     deck:'A long-haul airline wants to make VSI its Indian hub. The Gulf airports want India\'s travellers to keep changing planes with them.',
-    sub:{head:'Skyward puts London, Singapore and Nairobi on the table',body:'Skyward\'s chief executive flew in on Saturday to offer VSIAL a daily evening bank of long-haul flights. Each would be filled by the domestic flights that land at VSI in the hour before.\n\nThe airline wants stands, a quick transfer and a promise that the feeders will not run late. VSIAL\'s board meets this week.'},
+    sub:{head:'Haversine Airways puts London, Singapore and Nairobi on the table',body:'Haversine\'s commercial chief flew in on Saturday to offer VSIAL a daily evening bank of long-haul flights. Each would be filled by the domestic flights that land at VSI in the hour before.\n\nThe airline wants stands, a quick transfer and a promise that the feeders will not run late. VSIAL\'s board meets this week.'},
     columns:[{head:'Feeders fill up',body:'Fourteen Indian cities now send a morning and an evening bank to VSI. Lucknow and Indore are full most days.'},
       {head:'AERA holds charges',body:'The regulator kept airline charges where they were for five more years. VSIAL said it would live with the order.'}],
     photo:{kind:'intl-pier',caption:'The international pier at VSI, where a London flight would board. Drawn by our staff artist.'}},
-  decision:{docType:'route-agreement',docId:'RA-2040-07',title:'Route agreement: Skyward',
-    parties:{airport:'Vikram Sarabhai International Airport Limited',airline:'Skyward',signatory:{name:'Daniel Okafor',title:'Chief Executive, Skyward'}},
+  decision:{docType:'route-agreement',docId:'RA-2040-07',title:'Route agreement: Haversine Airways',
+    parties:{airport:'Vikram Sarabhai International Airport Limited',airline:'Haversine Airways',signatory:{name:'Daniel Okafor',title:'Chief Commercial Officer, Haversine Airways'}},
     body:['The Airline will base long-haul aircraft at the Airport and fly one bank of international departures each evening.','The Airport will give the Airline\'s flights stands on the international pier, and a transfer from the domestic bank in under an hour.','If a feeder lands late, the Airport may hold the departure. The slot it misses at the other end is the Airport\'s cost.'],
-    choices:[{id:'three',label:'London, Singapore and Nairobi, every evening',terms:'Three widebodies. Skyward wants three stands on the international pier.',act:'Sign for three routes',slip:{big:'+2,400 connections a day',money:'₹1,850 cr a year',line:'If the feeder bank holds. Every missed connection books via Doha next time.'}},
-      {id:'london',label:'London only, every evening',terms:'One widebody, one stand. Skyward may add routes later.',act:'Sign for London',slip:{big:'+900 connections a day',money:'₹690 cr a year',line:'Safer on stands. Singapore and Nairobi stay with Dubai and Doha.'}},
+    choices:[{id:'three',label:'London, Singapore and Nairobi, every evening',terms:'Three widebodies. Haversine Airways wants three stands on the international pier.',act:'Sign for three routes',slip:{big:'+2,400 connections a day',money:'₹1,850 cr a year',line:'If the feeder bank holds. Every missed connection books via Doha next time.'}},
+      {id:'london',label:'London only, every evening',terms:'One widebody, one stand. Haversine Airways may add routes later.',act:'Sign for London',slip:{big:'+900 connections a day',money:'₹690 cr a year',line:'Safer on stands. Singapore and Nairobi stay with Dubai and Doha.'}},
       {id:'decline',label:'Decline the agreement',terms:'No international bank this chapter.',slip:{big:'0 new connections',money:'₹0 a year',line:'Nothing can go wrong tonight. Doha keeps India\'s travellers.'}}],
     stamps:{three:'Signed',london:'Signed',decline:'Declined'}},
   brief:{title:'Duty manager’s handover',date:'15 Oct 2040, 13:40',
-    lines:[{text:'Skyward’s London bank departs 14:10 · 380 connecting',doc:'Route agreement with Skyward'},{text:'Only two widebody stands on the international side',doc:'Phase 1: the lean build'},{text:'No bird radar: watch the lakes south of 28L',doc:'Capital budget, 2034'}],
+    lines:[{text:'Haversine’s London bank departs 14:10 · 380 connecting',doc:'Route agreement with Haversine Airways'},{text:'Only two widebody stands on the international side',doc:'Phase 1: the lean build'},{text:'No bird radar: watch the lakes south of 28L',doc:'Capital budget, 2034'}],
     watch:'Lucknow’s feeder. If it’s late, London has to wait or go.',autoStartSec:6},
-  tags:[{id:'stands',doc:'Phase 1: the lean build',line:'No widebody stand free for Skyward 12.',docId:'p1'},{id:'birds',doc:'Capital budget, 2034',line:'You skipped the bird radar.',docId:'cb2034'}],
-  bill:{title:'The first year of the Gulf race',year:2040,page:7,
-    paragraph:'Skyward\'s evening bank to London, Singapore and Nairobi ran all year. Most feeders landed on time; when Lucknow ran late you held London. Two widebodies a night waited on taxiways for a stand.',
+  tags:[{id:'stands',doc:'Phase 1: the lean build',line:'No widebody stand free for Haversine 12.',docId:'p1'},{id:'birds',doc:'Capital budget, 2034',line:'You skipped the bird radar.',docId:'cb2034'}],
+  bill:{title:'The first year of the Gulf race',year:2040,page:7,period:'This page covers one year: 1 April 2040 to 31 March 2041.',
+    paragraph:'Haversine\'s evening bank to London, Singapore and Nairobi ran all year. Most feeders landed on time; when Lucknow ran late you held London. Two widebodies a night waited on taxiways for a stand.',
     table:[{label:'Earned',cr:2140},{label:'Spent',cr:1610},{label:'Connections',made:612000,missed:41000}],
-    margin:'You held London twice. It cost ₹38 cr in slots and kept 760 passengers off Doha. Skyward is adding a Frankfurt flight.',
+    margin:'You held London twice. It cost ₹38 cr in slots and kept 760 passengers off Doha. Haversine Airways is adding a Frankfurt flight.',
     cover:{ratio:1.18,words:'₹118 earned for every ₹100 due'},stake:{pct:64,valueCr:23600}},
   card:{title:'What really happened',text:'Emirates first flew on 25 October 1985, from Dubai to Karachi, with two leased aircraft and US$10 million from Dubai\'s government. In 2024 Dubai International handled a record 92.3 million passengers, and India was its biggest market.',
     sources:[{label:'Gulf News, “40 years of UAE: the launch of Emirates Airline”',url:'https://gulfnews.com/news/uae/government/40-years-of-uae-the-launch-of-emirates-airline-1.920215'},{label:'AP, “Dubai International Airport, busiest for world travel, sees record 92.3 million passengers in 2024”',url:'https://www.yahoo.com/news/dubai-international-airport-busiest-world-081648847.html'}]}};
 M._ch5Sample=CH5;
 function ch5Mock(kind){M.setPile(CH5.docs);const H5=window.HUB;
-  const live=()=>{if(H5&&H5.startLevel){try{H5.view&&H5.view('2d');H5.startLevel(3);H5.ff&&H5.ff(kind==='tags'?420:2);H5.pause&&H5.pause();}catch(e){console.warn(e);}}};
+  const live=()=>{if(H5&&H5.startLevel){try{H5.view&&H5.view('2d');H5.startLevel(3);H5.ff&&H5.ff(kind==='tags'||kind==='pins'?420:2);H5.pause&&H5.pause();}catch(e){console.warn(e);}}};
   if(kind==='frontpage')return M.frontPage(Object.assign({company:'Meridian Infra',founder:'Asha Rao'},CH5.front));
   if(kind==='decision')return M.decision(Object.assign({founder:'Asha Rao',parent:'Meridian Infra',date:'15 October 2040'},CH5.decision));
   if(kind==='bill')return M.bill(CH5.bill);
   if(kind==='card')return M.whatHappened(CH5.card);
   if(kind==='briefing'){live();return M.briefing(Object.assign({},CH5.brief,{autoStartSec:600}));}
-  if(kind==='tags'){live();M.enable(true);M.setDay({total:142.6,ratePerHr:61});M.setConnections({made:1840,missed:380});
-    const hs=CH5.tags.map(t=>M.tag(0,0,t.doc,t.line));
+  if(kind==='tags'||kind==='pins'){live();M.enable(true);M.setDay({total:142.6,ratePerHr:61});const cn={made:1840,missed:380};M.setConnections(cn);
+    const extra=kind==='pins'?[{doc:'Route agreement with Haversine Airways',line:'London waits for the Lucknow feeder.',docId:'ra2040'},{doc:'Concession Agreement',line:'Sixty years, then hand it back.',docId:'ca'}]:[];
+    const hs=CH5.tags.concat(extra).map(t=>M.tag(0,0,t.doc,t.line,t.docId));
+    // the live count, as hub.js sends it: every time a bank settles
+    setInterval(()=>{cn.made+=Math.round(20+Math.random()*30);if(Math.random()<.3)cn.missed+=Math.round(3+Math.random()*9);M.setConnections(cn);},900);
     // pin each tag to a real aircraft on the map: a widebody at a stand, and one on final approach
     const pickF=(want)=>{const fs=H5&&H5.flights?H5.flights():[];return fs.find(f=>f.sx!=null&&want(f));};
     // what hub.js does every frame: ZMMoney.tagAvoid(the screen rectangles of every runway and the terminal). Here the 2D map's
@@ -1898,10 +1951,18 @@ function ch5Mock(kind){M.setPile(CH5.docs);const H5=window.HUB;
       for(const f of fs)for(const g of fs){const d=Math.abs(f.x-g.x);if(d>dx){dx=d;a=f;bb=g;}}if(!a||dx<500)return;
       const k=(a.sx-bb.sx)/(a.x-bb.x),ox=a.sx-a.x*k,oy=a.sy-a.y*k,R=(x0,y0,x1,y1)=>({l:ox+x0*k,t:oy+y0*k,r:ox+x1*k,b:oy+y1*k});
       const rs=(H5.RW||[]).map(r=>{const q=R(r.x0,r.y-(r.width||60)/2,r.x1,r.y+(r.width||60)/2);const m=Math.max(0,5-(q.b-q.t)/2);q.t-=m;q.b+=m;q.kind='runway';return q;});
-      if(term){const q=R(term.l,term.t,term.r,term.b);q.kind='terminal';rs.push(q);}window.__zmmAvoid=rs;M.tagAvoid(rs);};
-    let fA=null,fB=null;const step=()=>{if(!fA||fA.sx==null)fA=pickF(f=>f.state==='at_gate');if(!fB||fB.sx==null)fB=pickF(f=>f.state==='approach'||f.state==='holding');
+      if(kind==='pins'){   // the real shapes: runways, every taxiway segment as a thin strip, each concourse and the main hall as polygons
+        const P=(x,y)=>[ox+x*k,oy+y*k];
+        for(const t of spec.taxiways||[])for(let i=0;i+1<(t.pts||[]).length;i++){const [x0,y0]=t.pts[i],[x1,y1]=t.pts[i+1],L=Math.hypot(x1-x0,y1-y0)||1,nx=-(y1-y0)/L*30,ny=(x1-x0)/L*30;
+          rs.push({pts:[P(x0+nx,y0+ny),P(x1+nx,y1+ny),P(x1-nx,y1-ny),P(x0-nx,y0-ny)],kind:'taxiway'});}
+        for(const c of (spec.concourses||[]).concat((spec.buildings||[]).filter(b=>b.kind==='processor'))){const n=nums(c.outline),pts=[];for(let i=0;i+1<n.length;i+=2)pts.push(P(n[i],n[i+1]));if(pts.length>2)rs.push({pts,kind:'terminal'});}}
+      else if(term){const q=R(term.l,term.t,term.r,term.b);q.kind='terminal';rs.push(q);}window.__zmmAvoid=rs;M.tagAvoid(rs);window.__zmmClash=M.tagClashes();};
+    let fA=null,fB=null,fC=null,fD=null;const step=()=>{if(!fA||fA.sx==null)fA=pickF(f=>f.state==='at_gate');if(!fB||fB.sx==null)fB=pickF(f=>f.state==='approach'||f.state==='holding');
       avoid();const app=$('#app').getBoundingClientRect();
-      hs[0].move(fA?fA.sx:app.width*.42,fA?fA.sy:app.height*.5);hs[1].move(fB?fB.sx:app.width*.3,fB?fB.sy:app.height*.25);requestAnimationFrame(step);};
+      hs[0].move(fA?fA.sx:app.width*.42,fA?fA.sy:app.height*.5);hs[1].move(fB?fB.sx:app.width*.3,fB?fB.sy:app.height*.25);
+      if(hs[2]){if(!fC||fC.sx==null)fC=pickF(f=>f!==fA&&f.state==='at_gate');hs[2].move(fC?fC.sx:app.width*.5,fC?fC.sy:app.height*.6);}
+      if(hs[3]){if(!fD||fD.sx==null)fD=pickF(f=>f!==fB&&(f.state==='taxi_out'||f.state==='taxi_in'||f.state==='lineup'));hs[3].move(fD?fD.sx:app.width*.55,fD?fD.sy:app.height*.4);}
+      requestAnimationFrame(step);};
     step();
     const fire=()=>{const r=$('#app').getBoundingClientRect();M.connFloat(r.width*.44,r.height*.56,{made:46,cr:0.4});M.connFloat(r.width*.56,r.height*.36,{missed:18,rival:'Doha'});};
     fire();setInterval(fire,1600);return Promise.resolve();}
@@ -1910,7 +1971,7 @@ M._ch5Mock=ch5Mock;
 
 /* ---------- auto-mount, and a mock driver for screenshots: ?moneymock ---------- */
 function boot(){M.mount();if(!/[?&]moneymock\b/.test(location.search))return;
-  {const k=(location.search.match(/[?&]moneymock=(frontpage|decision|briefing|tags|bill|card)\b/)||[])[1];if(k){ch5Mock(k).then(r=>{window.__zmmResult=r;});return;}}
+  {const k=(location.search.match(/[?&]moneymock=(frontpage|decision|briefing|tags|pins|bill|card)\b/)||[])[1];if(k){ch5Mock(k).then(r=>{window.__zmmResult=r;});return;}}
   {const k=(location.search.match(/[?&]moneymock=(file0|file|tear)\b/)||[])[1];if(k){fileMock(k);}}
   M.enable(true);let total=0;const hs=[];
   setInterval(()=>{const d=(Math.random()-0.28)*0.9;total+=d;hs.push(total);M.setDay({total,ratePerHr:total/Math.max(1,hs.length)*60,history:hs});
@@ -1929,7 +1990,7 @@ function boot(){M.mount();if(!/[?&]moneymock\b/.test(location.search))return;
     board:()=>M.boardMeeting({era:3,years:'2041–46',year:16,parent:'Meridian Infra',founder:'Asha Rao',parentPct:64,cashCr:14800,debtCr:31400,stakeValueCr:23600,dscr:{value:1.16,warn:1.2,covenant:1.1},
       aera:{title:'Charges to airlines and passengers, 2041–46',text:'AERA lets you charge ₹1,040 per passenger on average. Last period you earned ₹1,820 cr less than it allowed, so you get that back over these five years.',canAppeal:true,
         acceptText:'Your charges are fixed for five years. No quarrel with the airlines.',appealText:'Win and your charges rise 6%. Lose and the airlines stay angry with you for the whole period.'},
-      investments:[{id:'city',name:'Airport City — a property district on VSI land',costCr:9600,opens:'year 19',land:{earnCr:1450,aeraCr:435},effect:'Offices, hotels and shops, built in three phases; rents climb for six years after it opens.'},
+      investments:[{id:'city',name:'Zero Mile District: offices, hotels and shops on VSI land',costCr:9600,opens:'year 19',land:{earnCr:1450,aeraCr:435},effect:'Offices, hotels and shops, built in three phases; rents climb for six years after it opens.'},
         {id:'cdm',name:'Departure planning system',costCr:420,opens:'year 17',effect:'Aircraft leave the gate only when the runway can take them. Shorter taxi queues.',payback:'4 years'},
         {id:'radar',name:'Bird radar',costCr:180,opens:'year 17',effect:'Fewer bird strikes and no surprise runway closures.',payback:'3 years'},
         {id:'ret',name:'Extra rapid-exit taxiway',costCr:240,opens:'year 18',effect:'Arrivals clear 27R faster, so they can land a little closer together.',payback:'3 years'},

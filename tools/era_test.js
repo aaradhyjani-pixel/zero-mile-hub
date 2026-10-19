@@ -567,8 +567,16 @@ else {
   const br = SM.log.bridge5;
   if (br.from !== 2034 || br.to !== 2039 || br.years.map(y => y.calYear).join() !== '2035,2036,2037,2038' || br.years.some(y => y.paxM <= 0 || y.connectionsPerDay == null)) fail('bridge 4→5 should span 2035-2038: ' + br.from + '→' + br.to + ' ' + br.years.map(y => y.calYear));
   console.log('- cliffhangers: "' + ch1.lead + '" / smart "' + ch2s.lead + '" / blind "' + ch2b.lead + '"; years later 4→5: ' + br.years.map(y => y.calYear + (y.line ? ' (' + y.line + ')' : '')).join(', '));
+  if (br.fromYear !== 2034 || br.toYear !== 2039 || br.headlines.length !== 4 || !/^2035: /.test(br.headlines[0])) fail('bridge: fromYear/toYear and one headline a year, oldest first: ' + JSON.stringify(br.headlines));
+  // the engine playing over Chapters 3-4 without their decisions still builds a network (the "0 changing planes" bug)
+  let skip = E.applyConstruction(E.newCampaign(Object.assign({}, SIGN, SMART.terms), 1), {choices: SMART.con});
+  const skipB = E.bridge(E.ch3.start(skip), 5);
+  if (skipB.years.some(y => !(y.connectionsPerDay > 1000))) fail('bridge over chapters played by the engine: connections a day ' + skipB.years.map(y => y.connectionsPerDay));
+  if (!(E.ch7.fixture().s.decisions || []).some(d => d.id === 'ch6-cure' && d.auto)) fail('advance: a chapter the engine plays over should take the passive decision');
   const pg = E.debrief.pages(SM.st), pgR = E.debrief.pages(RF.st);
   ['return', 'attribution', 'papers', 'profile', 'thiel'].forEach(k => { if (!pg[k] || !pgR[k]) fail('debrief.pages missing ' + k); });
+  ['p1', 'p2', 'p3', 'p4'].forEach(k => { if (!pg[k] || !pgR[k]) fail('debrief.pages missing ' + k); });
+  if (pg.p1.valueCr == null || pgR.p1.valueCr !== 0 || pg.p2.bars.some(b => !b.sentence) || pg.p4.profile.some(l => !l.title) || !pg.p3.papers.length || pg.p4.thiel.length !== 7) fail('debrief.pages: p1.valueCr, a sentence on every bar, a title on every profile line');
   if (pg.thiel.length !== 7 || pg.thiel.some(x => !x.q || !x.answer || !/[✓✗]/.test(x.mark))) fail('debrief: Thiel\'s seven questions');
   const thB = E.debrief.thiel(BL.st), marks = th => th.filter(x => x.mark === '✓').length;
   if (!(marks(pg.thiel) > marks(thB))) fail('debrief: the smart run should answer more of Thiel\'s questions than the blind run: ' + marks(pg.thiel) + ' vs ' + marks(thB));

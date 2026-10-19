@@ -1622,7 +1622,7 @@
     for (var guard = 0; guard < 16 && !st.over && st.era < era; guard++) {
       var h = st.history[st.history.length - 1] || {};
       // the era's shift is already played if the last entry is this era's report (waiting for its board)
-      if (!(h.era === st.era && !h.board && !h.construction)) st = applyShift(st, opts.shift ? opts.shift(st.era) : autoShift(st.era)).state;
+      if (!(h.era === st.era && !h.board && !h.construction)) { autoDecide(st); st = applyShift(st, opts.shift ? opts.shift(st.era) : autoShift(st.era)).state; }
       if (st.over) break;
       var bo = boardOptions(st);
       st = applyBoard(st, opts.board ? opts.board(st, bo) : {appeal: false, prepayCr: 0, dividendCr: bo.dividend.maxCr,
@@ -2662,6 +2662,23 @@
   // VSIEra.bridge(state, n): the years between the end of one chapter and the start of chapter n, played by the engine
   // (pending boards at the defaults), with the facts for the "years later" split-flap: {state, from, to, years[], lines[]}
   // ---------------------------------------------------------------------------------------------
+  // a chapter the engine plays over without its decision (advance, the fixtures) takes what a passive player would have chosen
+  // (design/debrief.md §2), so its network, crisis and shocks exist; no front page goes into the player's papers
+  function autoDecide(st) {
+    var e = st.era, s = st.s;
+    var log = function (id, group, n, year, label, chosen, alt) { logDecision(st, {id: id, group: group, chapter: n, year: year, label: label, chosen: chosen, chosenLabel: chosen, 'default': chosen, alt: alt, auto: true}); };
+    if (e === firstEra(3) && !st.ch3) { applyPatch(s, ch3Patch('phased', 0.95, CH3.growth)); st.ch3 = {plan: 'phased', auto: true}; log('ch3-plan', 'opening', 3, CH3.year, 'The opening plan', 'phased', ch3Patch('phased', 0.95, CH3.growth)); }
+    if (e === firstEra(4) && !st.ch4) { var id = ch4Def(st); applyPatch(s, ch4Patch(id)); st.ch4 = {network: id, auto: true}; log('ch4-network', 'network', 4, CH4.year, 'The network', id, ch4Patch(id)); }
+    if (e === firstEra(6) && !st.ch6) {
+      ch6Ready(st);
+      var need = ch6Need(st), pt = ch6Patch(st, 'l5', need);
+      applyPatch(s, pt); st.stake = pt['stakeBy.ch6'].pct; s.l5Pct = (100 - stakeDef(st) - 20) + (stakeDef(st) - st.stake);
+      st.ch6.choice = 'l5'; st.ch6.needCr = need.cr; st.ch6.equityCr = need.equityCr; st.ch6.auto = true;
+      log('ch6-cure', 'cure', 6, CH6.year, 'The crisis cure', 'l5', pt);
+    }
+    if (e === firstEra(7) && !st.ch7) { ch7Ready(st); st.ch7.adopted = []; st.ch7.auto = true; }
+    return st;
+  }
   // the year each chapter's shift is played: the years-later pages run from it to the next chapter's first year
   var SHIFT_YEAR = {3: 5, 4: 9, 5: 15, 6: 21, 7: 34};
   function bridge(state, n) {
@@ -2688,7 +2705,9 @@
     if (last) lines.push(cal(last.year) + ': ' + last.paxM + ' million passengers a year, ' + last.connectionsPerDay.toLocaleString('en-IN') + ' changing planes here each day.');
     lines.push('Your ' + st.stake + '% is worth about ' + stakeWords(lr.stakeValueCr || 0) + '.');
     if (lr.cover != null) lines.push('The banks: ' + coverWords(lr.cover) + ' in the hardest recent year.');
-    return {state: st, from: cal(y0), to: cal(y1), years: years, lines: lines, chapter: n};
+    // the split-flap: one headline per year, oldest first (the year's event, or its passengers and connections)
+    var headlines = years.map(function (y) { return y.calYear + ': ' + (y.line || y.paxM + ' million passengers, ' + y.connectionsPerDay.toLocaleString('en-IN') + ' changing planes here each day.'); });
+    return {state: st, from: cal(y0), to: cal(y1), fromYear: cal(y0), toYear: cal(y1), years: years, headlines: headlines, lines: lines, chapter: n};
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -2808,7 +2827,8 @@
     var groups = ids.map(function (k) { return {group: k, label: GROUP_LABEL[k], chosen: G[k].chosen, npvCr: Math.round(phi[k]), sharePct: Math.round(phi[k] / den * 1000) / 10}; })
       .sort(function (a, b) { return Math.abs(b.npvCr) - Math.abs(a.npvCr); });
     // the page: shares under 3% pooled into "everything else", at most 5 bars, the two largest as sentences
-    var bars = groups.filter(function (x) { return Math.abs(x.sharePct) >= 3; }).slice(0, 5), pooled = rest + groups.filter(function (x) { return bars.indexOf(x) < 0; }).reduce(function (a, x) { return a + phi[x.group]; }, 0);
+    var bars = groups.filter(function (x) { return Math.abs(x.sharePct) >= 3; }).slice(0, 5);
+    var pooled = rest + groups.filter(function (x) { return bars.indexOf(x) < 0; }).reduce(function (a, x) { return a + phi[x.group]; }, 0);
     var sentence = function (x) {
       var w = x.group === 'shifts' ? 'Your shifts, against an expert\'s,' : x.group === 'finance' || x.group === 'bid' || x.group === 'build' || x.group === 'plan30' ? x.label + ' (' + x.chosen + ')' : x.chosen ? x.chosen.charAt(0).toUpperCase() + x.chosen.slice(1) : x.label;
       return w + (x.npvCr >= 0 ? ' made ' : ' cost you ') + Math.abs(Math.round(x.sharePct)) + '% of your return.';
@@ -2816,7 +2836,8 @@
     var absSum = groups.reduce(function (a, x) { return a + Math.abs(phi[x.group]); }, 0) + Math.abs(rest), top2 = groups.slice(0, 2).reduce(function (a, x) { return a + Math.abs(phi[x.group]); }, 0);
     return {method: method, words: method === 'quick' ? 'A quick estimate: each decision undone on its own.' : '', rate: npvRate(), playerNpvCr: Math.round(vN), passiveNpvCr: Math.round(v0), totalCr: Math.round(total),
       groups: groups, everythingElse: {npvCr: Math.round(pooled), sharePct: Math.round(pooled / den * 1000) / 10}, restCr: Math.round(rest), bars: bars,
-      sentences: bars.slice(0, 2).map(sentence), powerLaw: absSum > 0 && top2 / absSum >= 0.5 ? 'Two decisions made most of your sixty years. Most decisions barely mattered. That is how big returns work.' : 'No single decision made your sixty years: it was many small ones.',
+      sentences: bars.slice(0, 2).map(sentence), barSentences: bars.map(sentence),
+      barsWithWords: bars.map(function (x) { return Object.assign({sentence: sentence(x)}, x); }), powerLaw: absSum > 0 && top2 / absSum >= 0.5 ? 'Two decisions made most of your sixty years. Most decisions barely mattered. That is how big returns work.' : 'No single decision made your sixty years: it was many small ones.',
       top2Share: absSum > 0 ? Math.round(top2 / absSum * 1000) / 10 : 0, checkSum: Math.abs(sumPhi + rest - total) / (Math.abs(total) || 1), runs: method === 'exact' ? Math.pow(2, n) : n + 2};
   }
   // page 1: the return against the sourced benchmarks
@@ -2859,6 +2880,7 @@
       else if (rs < 0) out.push({id: 'risk-cost', line: 'A risk-taker, and it cost you.', evidence: risky.join('; ').replace(/^./, function (c) { return c.toUpperCase(); }) + ': it cost ' + Math.abs(Math.round(rs)) + '%.'});
     }
     if (!out.length) out.push({id: 'defaults', line: 'The airport mostly ran on its defaults. Next time, try a decision that scares you.', evidence: ''});
+    out.forEach(function (l) { var i = l.line.indexOf('. '); l.title = i > 0 ? l.line.slice(0, i + 1) : l.line; l.text = i > 0 ? l.line.slice(i + 2) : ''; });
     return out;
   }
   // page 4b: Peter Thiel's seven questions (Zero to One, ch. 13 "Seeing Green"), each answered in one line from the concession
@@ -2892,10 +2914,12 @@
   // the four pages as ZMMoney.debrief takes them: {return, attribution, papers, profile, thiel} (design/debrief.md §6)
   function pages(state, opts) {
     ensure();
-    var a = attribution(state, opts);
-    return {'return': returnPage(state), attribution: a, papers: papers(state), profile: profile(state, a), thiel: thiel(state),
-      company: state.parent || 'Your company', founder: state.founder || '', signature: state.signature || null, signedOn: state.signedOn || null, endsOn: state.endsOn || null,
-      moment: onceLine(state)};
+    var a = attribution(state, opts), rp = returnPage(state), pa = papers(state), pr = profile(state, a), th = thiel(state), f = state.final || {}, mo = onceLine(state);
+    rp.valueCr = f.banks ? 0 : (f.residualCr != null ? f.residualCr : 0);   // what the player's stake was worth at the handback (the cash left, its share)
+    a.bars = a.barsWithWords;
+    return {p1: rp, p2: a, p3: {papers: pa, moment: mo}, p4: {profile: pr, thiel: th},
+      'return': rp, attribution: a, papers: pa, profile: pr, thiel: th, moment: mo,
+      company: state.parent || 'Your company', founder: state.founder || '', signature: state.signature || null, signedOn: state.signedOn || null, endsOn: state.endsOn || null};
   }
   // page 3's last line: "Every moment happens once" (Zero to One, ch. 1), about the one shift that happens once per concession
   function onceLine(state) {

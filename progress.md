@@ -333,10 +333,19 @@ Every chapter has the Chapter 5 shape. `VSIEra.chapters[n]` is the registry for 
   - `VSIEra.cliffhanger(state, act)` returns a Zero Mile Times front page plus `{edition: 'Late City', act, actName, fold: 'Act II · The Network' | 'Act III · The Long Game'}`.
   - Act I's lead is fixed: "AIRLINES ASK: WILL VSI BECOME INDIA'S CONNECTING HUB?".
   - Act II's lead comes from what's coming for this player (Chapter 6's pick): RUPEE AT RECORD LOW / SUTRADHAR AIR MISSES ITS FUEL PAYMENTS / A NEW VIRUS SPREADS.
-- **Bridge spanning years.** `VSIEra.bridge(state, n)` now runs from the previous chapter's shift year to chapter n's first year. For example, 4→5 is `from` 2034, `to` 2039, with `years` 2035–2038.
+- **Bridge spanning years.** `VSIEra.bridge(state, n)` (also `fromYear`, `toYear`, and `headlines[]`: one per year, oldest first) now runs from the previous chapter's shift year to chapter n's first year. For example, 4→5 is `from` 2034, `to` 2039, with `years` 2035–2038.
   - Each year is `{year, calYear, paxM, light, connectionsPerDay, line}`.
   - `line` is the year's one event, if there is one: the rupee falls, a refinancing, fresh money from the owners, new terminal space opening, the last loan repaid.
 - **`VSIEra.debrief.pages(state, opts)`** → `{return, attribution, papers, profile, thiel, company, founder, signature, signedOn, endsOn, moment}`, as `ZMMoney.debrief` takes it.
   - `thiel` is Thiel's seven questions, each `{q, answer, mark: '✓'|'✗'}`. Smart gets 6/7 and blind 0/7 in the test.
   - `moment` is page 3's "Every moment happens once" line.
   - `opts.exact` switches page 2 to exact Shapley.
+- **Third push (after lane H's shape check):**
+  - **Bridge:** it adds `fromYear`/`toYear` and `headlines[]`, one per year, oldest first. The old `from`/`to`/`lines` stay.
+  - **Fixed the "0 changing planes" bug.** When `advance` played over a chapter whose decision was never taken, there was no network. Now `advance` applies the passive choice for that chapter, marked `auto: true` in `s.decisions`, and puts no paper in the player's pile. The passive choices are: Ch3 phased, Ch4 two feeders (anchor if Plateau Air declined), Ch6 L5 puts in the cure, Ch7 rejects all three.
+  - **`debrief.pages`** now gives `{p1, p2, p3, p4}`:
+    - `p1` is the return page plus `valueCr` (the player's share of what is left at the handback; 0 if the banks took it);
+    - `p2.bars[]` each carry their own `sentence`;
+    - `p3` is `{papers, moment}`;
+    - `p4` is `{profile, thiel}`, with every profile line split into `{title, text, evidence}`.
+    The long names stay as well.

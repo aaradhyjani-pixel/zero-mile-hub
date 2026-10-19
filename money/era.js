@@ -887,7 +887,7 @@
     ensure();
     var se = shareEquiv(bid) * 100;
     // rivals cluster 12–21% (design/onboarding.md S3): a smooth win chance over that band
-    var winPct = Math.round(100 / (1 + Math.exp(-(se - 16.5) / 1.2)));
+    var winPct = Math.round(winChance(Math.round(se * 10) / 10) * 100);   // the tender simulated 1,500 times
     winPct = Math.max(1, Math.min(99, winPct));
     var note = se < 13 ? 'Below what the rivals are likely to offer: you would probably lose the tender.' :
       se < 16 ? 'Close to the rivals. A fair chance, and the airport keeps a healthy share of what it earns.' :
@@ -895,6 +895,57 @@
       'Almost certain to win, but this much to AAI for 60 years leaves little for the loans and for you.';
     if (bid.type === 'ppf') note = 'About ' + se.toFixed(1) + '% of what the airport earns. ' + note;
     return {winPct: winPct, note: note};
+  }
+  // THE TENDER, simulated. Each rival values the whole project its own way: the largest share of the airport's income it
+  // could pay AAI and still earn its cost of capital on the whole project (debt and equity together, 7.5 to 8.5%), given its view of traffic (the base case's income, running and opening
+  // costs, renewals and the phase-1-to-phase-2 construction spend, discounted at the hurdle). It then shades that ceiling
+  // by its strategy, and each tender adds forecast noise. The desk's odds are the same simulation, run 1,500 times.
+  var BIDDERS = [
+    {name: 'Adani Airport Holdings', hurdle: 0.075, traffic: 1.08, shade: 0.62, sd: 0.07, style: 'Bids for growth: an optimistic traffic view and a lower hurdle.'},
+    {name: 'GMR Airports', hurdle: 0.080, traffic: 1.00, shade: 0.86, sd: 0.07, style: 'Protects its Hyderabad hub: bids the base case, and a little hungrier when the centre of India is at stake.'},
+    {name: 'Zurich Airport International', hurdle: 0.085, traffic: 0.96, shade: 0.95, sd: 0.06, style: 'Disciplined: a cautious traffic view and a high hurdle.'}];
+  var _ceil = null;
+  function rivalCeilings() {
+    if (_ceil) return _ceil;
+    ensure();
+    var base = newCampaign({parent: 'Base case', founder: 'Base case', signature: 'data:,', signedOn: '2026-04-01', bid: {type: 'share', value: 0.01}, gearing: 70}, 1);
+    var sim = simulate(base.s, 60), rows = sim.rows || sim, cpi = P.cpi_forward || 0.04;
+    var capex = {}; Object.keys(P.vsi_stages || {}).forEach(function (k) {
+      if (k === '1A_big') return; var st = P.vsi_stages[k], sp = st.spend || {}, tot = 0; Object.keys(sp).forEach(function (y) { tot += sp[y]; });
+      Object.keys(sp).forEach(function (y) { var yy = +y; capex[yy] = (capex[yy] || 0) + st.cost * sp[y] / (tot || 1) * Math.pow(1 + cpi, yy); }); });
+    _ceil = BIDDERS.map(function (b) {
+      var pvIn = 0, pvNet = 0;
+      for (var y = 1; y <= 60; y++) {
+        var r = rows[y - 1] || {}, d = Math.pow(1 + b.hurdle, -y), oi = (r.oi || 0) * b.traffic, op = (r.opex || 0) * (0.5 + 0.5 * b.traffic);
+        pvIn += oi * d; pvNet += (oi - op - (r.opening || 0) - (r.renew || 0) - (capex[y] || 0)) * d;
+      }
+      return Math.max(0.05, Math.min(0.40, pvNet / (pvIn || 1)));
+    });
+    return _ceil;
+  }
+  function rng(seed) {   // mulberry32, seeded through a splitmix-style mix so nearby seeds don't give correlated draws
+    var x = (Math.abs(Math.floor(+seed || 1)) ^ 0x9e3779b9) >>> 0; x = Math.imul(x ^ (x >>> 16), 0x85ebca6b) >>> 0; x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35) >>> 0; var a = (x ^ (x >>> 16)) >>> 0;
+    return function () { a = (a + 0x6D2B79F5) >>> 0; var t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  function normal(r) { var u = Math.max(1e-9, r()), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+  function rivalOffers(seed) {
+    var c = rivalCeilings(), r = rng(seed);
+    return BIDDERS.map(function (b, i) { var pct = c[i] * b.shade * Math.exp(b.sd * normal(r)) * 100;
+      return {name: b.name, pct: Math.round(Math.min(40, Math.max(10, pct)) * 10) / 10, style: b.style}; });
+  }
+  function winChance(se) { var w = 0, N = 1500; for (var i = 1; i <= N; i++) { var o = rivalOffers(i * 7919 + 13), m = 0; o.forEach(function (x) { if (x.pct > m) m = x.pct; }); if (se > m) w++; } return w / N; }
+  function bidRivals() {   // the market study: each rival's likely range (10th to 90th percentile of its offers)
+    var all = BIDDERS.map(function () { return []; });
+    for (var i = 1; i <= 800; i++) rivalOffers(i * 104729 + 7).forEach(function (o, k) { all[k].push(o.pct); });
+    return BIDDERS.map(function (b, k) { var a = all[k].sort(function (x, y) { return x - y; });
+      return {name: b.name, low: a[Math.floor(a.length * 0.1)], high: a[Math.floor(a.length * 0.9)], style: b.style}; });
+  }
+  function bidOpening(bid, seed) {
+    ensure();
+    var se = Math.round(shareEquiv(bid) * 1000) / 10, rivals = rivalOffers(seed).sort(function (x, y) { return y.pct - x.pct; });
+    var best = rivals[0].pct, won = se > best, top = rivals[0];
+    return {won: won, yours: se, best: best, winner: won ? null : top.name, rivals: rivals, margin: Math.round((se - best) * 10) / 10,
+      line: won ? 'Your offer is the highest. The Authority awards the concession to you.' :
+        top.name + ' offered ' + best + '% of everything the airport earns, more than your ' + se + '%. The concession goes to them.'};
   }
   var _closeCache = {};
   function closeFigures(s, sz) {   // phase 1's split, in today's money so it adds up to the price on the agreement
@@ -2994,7 +3045,7 @@
     ch3: ch3, ch4: ch4, ch5: ch5, ch6: ch6, ch7: ch7, chapters: {3: ch3, 4: ch4, 5: ch5, 6: ch6, 7: ch7}, bridge: bridge, debrief: debrief, cliffhanger: cliffhanger, actBreak: actBreak,
     data: function (md) { load(md); _closeCache = {}; return API; },
     capexCr: capexCr, phase1Options: phase1Options, stateLoanOpt: stateLoanOpt, lenders: lenderOptions, partners: partners, bidTypes: bidTypes,
-    previewBid: previewBid, previewClose: previewClose,
+    previewBid: previewBid, previewClose: previewClose, bidOpening: bidOpening, bidRivals: bidRivals, _tender: {BIDDERS: BIDDERS, reset: function () { _ceil = null; }, ceilings: function () { return rivalCeilings(); }},
     newCampaign: newCampaign, needsConstruction: needsConstruction, constructionOpts: constructionOpts, applyConstruction: applyConstruction,
     levelFor: levelFor, applyShift: applyShift, boardOptions: boardOptions, applyBoard: applyBoard,
     isOver: isOver, endOpts: endOpts, handbackOpts: handbackOpts, acPlan: acPlan,

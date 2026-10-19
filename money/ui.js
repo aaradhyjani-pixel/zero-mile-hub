@@ -643,10 +643,29 @@ M.onboarding=function(opts){opts=opts||{};
       if(M.nameBlocked(b)){err.textContent='That name can\'t be used here. Please write another director\'s name.';me.focus();me.select();return false;}
       st.parent=a;st.founder=b;P[0].name=a;return true;};
     sh.querySelector('#zdkN').onclick=()=>{if(ok())stampAndFile('Incorporated','Incorporation',docBid);};
-    sh.querySelector('#zdkQ').onclick=()=>{if(!ok())return;st.quick=true;st.bid={type:'share',value:T.share.def};st.gearing=G.def;st.repayment='sculpted';
-      stampAndFile('Incorporated','Incorporation',docCA);};}
+    sh.querySelector('#zdkQ').onclick=()=>{if(!ok())return;st.quick=true;st.bid={type:'share',value:Math.max(T.share.def,Math.min(T.share.max,18))};st.gearing=G.def;st.repayment='sculpted';
+      stampAndFile('Incorporated','Incorporation',()=>docOpening(docCA));};}
 
   /* 2 · the financial bid */
+  // the opening of sealed bids: everyone's offer, the highest wins. Lose, and the Authority re-tenders: bid again.
+  function docOpening(next){inkUp(1);st.tender=(st.tender||0)+1;
+    const seed=Math.floor(Math.random()*2147483646)+1;
+    const res=opts.bidOpening?opts.bidOpening(st.bid,seed):(()=>{const p=opts.previewBid?opts.previewBid(st.bid):{winPct:50};const won=Math.random()*100<p.winPct;
+      return {won,yours:st.bid.value,rivals:[],line:won?'Your offer is the highest. The Authority awards the concession to you.':'Another bidder offered more. The concession goes to them.'};})();
+    const you={name:st.parent,pct:res.yours,me:true},rows=[you].concat(res.rivals||[]).sort((x,y)=>y.pct-x.pct||(x.me?1:-1));
+    const pc=v=>(+v).toFixed(1).replace(/\.0$/,'')+'%';
+    const win=res.won?you:rows[0];
+    show(1,`<header class="zdk-dh">${vsiLogo(26)}<span>Airports Authority of India · Opening of sealed bids</span><span class="dt">${today}</span></header>
+      <h2>Opening of sealed bids</h2>
+      <p class="t">Concession of ${esc(M.cfg.airportName)}${st.tender>1?', re-tender '+(st.tender-1):''}. The envelopes were opened in front of the bidders. Each offer is the share of everything the airport earns paid to the Authority every year${st.bid.type==='ppf'?' (your fee per passenger is shown as the share it comes to)':''}.</p>
+      <table class="zdk-tab zbo"><tbody>${rows.map((r,i)=>`<tr${r===win?' class="win"':''}><td>${i+1}. ${r.me?`<span class="h">${esc(r.name)}</span> <small>your offer</small>`:esc(r.name)}</td><td class="n">${pc(r.pct)}</td></tr>`).join('')}</tbody></table>
+      <p class="t"><b>${esc(res.line)}</b></p>`,
+      res.won?`<button class="zdk-go" id="zdkN">Go to the term sheet</button>`:`<button class="zdk-go" id="zdkN">Bid again in the re-tender</button>`,
+      res.won?`<h3>You won</h3><p>Your offer beat the best rival by ${pc(Math.abs(res.margin!=null?res.margin:0))}. Every rupee of that is paid to AAI for ${M.cfg.years} years: a winning bid that is too high leaves little for the loans and for you.</p>`
+             :`<h3>You lost this one</h3><p>The highest offer wins. Offer more and your odds rise, but so does what you pay AAI every year for ${M.cfg.years} years. The rivals bid afresh in the re-tender.</p>`);
+    const w=docEl.querySelector('tr.win td');if(w)w.insertAdjacentHTML('beforeend',stampHtml(res.won?'Awarded':'Awarded','mini'));
+    if(M.sfx)M.sfx(res.won?'thud':'slide');
+    sh.querySelector('#zdkN').onclick=()=>{if(res.won){st.bidResult={tender:st.tender,best:res.best,yours:res.yours};next();}else{sh.querySelector('#zdkPile').lastElementChild?.remove();st.quick=false;docBid();}};}
   function docBid(){inkUp(1);
     const draw=()=>{const t=st.bid.type,c=T[t];if(st.bid.value<c.min||st.bid.value>c.max)st.bid.value=c.def;
       const fv=v=>t==='share'?(+v).toFixed(v%1?1:0)+'%':'₹'+Math.round(v);
@@ -657,13 +676,14 @@ M.onboarding=function(opts){opts=opts||{};
         <div class="zdk-ticks" role="radiogroup" aria-label="Type of payment">
           <button role="radio" data-t="share" aria-checked="${t==='share'}"><i></i>a share of everything the airport earns <small>as Delhi and Mumbai pay</small></button>
           <button role="radio" data-t="ppf" aria-checked="${t==='ppf'}"><i></i>a fee for every passenger <small>as Adani's six airports pay</small></button></div>
+        ${opts.bidRivals?`<div class="zdk-ticks" aria-label="Market study"><button role="checkbox" id="zdkSt" aria-checked="${!!st.study}"><i></i>commission a market study first <small>₹25 cr: your adviser reads each rival's likely offer</small></button></div>`:''}
         <div class="zdk-amt"><span class="h" id="zdkBV">${bidTxt(st.bid)}</span><span class="t">${t==='share'?'of everything the airport earns':'per passenger'}</span></div>
         ${ruler('zdkBR',c.min,c.max,c.step,st.bid.value,'Your offer',c.benchmarks,fv)}
         <p class="t">This offer is unconditional and holds for the whole term.</p>
         <div class="zdk-sigl"><span class="h">${esc(st.founder)}</span><span>for ${esc(st.parent)}</span></div>`,
         `<button class="zdk-go" id="zdkN">Seal and submit the bid</button><button class="zdk-q" id="zdkB">Back</button>`,
         `<h3>Your odds</h3><div class="zdk-odds"><b id="zdkWP"></b><span class="bar"><i id="zdkW"></i></span></div><p id="zdkWT"></p>
-         <h3>Also bidding</h3><ul class="zdk-rv">${rivals.map(r=>`<li><b>${esc(r.name)}</b>${esc(r.blurb)}</li>`).join('')}</ul>`);
+         <h3>Also bidding</h3><ul class="zdk-rv">${(st.study&&opts.bidRivals?opts.bidRivals().map(r=>({name:r.name,blurb:'Likely to offer '+r.low+'–'+r.high+'%. '+r.style})):rivals).map(r=>`<li><b>${esc(r.name)}</b>${esc(r.blurb)}</li>`).join('')}</ul>${st.study?'<p><small>Market study bought: ₹25 cr from your company.</small></p>':''}`);
       const r=sh.querySelector('#zdkBR');
       const upd=()=>{st.bid.value=+r.value;r.style.setProperty('--p',(st.bid.value-c.min)/(c.max-c.min)*100+'%');sh.querySelector('#zdkBV').textContent=bidTxt(st.bid);
         const p=opts.previewBid?opts.previewBid({type:t,value:st.bid.value}):{winPct:50,note:''};
@@ -671,9 +691,10 @@ M.onboarding=function(opts){opts=opts||{};
         const w=sh.querySelector('#zdkW');w.style.width=Math.max(2,p.winPct)+'%';w.style.background=col;
         const wp=sh.querySelector('#zdkWP');wp.textContent=Math.round(p.winPct)+'%';wp.style.color=col;sh.querySelector('#zdkWT').textContent=p.note||'';};
       r.oninput=upd;upd();
-      sh.querySelectorAll('.zdk-ticks button').forEach(b=>b.onclick=()=>{if(b.dataset.t===st.bid.type)return;st.bid={type:b.dataset.t,value:T[b.dataset.t].def};draw();
+      const sb=sh.querySelector('#zdkSt');if(sb)sb.onclick=()=>{st.study=!st.study;st.studyCr=st.study?25:0;if(M.sfx)M.sfx('tick');draw();};
+      sh.querySelectorAll('.zdk-ticks button[data-t]').forEach(b=>b.onclick=()=>{if(b.dataset.t===st.bid.type)return;st.bid={type:b.dataset.t,value:T[b.dataset.t].def};draw();
         if(!reduce)docEl.classList.remove('arrive');sh.querySelector(`.zdk-ticks [data-t="${b.dataset.t}"]`).focus();});
-      sh.querySelector('#zdkN').onclick=()=>stampAndFile('Bid received','Financial bid',docDebt);
+      sh.querySelector('#zdkN').onclick=()=>stampAndFile('Bid received','Financial bid',()=>docOpening(docDebt));
       sh.querySelector('#zdkB').onclick=docIncBack;};
     draw();}
   function docIncBack(){sh.querySelector('#zdkPile').lastElementChild?.remove();docInc();}
@@ -2684,6 +2705,8 @@ M.minutes=function(o){mountS();o=o||{};return new Promise(res=>{
    before it resolves. o = {docId, date, from?:{name, address}, signatory?, subject, body (one paragraph), circle (the text in
    the body to circle, e.g. "₹96"), circleNote?, replies:[{id:'own'|'l5'|'refuse', label, terms, slip:{big, money, line}, act?}]
    (or VSIEra.ch6.decision's choices), stamps?:{[id]:word}, founder, parent, signature?, pile?, stepIn?} */
+/* the bid opening table */
+(()=>{const c=document.createElement('style');c.textContent='.zbo tr.win td{font-weight:700;background:rgba(194,42,46,.06)} .zbo tr.win td:first-child{position:relative} .zbo .zdk-stamp{margin-left:10px;vertical-align:middle}';document.head.appendChild(c);})();
 /* names that may not be used on the deal desk (the company or the director), with look-alike spellings caught too */
 M.nameBlocked=function(raw){let t=String(raw||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
   t=t.replace(/[0@4]/g,m=>({'0':'o','@':'a','4':'a'})[m]).replace(/[1!|]/g,'i').replace(/3/g,'e').replace(/[5$]/g,'s').replace(/7/g,'t');

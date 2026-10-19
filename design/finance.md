@@ -2,6 +2,8 @@
 
 2026-10-19. This is the detail behind the money-design.md one-pager. Model: `tools/concession_model.py`. Run it with `python3 tools/concession_model.py all` (or `backtest`, or `vsi`; `zmi` is an old alias of `vsi`). It reads `money.json` and never writes it; every table below is pasted from its output. Where `design/eras.md` §5–7 differ (the glide cap, a WACC of 12.89%, era-average tests), this file wins.
 
+> **2026-10-19 capex recalibration.** The capex is now ₹2,00,000 cr to 260 MPPA (phase 1 ₹60,000 cr lean, ₹85,000 cr big); the stage table, the retuned levers, the charge-per-passenger comparison, the delay sensitivity and the current tables are in money-design.md (Frame and the two pasted tables). The VSI tables in §4–§7 below predate it (the BIAL back-test in §3 is unchanged): rerun `python3 tools/concession_model.py all` for the current figures.
+
 ## 1. What the player sees (binding)
 - **The model stays rich; the player sees three numbers:**
   1. Today's money.
@@ -157,119 +159,156 @@
 | CP3 | AERA order | 42,703 | 4,951 | 2,428 | 2,670 | 126 | -875 | 9,634 | 8,612 |
 
 ## 4. VSI results
+Re-run 2026-10-19 (capex branch): ₹2,00,000 cr full build, bank sizing fixed (§5.4), Airport City added (§5.5).
+
 ### 4.1 Side by side, by operating year (also in money-design.md)
 | Op yr | BIAL FY | BIAL pax m | VSI yr | VSI pax m | BIAL yield ₹ | VSI yield ₹ | BIAL EBITDA | VSI EBITDA | BIAL margin | VSI margin | BIAL DSCR | VSI DSCR | VSI lender DSCR | VSI event |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1 | 2009 | 7.2 | 5 | 40 | 952 | 948 | 144 E | 3,348 | 44% | 61% | 1.07 E | 1.39 | 1.24 | opens (1A); BLR moves in (L1); CP1 |
-| 2 | 2010 | 9.9 | 6 | 43 | 994 | 948 | — | 4,301 | — | 69% | — | 1.79 | 1.61 | opening costs (half year) |
-| 3 | 2011 | 11.6 | 7 | 46 | 872 | 948 | — | 5,358 | — | 77% | — | 1.58 | 1.34 |  |
-| 4 | 2012 | 12.7 | 8 | 86 | 812 | 948 | — | 9,670 | — | 69% | — | 1.60 | 1.33 | AMD+HYD move in (L2); 1B opens |
-| 5 | 2013 | 12.0 | 9 | 92 | 762 | 948 | — | 11,046 | — | 70% | — | 1.67 | 1.35 | T2-style close for 1C+1D (80:20) |
-| 6 | 2014 | 12.9 | 10 | 103 | 681 | 716 | 385 R | 10,965 | 60% | 74% | — | 1.64 | 1.30 | CP2: AERA carries 13.9% of PV ARR |
-| 7 | 2015 | 15.4 | 11 | 152 | 773 | 551 | 602 R | 12,650 | 66% | 64% | — | 1.43 | 1.17 | BOM moves in (L3); 1C opens |
-| 8 | 2016 | 19.0 | 12 | 163 | 729 | 551 | 804 R | 14,407 | 71% | 65% | — | 1.50 | 1.18 |  |
-| 9 | 2017 | 22.9 | 13 | 165 | 647 D | 551 | 932 R | 16,541 | 71% | 71% | — | 1.52 | 1.17 |  |
-| 10 | 2018 | 26.9 | 14 | 230 | 621 D | 551 | 1,098 D | 23,440 | 70% | 67% | — | 1.51 | 1.16 | DEL moves in (L4); 1D opens |
-| 11 | 2019 | 33.3 | 15 | 230 | 403 D | 584 | 975 D | 25,629 | 65% | 68% | 5.60 R | 1.76 | 1.32 | CP3: CP2 true-up recovered; 1C/1D repaying |
-| 12 | 2020 | 32.4 | 16 | 230 | 355 D | 629 | — | 30,137 | — | 74% | 3.90 E | 1.99 | 1.46 |  |
-| 13 | 2021 | 10.9 | 17 | 230 | 404 D | 629 | — | 31,342 | — | 74% | 0.45 E | 2.03 | 1.47 |  |
-| 14 | 2022 | 16.3 | 18 | 230 | 401 | 629 | — | 32,596 | — | 74% | 1.15 E | 7.38 | 5.17 | refinanced (8.15%, 15 yrs) |
-| 15 | 2023 | 31.9 | 19 | 230 | 406 | 629 | 1,110 D | 34,784 | 60% | 74% | 2.00 E | 7.88 | 5.47 | phase 2 build |
-| 16 | 2024 | 37.6 | 20 | 230 | 512 | 540 | 1,749 D | 32,030 | 64% | 72% | 1.45 E | 5.15 | 3.50 | CP4 |
-| 17 | 2025 | 41.9 | 21 | 261 | 595 | 485 | 2,720 D | 33,805 | 68% | 69% | 1.65 E | 4.17 | 2.82 | phase 2 opens |
-| 18 | 2026 | 44.5 | 22 | 278 | 606 | 485 | 3,052 D | 36,943 | 72% | 68% | 2.10 E | 4.31 | 2.88 |  |
+| 1 | 2009 | 7.2 | 5 | 37 | 952 | 1,498 | 144 E | 5,291 | 44% | 71% | 1.07 E | 1.40 | 1.24 | opens (1A); BLR moves in (L1); CP1 |
+| 2 | 2010 | 9.9 | 6 | 40 | 994 | 1,498 | — | 6,484 | — | 77% | — | 1.71 | 1.53 | opening costs (half year) |
+| 3 | 2011 | 11.6 | 7 | 43 | 872 | 1,498 | — | 7,809 | — | 83% | — | 1.48 | 1.29 |  |
+| 4 | 2012 | 12.7 | 8 | 79 | 812 | 1,498 | — | 14,327 | — | 77% | — | 1.52 | 1.28 | AMD+HYD move in (L2); 1B opens |
+| 5 | 2013 | 12.0 | 9 | 86 | 762 | 1,498 | — | 16,276 | — | 78% | — | 1.59 | 1.30 | T2-style close for 1C+1D (80:20) |
+| 6 | 2014 | 12.9 | 10 | 97 | 681 | 1,147 | 385 R | 15,940 | 60% | 80% | — | 1.56 | 1.25 | CP2: AERA carries 13.9% of PV ARR |
+| 7 | 2015 | 15.4 | 11 | 146 | 773 | 898 | 602 R | 19,186 | 66% | 72% | — | 1.40 | 1.15 | BOM moves in (L3); 1C opens |
+| 8 | 2016 | 19.0 | 12 | 157 | 729 | 898 | 804 R | 21,713 | 71% | 73% | — | 1.46 | 1.16 |  |
+| 9 | 2017 | 22.9 | 13 | 165 | 647 D | 898 | 932 R | 25,350 | 71% | 78% | — | 1.50 | 1.16 |  |
+| 10 | 2018 | 26.9 | 14 | 223 | 621 D | 898 | 1,098 D | 34,989 | 70% | 75% | — | 1.48 | 1.15 | DEL moves in (L4); 1D opens |
+| 11 | 2019 | 33.3 | 15 | 230 | 403 D | 947 | 975 D | 39,506 | 65% | 76% | 5.60 R | 1.68 | 1.27 | CP3: CP2 true-up recovered; 1C/1D repaying; phase 2 build |
+| 12 | 2020 | 32.4 | 16 | 230 | 355 D | 1,017 | — | 45,547 | — | 80% | 3.90 E | 1.89 | 1.40 |  |
+| 13 | 2021 | 10.9 | 17 | 261 | 404 D | 1,017 | — | 52,900 | — | 79% | 0.45 E | 1.82 | 1.34 | phase 2 opens |
+| 14 | 2022 | 16.3 | 18 | 278 | 401 | 1,017 | — | 58,153 | — | 78% | 1.15 E | 5.00 | 3.56 | refinanced (8.15%, 15 yrs) |
+| 15 | 2023 | 31.9 | 19 | 286 | 406 | 1,017 | 1,110 D | 64,106 | 60% | 79% | 2.00 E | 5.51 | 3.89 |  |
+| 16 | 2024 | 37.6 | 20 | 286 | 512 | 854 | 1,749 D | 57,771 | 64% | 78% | 1.45 E | 2.97 | 2.05 | CP4 |
+| 17 | 2025 | 41.9 | 21 | 286 | 595 | 750 | 2,720 D | 54,067 | 68% | 76% | 1.65 E | 3.02 | 2.03 |  |
+| 18 | 2026 | 44.5 | 22 | 286 | 606 | 750 | 3,052 D | 56,230 | 72% | 76% | 2.10 E | 3.09 | 2.04 |  |
 
 ### 4.2 Aligned on the second terminal (BIAL T2 ↔ VSI 1D)
 | k | BIAL FY | BIAL pax m | VSI yr | VSI pax m | BIAL yield ₹ | VSI yield ₹ | BIAL margin | VSI margin | BIAL DSCR | VSI DSCR | VSI lender DSCR |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| -3 | 2020 | 32.4 | 11 | 152 | 355 | 551 | — | 64% | 3.90 E | 1.43 | 1.17 |
-| -2 | 2021 | 10.9 | 12 | 163 | 404 | 551 | — | 65% | 0.45 E | 1.50 | 1.18 |
-| -1 | 2022 | 16.3 | 13 | 165 | 401 | 551 | — | 71% | 1.15 E | 1.52 | 1.17 |
-| +0 | 2023 | 31.9 | 14 | 230 | 406 | 551 | 60% | 67% | 2.00 E | 1.51 | 1.16 |
-| +1 | 2024 | 37.6 | 15 | 230 | 512 | 584 | 64% | 68% | 1.45 E | 1.76 | 1.32 |
-| +2 | 2025 | 41.9 | 16 | 230 | 595 | 629 | 68% | 74% | 1.65 E | 1.99 | 1.46 |
-| +3 | 2026 | 44.5 | 17 | 230 | 606 | 629 | 72% | 74% | 2.10 E | 2.03 | 1.47 |
+| -3 | 2020 | 32.4 | 11 | 146 | 355 | 898 | — | 72% | 3.90 E | 1.40 | 1.15 |
+| -2 | 2021 | 10.9 | 12 | 157 | 404 | 898 | — | 73% | 0.45 E | 1.46 | 1.16 |
+| -1 | 2022 | 16.3 | 13 | 165 | 401 | 898 | — | 78% | 1.15 E | 1.50 | 1.16 |
+| +0 | 2023 | 31.9 | 14 | 223 | 406 | 898 | 60% | 75% | 2.00 E | 1.48 | 1.15 |
+| +1 | 2024 | 37.6 | 15 | 230 | 512 | 947 | 64% | 76% | 1.45 E | 1.68 | 1.27 |
+| +2 | 2025 | 41.9 | 16 | 230 | 595 | 1,017 | 68% | 80% | 1.65 E | 1.89 | 1.40 |
+| +3 | 2026 | 44.5 | 17 | 261 | 606 | 1,017 | 72% | 79% | 2.10 E | 1.82 | 1.34 |
 
 ### 4.3 After BIAL's data ends
 | Era | Years | Pax m (end) | Aero yield ₹ FY26 (avg) | Aero share of revenue | EBITDA ₹cr (end yr) | Margin (avg) | Lender DSCR (worst year) | Debt end ₹cr |
 |---|---|---|---|---|---|---|---|---|
-| E4 | 14-18 | 230 | 605 | 63% | 32,596 | 72% | 1.16 | 54,189 |
-| E5 | 19-23 | 286 | 525 | 58% | 40,395 | 70% | 2.62 | 70,317 |
-| E6 | 24-28 | 286 | 403 | 51% | 42,255 | 68% | 2.37 | 44,087 |
-| E7 | 29-33 | 286 | 340 | 46% | 48,387 | 66% | 2.33 | 7,953 |
-| E8 | 34-38 | 286 | 324 | 44% | 59,072 | 66% | 3.02 | 0 |
-| E9 | 39-43 | 286 | 316 | 43% | 71,134 | 66% | repaid | 0 |
-| E10 | 44-48 | 286 | 308 | 42% | 86,154 | 66% | repaid | 0 |
-| E11 | 49-53 | 286 | 304 | 42% | 104,642 | 66% | repaid | 0 |
-| E12 | 54-60 | 286 | 307 | 42% | 139,304 | 66% | repaid | 0 |
-
-The real aero yield settles near ₹305 (FY2026 ₹) from E9. Renewals at replacement cost hold the real asset base, so the late-game collapse (₹25 a passenger by year 55 in the WIP) is gone.
+| E4 | 14-18 | 278 | 979 | 73% | 58,153 | 78% | 1.14 | 142,829 |
+| E5 | 19-23 | 286 | 824 | 68% | 58,479 | 77% | 2.02 | 116,368 |
+| E6 | 24-28 | 286 | 636 | 62% | 59,815 | 75% | 1.61 | 97,981 |
+| E7 | 29-33 | 286 | 537 | 57% | 66,470 | 73% | 1.47 | 20,371 |
+| E8 | 34-38 | 286 | 519 | 56% | 82,287 | 72% | 1.45 | 0 |
+| E9 | 39-43 | 286 | 518 | 56% | 100,354 | 72% | repaid | 0 |
+| E10 | 44-48 | 286 | 504 | 55% | 119,628 | 72% | repaid | 0 |
+| E11 | 49-53 | 286 | 499 | 54% | 145,992 | 72% | repaid | 0 |
+| E12 | 54-60 | 286 | 503 | 54% | 194,239 | 72% | repaid | 0 |
 
 ## 5. Scenarios and levers
 ### 5.1 Levers per scenario
 | Scenario | Gearing asked (1A, 1B) | Phase 1 | State loan (0%, 14.2% of 1A) | Defer state loan at 1C/1D | AERA stance (carry in the 1C/1D CP / escalation / capex disallowed / airline drag) | Repayment | Refinance | Equity cure | Retain cash to | Phase 2 | Ops profile |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| EXPERT | 70% (1C/1D at 80%) | lean | yes | yes | normal (13.9% / CPI / 0.0% / +0 pp a year) | sculpt | yes | yes | no | years 19-20 | expert |
+| EXPERT | 75% (1C/1D at 80%) | lean | yes | yes | normal (13.9% / CPI / 0.0% / +0 pp a year) | sculpt | yes | yes | no | years 15-16 | expert |
 | BAD | 75% (1C/1D at 80%) | lean | no | no | hard (0.0% / flat nominal / 13.5% / -1 pp a year) | sculpt | no | no | no | no | poor |
 | LAZY | 70% (1C/1D at 80%) | lean | no | no | normal (13.9% / CPI / 0.0% / +0 pp a year) | sculpt | no | no | no | no | lazy |
 
-Ops profiles by level (L1, L2, L3, L4, L5), hand-set stand-ins for the shift results (estimates): base: Q [0.95, 0.95, 0.95, 0.95, 0.95], disruption ₹/pax [60, 60, 60, 60, 60], SQ rebate [0.01, 0.01, 0.01, 0.01, 0.01], growth bonus [0.0, 0.0, 0.0, 0.0, 0.0], O&M × [1.0, 1.0, 1.0, 1.0, 1.0]; expert: Q [0.95, 0.95, 0.95, 0.95, 0.95], disruption ₹/pax [60, 60, 60, 60, 60], SQ rebate [-0.0125, -0.0125, -0.0125, -0.0125, -0.0125], growth bonus [0.015, 0.015, 0.015, 0.015, 0.015], O&M × [1.0, 1.0, 1.0, 1.0, 1.0]; poor: Q [0.92, 0.86, 0.85, 0.8, 0.78], disruption ₹/pax [70, 115, 120, 150, 160], SQ rebate [0.01, 0.02, 0.03, 0.04, 0.04], growth bonus [0.0, -0.005, -0.01, -0.01, -0.01], O&M × [1.0, 1.02, 1.04, 1.06, 1.06]; lazy: Q [0.85, 0.82, 0.8, 0.78, 0.78], disruption ₹/pax [150, 150, 160, 180, 180], SQ rebate [0.03, 0.04, 0.05, 0.05, 0.05], growth bonus [-0.01, -0.03, -0.03, -0.03, -0.03], O&M × [1.04, 1.05, 1.05, 1.06, 1.06]
-
 ### 5.2 Lender DSCR by era (also in money-design.md)
+Worst single year per era. W warning (< 1.20), C covenant breach (< 1.10), D below 1.0.
+
 | Run | E1 (5-7) | E2 (8-10) | E3 (11-13) | E4 (14-18) | E5 (19-23) | E6 (24-28) | E7 (29-33) | E8 (34-38) | E9 (39-43) | E10 (44-48) | E11 (49-53) | E12 (54-60) | Bank gearing 1A/1B/1C-1D | Outcome | Equity IRR |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| EXPERT | 1.23 | 1.29 | 1.16 W | 1.16 W | 2.62 | 2.37 | 2.33 | 3.02 | repaid | repaid | repaid | repaid | 65%/70%/80% | debt repaid | 13.5% |
-| BAD | 1.11 W | 0.96 D | 0.88 D | — | — | — | — | — | — | — | — | — | 64%/75%/80% | step-in, year 13: era DSCR below 1.0 for two eras | equity lost |
-| LAZY | 0.95 D | 0.92 D | — | — | — | — | — | — | — | — | — | — | 64%/70%/80% | step-in, year 10: era DSCR below 1.0 for two eras | equity lost |
-| Comparison: Delhi card (DIAL FY26 aero yield, 45.99% revenue share) | -0.30 D | -0.06 D | 0.06 D | 0.15 D | 0.23 D | 1.37 | 1.87 | 1.70 | 1.74 | repaid | repaid | repaid | 65%/70%/80% | would breach; cash short from year 5 | n/a |
-| Comparison: Navi Mumbai card (opening UDF, 12.6% revenue share) | 0.93 D | 1.11 W | 1.49 | 1.49 | 3.56 | 3.51 | 4.09 | repaid | repaid | repaid | repaid | repaid | 65%/70%/80% | no breach | n/a |
+| EXPERT | 1.23 | 1.25 | 1.14 W | 1.14 W | 2.02 | 1.61 | 1.47 | 1.45 | repaid | repaid | repaid | repaid | 63%/75%/80% | debt repaid | 12.5% |
+| EXPERT, builds Airport City | 1.23 | 1.25 | 1.14 W | 1.14 W | 2.05 | 1.71 | 1.58 | 1.57 | repaid | repaid | repaid | repaid | 63%/75%/80% | debt repaid | 12.7% |
+| BAD | 1.09 C | 0.98 D | 0.89 D | — | — | — | — | — | — | — | — | — | 61%/75%/80% | step-in, year 13: era DSCR below 1.0 for two eras | equity lost |
+| BAD, builds Airport City | 1.09 C | 0.98 D | 0.89 D | — | — | — | — | — | — | — | — | — | 61%/75%/80% | step-in, year 13: era DSCR below 1.0 for two eras | equity lost |
+| LAZY | 1.04 C | 0.97 D | 0.83 D | — | — | — | — | — | — | — | — | — | 61%/70%/80% | step-in, year 13: era DSCR below 1.0 for two eras (and a debt-service payment it could not fund) | equity lost |
+| LAZY, builds Airport City | 1.04 C | 0.97 D | 0.83 D | — | — | — | — | — | — | — | — | — | 61%/70%/80% | step-in, year 13: era DSCR below 1.0 for two eras (and a debt-service payment it could not fund) | equity lost |
+| Comparison: Delhi card (DIAL FY26 aero yield, 45.99% revenue share) | -0.25 D | -0.10 D | -0.03 D | 0.01 D | 0.05 D | 0.00 D | repaid | repaid | repaid | repaid | repaid | repaid | 63%/75%/80% | would breach; cash short from year 5 | n/a |
+| Comparison: Navi Mumbai card (opening UDF, 12.6% revenue share) | 0.53 D | 0.68 D | 1.00 C | 1.01 C | 1.14 W | 5.90 | 5.88 | 6.62 | repaid | repaid | repaid | repaid | 63%/75%/80% | would breach; cash short from year 6 | n/a |
 
 ### 5.3 One lever at a time
 | Run | E1 (5-7) | E2 (8-10) | E3 (11-13) | E4 (14-18) | E5 (19-23) | E6 (24-28) | E7 (29-33) | E8 (34-38) | E9 (39-43) | E10 (44-48) | E11 (49-53) | E12 (54-60) | Bank gearing 1A/1B/1C-1D | Outcome | Equity IRR |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| EXPERT | 1.23 | 1.29 | 1.16 W | 1.16 W | 2.62 | 2.37 | 2.33 | 3.02 | repaid | repaid | repaid | repaid | 65%/70%/80% | debt repaid | 13.5% |
-| EXPERT, big phase 1 (70 mppa) | 1.24 | 1.30 | 1.17 W | 1.31 | 2.92 | 2.67 | 2.66 | repaid | repaid | repaid | repaid | repaid | 45%/70%/80% | debt repaid | 12.2% |
-| EXPERT, no state loan | 1.23 | 1.30 | 1.16 W | 1.16 W | 2.67 | 2.41 | 2.37 | 3.09 | repaid | repaid | repaid | repaid | 64%/70%/80% | debt repaid | 13.2% |
-| EXPERT, 75% gearing | 1.23 | 1.29 | 1.16 W | 1.16 W | 2.53 | 2.29 | 2.25 | 2.85 | repaid | repaid | repaid | repaid | 65%/75%/80% | debt repaid | 13.6% |
-| EXPERT, 60% gearing | 1.35 | 1.29 | 1.16 W | 1.16 W | 3.02 | 2.74 | 2.71 | 3.85 | repaid | repaid | repaid | repaid | 60%/60%/80% | debt repaid | 13.0% |
-| EXPERT, pushes AERA hard (appeals the back-loaded order) | 1.18 W | 1.13 W | 1.13 W | 1.09 C | 2.21 | 2.14 | 2.11 | 2.81 | repaid | repaid | repaid | repaid | 65%/70%/80% | debt repaid | 12.2% |
-| EXPERT, soft (25% carried) | 1.23 | 1.24 | 1.02 C | 1.03 C | 2.76 | 2.37 | 2.29 | 2.96 | repaid | repaid | repaid | repaid | 65%/70%/80% | debt repaid | 13.5% |
-| EXPERT, equal instalments | 1.34 | 1.64 | 1.31 | 1.33 | 2.19 | 2.06 | 2.01 | repaid | repaid | repaid | repaid | repaid | 60%/65%/74% | debt repaid | 13.8% |
-| EXPERT, no refinancing | 1.23 | 1.29 | 1.16 W | 1.16 W | 1.38 | 5.99 | 5.86 | repaid | repaid | repaid | repaid | repaid | 65%/70%/80% | debt repaid | 13.1% |
-| EXPERT, prepay instead of dividends | 1.23 | 1.29 | 1.16 W | 1.16 W | 2.62 | repaid | repaid | repaid | repaid | repaid | repaid | repaid | 65%/70%/80% | debt repaid | 13.1% |
-| EXPERT, keeps cash to year 15, then prepays what the lock-up traps | 1.23 | 1.29 | 1.16 W | 1.16 W | 5.56 | 5.25 | 5.04 | repaid | repaid | repaid | repaid | repaid | 65%/70%/80% | debt repaid | 13.5% |
-| EXPERT, no phase 2 | 1.23 | 1.29 | 1.16 W | 1.16 W | 3.34 | 3.01 | 2.92 | 2.90 | repaid | repaid | repaid | repaid | 65%/70%/80% | debt repaid | 13.2% |
-| EXPERT, COVID-type years 16-17 (BIAL FY21-22) | 1.23 | 1.29 | 1.16 W | 0.32 D | 1.46 | 4.71 | 3.81 | 8.46 | repaid | repaid | repaid | repaid | 65%/70%/80% | debt repaid | 13.4% |
-| EXPERT, Nagpur-level fee 14.49% | 1.24 | 1.29 | 1.16 W | 1.16 W | 2.38 | 2.02 | 1.96 | 2.42 | repaid | repaid | repaid | repaid | 61%/70%/80% | debt repaid | 12.4% |
-| EXPERT, land at a BIAL-style cost-recovery rent | 1.24 | 1.29 | 1.16 W | 1.16 W | 2.61 | 2.36 | 2.33 | 3.03 | repaid | repaid | repaid | repaid | 61%/70%/80% | debt repaid | 13.1% |
+| EXPERT | 1.23 | 1.25 | 1.14 W | 1.14 W | 2.02 | 1.61 | 1.47 | 1.45 | repaid | repaid | repaid | repaid | 63%/75%/80% | debt repaid | 12.5% |
+| EXPERT, big phase 1 (70 mppa) | 1.24 | 1.25 | 1.14 W | 1.26 | 2.37 | 2.14 | 3.30 | repaid | repaid | repaid | repaid | repaid | 47%/75%/80% | debt repaid | 11.5% |
+| EXPERT, no state loan | 1.23 | 1.25 | 1.14 W | 1.14 W | 2.12 | 1.68 | 1.54 | 1.52 | repaid | repaid | repaid | repaid | 61%/75%/80% | debt repaid | 12.2% |
+| EXPERT, 75% gearing | 1.23 | 1.25 | 1.14 W | 1.14 W | 2.02 | 1.61 | 1.47 | 1.45 | repaid | repaid | repaid | repaid | 63%/75%/80% | debt repaid | 12.5% |
+| EXPERT, 60% gearing | 1.28 | 1.25 | 1.14 W | 1.14 W | 2.36 | 1.84 | 1.71 | 1.69 | repaid | repaid | repaid | repaid | 60%/60%/80% | debt repaid | 12.1% |
+| EXPERT, pushes AERA hard (appeals the back-loaded order) | 1.16 W | 1.10 W | 1.10 W | 1.07 C | 1.15 W | 4.27 | 4.08 | 3.99 | repaid | repaid | repaid | repaid | 63%/75%/80% | debt repaid | 10.5% |
+| EXPERT, soft (25% carried) | 1.23 | 1.20 | 1.02 C | 1.03 C | 2.13 | 1.62 | 1.44 | 1.42 | repaid | repaid | repaid | repaid | 63%/75%/80% | debt repaid | 12.4% |
+| EXPERT, equal instalments | 1.34 | 1.47 | 1.27 | 1.33 | 1.96 | 1.81 | 2.03 | repaid | repaid | repaid | repaid | repaid | 58%/69%/67% | debt repaid | 12.4% |
+| EXPERT, no refinancing | 1.23 | 1.25 | 1.14 W | 1.14 W | 1.44 | 2.64 | repaid | repaid | repaid | repaid | repaid | repaid | 63%/75%/80% | debt repaid | 12.2% |
+| EXPERT, prepay instead of dividends | 1.23 | 1.25 | 1.14 W | 1.14 W | 2.02 | repaid | repaid | repaid | repaid | repaid | repaid | repaid | 63%/75%/80% | debt repaid | 12.1% |
+| EXPERT, keeps cash to year 15, then prepays what the lock-up traps | 1.23 | 1.25 | 1.14 W | 1.14 W | 3.27 | 2.72 | 2.46 | 2.44 | repaid | repaid | repaid | repaid | 63%/75%/80% | debt repaid | 12.4% |
+| EXPERT, no phase 2 | 1.23 | 1.25 | 1.14 W | 1.14 W | 2.61 | 2.35 | 2.24 | 2.21 | repaid | repaid | repaid | repaid | 63%/75%/80% | debt repaid | 12.1% |
+| EXPERT, Airport City on BIAL's land share (11% of the site) | 1.23 | 1.25 | 1.14 W | 1.14 W | 2.09 | 1.82 | 1.72 | 1.71 | repaid | repaid | repaid | repaid | 63%/75%/80% | debt repaid | 12.8% |
+| EXPERT, COVID-type years 16-17 (BIAL FY21-22) | 1.23 | 1.25 | 1.14 W | 0.34 D | 1.49 | 3.17 | 2.34 | 2.17 | repaid | repaid | repaid | repaid | 63%/75%/80% | debt repaid | 12.3% |
+| EXPERT, Nagpur-level fee 14.49% | 1.23 | 1.25 | 1.14 W | 1.14 W | 1.84 | 1.49 | 1.34 | 1.32 | repaid | repaid | repaid | repaid | 60%/75%/80% | debt repaid | 11.4% |
+| EXPERT, land at a BIAL-style cost-recovery rent | 1.23 | 1.25 | 1.14 W | 1.14 W | 2.01 | 1.60 | 1.45 | 1.43 | repaid | repaid | repaid | repaid | 61%/75%/80% | debt repaid | 12.2% |
 
 ### 5.4 Where the expert's warning comes from
 | Run | E2 (8-10) | E3 (11-13) | E4 (14-18) | Worst year |
 |---|---|---|---|---|
-| Lender base case (what the bank sized on) | 1.29 | 1.29 | 1.29 | year 18: 1.29 |
-| EXPERT | 1.29 | 1.16 W | 1.16 W | year 14: 1.16 |
-| EXPERT, AERA does not back-load the 1C/1D control period (no 13.9% carry) | 1.32 | 1.32 | 1.32 | year 16: 1.32 |
-| EXPERT, no opening cost at the 1B/1C/1D expansions | 1.30 | 1.18 W | 1.25 | year 13: 1.18 |
-| EXPERT, 60% gearing | 1.29 | 1.16 W | 1.16 W | year 14: 1.16 |
-| EXPERT, pushes AERA hard | 1.13 W | 1.13 W | 1.09 C | year 14: 1.09 |
+| Lender base case (what the bank sized on) | 1.24 | 1.25 | 1.24 | year 8: 1.24 |
+| EXPERT | 1.25 | 1.14 W | 1.14 W | year 11: 1.14 |
+| EXPERT, AERA does not back-load the 1C/1D control period (no 13.9% carry) | 1.27 | 1.27 | 1.27 | year 8: 1.27 |
+| EXPERT, no opening cost at the 1B/1C/1D expansions | 1.25 | 1.16 W | 1.20 | year 13: 1.16 |
+| EXPERT, 60% gearing | 1.25 | 1.14 W | 1.14 W | year 11: 1.14 |
+| EXPERT, pushes AERA hard | 1.10 W | 1.10 W | 1.07 C | year 14: 1.07 |
 
-### 5.5 IRR basis
-All VSI IRRs are nominal rupee equity IRRs on the whole equity (the parent's 64% earns the same rate). Fairfax India's realised return on BIAL is 11% a year in US dollars (`bial.owners.fairfax_return`, mark-to-market, not dividends); at about 3.6% a year of rupee depreciation (est.) that is about 15% in rupees. Fairfax's DCF discount rates (12.2-17.5%, `bial.owners.dcf_inputs`; 12.4-17.3% in 2024, `finance.equity_irr_benchmark`) are after-tax; the source does not state their currency, and BIAL's cash flows are in rupees.
+| Year-20 fix | |
+|---|---|
+| Symptom | Lender base case dipped to 1.18 in year 17 and year 20 (mandatory stages only). |
+| Cause | Each stage is sculpted on the capacity the earlier stages leave, read from the previous sizing pass. In the year one stage finishes (1B→1C in year 17, 1C→1D in year 20) its last payment is a part-sized remainder that moved every pass, so the solve oscillated (30 passes, not converged) and the hand-over years were over-filled. Phase 2 did not overlap the 1A sculpt: 1A is repaid in year 15, phase 2 pays only interest from year 17. |
+| Change | `size_debt` now sculpts each stage on what the earlier stages pay in the same pass (`Tranche.ds_at`); the interest-only cover is sized just inside 1.20. Converges in 10 passes; base case 1.20 in year 5, 1.25 in every repaying year. |
 
-**What moved the expert's IRR from the WIP's ~10% to 13.5%** (measured one step at a time, in this order). Each step is a modelling correction, not a tuning knob:
+### 5.5 Airport City
+| Year | Income ₹ cr | AERA counts ₹ cr (30%) | Aero charge per passenger ₹ |
+|---|---|---|---|
+| 16 | 316 | 95 | 1,801 |
+| 18 | 1,024 | 307 | 1,948 |
+| 20 | 1,846 | 554 | 1,757 |
+| 21 | 2,303 | 691 | 1,590 |
+| 26 | 5,139 | 1,542 | 1,489 |
+| 30 | 8,205 | 2,462 | 1,574 |
+| 40 | 12,146 | 3,644 | 2,167 |
+| 50 | 17,979 | 5,394 | 3,083 |
+| 60 | 26,613 | 7,984 | 4,714 |
 
-| Step | IRR after | Why it is a correction |
-|---|---|---|
-| Tax passed through after the first plan | 10.7% | AERA passes through the aero share of the tax actually paid; the WIP allowed only BIAL's 4% of the return |
-| Renewals at replacement cost, no 1-year stub CP | 10.5% | Holds the real asset base |
-| Retained cash and the DSRA earn the repo rate | 11.0% | BIAL holds ₹3,603 cr of cash on deposit |
-| Bank tests interest-only years at 1.20; 3-star service bonus | 11.2% | The bank won't lend into its own warning zone; the expert earns `till.sq_incentive_max` |
-| One opening term instead of a greenfield term fitted to one point | 11.7% | Bank gearing on 1A goes from 42% to 59% |
-| Disruption charged only above the lender base case | 13.4% | BIAL's fitted O&M already holds normal disruption, so the WIP counted it twice |
-| Expert pays out what the lock-up allows (instead of trapping cash to prepay) | 13.5% | |
+Your land earns ₹8,205 cr a year; AERA counts ₹2,462 of it against your airline charges. (year 30) (year 30, expert who builds it.)
+
+### 5.6 IRR basis
+
+
+| Run | Equity IRR |
+|---|---|
+| EXPERT | 12.5% |
+| EXPERT, builds Airport City | 12.7% |
+| BAD | equity lost |
+| BAD, builds Airport City | equity lost |
+| LAZY | equity lost |
+| LAZY, builds Airport City | equity lost |
+| EXPERT, big phase 1 (70 mppa) | 11.5% |
+| EXPERT, no state loan | 12.2% |
+| EXPERT, 75% gearing | 12.5% |
+| EXPERT, 60% gearing | 12.1% |
+| EXPERT, pushes AERA hard (appeals the back-loaded order) | 10.5% |
+| EXPERT, soft (25% carried) | 12.4% |
+| EXPERT, equal instalments | 12.4% |
+| EXPERT, no refinancing | 12.2% |
+| EXPERT, prepay instead of dividends | 12.1% |
+| EXPERT, keeps cash to year 15, then prepays what the lock-up traps | 12.4% |
+| EXPERT, no phase 2 | 12.1% |
+| EXPERT, Airport City on BIAL's land share (11% of the site) | 12.8% |
+| EXPERT, COVID-type years 16-17 (BIAL FY21-22) | 12.3% |
+| EXPERT, Nagpur-level fee 14.49% | 11.4% |
+| EXPERT, land at a BIAL-style cost-recovery rent | 12.2% |
 
 ## 6. Scale
-There is no single ×5. VSI is its own premise (design-day traffic, the capex stages in money-design.md) run on BIAL's unit costs and mechanisms. Capex (FY2026 ₹): phase 1 ₹36,000 cr vs BIAL ~₹5,100 cr = ×7.1; full build ₹104,000 cr vs ~₹20,500 cr = ×5.1. Traffic by operating year: ×4.0 to ×9.9 (×21 against BIAL's COVID year). Mature traffic (op year 18): VSI 278 m vs BIAL 44.5 m = ×6.2. So VSI is ×5 on full-build capex, ×7 on phase 1 and ×4-10 on traffic; it reaches its mature traffic in 10 operating years where BIAL took 18, so in the middle of the arc it carries more passengers per rupee of capex than BIAL did.
+There is no single ×5. VSI is its own premise (design-day traffic, the capex stages in money-design.md) run on BIAL's unit costs and mechanisms. Capex (FY2026 ₹): phase 1 ₹60,000 cr vs BIAL ~₹5,100 cr = ×11.8; full build ₹168,000 cr vs ~₹20,500 cr = ×8.2. Traffic by operating year: ×3.7 to ×9.5 (×24 against BIAL's COVID year). Mature traffic (op year 18): VSI 286 m vs BIAL 44.5 m = ×6.4. So VSI is ×8 on full-build capex, ×12 on phase 1 and ×4-10 on traffic; it reaches its mature traffic in 10 operating years where BIAL took 18, so it carries fewer passengers per rupee of capex than BIAL did, which is why its charge per passenger is higher.
 
 ## 7. What the model does and doesn't reproduce
 - **Reproduces:**

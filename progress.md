@@ -136,3 +136,15 @@ Shipped in this pass:
 | Not wired: the economy must call it at year 60 with the real numbers | open (hub.js lane) |
 
 The certificate reuses the duty paper, ticks, signature pad, seal and stamp from the deal desk. The day-one signature is trimmed to its ink so both hands sit at the same size. Found while doing this: `.zmm-sheet p` (the old dark-sheet style) greys out and shrinks the paragraphs on every `.zdk-note` slip, including onboarding's. It is fixed for the handback slip only; the ui.js owner should add `.zdk .zdk-note p{color:#26292c;font-size:16.5px}`.
+- 2026-10-19 capex recalibration (branch capex): VSI capex Rs 2,00,000 cr to 260 MPPA (1A 60,000 lean / 85,000 big; 1B 32,000; 1C 38,000; 1D 38,000; P2 32,000), peers Istanbul and Al Maktoum in money.json; expert lowest DSCR 1.14 (year 11), IRR 12.4 percent; bad and lazy taken over in year 13 by the two-era rule; VSI must charge about Rs 1,500 a passenger against Bengaluru's 606 and Delhi's 379.
+
+## 2026-10-19 capex decisions (lane C)
+| Item | Status |
+|---|---|
+| ₹2,00,000 cr kept; Istanbul caveat kept; peer line in money-design.md | done |
+| Lender base-case dip (1.18, years 17 and 20) | fixed at the cause: stages sculpted on the same pass (`Tranche.ds_at`); base case ≥ 1.20 every year |
+| Airport City (`airport_city` in money.json, model scenario rows, screen text) | done; expert 12.7% (12.8% at 11% land), not 14–15% |
+| 14–15% target | not met honestly: needs ~₹30 cr/acre/yr licence. Needs the user's call |
+| design/finance.md §4–6 tables | regenerated; §7 prose not touched |
+| money-design.md side-by-side year table | not refreshed (rows from year 17 shift slightly: phase 2 now 80% geared) |
+| Merge origin/assist/capex-ui | not done in this lane (timebox) |

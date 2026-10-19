@@ -275,6 +275,80 @@ Thiel
 
 **Open:** Frankfurt is margin text only (no later chapter flies it); hub income stops growing after 2043; Doha has no counter-offer mechanic; connections per destination are additive; the cover can't visibly move (Skyward is ~1% of income). Skyward's London widebody shows as B789 in the at-risk list (CH5_TYPE doesn't read 'A388').
 
+## 2026-10-19 — Stage 0, lane E: the engine for the whole flight (branch s0-engine, cloud session)
+
+Only `money/era.js` and `tools/era_test.js` changed (`money.json` untouched). `node tools/era_test.js` → ALL PASS, including the new
+Stage 0 section: two full flights (smart and blind, Chapters 1–7 and the Black Box) through the public API in ~0.4 s, with the
+design/build-plan.md §3 checks per chapter. The site was not rebuilt here (build.py is lane H's); rebuild after merging.
+
+### Stage 0 engine API (for lanes H and U)
+Every chapter has the Chapter 5 shape. `VSIEra.chapters[n]` is the registry for `CHF` (n = 3..7):
+- `chN.start(save)` (the player's own save; null if not resumable or over), `chN.fixture(opts)` (the sample, test URLs only), `chN.eras`
+- `chN.frontPage(st)` → the Zero Mile Times; `chN.decision(st)` → `{docType, docId, title, date, dateWords, parties, body[], choices[{id, label, terms, slip:{big, money, stake, line}, disabled?}], stamps}`
+- `chN.applyDecision(st, id)` (Ch7: `applyDecision(st, {district, phase2, l5})` booleans; the decision has `resolutions[]`, docType `board-minutes`)
+- `chN.briefing(st)` → the duty manager's handover (3 lines, each with its doc)
+- `chN.shiftPlan(st)` → `{level, chapter, year, window:{from,to}, volume, banks[], incidents[{id, cause, docId, at, title, text, options[{id,label,effect}]}], tags[{docId, doc, line, anchor}], rates, auto}`. **`plan.auto` is the stub shift** (an expert's result). hub.js can pass it straight to `applyShift` until the real CHn_LEVEL exists.
+- `chN.applyShift(st, result)` → `{state, bill, card, report}`. It plays all the chapter's eras and leaves the last board pending, like ch5. `result` is `{stars, otp, cx, made, missed, incidents:{id: optionId}}`; Ch5's is unchanged.
+- **Ch3:** `bill.trust {value, words}`; sets `s.plateauTrust`, plus `s.ch3TrafficLag` for a soft open.
+- **Ch4:** `ch4.budget(st)` → the 2034 bird-radar tick for the bill page; `ch4.applyBudget(st, bought)`. Option C (`two`) comes back `disabled: true`, labelled "Plateau Air declined: day one went badly", when trust < 0.7.
+- **Ch6:** `ch6.pick(st)` → `'rupee'` (dollar bonds), `'airline'` (anchor) or `'pandemic'`.
+  - `ch6.start`/`fixture` set the shock.
+  - The decision is the banks' letter (`docType: 'banks-letter'`): own / l5 / refuse.
+  - **Refuse ends the game inside `applyDecision`** (`state.over.reason === 'banks'`, `state.ch6.notice` = the banks' notice). `chapter(state).n === 8`, so go to the Black Box.
+  - `ch6.card('rupee')` is null (no sourced card yet).
+- **Ch7:**
+  - `ch7.start`/`fixture` run the Kármán Line last-mover test (`st.ch7 = {score, rivalWon}`).
+  - `applyShift` runs to year 60: `state.over.reason === 'handback'`, then `handbackOpts(state)` as before.
+- `VSIEra.bridge(state, n)` → `{state, from, to, years[{year, calYear, paxM, light}], lines[]}` for the years-later split-flap. It plays any pending board at the defaults.
+- `state.papers[]` gets each chapter's front page on `applyDecision`. `s.decisions[]` is the log the debrief reads. `s.shiftLog[]` holds the shifts, with `auto: true` for stubs.
+- `VSIEra.debrief`:
+  - `benchmarks()`: the three sourced marks, with URLs.
+  - `returnPage(st)`: page 1.
+  - `attribution(st, {exact})`: page 2. The default is leave-one-out ("a quick estimate", n+2 runs); `exact: true` gives Shapley over the groups (2ⁿ runs, ~4 ms each).
+    It returns `groups[], bars (≤5), sentences (top 2), powerLaw, everythingElse, totalCr, checkSum`.
+  - `papers(st)`: page 3.
+  - `profile(st, attr)`: page 4a, the first three lines (capital allocator, operator, risk-taker right/cost), plus the defaults line.
+  - `all(st)`: everything at once.
+
+### Engine additions (all in `simulate`, all off unless a chapter sets them)
+- `s.streams{key}`: connection income, priced like `s.hub`.
+- `s.paxAdj{key}`:
+  - above 1, it raises demand, still capped by the terminals;
+  - below 1, it takes passengers even from a full airport.
+- `s.chargeCut`: the airport's own discount. It is billed below AERA's charge and not trued up.
+- `s.shock`: a second rupee fall on dollar debt.
+- `s.injectBy`: fresh money from the player or L5.
+- `s.stakeBy`/`s.paysBy`: the player's stake path, so `final` uses the player's own flows.
+- `s.stepInYear`, `s.rivalTake`, `s.extraBy`.
+
+### Findings for the design (numbers from the engine, not tuned)
+1. **Ch1 alone moves the return about 1 point, not 2.** Doubling the bid (15% → 30%) costs 1.3 points; 75% borrowing and dollar bonds each add a little back. The test asks for 0.8 and says why. The whole-game gap (smart 10.6% vs blind 5.5%) passes the 3-point bar easily.
+2. **Dollar bonds are close to a free lunch.** Phase 1's dollar bonds are repaid (or refinanced) before year 21, so Ch6's rupee crisis finds no dollar debt: the front page falls back to "AIRLINES CUT FLIGHTS AT VSI". Either keep part of the bonds outstanding to year 25, or move the rupee crisis earlier. That is a money.json decision (`lenders.dollar`).
+3. **L5 is priced to earn 12.2%** (the Fairfax low end, the debrief's rate), both for the cure money and for the Ch7 buyout. Neither is a free gift at that rate. With the cure, own money keeps 64% but costs about 0.1 points of return against asking L5.
+4. **The shifts group** counts only shifts the player played (not stubs), against `ops_profiles.expert`. In the blind run it is the biggest bar: bad shifts cost more than any single paper decision.
+
+### Lane E, second push: lane H's three requests, built ahead of the formal request text
+- **Cliffhanger.**
+  - `VSIEra.actBreak(state)` gives 1 right after Chapter 3's bill, 2 right after Chapter 5's, otherwise 0.
+  - `VSIEra.cliffhanger(state, act)` returns a Zero Mile Times front page plus `{edition: 'Late City', act, actName, fold: 'Act II · The Network' | 'Act III · The Long Game'}`.
+  - Act I's lead is fixed: "AIRLINES ASK: WILL VSI BECOME INDIA'S CONNECTING HUB?".
+  - Act II's lead comes from what's coming for this player (Chapter 6's pick): RUPEE AT RECORD LOW / SUTRADHAR AIR MISSES ITS FUEL PAYMENTS / A NEW VIRUS SPREADS.
+- **Bridge spanning years.** `VSIEra.bridge(state, n)` (also `fromYear`, `toYear`, and `headlines[]`: one per year, oldest first) now runs from the previous chapter's shift year to chapter n's first year. For example, 4→5 is `from` 2034, `to` 2039, with `years` 2035–2038.
+  - Each year is `{year, calYear, paxM, light, connectionsPerDay, line}`.
+  - `line` is the year's one event, if there is one: the rupee falls, a refinancing, fresh money from the owners, new terminal space opening, the last loan repaid.
+- **`VSIEra.debrief.pages(state, opts)`** → `{return, attribution, papers, profile, thiel, company, founder, signature, signedOn, endsOn, moment}`, as `ZMMoney.debrief` takes it.
+  - `thiel` is Thiel's seven questions, each `{q, answer, mark: '✓'|'✗'}`. Smart gets 6/7 and blind 0/7 in the test.
+  - `moment` is page 3's "Every moment happens once" line.
+  - `opts.exact` switches page 2 to exact Shapley.
+- **Third push (after lane H's shape check):**
+  - **Bridge:** it adds `fromYear`/`toYear` and `headlines[]`, one per year, oldest first. The old `from`/`to`/`lines` stay.
+  - **Fixed the "0 changing planes" bug.** When `advance` played over a chapter whose decision was never taken, there was no network. Now `advance` applies the passive choice for that chapter, marked `auto: true` in `s.decisions`, and puts no paper in the player's pile. The passive choices are: Ch3 phased, Ch4 two feeders (anchor if Plateau Air declined), Ch6 L5 puts in the cure, Ch7 rejects all three.
+  - **`debrief.pages`** now gives `{p1, p2, p3, p4}`:
+    - `p1` is the return page plus `valueCr` (the player's share of what is left at the handback; 0 if the banks took it);
+    - `p2.bars[]` each carry their own `sentence`;
+    - `p3` is `{papers, moment}`;
+    - `p4` is `{profile, thiel}`, with every profile line split into `{title, text, evidence}`.
+    The long names stay as well.
 ## Engine requests
 (for lane E, the cloud session; the Mac does not edit money/era.js, money.json or tools/era_test.js. Logged 19 October 2026, 18:55)
 
@@ -351,3 +425,18 @@ Please rename these, or add the screen's names alongside your own:
 - **`p2`**: `method` should be `'leave-one-out'` or `'shapley'` (today `'quick'`); `everythingElse.sharePct` → `everythingElsePct`; `powerLaw` → `closing`; `bars[].group` → `bars[].decision` (`sentence` ✓, `label` ✓, `sharePct` ✓).
 - **`p3`**: `papers` → `frontPages`, with each item's `calYear` → `year` (keep `chapter`, `lead`, `line`, `light`); `moment` → `once`.
 - **`p4`**: `profile` → `lines`, each `{title, line, evidence}`. Today `line` holds the title plus the text, so use `text` as `line`. `thiel` ✓.
+
+### Engine requests: done by lane E (the cloud session), 19 October 2026, 19:20
+- **§1, the test agent's four changes, all ported into `s0-engine` with tests:**
+  - the dated board meeting and pile (`boardOptions().date`, each `pile[].date`, "Board minutes, 2032");
+  - `poss()` in `stakeSentence`;
+  - `fileCard().stake.inCr` while building;
+  - `recordOf().endedOn` for torn-up and taken concessions.
+  - The `era_test` label is now "declines Haversine Airways". At the merge, take `s0-engine`'s `era.js` and `era_test.js` as they are; nothing from the uncommitted Mac copy is needed.
+- **§2, the field names, all done:**
+  - `bridge().lines` is now one headline a year, oldest first, and the three summary lines are in `summary[]`.
+  - `debrief.pages()`:
+    - `p1` has `{moneyInCr, moneyOutCr, valueCr, ended, endedYear, endedOn, benchmarks[].pct}` (a number, or `[low, high]`);
+    - `p2` has `{method: 'leave-one-out'|'shapley', bars[].decision, everythingElsePct, closing}`;
+    - `p3` has `{frontPages[].year, once}`;
+    - `p4` has `{lines[{title, line, evidence}], thiel}`.

@@ -305,27 +305,30 @@
       if (this.step_in) break;
       if (cps[t]) { active = cps[t]; this.plan_cp(active, t); }
       var pr = c.price(t), cap = c.cap(t), ops = c.ops(t);
-      var y = this.yields[t] || 0, demand = c.demand(t), f = 1;
+      var y = this.yields[t] || 0, demand = c.demand(t) * (c.pax_adj ? c.pax_adj(t) : 1), f = 1;
       if (demand > 0 && y > 0) { var norm = P.yield_market_norm * pr, fare = P.avg_fare * pr; f = Math.min(1, Math.pow(1 + (y - norm) / fare, -P.demand_elasticity)); }
       var pax = demand > 0 ? Math.min(demand * f, P.capacity_headroom * cap) : 0;
       if (c.pax_factor) pax *= c.pax_factor(t);   // a part-year opening (construction slip of under 12 months)
+      if (c.pax_cut) pax *= c.pax_cut(t);         // Chapters 3, 6, 7: a late move, a crisis, a rival hub
       var acI = c.nar_extra ? c.nar_extra(t) : 0;   // Airport City income (non-aero)
       var hubI = c.hub_inc ? c.hub_inc(t) : 0, hubC = c.hub_cost ? c.hub_cost(t) : 0;   // Chapter 5: connections income and its costs
-      var billed = y * pax / 10, aero = billed * (1 - ops.sq), nar = c.nar(t) * pax / 10 + acI + hubI;
+      // Chapter 4's charge cut is the airport's own discount, below what AERA allows: billed (and trued up) at the full charge
+      var billed = y * pax / 10, aero = billed * (1 - ops.sq) * (1 - (c.charge_cut ? c.charge_cut(t) : 0)), nar = c.nar(t) * pax / 10 + acI + hubI;
       var opex_b = c.opex_bench(t, cap, pax);
       var dis = Math.max(0, ops.dis - c.dis_in_opex);
       var opening = c.opening_cost(t);
       var opex = pax > 0 ? opex_b * ops.opex + dis * pr * pax / 10 + opening + P.ac.opex_share * acI + hubC : 0;
       // dollar bonds: the rupee falls, so what is owed (in rupees) grows by the fall
-      if (c.fx && t === c.fx.t) {
+      [c.fx, c.fx2].forEach(function (fx) {   // fx2: Chapter 6's rupee crisis (s.shock)
+        if (!fx || t !== fx.t) return;
         var hit = 0;
         c.tranches.forEach(function (tr) {
-          if (c.fx.names.indexOf(tr.name) < 0 || tr.out <= 0) return;
-          var add = tr.out * c.fx.fall; tr.out += add; hit += add;
-          if (tr.sched) Object.keys(tr.sched).forEach(function (k) { if (+k >= t) tr.sched[k] *= 1 + c.fx.fall; });
+          if (fx.names.indexOf(tr.name) < 0 || tr.out <= 0) return;
+          var add = tr.out * fx.fall; tr.out += add; hit += add;
+          if (tr.sched) Object.keys(tr.sched).forEach(function (k) { if (+k >= t) tr.sched[k] *= 1 + fx.fall; });
         });
-        if (hit > 0) this.events.push({t: t, k: 'fx', amt: hit, fall: c.fx.fall});
-      }
+        if (hit > 0) this.events.push({t: t, k: 'fx', amt: hit, fall: fx.fall});
+      }, this);
       var oi = aero + nar;
       var fee = c.feeShare(t) * oi + c.feePpf(t, pax);
       var ebitda = oi - opex - fee;
@@ -342,6 +345,7 @@
         cfads: cfads, dscr: ds > 1e-6 ? cfads / ds : null, debt: 0, bal: this.bal, sq: ops.sq};
       row.debt = c.tranches.reduce(function (s, x) { return s + x.out; }, 0);
       this.waterfall(t, row);
+      if (c.step_in_year != null && t + 1 >= c.step_in_year && !this.step_in) this.step_in = {t: t, why: 'you refused their letter asking for fresh money'};
       this.rows.push(row);
       if (active && t === active.start + active.n - 1) this.true_up(active, t);
       if (c.refi_rule) c.refi_rule(this, t);
@@ -368,7 +372,8 @@
   Engine.prototype.waterfall = function (t, row) {
     var c = this.c, lv = c.lever, eq = c.equity_need[t] || 0;
     var cash_int = (Math.max(this.cash, 0) + this.dsra) * P.cash_yield / 100 * (1 - P.tax_rate);
-    var free = row.cfads - row.ds + cash_int, cure = 0, cash = this.cash, unfunded = false;
+    var inj = c.inject ? c.inject[t] || 0 : 0;   // Chapter 6: fresh money from the shareholders (or L5) when the banks ask
+    var free = row.cfads - row.ds + cash_int, cure = 0, cash = this.cash + inj, unfunded = false;
     var cureOn = lv(t, 'cure');
     if (free < 0) {
       var draw = Math.min(this.dsra, -free); this.dsra -= draw; free += draw;
@@ -425,7 +430,7 @@
     }
     if (unfunded && !this.step_in) this.step_in = {t: t, why: 'a loan payment it could not make'};
     this.cash = cash; this.cures += cure; this.calls += call;
-    var flow = -call - cure + (this.step_in ? 0 : div);
+    var flow = -call - cure - inj + (this.step_in ? 0 : div);
     this.eq_flows[t] = (this.eq_flows[t] || 0) + flow;
     this.divs += div;
     row.cash = this.cash; row.dsra = this.dsra; row.div = div; row.cure = cure; row.call = call; row.sl_out = this.sl_out; row.swept = swept; row.prepay = prep;
@@ -552,7 +557,8 @@
       vintages.push(new Vintage(gx, gx * P.aero_asset_share, yOpen - 1, Math.min(CAL.dep_life, 60 - yOpen + 1), names[0] + '+'));
     }
     // one-off spends the shareholders paid after opening (the bird radar in a capital budget): equity, in the asset base
-    if (!base && s.extra_pay && s.extra_pay.length) s.extra_pay.forEach(function (p) {
+    var xpay = (!base && s.extraBy) ? [].concat.apply([], vals(s.extraBy)) : [];   // Chapter 7's dated plan, keyed like the stake
+    if (!base && ((s.extra_pay && s.extra_pay.length) || xpay.length)) (s.extra_pay || []).concat(xpay).forEach(function (p) {
       var t = p.year - 1, a = p.cr * pr(t); equity_need[t] = (equity_need[t] || 0) + a;
       vintages.push(new Vintage(a, a * P.aero_asset_share, t + 1, Math.min(CAL.dep_life, 60 - t - 1), null));
     });
@@ -565,6 +571,30 @@
       hubInc = function (t) { var y = t + 1; return y < H.from ? 0 : H.incCr * Math.pow(1 + H.growth, hk(y)) * pr(t) / pr(H.from - 1); };
       hubCost = function (t) { var y = t + 1; return y < H.from ? 0 : H.costCr * pr(t) / pr(H.from - 1); };
     }
+    // Chapters 3-7: connection streams (s.streams, keyed by what made them: Plateau Air's bank, Chapter 4's network, Chapter
+    // 7's dated plan), priced like s.hub; Kármán Line's Hyderabad hub can take a share of them (s.rivalTake)
+    var streams = (!base && s.streams) ? Object.keys(s.streams).map(function (k) { return s.streams[k]; }).filter(Boolean) : [], rt = !base && s.rivalTake;
+    if (streams.length || rt) {
+      var hubInc0 = hubInc, hubCost0 = hubCost;
+      var dipAt = function (S, y) { var f = 1; (S.dip || []).forEach(function (d) { if (y >= d.from && y <= d.until) f *= d.f; }); return f; };
+      hubInc = function (t) {
+        var y = t + 1, v = hubInc0 ? hubInc0(t) : 0;
+        streams.forEach(function (S) { if (y >= S.from && (!S.stop || y < S.stop)) v += (S.incCr || 0) * Math.pow(1 + (S.growth || 0), Math.min(y, S.until || 60) - S.from) * dipAt(S, y) * pr(t) / pr(S.from - 1); });
+        return rt && y >= rt.from ? v * (1 - rt.share) : v;
+      };
+      hubCost = function (t) {
+        var y = t + 1, v = hubCost0 ? hubCost0(t) : 0;
+        streams.forEach(function (S) { if (y >= S.from && (!S.stop || y < S.stop) && y <= (S.costUntil || 60)) v += (S.costCr || 0) * pr(t) / pr(S.from - 1); });
+        return v;
+      };
+    }
+    var adj = !base && s.paxAdj ? Object.keys(s.paxAdj).map(function (k) { return s.paxAdj[k]; }).filter(Boolean) : [];
+    // more traffic (f > 1) raises demand, still capped by the terminals; a shock (f < 1) takes passengers away even from a full airport
+    var adjAt = function (t, up) { var y = t + 1, f = 1; adj.forEach(function (a) { a.forEach(function (d) { if (y >= d.from && y <= d.until && (d.f > 1) === up) f *= d.f; }); }); return f; };
+    var paxAdj = adj.length ? function (t) { return adjAt(t, true); } : null, paxCut = adj.length ? function (t) { return adjAt(t, false); } : null;
+    var cc = !base && s.chargeCut, chargeCut = cc ? function (t) { var y = t + 1; return y >= cc.from && y <= cc.until ? cc.cut * cc.airlineShare : 0; } : null;
+    var inject = null;
+    if (!base && s.injectBy) { inject = {}; vals(s.injectBy).forEach(function (x) { inject[x.year - 1] = (inject[x.year - 1] || 0) + x.cr; }); }
     // Airport City: ordered at a board (s.ac_year), built on money.json's plan, never before its planned first year
     var acInc = null, acPhases = [];
     if (!base && s.ac_year) {
@@ -624,6 +654,8 @@
       renewal_share: renewal, first_cod_t: st[names[0]].cod - 1, dis_in_opex: P.ops_profiles.base.dis[0], forecast: !!base,
       nar_extra: acInc, hub_inc: hubInc, hub_cost: hubCost, hub_growth: (!base && s.hub && s.hub.growth) || 0, pax_factor: frac > 0 ? function (t) { return t + 1 === yOpen ? 1 - frac : 1; } : null,
       fx: (!base && lenderOf(s).fx) ? {t: lenderOf(s).fx.year - 1, fall: lenderOf(s).fx.fall, names: names.filter(function (n) { var k = stageKey(n); return k === '1A' || k === '1B'; })} : null,
+      fx2: (!base && s.shock && s.shock.kind === 'rupee' && s.lender === 'dollar') ? {t: s.shock.year - 1, fall: s.shock.fall, names: names.filter(function (n) { var k = stageKey(n); return k === '1A' || k === '1B'; })} : null,
+      pax_adj: paxAdj, pax_cut: paxCut, charge_cut: chargeCut, inject: inject, step_in_year: (!base && s.stepInYear) || null, no_step_in: !base && !!s.noStepIn,
       lever: function (t, key) {
         if (base) return key === 'cure' || (key === 'defer_state_loan' && !!s.defer_state_loan);
         if (key === 'cure') return (slipM > 0 && t + 1 <= yOpen) || leverAt(s.cure, t + 1);   // a late opening: the shareholders pay the interest
@@ -1042,18 +1074,36 @@
     }
     return {state: state, report: rep};
   }
-  function finalOf(state, eng) {
+  // the player's own share of the company's money in and out, year by year (Chapters 6-7 can change the stake: L5 putting in
+  // the cure money, the player buying L5 out). Each keyed by the chapter that made it, so the debrief can swap one out:
+  // s.stakeBy {key: {from, pct}}; s.injectBy {key: {year, cr, by: 'player'|'l5'}} (fresh money into the company, nominal ₹ cr,
+  // all of it from one party); s.paysBy {key: {year, cr}} (paid by the player to another owner, not into the company)
+  function vals(o) { return o ? Object.keys(o).map(function (k) { return o[k]; }).filter(Boolean) : []; }
+  function stakeDef(state) { return state.s && state.s.stake0 != null ? state.s.stake0 : state.stake; }
+  function pctAt(s, year, def) { var p = def, at = -1; vals(s.stakeBy).forEach(function (x) { if (x.from <= year && x.from >= at) { p = x.pct; at = x.from; } }); return p; }
+  function playerFlows(s, flows, def) {
+    var injAll = {}, injP = {}, pay = {};
+    vals(s.injectBy).forEach(function (x) { injAll[x.year - 1] = (injAll[x.year - 1] || 0) + x.cr; if (x.by === 'player') injP[x.year - 1] = (injP[x.year - 1] || 0) + x.cr; });
+    vals(s.paysBy).forEach(function (x) { pay[x.year - 1] = (pay[x.year - 1] || 0) + x.cr; });
+    return flows.map(function (f, t) { return (f + (injAll[t] || 0)) * pctAt(s, t + 1, def) / 100 - (injP[t] || 0) - (pay[t] || 0); });
+  }
+  function companyFlows(eng) {
     var flows = []; for (var t = 0; t < 60; t++) flows.push(eng.eq_flows[t] || 0);
     var lastRow = eng.rows[eng.rows.length - 1];
     if (!eng.step_in && lastRow) flows[flows.length - 1] += Math.max(0, eng.cash + eng.dsra - lastRow.debt - eng.sl_out);
-    var inv = 0, ret = 0; flows.forEach(function (f) { if (f < 0) inv -= f; else ret += f; });
-    var r = eng.step_in ? null : irr(flows);
-    var paxM = 0, fees = 0, repaidYear = null;
-    eng.rows.forEach(function (rw) { paxM += rw.pax; fees += rw.fee; if (repaidYear == null && rw.t >= 4 && rw.debt < 1) repaidYear = rw.year; });
+    return flows;
+  }
+  function finalOf(state, eng) {
+    var lastRow = eng.rows[eng.rows.length - 1], s = state.s || {}, def = stakeDef(state);
+    var pf = playerFlows(s, companyFlows(eng), def);
+    var inv = 0, ret = 0; pf.forEach(function (f) { if (f < 0) inv -= f; else ret += f; });
+    var r = eng.step_in ? null : irr(pf);
+    var paxM = 0, fees = 0, repaidYear = null, divs = 0;
+    eng.rows.forEach(function (rw) { paxM += rw.pax; fees += rw.fee; divs += (rw.div || 0) * pctAt(s, rw.year, def) / 100; if (repaidYear == null && rw.t >= 4 && rw.debt < 1) repaidYear = rw.year; });
     var residual = eng.step_in || !lastRow ? 0 : Math.max(0, eng.cash + eng.dsra - lastRow.debt - eng.sl_out);
-    return {irr: r, investedCr: Math.round(inv * state.stake / 100), returnedCr: Math.round(ret * state.stake / 100), dividendsCr: Math.round(eng.divs * state.stake / 100),
+    return {irr: r, investedCr: Math.round(inv), returnedCr: Math.round(ret), dividendsCr: Math.round(divs), stakePct: pctAt(s, 60, def),
       debtRepaid: !eng.step_in && lastRow && lastRow.debt < 1, banks: !!eng.step_in,
-      paxTotalM: Math.round(paxM), paidToStateCr: Math.round(fees), residualCr: Math.round(residual * state.stake / 100), repaidYear: repaidYear,
+      paxTotalM: Math.round(paxM), paidToStateCr: Math.round(fees), residualCr: Math.round(residual * pctAt(s, 60, def) / 100), repaidYear: repaidYear,
       p2: !!state.s.p2year, ac: !!state.s.ac_year};
   }
 
@@ -1098,10 +1148,12 @@
     var div = {maxCr: Math.floor(cash * payout), lastCr: lastDiv || undefined};
     if (cash >= 1 && payout <= 0) { div.blocked = true; div.reason = 'The banks hold back dividends while the airport earns under ₹' + Math.round(P.lockup.nil_below * 100) + ' for every ₹100 due.'; }
     var pr = partners(); pr[0] = Object.assign({}, pr[0], {name: state.parent || pr[0].name, pct: state.stake});
-    var pile = [{title: 'Concession Agreement', stamp: 'Executed'}];
-    if (state.construction) pile.push({title: 'Construction record', stamp: 'Filed'});
-    for (var k = 2; k <= e; k++) pile.push({title: 'Board minutes, era ' + k, stamp: 'Approved'});
-    return {era: e + 1, years: (2025 + nx[1]) + '–' + (2025 + nx[2]), year: nextStart, parent: state.parent, parentPct: state.stake, founder: state.founder || undefined,
+    // dated in the game: the meeting sits on the last day of the era just run, on the signing day's month and day
+    var md = String(state.signedOn || '2026-04-01').slice(4), meet = cal(ys[2]) + md, con = (state.history || []).filter(function (h) { return h.construction; })[0];
+    var pile = [{title: 'Concession Agreement', stamp: 'Executed', date: state.signedOn || undefined}];
+    if (state.construction) pile.push({title: 'Construction record', stamp: 'Filed', date: (con && con.construction.finishedOn) || state.opensOn || undefined});
+    for (var k = 2; k <= e; k++) pile.push({title: 'Board minutes, ' + cal(eraYears(k - 1)[2]), stamp: 'Approved', date: cal(eraYears(k - 1)[2]) + md});
+    return {era: e + 1, years: (2025 + nx[1]) + '–' + (2025 + nx[2]), year: nextStart, date: meet, parent: state.parent, parentPct: state.stake, founder: state.founder || undefined,
       partners: pr.map(function (x) { return {name: x.name, pct: x.pct}; }), stakeValueCr: lr.stakeValueCr, cashCr: cash, debtCr: lr.debtCr || 0,
       dscr: lr.cover != null ? {value: lr.cover, warn: P.thr.warning, covenant: P.thr.covenant} : null,
       aera: aera, appealNow: stance === 'hard', investments: invest,
@@ -1186,7 +1238,7 @@
       diffPct: Math.round((implied - valueCr) / valueCr * 1000) / 10};
   }
   function stakeSentence(company, pct, valueCr, chk, when) {   // the stake line every bill uses, with its reconciliation
-    var w = (company || 'Your company') + '\'s ' + pct + '% is worth about ' + stakeWords(valueCr) + (when ? ' ' + when : '') + '.';
+    var w = poss(company || 'Your company') + ' ' + pct + '% is worth about ' + stakeWords(valueCr) + (when ? ' ' + when : '') + '.';
     if (!chk) return w;
     return w + ' ' + (company ? 'It has' : 'You have') + ' put in ' + stakeWords(chk.moneyInCr) + ' since ' + chk.fromYear +
       (chk.dividendsCr >= 1 ? ' and taken out ' + stakeWords(chk.dividendsCr) + ' in dividends' : '') +
@@ -1252,9 +1304,13 @@
       director: (state.founder || 'The founder') + ', director', chapter: ch, resumable: resumable(state).ok,
       line: 'Signed ' + fmtDate(state.signedOn || '2026-04-01') + ' · now year ' + yr + ' of 60 · ' + (ch.n <= 7 ? 'Chapter ' + ch.n + ', ' : '') + ch.name,
       year: state.year || 1, calYear: cal(state.year || 1), era: state.era || 1, building: !!state.building,
-      stake: {pct: state.stake || 0, valueCr: lr.stakeValueCr != null ? lr.stakeValueCr : null},
+      stake: {pct: state.stake || 0, valueCr: lr.stakeValueCr != null ? lr.stakeValueCr : null, inCr: lr.stakeValueCr != null ? null : putIn(state)},
       cover: {words: state.building ? 'No loan payments due until the airport opens' : coverWords(cov), light: lr.light || 'green'},
       cashCr: h.cashCr != null ? h.cashCr : Math.round(state.cash || 0), docs: campaignDocs(state)};
+  }
+  // the player's share of what the shareholders have put in so far (the file card's stake before the first books close)
+  function putIn(state) {
+    try { var q = closeFigures(state.s, state.s.sizing); return Math.round(q.equityCr * (state.stake || 64) / 100); } catch (e) { return null; }
   }
   // The save (zm_campaign). A concession is resumable only if it is the player's own: signed (signature, founder and
   // signing day), from this version of the game, not the sample company, and not over. VSIEra.resumable(save) → {ok, why}
@@ -1283,7 +1339,7 @@
       yearsRun: yearsRun, how: how,
       howWords: how === 'handback' ? 'Handed back after 60 years' : how === 'banks' ? 'The banks took control in ' + cal(o.year || state.year || 1) : 'Torn up in year ' + (state.year || 1),
       finalReturnPct: ret, stakeValueCr: how === 'banks' ? 0 : (lr.stakeValueCr != null ? lr.stakeValueCr : null),
-      endedOn: how === 'handback' ? (state.endsOn || null) : null};
+      endedOn: how === 'handback' ? (state.endsOn || null) : cal(o.year || state.year || 1) + String(state.signedOn || '2026-04-01').slice(4)};
   }
   function addMonths(iso, m) {
     var d = iso ? new Date(iso + 'T12:00:00Z') : new Date(Date.UTC(2026, 3, 1, 12));
@@ -1572,7 +1628,7 @@
     for (var guard = 0; guard < 16 && !st.over && st.era < era; guard++) {
       var h = st.history[st.history.length - 1] || {};
       // the era's shift is already played if the last entry is this era's report (waiting for its board)
-      if (!(h.era === st.era && !h.board && !h.construction)) st = applyShift(st, opts.shift ? opts.shift(st.era) : autoShift(st.era)).state;
+      if (!(h.era === st.era && !h.board && !h.construction)) { autoDecide(st); st = applyShift(st, opts.shift ? opts.shift(st.era) : autoShift(st.era)).state; }
       if (st.over) break;
       var bo = boardOptions(st);
       st = applyBoard(st, opts.board ? opts.board(st, bo) : {appeal: false, prepayCr: 0, dividendCr: bo.dividend.maxCr,
@@ -1618,7 +1674,7 @@
     if (!st || st.over || st.era !== 4) return null;
     if (opts.radar && !st.radar) st.radar = opts.radar;
     st.sample = false;
-    return ch5Ready(st);
+    return ch5Ready(ensureDocs(st));
   }
   // VSIEra.ch5.fixture(opts): the SAMPLE concession (Meridian Infra, Asha Rao), for the ?chapter5= test URL and the tests
   // only. It is marked sample: true and test: true, so resumable() refuses it and it can never be saved as zm_campaign.
@@ -1662,7 +1718,7 @@
       stake: state.stake, stakeValue: stakeWords(lr.stakeValueCr || 0), stands: state.phase1 === 'big' ? CH5.stands.need : CH5.stands.lean};
     return {masthead: F.masthead, dateLine: d.words + ' · Nagpur', price: F.price, lead: F.lead, deck: fill(F.deck, v),
       sub: {head: F.sub.head, body: fill(F.sub.body, v)},
-      columns: F.columns.map(function (c) { return {head: c.head, body: fill(c.body, v)}; }),
+      columns: F.columns.map(function (c, i) { return i === 0 && state.s.chargeCut ? {head: 'Dubai matches VSI\'s cut', body: 'Dubai matched VSI\'s 30% cut in airline charges within a year. The flights it pulled from the Gulf mostly fly past each other.'} : {head: c.head, body: fill(c.body, v)}; }),
       photo: {kind: F.photo.kind, caption: fill(F.photo.caption, v)},
       company: state.parent, founder: state.founder || 'Asha Rao', signature: state.signature || state.founder || 'Asha Rao',
       sources: [GULF_SRC]};
@@ -1706,6 +1762,9 @@
         'You declined ' + CH5.partner + '. Its long-haul flights went to ' + CH5.rival + '.'};
     dw(doc);
     state.docs = (state.docs || []).filter(function (x) { return x.id !== doc.id; }).concat([doc]);
+    addPaper(state, 5, ch5FrontPage(state),  state.s.network === 'anchor' || state.s.network === 'two' ? 'Because your afternoon bank fed ' + CH5.feeders.length + ' cities' : 'Because ' + CH5.partner + ' wanted an Indian hub', CH5.year);
+    logDecision(state, {id: 'ch5-partner', group: 'partner', chapter: 5, year: CH5.year, label: CH5.partner, chosen: id,
+      chosenLabel: {three: 'Signing ' + CH5.partner + ' for three routes', london: 'Signing ' + CH5.partner + ' for London', decline: 'Declining ' + CH5.partner}[id], 'default': 'decline', alt: {hub: null}});
     return state;
   }
   function ch5Trail(state) {
@@ -1739,11 +1798,12 @@
       holdLine: fill(CH5_SCRIPT.incident.hold, hv), letGoLine: fill(CH5_SCRIPT.incident.go, hv)};
     return {level: 3, year: CH5.banksFrom,
       partner: CH5.partner, partnerCode: CH5.partnerCode, partnerRadio: CH5.partnerRadio,
-      feeder: {airline: CH5.feederAirline, code: CH5.feederCode, radio: CH5.feederRadio, cities: CH5.feeders.map(function (c) { return {code: c[1], name: c[0]}; }), from: CH5.feederFrom, to: CH5.feederTo, flights: CH5.feederFlights, paxEach: CH5.feederPaxEach},
+      feeder: {airline: CH5.feederAirline, code: CH5.feederCode, radio: CH5.feederRadio, cities: CH5.feeders.map(function (c) { return {code: c[1], name: c[0]}; }), from: CH5.feederFrom, to: state.s.network === 'two' ? '14:10' : CH5.feederTo, flights: CH5.feederFlights, paxEach: CH5.feederPaxEach},
       intl: intl,
       rates: {perConnectionCr: r.perConnectionCr, missedCostCr: r.missedCostCr, rival: CH5.rival},
       hub: hub, trail: tr, tags: tags,
-      stands: {need: CH5.stands.need, have: state.phase1 === 'big' ? CH5.stands.need : CH5.stands.lean}};
+      stands: {need: CH5.stands.need, have: state.phase1 === 'big' ? CH5.stands.need : CH5.stands.lean},
+      network: state.s.network || null, second: state.s.network === 'two' ? {airline: NM.plateau, code: 'BLR', name: 'Bengaluru'} : null};
   }
   function ch5Briefing(state) {
     var plan = ch5ShiftPlan(state), d = ch5Date(state, CH5.banksFrom), sky = CH5.docId + cal(CH5.year), lines = [];
@@ -1797,6 +1857,15 @@
     var growth = yrShare == null ? 0 : Math.max(-0.12, Math.min(0.12, (yrShare - 0.9) * 2.4)) - (letGo ? CH5.letGoGrowthHit : 0);
     state.s.hub = choice === 'decline' ? null : ch5Hub(earnedCr, spentCr, growth);
     if (!state.s.hub) delete state.s.hub;
+    else state.s.hub.perDay = Math.round(madeYr / days);
+    if (H) {   // the decision log: had London gone without the Lucknow passengers (design/debrief.md §2)
+      var altLost = (CH5.intl[H.dest].connecting * days + H.pax * CH5.lateDaysPerYear) * r.perConnInr / 1e7, altCare = H.pax * CH5.lateDaysPerYear * r.careInr / 1e7;
+      var altHub = held ? ch5Hub(Math.max(0, earnedCr - altLost), Math.max(0, spentCr - holdCr + altCare), Math.max(-0.12, growth - CH5.letGoGrowthHit)) : clone(state.s.hub);
+      altHub.perDay = Math.round(Math.max(0, madeYr - CH5.intl[H.dest].connecting * days - (held ? H.pax * CH5.lateDaysPerYear : 0)) / days);
+      logDecision(state, {id: 'ch5-hold', group: 'hold', chapter: 5, year: CH5.banksFrom, label: 'Holding London for Lucknow', chosen: held ? 'hold' : 'letgo',
+        chosenLabel: held ? 'Holding London for Lucknow' : 'Letting London go', 'default': 'letgo', alt: {hub: altHub}});
+    }
+    logShift(state, 5, result);
     var otp = result.otp != null ? result.otp : 0.85;
     // the whole shift's connections (domestic too) move the Mall and passenger care for the era; one bank of the day, so a quarter weight
     var allShare = result.made != null && result.made + (result.missed || 0) > 0 ? result.made / (result.made + (result.missed || 0)) : normShare;
@@ -1805,7 +1874,10 @@
     var out = applyShift(state, shift), st = out.state, rep = out.report;
     var eng = simulate(st.s, eraYears(4)[2]);
     var hubRows = eng.rows.filter(function (x) { return x.year >= CH5.banksFrom && x.year <= eraYears(4)[2]; });
-    var hubEarned = hubRows.reduce(function (a, x) { return a + x.hubInc; }, 0), hubSpent = hubRows.reduce(function (a, x) { return a + x.hubCost; }, 0);
+    // the era's figures are the partner's banks only: the Chapter 4 bank (s.streams) is taken out
+    var sNo = clone(st.s); delete sNo.streams; delete sNo.rivalTake;
+    var hubOnly = simulate(sNo, eraYears(4)[2]).rows.filter(function (x) { return x.year >= CH5.banksFrom && x.year <= eraYears(4)[2]; });
+    var hubEarned = hubOnly.reduce(function (a, x) { return a + x.hubInc; }, 0), hubSpent = hubOnly.reduce(function (a, x) { return a + x.hubCost; }, 0);
     // the banks' number for the years the partner flies (the era's worst year is 2039, before the first bank)
     var cov = null; hubRows.forEach(function (x) { if (x.dscr != null && (cov == null || x.dscr < cov)) cov = x.dscr; });
     var y1 = cal(eraYears(4)[2]);
@@ -1859,8 +1931,1039 @@
   var ch5 = {script: CH5_SCRIPT, card: ch5Card, fixture: ch5Fixture, start: ch5Start, frontPage: ch5FrontPage, decision: ch5Decision, applyDecision: ch5ApplyDecision, briefing: ch5Briefing,
     shiftPlan: ch5ShiftPlan, applyShift: ch5ApplyShift, rates: function (y) { var r = ch5Rates(y || CH5.year); return {perConnectionCr: r.perConnectionCr, missedCostCr: r.missedCostCr, holdCostCr: r.holdCostCr}; }};
 
+  // =============================================================================================
+  // Stage 0 (design/build-plan.md §2): Chapters 3, 4, 6 and 7 in the Chapter 5 shape, the bridges between chapters, the
+  // decision log (s.decisions) and the Black Box (VSIEra.debrief). Each chapter:
+  //   start(save) | fixture(opts) → frontPage → decision → applyDecision → briefing → shiftPlan → (the shift) → applyShift
+  //   → {state, bill, card}
+  // The shifts are stubs in Stage 0: shiftPlan(state).auto is an expert's result that hub.js (or a bot) can hand straight to
+  // applyShift. Money still comes from connections, routes, land and shops (s.streams, s.hub, s.ac_year), never from movements.
+  // Numbers marked (est.) are game assumptions; every history card is research/history-cards.md as written.
+  // =============================================================================================
+  var NM = {plateau: 'Plateau Air', feeder: CH5.feederAirline, partner: CH5.partner, rival: 'Kármán Line Ventures', district: 'Zero Mile District', l5: 'L5 Capital'};
+  var CH_ERAS = {3: [1], 4: [2, 3], 5: [4], 6: [5, 6, 7], 7: [8, 9, 10, 11, 12]};
+  function firstEra(n) { return CH_ERAS[n][0]; }
+  function chYears(n) { var e = CH_ERAS[n]; return [eraYears(e[0])[1], eraYears(e[e.length - 1])[2]]; }
+  function prAt(year) { return Math.pow(1 + P.cpi_forward, year - 1); }
+  // one domestic connection at VSI (the year's prices): the inbound leg's landing fee per seat, the onward passenger fee and
+  // shopping in transfer (money.json, the same rates Chapter 5 uses for its domestic leg)
+  function domConnInr(year) {
+    var udf = J('aero.udf_greenfield_opening_nmia', {dom_dep: 620, intl_dep: 1225}), landDom = J('aero.landing_dom_narrow_per_t', 347);
+    var xfer = J('nonaero.transfer_vs_od_spend', 0.75), shop = P.nar0 + (P.nar1 - P.nar0) * 0.5;
+    return (landDom * 79 / 180 + udf.dom_dep + shop * xfer) * prAt(year);
+  }
+  // a stream of connections (s.streams[key]): perDay connections from year `from`, growing through `until`, priced at the
+  // year's prices (o.perConnInr overrides the domestic rate; o.made the share that connect)
+  function streamOf(perDay, from, o) {
+    o = o || {};
+    var per = o.perConnInr || domConnInr(from), made = o.made == null ? 1 : o.made, inc = perDay * made * P.p2a * per / 1e7;
+    var S = {perDay: Math.round(perDay * made), from: from, until: o.until || 60, incCr: inc, costCr: (o.costShare || 0) * inc, growth: o.growth || 0};
+    if (o.costUntil) S.costUntil = o.costUntil;
+    if (o.dip) S.dip = o.dip;
+    return S;
+  }
+  function perDayAt(S, y) {
+    if (!S || y < S.from || (S.stop && y >= S.stop)) return 0;
+    var f = 1; (S.dip || []).forEach(function (d) { if (y >= d.from && y <= d.until) f *= d.f; });
+    return (S.perDay || 0) * Math.pow(1 + (S.growth || 0), Math.min(y, S.until || 60) - S.from) * f;
+  }
+  function networkPerDay(st, y) {   // connections a day through VSI in year y, from every stream and the partner's banks
+    var s = st.s, n = 0;
+    vals(s.streams).forEach(function (S) { n += perDayAt(S, y); });
+    if (s.hub && s.hub.perDay) n += s.hub.perDay * Math.pow(1 + (s.hub.growth || 0), Math.min(y, s.hub.until) - s.hub.from) * (y >= s.hub.from ? 1 : 0);
+    if (s.rivalTake && y >= s.rivalTake.from) n *= 1 - s.rivalTake.share;
+    return Math.round(n);
+  }
+  // patches: what a decision wrote into s, keyed one level deep ('streams.network'), so the debrief can swap in what a
+  // passive player would have done (design/debrief.md §2). null removes the key.
+  function applyPatch(s, patch) {
+    Object.keys(patch || {}).forEach(function (k) {
+      var v = patch[k] == null ? null : clone(patch[k]), i = k.indexOf('.');
+      if (i < 0) { if (v == null) delete s[k]; else s[k] = v; return; }
+      var a = k.slice(0, i), b = k.slice(i + 1);
+      s[a] = s[a] || {};
+      if (v == null) delete s[a][b]; else s[a][b] = v;
+    });
+    return s;
+  }
+  function logDecision(st, d) { st.s.decisions = (st.s.decisions || []).filter(function (x) { return x.id !== d.id; }).concat([d]); return d; }
+  function logShift(st, n, r) {
+    r = r || {};
+    st.s.shiftLog = (st.s.shiftLog || []).filter(function (x) { return x.chapter !== n; }).concat([{chapter: n, stars: r.stars != null ? r.stars : 2, otp: r.otp != null ? r.otp : 0.85,
+      made: r.made || 0, missed: r.missed || 0, auto: !!r.auto}]);
+  }
+  function addPaper(st, n, fp, cause, year) {
+    year = year || st.year;
+    st.papers = (st.papers || []).filter(function (x) { return x.chapter !== n; }).concat([{chapter: n, year: year, calYear: cal(year), masthead: fp.masthead,
+      lead: fp.lead, dateLine: fp.dateLine, light: (st.lastReport || {}).light || 'green', cause: cause || ''}]);
+  }
+  function addDoc(st, doc) { dw(doc); st.docs = (st.docs || []).filter(function (x) { return x.id !== doc.id; }).concat([doc]); return doc; }
+  function docTitle(st, id, fb) { var d = ch5Doc(st, id); return d ? d.title : fb || id; }
+  function paperOf(st, year, o) {
+    var d = ch5Date(st, year);
+    return {masthead: 'The Zero Mile Times', dateLine: d.words + ' · Nagpur', price: o.price || '₹12', lead: o.lead, deck: o.deck, sub: o.sub,
+      columns: o.columns, photo: o.photo, company: st.parent, founder: st.founder || 'Asha Rao', signature: st.signature || st.founder || 'Asha Rao', sources: o.sources || []};
+  }
+  function stakeColumn(st) {
+    var lr = st.lastReport || {};
+    return {head: 'The owners', body: (st.parent || 'Your company') + ' holds ' + st.stake + '% of VSIAL, worth about ' + stakeWords(lr.stakeValueCr || 0) + ' on paper' +
+      (lr.cover != null ? '. In its hardest recent year VSI earned ' + coverWords(lr.cover).replace(' earned', '') + ' to its banks.' : '.')};
+  }
+  // the stake at the end of `year` with a patch applied (the slips' "your 64%: +₹X by 2032", and the bills' counterfactual)
+  function stakeWith(st, patch, year) {
+    var s2 = applyPatch(clone(st.s), patch || {});
+    if (patch && 'p2year' in patch) s2.sizing = sizeMemo(s2);
+    var eng = simulate(s2, year), row = eng.rows[eng.rows.length - 1];
+    return eng.step_in ? 0 : stakeValue(eng, row) * st.stake / 100;
+  }
+  function leadDelta(what, d, st, year, against) {   // 'X added about ₹Y to your 64% by 2032, against Z.'
+    if (Math.abs(d) < 50) return what + ' made little difference to your ' + st.stake + '% by ' + cal(year) + ', against ' + against + '.';
+    return what + (d >= 0 ? ' added about ' + stakeWords(d) + ' to ' : ' cost about ' + stakeWords(-d) + ' off ') + 'your ' + st.stake + '% by ' + cal(year) + ', against ' + against + '.';
+  }
+  function deltaWords(st, d, year) { return 'your ' + st.stake + '%: ' + (d >= 0 ? '+' : '−') + stakeWords(Math.abs(d)) + ' by ' + cal(year); }
+  function autoOf(e, extra) { var a = autoShift(e); return Object.assign({stars: a.stars, otp: a.otp, cx: a.cx, safety: a.safety, auto: true}, extra || {}); }
+  function chBoard(st, noBuild) {
+    var bo = boardOptions(st);
+    return {appeal: false, prepayCr: 0, dividendCr: bo.dividend.maxCr,
+      bought: noBuild ? [] : bo.investments.filter(function (i) { return i.id === 'phase2'; }).map(function (i) { return i.id; })};
+  }
+  // the chapter's eras: the first with the player's shift, the rest with the same shift summary (the engine plays them), boards
+  // between at the defaults (Chapter 7's do not build: phase 2 and the district are its own resolutions). The last era's board
+  // is left for the player (or VSIEra.advance).
+  function playEras(st, eras, shift, noBuild) {
+    var reps = [];
+    for (var i = 0; i < eras.length; i++) {
+      if (st.over || st.era !== eras[i]) break;
+      var out = applyShift(st, shift);
+      st = out.state; reps.push(out.report);
+      if (st.over || i === eras.length - 1) break;
+      st = applyBoard(st, chBoard(st, noBuild));
+    }
+    return {state: st, reports: reps};
+  }
+  function eraSums(st, y0, y1) {
+    var eng = simulate(st.s, y1), earned = 0, spent = 0, conn = 0;
+    eng.rows.forEach(function (r) { if (r.year >= y0 && r.year <= y1) { earned += r.aero + r.nar; spent += r.opex + r.fee; } });
+    return {earnedCr: Math.round(earned), spentCr: Math.round(spent), eng: eng};
+  }
+  // a chapter's bill (ZMMoney.bill), from the era reports the engine made for it
+  function chBill(prev, st, reps, o) {
+    if (!reps.length) return null;
+    var y0 = eraYears(reps[0].era)[1], y1 = eraYears(reps[reps.length - 1].era)[2], last = reps[reps.length - 1];
+    var worst = null, wy = null;
+    reps.forEach(function (r) { if (r.coverWorstExact != null && (worst == null || r.coverWorstExact < worst)) { worst = r.coverWorstExact; wy = r.worstYear; } });
+    var per = cal(y0) + '–' + String(cal(y1)).slice(2), sums = eraSums(st, y0, y1), thenCr = (prev.lastReport || {}).stakeValueCr;
+    var bt = reps.some(function (r) { return r.banksTookControl; }), who = st.parent || 'Your company';
+    var table = [{label: 'Earned, ' + per, cr: sums.earnedCr}, {label: 'Spent, ' + per, cr: sums.spentCr}].concat(o.table || []);
+    var stakeLine = bt ? 'The banks took control, and ' + poss(who) + ' stake is lost.' :
+      who + ' owns ' + st.stake + '% of VSIAL, worth about ' + stakeWords(last.stakeValueCr) + ' in ' + cal(y1) + (thenCr != null ? ', up from ' + stakeWords(thenCr) + ' when the chapter began' : '') + '.' +
+      (last.stakeCheck ? ' It has put in ' + stakeWords(last.stakeCheck.moneyInCr) + ' since ' + last.stakeCheck.fromYear + (last.stakeCheck.dividendsCr >= 1 ? ' and taken out ' + stakeWords(last.stakeCheck.dividendsCr) + ' in dividends' : '') + ': about ' + last.returnPerYear + '% a year.' : '');
+    if (thenCr != null && last.stakeValueCr < thenCr && !bt) stakeLine = stakeLine.replace(', up from ', ', down from ');
+    return {title: 'Annual report, ' + cal(y1), year: cal(y1), lead: o.lead, paragraph: o.paragraph, per: per, table: table, margin: o.margin, routes: o.routes || [],
+      cover: {ratio: worst == null ? null : Math.floor(worst * 100 + 1e-9) / 100, words: coverWords(worst), light: lightOf(worst), years: cal(y0) + '–' + cal(y1), year: wy ? cal(wy) : null},
+      stake: {pct: st.stake, valueCr: bt ? 0 : last.stakeValueCr, year: cal(y1), thenCr: thenCr != null ? thenCr : null, returnPct: last.returnPerYear, check: last.stakeCheck,
+        deltaCr: o.deltaCr != null ? Math.round(o.deltaCr) : null, words: stakeLine},
+      signed: {name: st.founder || 'Asha Rao', title: 'Director, for ' + who}, banksTookControl: bt,
+      moments: [].concat.apply([], reps.map(function (r) { return r.sentences; })).slice(0, 3)};
+  }
+  function fileReport(st, bill, y1) { addDoc(st, {id: 'report-' + bill.year, title: 'Annual report, ' + bill.year, year: y1, date: ch5Date(st, y1).iso, kind: 'report', stamp: 'FILED', summary: bill.margin || bill.paragraph}); }
+  // the start of chapter n from the player's own save; null for a save that is not the player's own (resumable), or over
+  function chStart(n, save, opts) {
+    ensure();
+    opts = opts || {};
+    if (!resumable(save).ok) return null;
+    var st = advance(save, firstEra(n), opts);
+    if (!st || st.over || st.era !== firstEra(n)) return null;
+    st.sample = false;
+    return ensureDocs(st);
+  }
+  // the SAMPLE concession (Meridian Infra, Asha Rao) at the start of chapter n: tests and the ?chapterN= URLs only
+  function chFixture(n, opts) {
+    ensure();
+    opts = opts || {};
+    if (opts.from) return chStart(n, opts.from, opts);
+    var st = newCampaign(Object.assign({parent: 'Meridian Infra', founder: 'Asha Rao', phase1: 'lean', bid: {type: 'share', value: 15}, gearing: 70, repayment: 'sculpted', cure: true,
+      signedOn: '2026-04-01', endsOn: '2086-03-31'}, opts.terms || {}), 1);
+    st.sample = true; st.test = true;
+    st = applyConstruction(st, {choices: opts.construction || {monsoon: 'pay', overrun: 'pay', trials: 'full'}, finishedOn: '2030-04-01'});
+    return ensureDocs(advance(st, firstEra(n)));
+  }
+  function choiceDoc(st, o) {   // the paper the player signs: {docType, docId, title, date, dateWords, parties, body[], choices[], stamps}
+    var d = ch5Date(st, o.year);
+    return {docType: o.docType, docId: o.docId, title: o.title, date: d.iso, dateWords: d.words, parties: o.parties, body: o.body, choices: o.choices, stamps: o.stamps};
+  }
+  var VSIAL = 'Vikram Sarabhai International Airport Limited (VSIAL)';
+  function conTitle(st) { var f = st.construction && st.construction.finishedOn; return 'Construction register, ' + (f ? f.slice(0, 4) : cal(5)); }
+  // the papers every chapter's tags may point at, added to whatever the save already holds
+  function ensureDocs(st) {
+    var have = {}; (st.docs || []).forEach(function (d) { if (d && d.id) have[d.id] = true; });
+    var s = st.s, on = st.signedOn || ch5Date(st, 1).iso, add = [];
+    if (!have.concession) add.push({id: 'concession', title: 'Concession Agreement', year: 0, date: on, kind: 'agreement', stamp: 'EXECUTED',
+      summary: 'Sixty years to build and run Vikram Sarabhai International, signed by ' + (st.founder || 'the director') + ' for ' + (st.parent || 'your company') + ', with AAI, the State through MADC and ' + NM.l5 + '.'});
+    if (!have['loan-offer']) add.push({id: 'loan-offer', title: 'Loan offer, ' + cal(1), year: 1, date: on, kind: 'loan', stamp: 'ACCEPTED',
+      summary: 'You borrowed ' + Math.round(s.gearing * 100) + '% of phase 1 from ' + lenderName(s) + (s.lender === 'dollar' ? ', in dollars' : '') + (s.state_loan ? ', with the State\'s interest-free loan' : '') + '.'});
+    if (!have.construction && st.construction) add.push({id: 'construction', title: conTitle(st), year: 4, date: st.construction.finishedOn || ch5Date(st, 5).iso, kind: 'register', stamp: 'FILED',
+      summary: (st.construction.slipMonths ? 'The airport opened ' + st.construction.slipMonths + ' months late' : 'The airport opened on time') + (st.construction.trials === 'short' ? ', after short trials.' : ', after full trials.')});
+    st.docs = (st.docs || []).concat(add.map(dw));
+    return st;
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // Chapter 3 · Takeoff: open the doors (years 5-7, era 1). design/chapters.md §2
+  // ---------------------------------------------------------------------------------------------
+  var CH3 = {year: 5, perDay: 600 /* (est.) Plateau Air's Bengaluru connecting bank, connections a day */, growth: 0.02, until: 18, trustLine: 0.7,
+    plans: {
+      bigbang: {label: 'Big bang: every flight moves in on day one', volume: 1, adj: null, from: 5, delayMin: 14,
+        terms: 'Every Plateau Air flight moves to VSI overnight, as Bengaluru\'s did in May 2008.', line: 'The fullest first bank. Every system is tested on the day, for real.'},
+      phased: {label: 'Phased: half the flights in week 1, the rest in week 3', volume: 0.6, adj: [{from: 5, until: 5, f: 0.97}], from: 5, delayMin: 6,
+        terms: 'Half of Plateau Air\'s flights move in week 1, the rest in week 3.', line: 'A lighter day one. Plateau Air pays its crews twice while it runs two airports.'},
+      soft: {label: 'Soft open: one airline\'s flights first', volume: 0.3, adj: [{from: 5, until: 5, f: 0.8}], from: 6, delayMin: 2, lag: 0.2,
+        terms: 'Only Plateau Air\'s first wave flies from VSI; its full move waits a year.', line: 'A quiet day one, but Plateau Air delays its full move by a year.'}},
+    shortTrialsMin: 8, beltCarryCr: 4, beltHoldCr: 1.5, towCr: 0.6, taxiCr: 0.3 /* (est.) */};
+  function ch3Plan(id) { return CH3.plans[id] ? id : 'phased'; }
+  function ch3Stream(id, made, growth) { var p = CH3.plans[ch3Plan(id)]; return streamOf(CH3.perDay, p.from, {made: made, growth: growth, until: CH3.until}); }
+  function ch3Patch(id, made, growth) { var p = CH3.plans[ch3Plan(id)]; return {'paxAdj.ch3': p.adj, 'streams.plateau': ch3Stream(id, made, growth), ch3TrafficLag: p.lag || null}; }
+  function ch3Late(st) { var sl = st.construction && st.construction.slipMonths; return sl ? sl + ' months late, in ' + monthName(st.opensOn || addMonths(st.signedOn, 48 + sl)) : ''; }
+  function ch3FrontPage(st) {
+    ensure();
+    var late = ch3Late(st), eng = simulate(st.s, 5), tr = eng.c.tranches[0], rep = tr ? tr.rep_start + 1 : 7, debt = eng.c.tranches.reduce(function (a, x) { return a + x.out; }, 0);
+    return paperOf(st, CH3.year, {lead: 'VSI OPENS: A CITY\'S FLIGHTS MOVE IN OVERNIGHT',
+      deck: 'Vikram Sarabhai International opens its doors' + (late ? ', ' + late : ' on time') + '. ' + NM.plateau + ' is moving its Bengaluru connecting bank here.',
+      sub: {head: NM.plateau + ' moves in', body: NM.plateau + ' will connect its Bengaluru passengers at VSI instead of at Delhi. ' + (late ? 'The airport opened ' + late + ', so the airline has waited.' : 'The airport opened on the day it promised.') +
+        ' How the first morning goes will decide how much more it brings.'},
+      columns: [{head: 'The banks', body: 'VSIAL owes its banks about ' + cr(debt) + '. Repayments begin in ' + cal(rep) + ', paid from what the airport earns.'}, stakeColumn(st)],
+      photo: {kind: 'opening-day', caption: 'The Hall at dawn on opening day.'}});
+  }
+  function ch3Decision(st) {
+    ensure();
+    var short = st.construction && st.construction.trials === 'short', y1 = chYears(3)[1], base = stakeWith(st, ch3Patch('phased', 0.95, CH3.growth), y1);
+    return choiceDoc(st, {year: CH3.year, docType: 'opening-plan', docId: 'opening-' + cal(CH3.year), title: 'Opening plan: ' + NM.plateau + ' at Vikram Sarabhai International',
+      parties: {airport: VSIAL, airline: NM.plateau, signatory: {name: 'The Chief Operating Officer', title: NM.plateau}},
+      body: [NM.plateau + ' will move its Bengaluru connecting bank to VSI. This plan sets how fast its flights move in.',
+        short ? 'You ran short trials before opening, so the belts and gates have never run full: add about ' + CH3.shortTrialsMin + ' minutes of delay on the first morning.' : 'You ran full trials before opening: the belts and gates have been rehearsed with real aircraft.',
+        'The first morning happens once. Its record stays on every front page that follows.'],
+      choices: ['bigbang', 'phased', 'soft'].map(function (id) {
+        var p = CH3.plans[id], d = id === 'phased' ? stakeWith(st, ch3Patch('bigbang', 0.95, CH3.growth), y1) - base : stakeWith(st, ch3Patch(id, 0.95, CH3.growth), y1) - base;
+        return {id: id, label: p.label, terms: p.terms, slip: {big: '≈ ' + (p.delayMin + (short ? CH3.shortTrialsMin : 0)) + ' minutes late on day one', money: Math.round(p.volume * 100) + '% of the flights on day one',
+          stake: id === 'phased' ? 'against a big bang: ' + deltaWords(st, -d, y1).replace('your ' + st.stake + '%: ', '') : deltaWords(st, d, y1), line: p.line}, effects: {volume: p.volume}};
+      }),
+      stamps: {bigbang: 'SIGNED', phased: 'SIGNED', soft: 'SIGNED'}});
+  }
+  function ch3ApplyDecision(st, id) {
+    ensure();
+    st = clone(st); id = ch3Plan(id);
+    var fp = ch3FrontPage(st);
+    st.ch3 = {plan: id};
+    applyPatch(st.s, ch3Patch(id, 0.95, CH3.growth));
+    addPaper(st, 3, fp, ch3Late(st) ? 'Because the airport opened ' + ch3Late(st) : 'Because the airport opened on time', CH3.year);
+    addDoc(st, {id: 'opening-' + cal(CH3.year), title: 'Opening plan, ' + cal(CH3.year), year: CH3.year, date: ch5Date(st, CH3.year).iso, kind: 'opening-plan', stamp: 'SIGNED',
+      summary: 'You signed ' + NM.plateau + ' to a ' + {bigbang: 'big-bang opening: every flight on day one', phased: 'phased opening: half the flights in week 1, the rest in week 3', soft: 'soft opening: its first wave only, the full move a year later'}[id] + '.'});
+    logDecision(st, {id: 'ch3-plan', group: 'opening', chapter: 3, year: CH3.year, label: 'The opening plan', chosen: id, chosenLabel: CH3.plans[id].label.split(':')[0], 'default': 'phased', alt: ch3Patch('phased', 0.95, CH3.growth)});
+    return st;
+  }
+  function ch3Incidents(st) {
+    var id = (st.ch3 && st.ch3.plan) || 'phased', out = [];
+    if (st.construction && st.construction.trials === 'short') out.push({id: 'belt', cause: 'short-trials', docId: 'construction', at: '06:40', title: 'Belt 3 stops with 900 bags',
+      text: 'Belt 3 stops at 06:40 with 900 bags on it. The belts never ran full in trials.',
+      options: [{id: 'carry', label: 'Send ground staff to carry the bags', effect: 'About ' + crs(CH3.beltCarryCr * prAt(5)) + ' in overtime, and slower turns.'},
+        {id: 'hold', label: 'Hold three departures until the belt runs', effect: 'About ' + crs(CH3.beltHoldCr * prAt(5)) + ' in passenger care, and three late flights.'}]});
+    if (id === 'bigbang') out.push({id: 'stands', cause: 'big-bang', docId: 'opening-' + cal(CH3.year), at: '07:15', title: 'Two jets, one stand',
+      text: 'Two ' + NM.plateau + ' jets have been given the same stand in the overnight move.',
+      options: [{id: 'tow', label: 'Tow one to a remote stand and bus its passengers', effect: 'About ' + crs(CH3.towCr * prAt(5)) + ', and its connections may miss.'},
+        {id: 'taxi', label: 'Hold it on the taxiway until the stand clears', effect: 'About ' + crs(CH3.taxiCr * prAt(5)) + ' in fuel, and a late departure.'}]});
+    return out;
+  }
+  function ch3ShiftPlan(st) {
+    ensure();
+    var id = (st.ch3 && st.ch3.plan) || 'phased', p = CH3.plans[id], inc = ch3Incidents(st);
+    var tags = [{docId: 'opening-' + cal(CH3.year), doc: 'Opening plan, ' + cal(CH3.year), line: {bigbang: 'Every flight on day one.', phased: 'Half the flights in week 1.', soft: 'One wave first; the rest next year.'}[id], anchor: 'apron'}];
+    if (st.construction && st.construction.trials === 'short') tags.push({docId: 'construction', doc: conTitle(st), line: 'Short trials: belts never ran full.', anchor: 'baggage'});
+    else if (st.construction && st.construction.slipMonths) tags.push({docId: 'construction', doc: conTitle(st), line: 'Opened ' + st.construction.slipMonths + ' months late.', anchor: 'terminal'});
+    var auto = autoOf(1, {made: Math.round(CH3.perDay / 2 * p.volume * 0.95), missed: Math.round(CH3.perDay / 2 * p.volume * 0.05), incidents: {belt: 'carry', stands: 'tow'}});
+    return {level: 1, chapter: 3, year: CH3.year, window: {from: '06:00', to: '09:00'}, volume: p.volume,
+      banks: [{airline: NM.plateau, from: '06:00', to: '08:30', connecting: Math.round(CH3.perDay / 2 * p.volume)}],
+      incidents: inc, tags: tags, rates: {perConnectionCr: domConnInr(CH3.year) / 1e7, missedCostCr: CH5.careInr * prAt(CH3.year) / 1e7}, auto: auto};
+  }
+  function ch3Briefing(st) {
+    var plan = ch3ShiftPlan(st), d = ch5Date(st, CH3.year), id = (st.ch3 && st.ch3.plan) || 'phased';
+    var lines = [{text: 'Opening day: ' + Math.round(plan.volume * 100) + '% of ' + poss(NM.plateau) + ' flights, 06:00–09:00', docId: 'opening-' + cal(CH3.year)},
+      {text: poss(NM.plateau) + ' Bengaluru bank: ' + plan.banks[0].connecting + ' passengers connecting', docId: 'opening-' + cal(CH3.year)},
+      {text: st.construction && st.construction.trials === 'short' ? 'Short trials: the belts have never run full' : 'Full trials: every belt and gate rehearsed', docId: 'construction'}];
+    lines.forEach(function (l) { l.doc = docTitle(st, l.docId, 'Construction record'); l.ref = l.doc; });
+    return {title: 'Duty manager\'s handover', date: d.words, lines: lines, watch: id === 'bigbang' ? 'The stand plan: every flight moved overnight.' : 'The first wave: on time, and every connection made.', autoStartSec: 6};
+  }
+  function ch3Trust(id, r) {
+    var inc = r.incidents || {};
+    var t = 0.2 + 0.15 * (r.stars != null ? r.stars : 2) + 2 * ((r.otp != null ? r.otp : 0.85) - 0.82) + (id === 'bigbang' && r.stars >= 3 ? 0.05 : 0) + (id === 'soft' ? -0.1 : 0) +
+      (inc.belt === 'ignored' ? -0.1 : 0) + (inc.stands === 'taxi' ? -0.03 : 0);
+    return Math.round(Math.max(0, Math.min(1, t)) * 100) / 100;
+  }
+  function ch3ApplyShift(st, result) {
+    ensure();
+    if (st.over) return {state: st, bill: null, card: null};
+    if (!st.ch3) st = ch3ApplyDecision(st, 'phased');
+    var prev = clone(st); st = clone(st); result = result || ch3ShiftPlan(st).auto;
+    var id = (st.ch3 && st.ch3.plan) || 'phased', made = result.made, missed = result.missed || 0, share = made != null && made + missed > 0 ? made / (made + missed) : 0.95;
+    var trust = ch3Trust(id, result), growth = trust >= CH3.trustLine ? CH3.growth : trust >= 0.4 ? 0 : -0.04, inc = result.incidents || {};
+    st.s.plateauTrust = trust;
+    applyPatch(st.s, ch3Patch(id, share, growth));
+    var incCr = (inc.belt === 'carry' ? CH3.beltCarryCr : inc.belt ? CH3.beltHoldCr : 0) + (inc.stands === 'tow' ? CH3.towCr : inc.stands ? CH3.taxiCr : 0);
+    if (incCr > 0) st.s.streams.ch3incidents = {perDay: 0, from: 5, until: 5, incCr: 0, costCr: incCr * prAt(5), stop: 6};   // a one-off, in 2030's prices
+    // the decision log: the counterfactual opening plan with the same morning's record
+    var dlog = (st.s.decisions || []).filter(function (x) { return x.id === 'ch3-plan'; })[0];
+    if (dlog) dlog.alt = ch3Patch('phased', share, growth);
+    logShift(st, 3, result);
+    var out = playEras(st, CH_ERAS[3], result), y1 = chYears(3)[1]; st = out.state;
+    var otherId = id === 'phased' ? 'bigbang' : 'phased', alt = stakeWith(st, ch3Patch(otherId, share, growth), y1), now = (st.lastReport || {}).stakeValueCr || 0, delta = now - alt;
+    var otp = Math.round((result.otp != null ? result.otp : 0.85) * 100), quote = trust >= CH3.trustLine ? poss(NM.plateau) + ' chief told the paper VSI "opened like an airport that had been open for years".' :
+      trust >= 0.4 ? poss(NM.plateau) + ' chief said the first morning "had its moments".' : poss(NM.plateau) + ' chief told the paper the airline will "think hard" before moving more flights here.';
+    var bits = ['Day one ran at ' + otp + '% on time.', quote];
+    if (inc.belt === 'carry') bits.push('Belt 3 cost ' + crs(CH3.beltCarryCr * prAt(5)) + ' in hand-carried bags.');
+    else if (inc.belt === 'hold') bits.push('Holding three flights for belt 3 cost ' + crs(CH3.beltHoldCr * prAt(5)) + ' in passenger care.');
+    else if (inc.belt === 'ignored') bits.push('Belt 3 stopped with 900 bags, and nobody moved them for an hour.');
+    if (trust >= CH3.trustLine && id === 'bigbang' && result.stars >= 3) bits.push(NM.plateau + ' now wants to feed your afternoon bank too.');
+    if (CH3.plans[id].lag) bits.push(NM.plateau + ' moves the rest of its flights in ' + cal(6) + '.');
+    var bill = chBill(prev, st, out.reports, {lead: leadDelta('The ' + {bigbang: 'big-bang', phased: 'phased', soft: 'soft'}[id] + ' opening', delta, st, y1, 'a ' + {bigbang: 'big bang', phased: 'phased opening'}[otherId]),
+      paragraph: 'Vikram Sarabhai International opened on ' + ch5Date(st, CH3.year).words + '. ' + Math.round(((made || 0) + missed)).toLocaleString('en-IN') + ' ' + NM.plateau + ' passengers changed planes here on the first morning' + (missed ? ', and ' + missed.toLocaleString('en-IN') + ' missed their flight' : '') + '. Then the engine ran ' + cal(chYears(3)[0]) + '–' + cal(y1) + '.',
+      margin: bits.join(' '), deltaCr: delta,
+      table: [{label: 'Connections on opening morning', made: made || 0, missed: missed}]});
+    bill.trust = {value: trust, words: trust >= CH3.trustLine ? NM.plateau + ' trusts VSI' : trust >= 0.4 ? NM.plateau + ' is unsure of VSI' : NM.plateau + ' has lost faith in VSI'};
+    st.ch3.result = {trust: trust, otp: result.otp, stars: result.stars, share: share};
+    st.ch3.bill = bill;
+    fileReport(st, bill, y1);
+    return {state: st, bill: bill, card: ch5Card(3), report: out.reports[out.reports.length - 1]};
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // Chapter 4 · Climb: wire the country (years 8-13, eras 2-3)
+  // ---------------------------------------------------------------------------------------------
+  var CH4 = {year: 8, from: 9, until: 18, cities: CH5.feeders.length,
+    nets: {
+      anchor: {perDay: 2900, growth: 0.045, share: 0.74, costShare: 0.08 /* (est.) ten years of lower charges for Sutradhar */, stamp: 'SIGNED',
+        label: 'Anchor ' + NM.feeder + ': an exclusive afternoon bank', terms: NM.feeder + ' times ' + CH5.feeders.length + ' cities into one afternoon bank, with 40-minute connections, for ten years of lower charges.',
+        line: 'The network grows fastest. One airline carries the bank: if it fails, the bank fails.'},
+      cut: {perDay: 300, growth: 0, share: 0.3, costShare: 0, stamp: 'APPROVED',
+        label: 'Cut airlines\' charges 30% for every airline', terms: 'Landing and parking charges fall 30% for every airline for ten years, to pull flights from the Gulf.',
+        line: 'Flights come. Whether they connect is another matter, and Dubai can cut too.'},
+      two: {perDay: 2100, growth: 0.035, share: 0.52, costShare: 0, stamp: 'SIGNED',
+        label: 'Two feeders share the bank: ' + NM.feeder + ' and ' + NM.plateau, terms: NM.feeder + '\'s twelve cities and ' + poss(NM.plateau) + ' Bengaluru flights share a looser afternoon bank.',
+        line: 'Slower, but no single airline can take the bank down with it.'}},
+    cut: {cut: 0.30, airlineShare: 0.35 /* (est.) landing and parking as a share of the airport's charges */, flightsUp: 18, adj: [{from: 9, until: 9, f: 1.05}, {from: 10, until: 18, f: 1.02}]},
+    radarYear: CH5.radarYear, tightPax: 140, tightHoldCr: 0.4, rampCr: 0.8 /* (est.) */};
+  function ch4Two(st) { return (st.s.plateauTrust == null ? 0.75 : st.s.plateauTrust) >= CH3.trustLine; }
+  function ch4Def(st) { return ch4Two(st) ? 'two' : 'anchor'; }
+  function ch4Patch(id, made) {
+    var N = CH4.nets[id] || CH4.nets.two, S = streamOf(N.perDay, CH4.from, {made: made == null ? 1 : made, growth: N.growth, until: CH4.until, costShare: N.costShare, costUntil: N.costShare ? CH4.until : null});
+    return {network: id, anchorShare: N.share, chargeCut: id === 'cut' ? {from: CH4.from, until: CH4.until, cut: CH4.cut.cut, airlineShare: CH4.cut.airlineShare} : null,
+      'paxAdj.ch4': id === 'cut' ? CH4.cut.adj : null, 'streams.network': S};
+  }
+  function ch4FrontPage(st) {
+    ensure();
+    var t = st.s.ch3TrafficLag;
+    return paperOf(st, CH4.year, {lead: 'TWELVE CITIES, ONE AFTERNOON: VSI BIDS TO BE INDIA\'S CONNECTING HUB',
+      deck: NM.feeder + ' offers to time ' + CH4.cities + ' Indian cities into one afternoon bank at Vikram Sarabhai International.',
+      sub: {head: 'Lucknow to Kochi, one change, in Nagpur', body: 'Today a passenger from Lucknow to Kochi changes planes in Delhi or Mumbai, if a flight exists at all. A bank at VSI would connect ' + CH4.cities + ' cities to each other: ' + (CH4.cities * (CH4.cities - 1)) + ' one-stop journeys from one afternoon.' +
+        (t ? ' ' + NM.plateau + ' moved in a year late after the soft opening, so VSI starts the race behind.' : '')},
+      columns: [{head: 'The Gulf cuts again', body: 'Doha and Dubai have cut their transfer charges again to keep India\'s connecting passengers.'}, stakeColumn(st)],
+      photo: {kind: 'feeder-bank', caption: 'The domestic pier at 13:00: the afternoon bank VSI wants to fill.'}});
+  }
+  function ch4Decision(st) {
+    ensure();
+    var y1 = chYears(4)[1], def = ch4Def(st), base = stakeWith(st, ch4Patch(def), y1), two = ch4Two(st);
+    return choiceDoc(st, {year: CH4.year, docType: 'network-agreement', docId: 'feeders-' + cal(CH4.year), title: 'Network agreement: the afternoon bank at Vikram Sarabhai International',
+      parties: {airport: VSIAL, airline: NM.feeder, signatory: {name: 'The Network Planning Director', title: NM.feeder}},
+      body: ['Money comes from connections: every passenger who changes planes at VSI pays its fees and shops here. A bank is a set of flights timed to land together and leave together, so they connect.',
+        NM.feeder + ' offers ' + CH4.cities + ' cities into one afternoon bank from ' + cal(CH4.from) + '.',
+        two ? NM.plateau + ' would share the bank: its first morning at VSI went well.' : NM.plateau + ' declined to share the bank: day one went badly.'],
+      choices: ['anchor', 'cut', 'two'].map(function (id) {
+        var N = CH4.nets[id], P1 = ch4Patch(id), S = P1['streams.network'], d = id === def ? 0 : stakeWith(st, P1, y1) - base;
+        var c = {id: id, label: N.label, terms: N.terms,
+          slip: {big: id === 'cut' ? '+' + CH4.cut.flightsUp + '% flights next year' : '+' + N.perDay.toLocaleString('en-IN') + ' connections a day', money: cr(S.incCr) + ' a year from connections' + (id === 'cut' ? ', and charges 30% lower for ten years' : ''),
+            stake: id === def ? 'your ' + st.stake + '%: the usual path' : deltaWords(st, d, y1), line: N.line}, effects: {network: id}};
+        if (id === 'two' && !two) { c.disabled = true; c.label = NM.plateau + ' declined: day one went badly'; c.slip.line = 'Two feeders needs ' + NM.plateau + ', and it has lost faith in VSI.'; }
+        return c;
+      }),
+      stamps: {anchor: 'SIGNED', cut: 'APPROVED', two: 'SIGNED'}});
+  }
+  function ch4ApplyDecision(st, id) {
+    ensure();
+    st = clone(st);
+    if (!CH4.nets[id] || (id === 'two' && !ch4Two(st))) id = ch4Def(st);
+    var fp = ch4FrontPage(st), N = CH4.nets[id];
+    st.ch4 = {network: id};
+    applyPatch(st.s, ch4Patch(id));
+    addPaper(st, 4, fp, (st.s.ch3TrafficLag ? 'Because the soft opening put ' + NM.plateau + ' a year behind' : 'Because ' + NM.feeder + ' saw ' + (st.s.plateauTrust >= CH3.trustLine ? 'a good first morning' : 'a hub still to prove')), CH4.year);
+    addDoc(st, {id: 'feeders-' + cal(CH4.year), title: 'Network agreement, ' + cal(CH4.year), year: CH4.year, date: ch5Date(st, CH4.year).iso, kind: 'route-agreement', stamp: N.stamp,
+      summary: id === 'anchor' ? NM.feeder + ' flies ' + CH4.cities + ' Indian cities into VSI in one afternoon bank, with 40-minute connections, for ten years of lower charges. It carries ' + Math.round(N.share * 100) + '% of your connecting passengers.' :
+        id === 'two' ? NM.feeder + ' and ' + NM.plateau + ' share VSI\'s afternoon bank: ' + CH4.cities + ' cities and Bengaluru, timed so their passengers can change planes here.' :
+        'Landing and parking charges cut 30% for every airline for ten years, from ' + cal(CH4.from) + '. ' + NM.feeder + ' flies its own timetable; there is no bank.'});
+    logDecision(st, {id: 'ch4-network', group: 'network', chapter: 4, year: CH4.year, label: 'The network', chosen: id, chosenLabel: {anchor: 'Anchoring ' + NM.feeder, cut: 'Cutting charges 30%', two: 'Two feeders'}[id],
+      'default': ch4Def(st), alt: ch4Patch(ch4Def(st))});
+    return st;
+  }
+  // the 2034 capital budget, one tick on the Chapter 4 bill page: the bird radar (Chapter 5's paper trail)
+  function ch4Budget(st) {
+    ensure();
+    var c = CH5.radarCr * prAt(CH5.radarYear);
+    return {id: 'budget-' + cal(CH5.radarYear), title: 'Capital budget, ' + cal(CH5.radarYear), line: 'Approve the ' + cal(CH5.radarYear) + ' capital budget: a bird radar, ' + cr(c),
+      text: 'The lakes east of runway 3 draw birds at dawn and dusk. A radar watches them; without it, the tower relies on the eyes of its staff.', costCr: Math.round(c), bought: st.radar === 'bought'};
+  }
+  function ch4ApplyBudget(st, bought) {
+    ensure();
+    st = clone(st);
+    st.radar = bought ? 'bought' : 'skipped';
+    var others = (st.s.extra_pay || []).filter(function (x) { return x.year !== CH5.radarYear; });
+    st.s.extra_pay = bought ? others.concat([{year: CH5.radarYear, cr: CH5.radarCr}]) : others;
+    var c = CH5.radarCr * prAt(CH5.radarYear);
+    addDoc(st, {id: 'budget-2034', title: 'Capital budget, ' + cal(CH5.radarYear), year: CH5.radarYear, date: ch5Date(st, CH5.radarYear).iso, kind: 'budget', stamp: 'APPROVED',
+      summary: bought ? 'You bought the bird radar for ' + cr(c) + '. It watches the lakes east of runway 3.' : 'You skipped the bird radar and saved ' + cr(c) + '. Nobody watches the lakes east of runway 3.'});
+    logDecision(st, {id: 'ch4-radar', group: 'radar', chapter: 4, year: CH5.radarYear, label: 'The bird radar', chosen: st.radar, chosenLabel: bought ? 'Buying the bird radar' : 'Skipping the bird radar',
+      'default': 'bought', alt: {extra_pay: others.concat([{year: CH5.radarYear, cr: CH5.radarCr}])}});
+    return st;
+  }
+  function ch4Incidents(st) {
+    var id = st.s.network, out = [];
+    if (id === 'anchor') out.push({id: 'tight', cause: 'anchor-40min', docId: 'feeders-' + cal(CH4.year), at: '13:25', title: 'Indore is 15 minutes late',
+      text: 'The Indore flight is 15 minutes late: ' + CH4.tightPax + ' of its passengers connect to Kochi and Guwahati. You promised 40-minute connections.',
+      options: [{id: 'hold', label: 'Hold Kochi and Guwahati 15 minutes', effect: 'About ' + crs(CH4.tightHoldCr * prAt(9)) + ' in fuel and crew time.'},
+        {id: 'go', label: 'Let them go on time', effect: 'The ' + CH4.tightPax + ' miss their flights: passenger care, and ' + NM.feeder + ' notices.'}]});
+    if (id === 'cut') out.push({id: 'ramp', cause: 'charge-cut', docId: 'feeders-' + cal(CH4.year), at: '14:05', title: 'Eleven departures queued for push-back',
+      text: 'Cheaper charges brought flights at every hour, timed for no one. Eleven departures are waiting to push back.',
+      options: [{id: 'remote', label: 'Open the remote stands and bus passengers', effect: 'About ' + crs(CH4.rampCr * prAt(9)) + ' in buses and staff.'},
+        {id: 'meter', label: 'Meter the queue, one push-back at a time', effect: 'Late departures, and airlines claim penalties.'}]});
+    return out;
+  }
+  function ch4ShiftPlan(st) {
+    ensure();
+    var id = st.s.network || ch4Def(st), N = CH4.nets[id];
+    var banks = id === 'cut' ? [] : [{airline: NM.feeder, from: '12:40', to: id === 'two' ? '14:10' : '13:40', cities: CH5.feeders.map(function (c) { return {code: c[1], name: c[0]}; }), onward: {from: '14:20', to: '15:10'}}];
+    if (id === 'two') banks.push({airline: NM.plateau, from: '12:50', to: '14:10', cities: [{code: 'BLR', name: 'Bengaluru'}]});
+    var tags = [{docId: 'feeders-' + cal(CH4.year), doc: 'Network agreement, ' + cal(CH4.year), line: id === 'anchor' ? NM.feeder + ' carries ' + Math.round(N.share * 100) + '% of connections.' : id === 'cut' ? 'Charges cut 30% for 10 years.' : 'Two feeders share the bank.', anchor: 'transfer'}];
+    if (id === 'anchor') tags.push({docId: 'feeders-' + cal(CH4.year), doc: 'Network agreement, ' + cal(CH4.year), line: '40-minute connections promised.', anchor: 'domestic-pier'});
+    var perBank = Math.round(N.perDay / 2);
+    return {level: 2, chapter: 4, year: CH4.from, window: {from: '12:30', to: '15:15'}, volume: id === 'cut' ? 1 + CH4.cut.flightsUp / 100 : 1, network: id, banks: banks,
+      incidents: ch4Incidents(st), tags: tags, rates: {perConnectionCr: domConnInr(CH4.from) / 1e7, missedCostCr: CH5.careInr * prAt(CH4.from) / 1e7},
+      auto: autoOf(2, {made: Math.round(perBank * 0.94), missed: Math.round(perBank * 0.06), incidents: {tight: 'hold', ramp: 'remote'}})};
+  }
+  function ch4Briefing(st) {
+    var plan = ch4ShiftPlan(st), d = ch5Date(st, CH4.from), id = plan.network;
+    var lines = [{text: id === 'cut' ? 'No bank: airlines fly at every hour on the cheaper charges' : poss(NM.feeder) + ' bank lands ' + plan.banks[0].from + '–' + plan.banks[0].to + ' from ' + CH4.cities + ' cities', docId: 'feeders-' + cal(CH4.year)},
+      {text: id === 'two' ? NM.plateau + ' adds Bengaluru to the bank' : id === 'anchor' ? 'Connections promised in 40 minutes' : 'Flights up ' + CH4.cut.flightsUp + '% on last year', docId: 'feeders-' + cal(CH4.year)},
+      {text: 'Onward flights leave 14:20–15:10', docId: 'opening-' + cal(CH3.year)}];
+    lines.forEach(function (l) { l.doc = docTitle(st, l.docId); l.ref = l.doc; });
+    return {title: 'Duty manager\'s handover', date: d.words, lines: lines, watch: id === 'cut' ? 'The push-back queue.' : 'The connections: every passenger onto the next flight.', autoStartSec: 6};
+  }
+  function ch4ApplyShift(st, result) {
+    ensure();
+    if (st.over) return {state: st, bill: null, card: null};
+    if (!st.ch4) st = ch4ApplyDecision(st, ch4Def(st));
+    var prev = clone(st); st = clone(st); result = result || ch4ShiftPlan(st).auto;
+    var id = st.s.network || ch4Def(st), made = result.made, missed = result.missed || 0, share = made != null && made + missed > 0 ? made / (made + missed) : 0.94, inc = result.incidents || {};
+    applyPatch(st.s, {'streams.network': ch4Patch(id, share)['streams.network']});
+    var incCr = (inc.tight === 'hold' ? CH4.tightHoldCr : 0) + (inc.ramp === 'remote' ? CH4.rampCr : 0);
+    if (incCr > 0) st.s.streams.ch4incidents = {perDay: 0, from: 9, until: 9, incCr: 0, costCr: incCr * prAt(9) * 30 /* (est.) about 30 such days a year */, stop: 10};
+    var dlog = (st.s.decisions || []).filter(function (x) { return x.id === 'ch4-network'; })[0];
+    if (dlog) dlog.alt = ch4Patch(dlog['default'], share);
+    logShift(st, 4, result);
+    var out = playEras(st, CH_ERAS[4], result), y1 = chYears(4)[1]; st = out.state;
+    var def = ch4Def(st), other = id === def ? (id === 'anchor' ? 'cut' : 'anchor') : def;
+    var alt = stakeWith(st, ch4Patch(other, share), y1), now = (st.lastReport || {}).stakeValueCr || 0, delta = now - alt;
+    var conns = networkPerDay(st, y1), N = CH4.nets[id];
+    var margin = id === 'anchor' ? 'Twelve cities now reach each other through VSI in one afternoon. ' + NM.feeder + ' carries ' + Math.round(N.share * 100) + '% of your connecting passengers: if it stumbles, so do you.' :
+      id === 'cut' ? 'Flights up ' + CH4.cut.flightsUp + '%. Connections up 2%. Dubai matched your cut in March. You are now paying airlines to fly past each other.' :
+      'Twelve cities and ' + poss(NM.plateau) + ' Bengaluru flights feed one afternoon bank. No single airline carries more than half of it.';
+    var bill = chBill(prev, st, out.reports, {lead: leadDelta({anchor: 'Anchoring ' + NM.feeder, cut: 'Cutting charges 30%', two: 'Two feeders'}[id], delta, st, y1, {anchor: 'anchoring ' + NM.feeder, cut: 'cutting charges', two: 'two feeders'}[other]),
+      paragraph: 'By ' + cal(y1) + ' about ' + conns.toLocaleString('en-IN') + ' passengers a day changed planes at VSI' + (id === 'cut' ? ', on flights that were not timed to meet.' : ', in one afternoon bank.'),
+      margin: margin, deltaCr: delta, table: [{label: 'Connections a day, ' + cal(y1), made: conns, missed: Math.round(conns * (1 - share) / Math.max(share, 0.01))}]});
+    bill.budget = ch4Budget(st);
+    st.ch4.result = {share: share, connectionsPerDay: conns};
+    st.ch4.bill = bill;
+    fileReport(st, bill, y1);
+    return {state: st, bill: bill, card: ch5Card(4), report: out.reports[out.reports.length - 1]};
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // Chapter 6 · Turbulence: the crisis, chosen by the player's past (years 19-33, eras 5-7)
+  // ---------------------------------------------------------------------------------------------
+  var CH6 = {year: 21, fall: 0.25, cover: 1.10, reserveShare: 0.5 /* (est.) half a year's loan payments, if the crisis leaves cover above ₹110 */,
+    kinds: {
+      rupee: {adj: [{from: 21, until: 21, f: 0.85}, {from: 22, until: 22, f: 0.93}]},
+      airline: {adj: [{from: 21, until: 21, f: 0.80}, {from: 22, until: 22, f: 0.88}, {from: 23, until: 23, f: 0.95}], dip: [{from: 21, until: 22, f: 0}, {from: 23, until: 60, f: 0.6}]},
+      pandemic: {adj: [{from: 21, until: 21, f: 0.38}, {from: 22, until: 22, f: 0.65}, {from: 23, until: 23, f: 0.88}]}},
+    jets: 30, towCr: 2, hallCr: 30, discountShare: 0.2 /* (est.) */};
+  function ch6Pick(st) { var s = st.s || {}; return s.lender === 'dollar' ? 'rupee' : s.network === 'anchor' ? 'airline' : 'pandemic'; }
+  function ch6Ready(st) {
+    var k = ch6Pick(st), K = CH6.kinds[k];
+    st.s.shock = {kind: k, year: CH6.year, fall: CH6.fall};
+    st.s.paxAdj = st.s.paxAdj || {}; st.s.paxAdj.ch6 = K.adj;
+    if (k === 'airline' && st.s.streams && st.s.streams.network) st.s.streams.network.dip = K.dip;
+    st.ch6 = {kind: k};
+    return st;
+  }
+  function ch6Start(save, opts) { var st = chStart(6, save, opts); return st ? ch6Ready(st) : null; }
+  function ch6Fixture(opts) { opts = opts || {}; var st = opts.from ? chStart(6, opts.from, opts) : chFixture(6, opts); if (opts.network) applyPatch(st.s, ch4Patch(opts.network)); return st ? ch6Ready(st) : null; }
+  function cureList(s, from) { var c = Array.isArray(s.cure) ? s.cure.slice() : [{from: 1, on: !!s.cure}]; return c.filter(function (x) { return x.from < from; }).concat([{from: from, on: true}]); }
+  function ch6Need(st) {   // what the crisis does with no fresh money, and what the banks ask for
+    var s1 = clone(st.s); s1.noStepIn = true; s1.cure = false;
+    var eng = simulate(s1, CH6.year + 2), short = 0, worst = null, fx = 0;
+    eng.rows.forEach(function (r) { if (r.year >= CH6.year && r.year <= CH6.year + 2 && r.ds > 0) { short += Math.max(0, CH6.cover * r.ds - r.cfads); if (!worst || r.dscr < worst.dscr) worst = r; } });
+    eng.events.forEach(function (e) { if (e.k === 'fx' && e.t + 1 === CH6.year) fx += e.amt; });
+    var x = Math.max(short, worst ? CH6.reserveShare * worst.ds : 100);
+    // L5 buys new shares at a price that earns it the Fairfax low-end rate: what the company's money from here is worth at it
+    var s2 = clone(st.s); s2.cure = cureList(st.s, CH6.year); for (var e = 1; e <= 12; e++) if (!s2.boards[e]) s2.boards[e] = 'auto';
+    var fl = companyFlows(simulate(s2, 60)), rr = npvRate(), V = 0;
+    for (var t = CH6.year - 1; t < 60; t++) V += (fl[t] || 0) / Math.pow(1 + rr, t - CH6.year + 2);
+    return {cr: Math.max(100, Math.ceil(x / 10) * 10), worst: worst ? worst.dscr : null, worstYear: worst ? worst.year : null, fxCr: Math.round(fx), equityCr: V,
+      paxDrop: Math.round((1 - CH6.kinds[st.ch6 ? st.ch6.kind : 'pandemic'].adj[0].f) * 100)};
+  }
+  function ch6Patch(st, id, need) {
+    var X = need.cr, m = Math.max(1, Math.round(st.stake * need.equityCr / Math.max(1, need.equityCr + X)));
+    if (id === 'refuse') return {stepInYear: CH6.year, 'injectBy.ch6': null, 'stakeBy.ch6': null};
+    if (id === 'own') return {cure: cureList(st.s, CH6.year), 'injectBy.ch6': {year: CH6.year, cr: X, by: 'player'}, 'stakeBy.ch6': null, stepInYear: null};
+    return {cure: cureList(st.s, CH6.year), 'injectBy.ch6': {year: CH6.year, cr: X, by: 'l5'}, 'stakeBy.ch6': {from: CH6.year, pct: m}, stake0: stakeDef(st), stepInYear: null};
+  }
+  function projectReturn(st, patch) {   // the player's return per year to the handback, the rest of the game at the defaults
+    var s2 = applyPatch(clone(st.s), patch || {});
+    for (var e = 1; e <= 12; e++) if (!s2.boards[e]) s2.boards[e] = 'auto';
+    if (patch && 'p2year' in patch) s2.sizing = sizeMemo(s2);
+    var eng = simulate(s2, 60), r = eng.step_in ? null : irr(playerFlows(s2, companyFlows(eng), s2.stake0 != null ? s2.stake0 : st.stake));
+    return r == null ? null : Math.round(r * 1000) / 10;
+  }
+  function ch6FrontPage(st) {
+    ensure();
+    var k = (st.ch6 && st.ch6.kind) || ch6Pick(st), need = ch6Need(st);
+    var lead = k === 'rupee' ? (need.fxCr > 0 ? 'RUPEE AT RECORD LOW: VSI\'S DOLLAR DEBT JUMPS ' + cr(need.fxCr).toUpperCase() + ' OVERNIGHT' : 'RUPEE AT RECORD LOW: AIRLINES CUT FLIGHTS AT VSI') :
+      k === 'airline' ? NM.feeder.toUpperCase() + ' GROUNDED: ' + CH6.jets + ' JETS PARKED AT VSI' : 'PASSENGERS DOWN ' + need.paxDrop + '%: AIRPORTS ASK FOR RELIEF';
+    var deck = k === 'rupee' ? 'The rupee has fallen ' + Math.round(CH6.fall * 100) + '% in a year. Fuel and aircraft leases are priced in dollars, so airlines are cutting flights.' :
+      k === 'airline' ? NM.feeder + ' has stopped flying. It carried ' + Math.round((st.s.anchorShare || 0.74) * 100) + '% of the passengers who change planes at VSI.' :
+      'A new virus has emptied the world\'s airports. VSI\'s terminals are quiet and its banks are counting.';
+    return paperOf(st, CH6.year, {lead: lead, deck: deck,
+      sub: {head: 'The banks write to VSIAL', body: 'With less coming in, the airport will earn ' + (need.worst != null ? coverWords(need.worst).replace(' earned', '') : 'too little') + ' in its hardest year. Its banks want fresh money from the owners.'},
+      columns: [{head: 'What it means', body: k === 'airline' ? 'One airline carried the bank, and the bank has gone with it.' : k === 'rupee' ? 'Borrowing in dollars was cheaper, until the rupee fell.' : 'No airport planned for this. Every one of them is asking for help.'}, stakeColumn(st)],
+      photo: {kind: k === 'airline' ? 'parked-jets' : 'empty-hall', caption: k === 'airline' ? poss(NM.feeder) + ' jets parked on the international pier.' : 'The Hall at noon, nearly empty.'}});
+  }
+  function ch6Decision(st) {
+    ensure();
+    var need = ch6Need(st), X = need.cr, pOwn = ch6Patch(st, 'own', need), pL5 = ch6Patch(st, 'l5', need), m = pL5['stakeBy.ch6'].pct;
+    var before = projectReturn(st, {stepInYear: null, 'paxAdj.ch6': null, shock: null, cure: cureList(st.s, CH6.year)}), rOwn = projectReturn(st, pOwn), rL5 = projectReturn(st, pL5), who = st.parent || 'Your company';
+    var l5Now = 100 - st.stake - 20, l5After = l5Now + (st.stake - m);
+    return choiceDoc(st, {year: CH6.year, docType: 'banks-letter', docId: 'banks-letter-' + cal(CH6.year), title: 'Letter from the banks to ' + VSIAL,
+      parties: {from: lenderName(st.s) + ' and the State Bank consortium', to: VSIAL + ', for ' + who, signatory: {name: 'The lenders\' agent', title: 'For the banks'}},
+      body: ['The crisis means the airport will earn ' + (need.worst != null ? coverWords(need.worst) : 'too little for its loan payments') + ' in ' + cal(need.worstYear || CH6.year) + '.',
+        'The banks ask the owners to put in ' + cr(X) + ' of fresh money this year, enough to bring the hardest year back to ₹110 earned for every ₹100 due.',
+        'If no money comes, the banks will take control of the airport and its owners\' shares will be lost.'],
+      choices: [
+        {id: 'own', label: 'Put in your own money: ' + cr(X) + ' from ' + who, terms: who + ' puts in all of it.',
+          slip: {big: cr(X), money: 'your stake stays ' + st.stake + '%', stake: 'your return: about ' + rOwn + '% a year' + (before != null && rOwn != null ? ', ' + Math.abs(Math.round((before - rOwn) * 10) / 10) + ' points ' + (rOwn <= before ? 'lower' : 'higher') + ' than before the crisis' : ''), line: 'You keep the airport and all of your share of it.'}, effects: {}},
+        {id: 'l5', label: 'Ask ' + NM.l5 + ' to put it in', terms: NM.l5 + ' puts in ' + cr(X) + ' for new shares, priced so it earns about ' + Math.round(npvRate() * 1000) / 10 + '% a year.',
+          slip: {big: 'your stake falls to ' + m + '%', money: NM.l5 + ' rises to ' + l5After + '%', stake: 'your return: about ' + rL5 + '% a year', line: 'No money from you, but a smaller share of everything that follows.'}, effects: {}},
+        {id: 'refuse', label: 'Refuse', terms: 'No fresh money from the owners.', slip: {big: 'The banks take control', money: 'your ' + st.stake + '% is lost', stake: 'the concession ends in ' + cal(CH6.year), line: 'The game ends with the banks\' notice.'}, effects: {ends: true}}],
+      stamps: {own: 'CURED', l5: 'AGREED', refuse: 'REFUSED'}});
+  }
+  function ch6ApplyDecision(st, id) {
+    ensure();
+    st = clone(st); if (!st.ch6) ch6Ready(st);
+    id = ['own', 'l5', 'refuse'].indexOf(id) >= 0 ? id : 'own';
+    var fp = ch6FrontPage(st), need = ch6Need(st), patch = ch6Patch(st, id, need), k = st.ch6.kind;
+    addPaper(st, 6, fp, (k === 'rupee' ? 'Because you borrowed in dollars' : k === 'airline' ? 'Because you anchored ' + NM.feeder : 'Because no airport can plan for a pandemic'), CH6.year);
+    applyPatch(st.s, patch);
+    if (id === 'l5') { st.stake = patch['stakeBy.ch6'].pct; st.s.l5Pct = (100 - stakeDef(st) - 20) + (stakeDef(st) - st.stake); }
+    st.ch6.choice = id; st.ch6.needCr = need.cr; st.ch6.equityCr = need.equityCr;
+    addDoc(st, {id: 'banks-letter-' + cal(CH6.year), title: 'Banks\' letter, ' + cal(CH6.year), year: CH6.year, date: ch5Date(st, CH6.year).iso, kind: 'letter', stamp: {own: 'CURED', l5: 'AGREED', refuse: 'REFUSED'}[id],
+      summary: id === 'own' ? 'You put in ' + cr(need.cr) + ' of your own when the banks asked.' : id === 'l5' ? NM.l5 + ' put in the ' + cr(need.cr) + ': you own ' + st.stake + '%.' : 'You refused the banks\' letter.'});
+    var def = id === 'refuse' ? 'own' : 'l5';
+    logDecision(st, {id: 'ch6-cure', group: 'cure', chapter: 6, year: CH6.year, label: 'The crisis cure', chosen: id, chosenLabel: {own: 'Putting in your own money', l5: 'Asking ' + NM.l5, refuse: 'Refusing the banks'}[id],
+      'default': def, alt: ch6Patch(st, def, need)});
+    if (id === 'refuse') {   // the banks take control: the era runs to the notice, and the game goes to the Black Box
+      var r = applyShift(st, autoOf(5)); st = r.state;
+      st.ch6.notice = ch6Notice(st);
+    }
+    return st;
+  }
+  function ch6Notice(st) {
+    var d = ch5Date(st, CH6.year);
+    return {title: 'Notice from the banks', date: d.iso, dateWords: d.words, stamp: 'TAKEN OVER',
+      text: ['The owners of ' + VSIAL + ' have refused the banks\' request for fresh money.', 'Under the loan agreements, the banks take control of the airport from today. They will run it, or sell it to an operator of their choosing.',
+        poss(st.parent || 'Your company') + ' shares in VSIAL are lost.'],
+      signed: {name: 'The lenders\' agent', title: 'For the banks'}};
+  }
+  function ch6Incidents(st) {
+    var k = (st.ch6 && st.ch6.kind) || ch6Pick(st);
+    if (k === 'airline') return [{id: 'pier', cause: 'anchor-collapse', docId: 'feeders-' + cal(CH4.year), at: '14:00', title: NM.feeder + ' jets block the pier',
+      text: poss(NM.feeder) + ' crews have not been paid; 4 of its jets sit on the international pier where ' + CH5.partner + ' needs them.',
+      options: [{id: 'tow', label: 'Tow them to the remote apron', effect: 'About ' + crs(CH6.towCr * prAt(CH6.year)) + ' in tugs and crews.'}, {id: 'leave', label: 'Leave them', effect: CH5.partner + ' waits on the taxiway.'}]}];
+    if (k === 'rupee') return [{id: 'london', cause: 'rupee-fall', docId: 'loan-offer', at: '15:00', title: CH5.partner + ' wants London once a day',
+      text: 'With fuel priced in dollars, ' + CH5.partner + ' asks to cut London to once a day.',
+      options: [{id: 'discount', label: 'Offer a year\'s discount on its charges', effect: 'About ' + Math.round(CH6.discountShare * 100) + '% off its charges for a year.'}, {id: 'accept', label: 'Accept the cut', effect: 'One London flight a day, and its connections.'}]}];
+    return [{id: 'screening', cause: 'pandemic', docId: 'banks-letter-' + cal(CH6.year), at: '09:30', title: 'The screening queue at arrivals', priceOn: 'hall',
+      text: 'Health screening at arrivals is backing up into the pier. Every passenger is screened; the question is how many halls.',
+      options: [{id: 'hall', label: 'Open a second screening hall', effect: 'The hall costs about ' + crs(CH6.hallCr * prAt(CH6.year)) + '.'}, {id: 'one', label: 'Keep one hall', effect: 'Longer queues at arrivals.'}]}];
+  }
+  function ch6ShiftPlan(st) {
+    ensure();
+    var k = (st.ch6 && st.ch6.kind) || ch6Pick(st), tags = [];
+    if (k === 'airline') tags.push({docId: 'feeders-' + cal(CH4.year), doc: 'Network agreement, ' + cal(CH4.year), line: NM.feeder + ' carried ' + Math.round((st.s.anchorShare || 0.74) * 100) + '% of connections.', anchor: 'transfer'});
+    if (k === 'rupee') tags.push({docId: 'loan-offer', doc: 'Loan offer, ' + cal(1), line: 'Borrowed in dollars.', anchor: 'margin'});
+    if (st.ch6 && st.ch6.choice) tags.push({docId: 'banks-letter-' + cal(CH6.year), doc: 'Banks\' letter, ' + cal(CH6.year), line: st.ch6.choice === 'l5' ? NM.l5 + ' put in the cure: you own ' + st.stake + '%.' : 'You put in ' + cr(st.ch6.needCr) + '.', anchor: 'margin'});
+    return {level: 3, chapter: 6, year: CH6.year, window: {from: '13:00', to: '16:00'}, volume: 0.5, crisis: k, standsBlocked: k === 'airline' ? 4 : 0, banks: [],
+      incidents: ch6Incidents(st), tags: tags, rates: {perConnectionCr: domConnInr(CH6.year) / 1e7, missedCostCr: CH5.careInr * prAt(CH6.year) / 1e7},
+      auto: autoOf(5, {incidents: {pier: 'tow', london: 'discount', screening: 'hall'}})};
+  }
+  function ch6Briefing(st) {
+    var plan = ch6ShiftPlan(st), d = ch5Date(st, CH6.year), k = plan.crisis;
+    var lines = [{text: 'Half the usual traffic today', docId: 'banks-letter-' + cal(CH6.year)},
+      {text: k === 'airline' ? 'Four ' + NM.feeder + ' jets parked on the international pier' : k === 'rupee' ? CH5.partner + ' is reviewing its London flights' : 'Health screening for every arriving passenger', docId: k === 'airline' ? 'feeders-' + cal(CH4.year) : 'banks-letter-' + cal(CH6.year)},
+      {text: 'The banks are watching every rupee', docId: 'banks-letter-' + cal(CH6.year)}];
+    lines.forEach(function (l) { l.doc = docTitle(st, l.docId); l.ref = l.doc; });
+    return {title: 'Duty manager\'s handover', date: d.words, lines: lines, watch: 'Keep the airport safe and open, at half the usual traffic.', autoStartSec: 6};
+  }
+  function ch6ApplyShift(st, result) {
+    ensure();
+    if (st.over) return {state: st, bill: null, card: null};
+    if (!st.ch6 || !st.ch6.choice) st = ch6ApplyDecision(st, 'own');
+    if (st.over) return {state: st, bill: null, card: null};
+    var prev = clone(st); st = clone(st); result = result || ch6ShiftPlan(st).auto;
+    var inc = result.incidents || {}, k = st.ch6.kind, incCr = (inc.pier === 'tow' ? CH6.towCr : 0) + (inc.screening === 'hall' ? CH6.hallCr : 0);
+    if (incCr > 0) st.s.streams = Object.assign(st.s.streams || {}, {ch6incidents: {perDay: 0, from: CH6.year, until: CH6.year, incCr: 0, costCr: incCr * prAt(CH6.year), stop: CH6.year + 1}});
+    if (k === 'rupee' && st.s.hub) st.s.hub = Object.assign({}, st.s.hub, inc.london === 'discount' ? {costCr: (st.s.hub.costCr || 0) + CH6.discountShare * st.s.hub.incCr / 5} : {growth: (st.s.hub.growth || 0) - 0.02});
+    logShift(st, 6, result);
+    var out = playEras(st, CH_ERAS[6], result), y1 = chYears(6)[1]; st = out.state;
+    var id = st.ch6.choice || 'own', X = st.ch6.needCr || 0;
+    var rNow = projectReturn(st, {}), rAlt = projectReturn(st, id === 'l5' ? ch6Patch(st, 'own', {cr: X, equityCr: st.ch6.equityCr}) : ch6Patch(st, 'l5', {cr: X, equityCr: st.ch6.equityCr}));
+    var margin = id === 'own' ? 'You put in ' + cr(X) + ' of your own when the banks asked. ' + (rNow != null && rAlt != null ? 'Against asking ' + NM.l5 + ', it ' + (rNow >= rAlt ? 'adds ' : 'costs you ') + Math.abs(Math.round((rNow - rAlt) * 10) / 10) + ' points of return a year. ' : '') + 'Without it, the banks would own the airport today.' :
+      NM.l5 + ' put in the ' + cr(X) + '. You own ' + st.stake + '% of VSIAL now, and kept your own money. Without it, the banks would own the airport today.';
+    var bill = chBill(prev, st, out.reports, {lead: 'The airport came through the crisis' + (st.over ? '' : ', and you still own ' + st.stake + '% of it') + '.',
+      paragraph: {rupee: 'The rupee fell ' + Math.round(CH6.fall * 100) + '% in ' + cal(CH6.year) + '. Airlines cut flights while fuel cost more, and came back as it settled.', airline: NM.feeder + ' stopped flying in ' + cal(CH6.year) + '. Other airlines took over some of its routes, but the afternoon bank came back at about 60%.', pandemic: 'Passengers fell ' + Math.round((1 - CH6.kinds.pandemic.adj[0].f) * 100) + '% in ' + cal(CH6.year) + ' and took three years to come back.'}[k] + ' The engine then ran ' + cal(CH6.year + 3) + '–' + cal(y1) + '.',
+      margin: margin});
+    st.ch6.bill = bill;
+    fileReport(st, bill, y1);
+    return {state: st, bill: bill, card: ch6Card(k), report: out.reports[out.reports.length - 1]};
+  }
+  function ch6Card(k) { return k === 'airline' ? ch5Card(6, 'airline') : k === 'pandemic' ? ch5Card(6, 'pandemic') : null; }   // no card for the rupee until one is sourced
+
+  // ---------------------------------------------------------------------------------------------
+  // Chapter 7 · Landing: hand it back (years 34-60, eras 8-12)
+  // ---------------------------------------------------------------------------------------------
+  var CH7 = {year: 34, scoreYear: 33, threshold: 3000 /* (est.) connections a day at year 33 that keep a rival hub from taking your banks */,
+    rivalFrom: 36, rivalShare: 0.3, rivalPaxF: 0.92 /* (est.) Hyderabad takes a bank of domestic flights: about 8% of passengers */,
+    plan: {routes: 6, perDay: 3600 /* (est.) 6 new long-haul routes, 300 connecting a bank, two banks a day */, capexCr: 1000 /* (est.) today's money: fitting out 20 widebody gates on the satellites */, from: 37, until: 50, growth: 0.02}};
+  function ch7Ready(st) {
+    var score = networkPerDay(st, CH7.scoreYear), won = score < CH7.threshold;
+    if (won) { st.s.rivalTake = {from: CH7.rivalFrom, share: CH7.rivalShare}; st.s.paxAdj = st.s.paxAdj || {}; st.s.paxAdj.ch7rival = [{from: CH7.rivalFrom, until: 60, f: CH7.rivalPaxF}]; }
+    else { delete st.s.rivalTake; if (st.s.paxAdj) delete st.s.paxAdj.ch7rival; }
+    st.ch7 = {score: score, rivalWon: won};
+    return st;
+  }
+  // L5's price: what its share of the company's money from here to the handback is worth to a fund at the low end of the
+  // Fairfax range (the rate the debrief values everything at), on the board's plan as it stands
+  function l5Price(st, buy) {
+    var s2 = clone(st.s); for (var e = 1; e <= 12; e++) if (!s2.boards[e]) s2.boards[e] = 'auto';
+    var eng = simulate(s2, 60), fl = companyFlows(eng), r = npvRate(), pv = 0;
+    for (var t = CH7.year; t < 60; t++) pv += (fl[t] || 0) / Math.pow(1 + r, t - CH7.year + 1);
+    return Math.max(0, pv * buy / 100);
+  }
+  function ch7Start(save, opts) { var st = chStart(7, save, opts); return st ? ch7Ready(st) : null; }
+  function ch7Fixture(opts) { opts = opts || {}; var st = opts.from ? chStart(7, opts.from, opts) : chFixture(7, opts); return st ? ch7Ready(st) : null; }
+  function ch7Res(st) {   // the resolutions on the table: {district, phase2, l5}, each {offered, patch, ...}
+    var s = st.s, r = {};
+    if (!s.ac_year) { var ac = acPlan(CH7.year - 1); r.district = {patch: {ac_year: CH7.year - 1}, plan: ac}; }
+    if (!s.p2year) r.phase2 = {kind: 'build', patch: {p2year: CH7.year - 1}};
+    else r.phase2 = {kind: 'dated', patch: {'extraBy.ch7plan': [{year: CH7.year + 1, cr: CH7.plan.capexCr}],
+      'streams.plan30': streamOf(CH7.plan.perDay, CH7.plan.from, {perConnInr: ch5Rates(CH7.plan.from).perConnInr, growth: CH7.plan.growth, until: CH7.plan.until})}};
+    var l5 = s.l5Pct != null ? s.l5Pct : 16, buy = Math.max(0, Math.min(l5, 80 - st.stake));
+    if (buy > 0) {
+      var price = l5Price(st, buy);
+      r.l5 = {buy: buy, priceCr: Math.round(price), patch: {'stakeBy.ch7': {from: CH7.year, pct: st.stake + buy}, 'paysBy.ch7': {year: CH7.year, cr: Math.round(price)}, stake0: stakeDef(st), l5Pct: l5 - buy}};
+    }
+    return r;
+  }
+  function ch7FrontPage(st) {
+    ensure();
+    var conns = networkPerDay(st, CH7.scoreYear), lr = st.lastReport || {}, who = st.parent || 'Your company', won = st.ch7 ? st.ch7.rivalWon : networkPerDay(st, CH7.scoreYear) < CH7.threshold;
+    return paperOf(st, CH7.year, {lead: 'THIRTY YEARS ON: ' + who.toUpperCase() + ' RUNS INDIA\'S CONNECTING HUB',
+      deck: 'Vikram Sarabhai International connects about ' + conns.toLocaleString('en-IN') + ' passengers a day. ' + who + '\'s ' + st.stake + '% is worth about ' + stakeWords(lr.stakeValueCr || 0) + '.',
+      sub: {head: NM.rival + ' opens a rival hub at Hyderabad', body: 'The bidder VSI beat for the concession is back, with a hub of its own. ' +
+        (won ? 'Its first move: ' + poss(NM.feeder) + ' evening bank. VSI\'s network was thin enough to take.' : 'It is struggling to fill its banks: VSI\'s network already connects the cities it wanted.')},
+      columns: [{head: 'The last twenty-six years', body: 'The board meets to decide what VSI will be when it is handed back to the State in ' + cal(60) + '.'}, stakeColumn(st)],
+      photo: {kind: 'aerial', caption: 'VSI from the air, thirty years after the first digger.'}});
+  }
+  function ch7Decision(st) {
+    ensure();
+    var R = ch7Res(st), res = [], y = 50;
+    if (R.district) res.push({id: 'district', label: 'Build ' + NM.district + ': hotels, offices and shops on airport land', terms: 'Developers build and pay rent; VSIAL builds the roads, power and water for about ' + cr(R.district.plan.costCr) + '. AERA counts 30% of the income against airline charges.',
+      slip: {big: cr(R.district.plan.earnCr) + ' a year by ' + cal(R.district.plan.fullYear), money: 'about ' + cr(R.district.plan.costCr) + ' from the shareholders', stake: 'the first plots open in ' + cal(R.district.plan.opens), line: 'Land and shops, earning while the airport runs.'}});
+    if (R.phase2) {
+      var S = R.phase2.patch['streams.plan30'];
+      res.push(R.phase2.kind === 'build' ? {id: 'phase2', label: 'Commit phase 2, satellites G and H, now', terms: 'Satellites G and H, with the airlines\' letters signed for a date.', slip: {big: '+' + (P.gcap.phase2_mppa - P.gcap.full_mppa) + ' million passengers a year', money: 'about ' + cr(P.vsi_stages.P2.cost * prAt(CH7.year)) + ', 80% lent by the banks', stake: 'open from ' + cal(CH7.year + 3), line: 'A dated plan the airlines can sell.'}} :
+        {id: 'phase2', label: 'Commit the last widebody gates for ' + cal(CH7.plan.from) + ', with the airlines\' letters signed', terms: '20 more widebody gates on the satellites, on a date the airlines can sell tickets for. Or wait and see.',
+          slip: {big: '+' + CH7.plan.routes + ' long-haul routes from ' + cal(CH7.plan.from), money: cr(S.incCr) + ' a year from their connections', stake: 'costs about ' + cr(CH7.plan.capexCr * prAt(CH7.year + 1)) + ' from the shareholders', line: 'Airlines add routes to a date, not to a maybe.'}});
+    }
+    if (R.l5) res.push({id: 'l5', label: 'Buy ' + poss(NM.l5) + ' ' + R.l5.buy + '%, taking you to ' + (st.stake + R.l5.buy) + '%', terms: 'Priced on what the airport is worth today.',
+      slip: {big: cr(R.l5.priceCr), money: 'you own ' + (st.stake + R.l5.buy) + '% of the handback', stake: 'paid by ' + (st.parent || 'your company') + ', not the airport', line: 'More of the next twenty-six years is yours.'}});
+    var d = ch5Date(st, CH7.year);
+    return {docType: 'board-minutes', docId: 'minutes-' + cal(CH7.year), title: 'Minutes of the board of ' + VSIAL, date: d.iso, dateWords: d.words,
+      parties: {company: VSIAL, present: [st.founder || 'Asha Rao', NM.l5, 'Airports Authority of India', 'State of Maharashtra, through MADC']},
+      body: ['The board meets in ' + cal(CH7.year) + ' to set the plan for the last ' + (60 - CH7.year + 1) + ' years of the concession.', 'Each resolution is adopted or rejected.'],
+      resolutions: res, choices: res, stamps: {adopted: 'APPROVED', rejected: 'REJECTED'}};
+  }
+  function ch7ApplyDecision(st, picks) {
+    ensure();
+    st = clone(st); if (!st.ch7) ch7Ready(st);
+    picks = picks || {};
+    var R = ch7Res(st), fp = ch7FrontPage(st), adopted = [];
+    addPaper(st, 7, fp, st.ch7.rivalWon ? 'Because your network was thin when ' + NM.rival + ' came back' : 'Because your network was already there when ' + NM.rival + ' came back', CH7.year);
+    ['district', 'phase2', 'l5'].forEach(function (k) {
+      if (!R[k]) return;
+      var on = !!picks[k], empty = {};
+      Object.keys(R[k].patch).forEach(function (x) { empty[x] = x === 'stake0' ? R[k].patch[x] : null; });
+      if (on) { applyPatch(st.s, R[k].patch); adopted.push(k); if (k === 'phase2' && R.phase2.kind === 'build') st.s.sizing = sizeMemo(st.s); if (k === 'l5') st.stake = R.l5.patch['stakeBy.ch7'].pct; }
+      logDecision(st, {id: 'ch7-' + k, group: 'plan30', chapter: 7, year: CH7.year, label: {district: 'Building ' + NM.district, phase2: R.phase2 && R.phase2.kind === 'build' ? 'Committing phase 2' : 'Committing the last gates to a date', l5: 'Buying ' + poss(NM.l5) + ' stake'}[k],
+        chosen: on ? 'adopt' : 'reject', 'default': 'reject', alt: empty, sizing: k === 'phase2' && R.phase2.kind === 'build'});
+    });
+    st.ch7.adopted = adopted;
+    addDoc(st, {id: 'minutes-' + cal(CH7.year), title: 'Board minutes, ' + cal(CH7.year), year: CH7.year, date: ch5Date(st, CH7.year).iso, kind: 'minutes', stamp: 'APPROVED',
+      summary: adopted.length ? 'The board adopted: ' + andList(adopted.map(function (k) { return {district: 'building ' + NM.district, phase2: 'the dated plan for the last gates', l5: 'buying ' + poss(NM.l5) + ' stake'}[k]; })) + '.' : 'The board rejected all three resolutions.'});
+    return st;
+  }
+  function ch7ShiftPlan(st) {
+    ensure();
+    var district = !!st.s.ac_year && st.s.ac_year >= CH7.year - 1, inc = [];
+    if (district) inc.push({id: 'road', cause: 'district', docId: 'minutes-' + cal(CH7.year), at: '20:20', title: 'Evening jam on the access road',
+      text: NM.district + '\'s offices empty onto the access road: 40 crew are stuck for the 21:00 bank.',
+      options: [{id: 'buses', label: 'Run buses from the city for the crews', effect: 'About ' + crs(0.5 * prAt(CH7.year)) + '.'}, {id: 'delay', label: 'Delay the bank 20 minutes', effect: 'Late departures and missed connections.'}]});
+    var tags = [{docId: 'minutes-' + cal(CH7.year), doc: 'Board minutes, ' + cal(CH7.year), line: district ? NM.district + ' built.' : 'The board has met.', anchor: 'margin'}];
+    var hv = (st.docs || []).filter(function (d) { return /^(partner|skyward)-/.test(d.id); })[0];
+    if (hv) tags.push({docId: hv.id, doc: CH5.partner + ' agreement, ' + cal(CH5.year), line: hv.stamp === 'DECLINED' ? 'Declined ' + CH5.partner + '.' : 'Signed ' + CH5.partner + '.', anchor: 'intl-pier'});
+    return {level: 4, chapter: 7, year: CH7.year, window: {from: '20:55', to: '21:00'}, volume: 1, banks: [{airline: CH5.partner, from: '20:30', to: '21:30', international: true}],
+      incidents: inc, tags: tags, rates: {perConnectionCr: ch5Rates(CH7.year).perConnectionCr, missedCostCr: CH5.careInr * prAt(CH7.year) / 1e7},
+      auto: autoOf(8, {incidents: {road: 'buses'}})};
+  }
+  function ch7Briefing(st) {
+    var plan = ch7ShiftPlan(st), d = ch5Date(st, CH7.year);
+    var lines = [{text: 'The evening international bank leaves at 21:00', docId: 'minutes-' + cal(CH7.year)},
+      {text: st.ch7 && st.ch7.rivalWon ? NM.rival + ' has taken ' + poss(NM.feeder) + ' evening bank to Hyderabad' : poss(NM.rival) + ' Hyderabad hub is half empty tonight', docId: 'minutes-' + cal(CH7.year)},
+      {text: plan.incidents.length ? NM.district + '\'s rush hour meets the crews\' shift change' : 'The access road is clear', docId: 'minutes-' + cal(CH7.year)}];
+    lines.forEach(function (l) { l.doc = docTitle(st, l.docId); l.ref = l.doc; });
+    return {title: 'Duty manager\'s handover', date: d.words, lines: lines, watch: 'The last bank of the evening.', autoStartSec: 6};
+  }
+  function ch7ApplyShift(st, result) {
+    ensure();
+    if (st.over) return {state: st, bill: null, card: null};
+    if (!st.ch7 || !st.ch7.adopted) st = ch7ApplyDecision(st, {});
+    var prev = clone(st); st = clone(st); result = result || ch7ShiftPlan(st).auto;
+    var inc = result.incidents || {};
+    if (inc.road === 'buses') st.s.streams = Object.assign(st.s.streams || {}, {ch7incidents: {perDay: 0, from: CH7.year, until: 60, incCr: 0, costCr: 0.5 * prAt(CH7.year) * 60 /* (est.) about 60 jam evenings a year */, stop: 61}});
+    logShift(st, 7, result);
+    var out = playEras(st, CH_ERAS[7], result, true); st = out.state;
+    var f = st.final || {}, adopted = (st.ch7 && st.ch7.adopted) || [], y1 = 60;
+    var margin = (adopted.indexOf('district') >= 0 ? NM.district + ' paid its rent every year from ' + cal(acPlan(CH7.year - 1).opens) + '. ' : '') +
+      (st.ch7 && st.ch7.rivalWon ? NM.rival + ' took some of your banks to Hyderabad: your network was too thin to hold them. ' : poss(NM.rival) + ' Hyderabad hub never filled its banks: your network got there first. ') +
+      (adopted.indexOf('l5') >= 0 ? 'Buying ' + poss(NM.l5) + ' stake made ' + st.stake + '% of the last ' + (60 - CH7.year + 1) + ' years yours.' : '');
+    var bill = chBill(prev, st, out.reports, {lead: (st.parent || 'Your company') + ' handed Vikram Sarabhai International back to the State' + (f.returnedCr != null ? ', having received ' + cr(f.returnedCr) + ' on ' + cr(f.investedCr) + ' put in' : '') + '.',
+      paragraph: 'From ' + cal(CH7.year) + ' to ' + cal(60) + ' the engine ran the airport on the board\'s plan. ' + (f.paxTotalM ? 'Over sixty years it served about ' + (f.paxTotalM / 1000).toFixed(1) + ' billion passengers.' : ''),
+      margin: margin.trim()});
+    st.ch7.bill = bill;
+    fileReport(st, bill, y1);
+    return {state: st, bill: bill, card: ch5Card(7), report: out.reports[out.reports.length - 1]};
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // VSIEra.bridge(state, n): the years between the end of one chapter and the start of chapter n, played by the engine
+  // (pending boards at the defaults), with the facts for the "years later" split-flap: {state, from, to, years[], lines[]}
+  // ---------------------------------------------------------------------------------------------
+  // a chapter the engine plays over without its decision (advance, the fixtures) takes what a passive player would have chosen
+  // (design/debrief.md §2), so its network, crisis and shocks exist; no front page goes into the player's papers
+  function autoDecide(st) {
+    var e = st.era, s = st.s;
+    var log = function (id, group, n, year, label, chosen, alt) { logDecision(st, {id: id, group: group, chapter: n, year: year, label: label, chosen: chosen, chosenLabel: chosen, 'default': chosen, alt: alt, auto: true}); };
+    if (e === firstEra(3) && !st.ch3) { applyPatch(s, ch3Patch('phased', 0.95, CH3.growth)); st.ch3 = {plan: 'phased', auto: true}; log('ch3-plan', 'opening', 3, CH3.year, 'The opening plan', 'phased', ch3Patch('phased', 0.95, CH3.growth)); }
+    if (e === firstEra(4) && !st.ch4) { var id = ch4Def(st); applyPatch(s, ch4Patch(id)); st.ch4 = {network: id, auto: true}; log('ch4-network', 'network', 4, CH4.year, 'The network', id, ch4Patch(id)); }
+    if (e === firstEra(6) && !st.ch6) {
+      ch6Ready(st);
+      var need = ch6Need(st), pt = ch6Patch(st, 'l5', need);
+      applyPatch(s, pt); st.stake = pt['stakeBy.ch6'].pct; s.l5Pct = (100 - stakeDef(st) - 20) + (stakeDef(st) - st.stake);
+      st.ch6.choice = 'l5'; st.ch6.needCr = need.cr; st.ch6.equityCr = need.equityCr; st.ch6.auto = true;
+      log('ch6-cure', 'cure', 6, CH6.year, 'The crisis cure', 'l5', pt);
+    }
+    if (e === firstEra(7) && !st.ch7) { ch7Ready(st); st.ch7.adopted = []; st.ch7.auto = true; }
+    return st;
+  }
+  // the year each chapter's shift is played: the years-later pages run from it to the next chapter's first year
+  var SHIFT_YEAR = {3: 5, 4: 9, 5: 15, 6: 21, 7: 34};
+  function bridge(state, n) {
+    ensure();
+    var y0 = SHIFT_YEAR[n - 1] || state.year || 1, st = advance(state, firstEra(n));
+    if (n === 6 && st && !st.over && st.era === firstEra(6) && !st.ch6) ch6Ready(st);
+    if (n === 7 && st && !st.over && st.era === firstEra(7) && !st.ch7) ch7Ready(st);
+    var y1 = st.over ? (st.over.year || st.year) : (eraYears(firstEra(n)) || [0, st.year])[1], eng = simulate(st.s, Math.max(1, y1)), years = [];
+    var ev = {}; eng.events.forEach(function (e) { (ev[e.t + 1] = ev[e.t + 1] || []).push(e); });
+    eng.rows.forEach(function (r, i) {
+      if (r.year <= y0 || r.year >= y1) return;
+      var p = eng.rows[i - 1], line = '';
+      (ev[r.year] || []).forEach(function (e) {
+        if (!line && e.k === 'fx') line = 'The rupee falls ' + Math.round(e.fall * 100) + '%: the dollar bonds grow by ' + cr(e.amt) + '.';
+        if (!line && e.k === 'refi') line = 'A steady record: the banks refinance ' + cr(e.amt) + ' more cheaply.';
+        if (!line && (e.k === 'cure_ds' || e.k === 'cure_era')) line = 'The owners put in ' + cr(e.amt) + ' to keep the banks paid.';
+      });
+      if (!line && p && r.cap > p.cap + 1) line = 'New terminal space opens: room for ' + Math.round(r.cap) + ' million passengers a year.';
+      if (!line && p && p.debt > 1 && r.debt < 1) line = 'The last bank loan is repaid.';
+      years.push({year: r.year, calYear: cal(r.year), paxM: Math.round(r.pax * 10) / 10, light: lightOf(r.dscr), connectionsPerDay: networkPerDay(st, r.year), line: line});
+    });
+    var last = years[years.length - 1], lr = st.lastReport || {};
+    var lines = [];
+    if (last) lines.push(cal(last.year) + ': ' + last.paxM + ' million passengers a year, ' + last.connectionsPerDay.toLocaleString('en-IN') + ' changing planes here each day.');
+    lines.push('Your ' + st.stake + '% is worth about ' + stakeWords(lr.stakeValueCr || 0) + '.');
+    if (lr.cover != null) lines.push('The banks: ' + coverWords(lr.cover) + ' in the hardest recent year.');
+    // the split-flap: one headline per year, oldest first (the year's event, or its passengers and connections)
+    var headlines = years.map(function (y) { return y.calYear + ': ' + (y.line || y.paxM + ' million passengers, ' + y.connectionsPerDay.toLocaleString('en-IN') + ' changing planes here each day.'); });
+    return {state: st, from: cal(y0), to: cal(y1), fromYear: cal(y0), toYear: cal(y1), years: years, lines: headlines, headlines: headlines, summary: lines, chapter: n};
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // The cliffhanger (money/DESIGN.md §14.4): the act's last front page, the Late City edition, folded with the next act's name
+  // in pencil. VSIEra.actBreak(state) → the act just finished (1 after Chapter 3's shift, 2 after Chapter 5's) or 0;
+  // VSIEra.cliffhanger(state, act) → the front page. Act II's is written from what is coming for this player (Chapter 6's pick).
+  // ---------------------------------------------------------------------------------------------
+  var ACTS = {1: {name: 'The Deal', next: 'Act II · The Network', last: 3}, 2: {name: 'The Network', next: 'Act III · The Long Game', last: 5}, 3: {name: 'The Long Game', next: 'The Black Box', last: 7}};
+  function actBreak(state) {
+    if (!state || !state.s || state.over) return 0;
+    if (state.ch3 && state.ch3.bill && state.era === 1) return 1;
+    if (state.ch5 && state.ch5.bill && state.era === 4) return 2;
+    return 0;
+  }
+  function cliffhanger(state, act) {
+    ensure();
+    act = act || actBreak(state) || 1;
+    var st = state, lr = st.lastReport || {}, who = st.parent || 'Your company', A = ACTS[act] || ACTS[1], o;
+    if (act === 1) {
+      var tr = st.s.plateauTrust, otp = st.ch3 && st.ch3.result && st.ch3.result.otp;
+      o = {year: SHIFT_YEAR[3] + 2, lead: 'AIRLINES ASK: WILL VSI BECOME INDIA\'S CONNECTING HUB?',
+        deck: 'Two years after opening day, ' + NM.feeder + ' is drawing up a plan to time twelve cities into one afternoon at Vikram Sarabhai International.',
+        sub: {head: 'Opening day, remembered', body: otp != null ? 'VSI ran its first morning at ' + Math.round(otp * 100) + '% on time. ' + (tr != null && tr >= CH3.trustLine ? NM.plateau + ' wants a bigger part in what comes next.' : NM.plateau + ' is keeping its distance.') : 'The airport has found its feet.'}};
+    } else {
+      var k = ch6Pick(st);
+      o = {year: SHIFT_YEAR[5] + 3, lead: k === 'rupee' ? 'A STORM IS COMING: RUPEE AT RECORD LOW' : k === 'airline' ? NM.feeder.toUpperCase() + ' MISSES ITS FUEL PAYMENTS' : 'A NEW VIRUS SPREADS: AIRLINES WATCH THEIR BOOKINGS',
+        deck: k === 'rupee' ? 'Traders expect the rupee to fall further. Every airline that pays for fuel in dollars is nervous.' :
+          k === 'airline' ? 'Oil companies say ' + NM.feeder + ' is behind on its bills. It carries ' + Math.round((st.s.anchorShare || 0.74) * 100) + '% of the passengers who change planes at VSI.' :
+          'Health officials are tracking a new virus. Airports are drawing up plans for empty terminals.',
+        sub: {head: 'Where VSI stands', body: who + '\'s ' + st.stake + '% is worth about ' + stakeWords(lr.stakeValueCr || 0) + '. ' + (lr.cover != null ? 'In its hardest recent year the airport earned ' + coverWords(lr.cover).replace(' earned', '') + ' to its banks.' : '')}};
+    }
+    var fp = paperOf(st, o.year, {lead: o.lead, deck: o.deck, sub: o.sub, columns: [stakeColumn(st)], photo: {kind: act === 1 ? 'dusk-apron' : 'storm', caption: act === 1 ? 'The apron at dusk.' : 'Clouds over the lakes east of runway 3.'}});
+    fp.edition = 'Late City'; fp.act = act; fp.actName = A.name; fp.fold = A.next;
+    return fp;
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // The Black Box (design/debrief.md): VSIEra.debrief.*
+  // ---------------------------------------------------------------------------------------------
+  var GROUPS = ['finance', 'bid', 'build', 'opening', 'network', 'radar', 'partner', 'hold', 'cure', 'plan30', 'shifts'];
+  var GROUP_LABEL = {finance: 'How you financed it', bid: 'Your bid', build: 'How you built it', opening: 'The opening plan', network: 'The network', radar: 'The bird radar',
+    partner: CH5.partner, hold: 'Holding London for Lucknow', cure: 'The crisis cure', plan30: 'The thirty-year plan', shifts: 'Your shifts'};
+  var MEDIAN_BID = 16.5;   // previewBid's 50% chance of winning (the rivals cluster 12-21%)
+  var _sizeMemo = {};
+  function sizeKey(s) { return JSON.stringify([s.gearing, s.phase1, s.lender, s.state_loan, s.defer_state_loan, s.profile, s.bid, s.p2year]); }
+  function sizeMemo(s) { var k = sizeKey(s); if (!_sizeMemo[k]) _sizeMemo[k] = clone(sizeDebt(s)); return clone(_sizeMemo[k]); }
+  function benchmarks() {
+    ensure();
+    var dcf = J('bial.owners.dcf_inputs', {}) || {}, roe = J('till.fair_return_on_equity', null), cod = J('till.efficient_cost_of_debt', null);
+    var src = function (p) { var n = MD; p.split('.').forEach(function (k) { n = n && n[k]; }); return n && n.source ? n.source.split(' ; ')[0] : null; };
+    var out = [];
+    if (dcf.discount_rate) out.push({id: 'fairfax', label: 'What Fairfax\'s own valuation of Bengaluru\'s airport assumes it earns', lowPct: dcf.discount_rate[0] * 100, highPct: dcf.discount_rate[1] * 100, pct: [Math.round(dcf.discount_rate[0] * 1000) / 10, Math.round(dcf.discount_rate[1] * 1000) / 10], year: 2025, source: src('bial.owners.dcf_inputs'), key: 'bial.owners.dcf_inputs'});
+    if (roe != null) out.push({id: 'aera', label: 'What AERA allows Delhi\'s airport on its shareholders\' money', pct: roe, source: src('till.fair_return_on_equity'), key: 'till.fair_return_on_equity'});
+    if (cod != null) out.push({id: 'banks', label: 'What the banks charged', pct: cod, source: src('till.efficient_cost_of_debt'), key: 'till.efficient_cost_of_debt'});
+    return out;
+  }
+  function npvRate() { var b = benchmarks().filter(function (x) { return x.id === 'fairfax'; })[0]; return b ? b.lowPct / 100 : 0.122; }
+  // every decision with what a passive player would have done (design/debrief.md §2): Chapters 1-2 read from the scenario,
+  // Chapters 3-7 from s.decisions, the shifts from s.eraOps
+  function groupPatches(state) {
+    var s = state.s, g = {};
+    if (s.gearing !== 0.7 || s.lender !== 'banks' || s.profile !== 'sculpt' || s.state_loan !== true || s.defer_state_loan !== true || s.phase1 !== 'lean')
+      g.finance = {patch: {gearing: 0.7, lender: 'banks', profile: 'sculpt', state_loan: true, defer_state_loan: true, phase1: 'lean'}, sizing: true,
+        chosen: (s.lender === 'dollar' ? 'dollar bonds' : s.lender === 'infra' ? 'the infrastructure bank' : 'Indian banks') + ', ' + Math.round(s.gearing * 100) + '% borrowed, phase 1 ' + s.phase1};
+    if (!(s.bid.type === 'share' && Math.abs(s.bid.value - MEDIAN_BID) < 1e-9)) g.bid = {patch: {bid: {type: 'share', value: MEDIAN_BID}}, sizing: true, chosen: s.bid.type === 'share' ? 'a bid of ' + s.bid.value + '%' : 'a bid of ₹' + s.bid.value + ' a passenger'};
+    var payAll = conFrom({monsoon: 'pay', overrun: 'pay', trials: 'full'}), cn = s.construction;
+    if (cn && (cn.monsoon !== 'pay' || cn.overrun !== 'pay' || cn.trials !== 'full')) g.build = {patch: {construction: Object.assign({}, cn, payAll)}, chosen: [cn.monsoon === 'slip' ? 'waited out the monsoon' : '', cn.overrun === 'slip' ? 'slipped the roof' : '', cn.trials === 'short' ? 'short trials' : ''].filter(Boolean).join(', ') || 'paid to open on time'};
+    (s.decisions || []).forEach(function (d) {
+      if (d.chosen === d['default']) return;
+      var x = g[d.group] = g[d.group] || {patch: {}, chosen: [], sizing: false};
+      Object.assign(x.patch, d.alt || {}); x.sizing = x.sizing || !!d.sizing;
+      x.chosen = [].concat(x.chosen, [d.group === 'plan30' ? d.label.charAt(0).toLowerCase() + d.label.slice(1) : d.chosenLabel || d.chosen]);
+    });
+    // the shifts the player played (not the engine's stubs), against an expert's (ops_profiles.expert) in the same eras
+    var played = (s.shiftLog || []).filter(function (x) { return !x.auto; }), ex = clone(s.eraOps || {}), nEra = 0;
+    played.forEach(function (x) { (CH_ERAS[x.chapter] || []).forEach(function (e) { if (s.eraOps && s.eraOps[e]) { ex[e] = opsProfile('expert', eraYears(e)[1]); nEra++; } }); });
+    if (nEra) g.shifts = {patch: {eraOps: ex}, chosen: played.length + (played.length > 1 ? ' shifts' : ' shift') + ' you played'};
+    Object.keys(g).forEach(function (k) { if (Array.isArray(g[k].chosen)) g[k].chosen = andList(g[k].chosen); });
+    return g;
+  }
+  function valueOf(state, G, keep) {   // v(S): the player's net present value with the groups in keep as played, the rest passive
+    var s = clone(state.s), resize = false;
+    delete s.decisions;
+    Object.keys(G).forEach(function (k) { if (!keep[k]) { applyPatch(s, G[k].patch); resize = resize || !!G[k].sizing; } });
+    if (resize) s.sizing = sizeMemo(s);
+    for (var e = 1; e <= 12; e++) s.boards[e] = 'auto';
+    var eng = simulate(s, 60), pf = playerFlows(s, companyFlows(eng), s.stake0 != null ? s.stake0 : state.stake), r = npvRate(), v = 0;
+    pf.forEach(function (f, t) { v += f / Math.pow(1 + r, t); });
+    return v;
+  }
+  // design/debrief.md §2: exact Shapley values over the decision groups (opts.exact, 2^n runs), or leave-one-out (n + 2 runs,
+  // "a quick estimate"). Shares are of the difference between the player's run and the all-passive run; "everything else"
+  // is what the method leaves (interactions, for leave-one-out), so the shares and it add up to that difference exactly.
+  function attribution(state, opts) {
+    ensure();
+    opts = opts || {};
+    var G = groupPatches(state), ids = GROUPS.filter(function (k) { return G[k]; }), n = ids.length, all = {}, none = {}, phi = {};
+    ids.forEach(function (k) { all[k] = true; });
+    var vN = valueOf(state, G, all), v0 = valueOf(state, G, none), total = vN - v0, method = opts.exact ? 'shapley' : 'leave-one-out';
+    if (opts.exact && n) {
+      var memo = {}, fact = [1]; for (var i = 1; i <= n; i++) fact[i] = fact[i - 1] * i;
+      var V = function (mask) { if (memo[mask] == null) { var keep = {}; ids.forEach(function (k, j) { if (mask & (1 << j)) keep[k] = true; }); memo[mask] = valueOf(state, G, keep); } return memo[mask]; };
+      memo[(1 << n) - 1] = vN; memo[0] = v0;
+      ids.forEach(function (k, j) {
+        var sum = 0;
+        for (var m = 0; m < (1 << n); m++) {
+          if (m & (1 << j)) continue;
+          var size = 0; for (var b = m; b; b >>= 1) size += b & 1;
+          sum += fact[size] * fact[n - size - 1] / fact[n] * (V(m | (1 << j)) - V(m));
+        }
+        phi[k] = sum;
+      });
+    } else ids.forEach(function (k) { var keep = Object.assign({}, all); delete keep[k]; phi[k] = vN - valueOf(state, G, keep); });
+    // percentages are of everything the decisions moved (each share's size, and what is left), so they stay readable when the
+    // player's run and the passive one end close together; the crore figures add up to the difference exactly
+    var sumPhi = ids.reduce(function (a, k) { return a + phi[k]; }, 0), rest = total - sumPhi, den = ids.reduce(function (a, k) { return a + Math.abs(phi[k]); }, 0) + Math.abs(rest) || 1;
+    var groups = ids.map(function (k) { return {group: k, label: GROUP_LABEL[k], chosen: G[k].chosen, npvCr: Math.round(phi[k]), sharePct: Math.round(phi[k] / den * 1000) / 10}; })
+      .sort(function (a, b) { return Math.abs(b.npvCr) - Math.abs(a.npvCr); });
+    // the page: shares under 3% pooled into "everything else", at most 5 bars, the two largest as sentences
+    var bars = groups.filter(function (x) { return Math.abs(x.sharePct) >= 3; }).slice(0, 5);
+    var pooled = rest + groups.filter(function (x) { return bars.indexOf(x) < 0; }).reduce(function (a, x) { return a + phi[x.group]; }, 0);
+    var sentence = function (x) {
+      var w = x.group === 'shifts' ? 'Your shifts, against an expert\'s,' : x.group === 'finance' || x.group === 'bid' || x.group === 'build' || x.group === 'plan30' ? x.label + ' (' + x.chosen + ')' : x.chosen ? x.chosen.charAt(0).toUpperCase() + x.chosen.slice(1) : x.label;
+      return w + (x.npvCr >= 0 ? ' made ' : ' cost you ') + Math.abs(Math.round(x.sharePct)) + '% of your return.';
+    };
+    var absSum = groups.reduce(function (a, x) { return a + Math.abs(phi[x.group]); }, 0) + Math.abs(rest), top2 = groups.slice(0, 2).reduce(function (a, x) { return a + Math.abs(phi[x.group]); }, 0);
+    return {method: method, words: method === 'leave-one-out' ? 'A quick estimate: each decision undone on its own.' : '', rate: npvRate(), playerNpvCr: Math.round(vN), passiveNpvCr: Math.round(v0), totalCr: Math.round(total),
+      groups: groups, everythingElse: {npvCr: Math.round(pooled), sharePct: Math.round(pooled / den * 1000) / 10}, restCr: Math.round(rest), bars: bars,
+      sentences: bars.slice(0, 2).map(sentence), barSentences: bars.map(sentence),
+      barsWithWords: bars.map(function (x) { return Object.assign({sentence: sentence(x)}, x); }), powerLaw: absSum > 0 && top2 / absSum >= 0.5 ? 'Two decisions made most of your sixty years. Most decisions barely mattered. That is how big returns work.' : 'No single decision made your sixty years: it was many small ones.',
+      top2Share: absSum > 0 ? Math.round(top2 / absSum * 1000) / 10 : 0, checkSum: Math.abs(sumPhi + rest - total) / (Math.abs(total) || 1), runs: method === 'shapley' ? Math.pow(2, n) : n + 2};
+  }
+  // page 1: the return against the sourced benchmarks
+  function returnPage(state) {
+    ensure();
+    var f = state.final || {}, o = state.over || {}, banks = o.reason === 'banks', ret = f.irr == null ? null : Math.round(f.irr * 1000) / 10;
+    return {returnPct: banks ? null : ret, words: banks ? 'Lost' : ret == null ? 'No return yet' : ret + '% a year, for 60 years', banks: banks,
+      investedCr: f.investedCr || 0, returnedCr: f.returnedCr || 0, company: state.parent || 'Your company',
+      line: (state.parent || 'Your company') + ' put in ' + cr(f.investedCr || 0) + '; ' + cr(f.returnedCr || 0) + ' came back' + (banks ? ' before the banks took control.' : ' over 60 years.'),
+      ending: banks ? 'The banks took control in ' + cal(o.year || state.year || 1) + '.' : 'Handed back in ' + cal(60) + '.', benchmarks: benchmarks()};
+  }
+  // page 3: the player's own front pages, each with the decision that caused it
+  function papers(state) {
+    return (state.papers || []).slice().sort(function (a, b) { return a.chapter - b.chapter; }).map(function (p) {
+      return {chapter: p.chapter, name: CHAPTERS[p.chapter] ? CHAPTERS[p.chapter].name : '', calYear: p.calYear, lead: p.lead, dateLine: p.dateLine, light: p.light, line: p.cause + ', ' + p.calYear + '.'};
+    });
+  }
+  // page 4a, the first three lines (design/debrief.md §4a): each shown only when its evidence is there, with the evidence
+  function profile(state, attr) {
+    ensure();
+    attr = attr || attribution(state);
+    var s = state.s, by = {}; attr.groups.forEach(function (g) { by[g.group] = g; });
+    var share = function (k) { return by[k] ? by[k].sharePct : 0; }, out = [];
+    var eng = simulate(Object.assign(clone(s), {}), 60), firstDiv = null;
+    eng.rows.forEach(function (r) { if (firstDiv == null && (r.div || 0) > 1) firstDiv = r.year; });
+    var built = (s.decisions || []).filter(function (d) { return d.group === 'plan30' && d.chosen === 'adopt' && d.id !== 'ch7-l5'; });
+    if (built.length && share('plan30') > 0 && (firstDiv == null || firstDiv > 20))
+      out.push({id: 'allocator', line: 'A capital allocator. You put money where it compounded.', evidence: andList(built.map(function (d, i) { return i ? d.label.charAt(0).toLowerCase() + d.label.slice(1) : d.label; })) + ' in ' + cal(CH7.year) + ' (+' + Math.round(share('plan30')) + '%); ' + (firstDiv ? 'took no dividends before ' + cal(firstDiv) : 'took no dividends') + '.'});
+    var played = (s.shiftLog || []).filter(function (x) { return !x.auto; }), all = s.shiftLog || [];
+    var otp = all.length ? all.reduce(function (a, x) { return a + x.otp; }, 0) / all.length : 0;
+    if (all.length && share('shifts') >= 0 && otp >= 0.85)
+      out.push({id: 'operator', line: 'An operator. Your shifts made money.', evidence: '3★ in ' + all.filter(function (x) { return x.stars >= 3; }).length + ' of ' + all.length + ' shifts' + (played.length < all.length ? ' (' + (all.length - played.length) + ' played by the engine)' : '') + '; ' + Math.round(otp * 100) + '% on time.'});
+    var risky = [];
+    if (s.bid.type === 'share' && s.bid.value > MEDIAN_BID) risky.push('bid ' + s.bid.value + '% when ' + MEDIAN_BID + '% had an even chance');
+    if (s.gearing >= 0.72) risky.push('borrowed ' + Math.round(s.gearing * 100) + '%');
+    if (s.lender === 'dollar') risky.push('borrowed in dollars');
+    if (risky.length) {
+      var rs = share('finance') + share('bid');
+      if (rs > 0) out.push({id: 'risk-right', line: 'A risk-taker, and right about it.', evidence: risky.join('; ').replace(/^./, function (c) { return c.toUpperCase(); }) + ': it still made ' + Math.round(rs) + '%.'});
+      else if (rs < 0) out.push({id: 'risk-cost', line: 'A risk-taker, and it cost you.', evidence: risky.join('; ').replace(/^./, function (c) { return c.toUpperCase(); }) + ': it cost ' + Math.abs(Math.round(rs)) + '%.'});
+    }
+    if (!out.length) out.push({id: 'defaults', line: 'The airport mostly ran on its defaults. Next time, try a decision that scares you.', evidence: ''});
+    out.forEach(function (l) { var i = l.line.indexOf('. '); l.title = i > 0 ? l.line.slice(0, i + 1) : l.line; l.text = i > 0 ? l.line.slice(i + 2) : ''; });
+    return out;
+  }
+  // page 4b: Peter Thiel's seven questions (Zero to One, ch. 13 "Seeing Green"), each answered in one line from the concession
+  var POOL = 20000;   // (est.) the game's India-to-world connecting passengers a day at year 30, the market a hub can win
+  function thiel(state) {
+    ensure();
+    var s = state.s || {}, dec = {}; (s.decisions || []).forEach(function (d) { dec[d.id] = d.chosen; });
+    var net = s.network, partner = dec['ch5-partner'], dests = partner === 'three' ? 3 : partner === 'london' ? 1 : 0, cities = net === 'anchor' || net === 'two' ? CH5.feeders.length : 0;
+    var conns30 = networkPerDay(state, 30), share = Math.round(conns30 / POOL * 100), slip = (state.construction && state.construction.slipMonths) || 0;
+    var lean = state.phase1 !== 'big' && dests > 0, collapsed = s.shock && s.shock.kind === 'airline', rivalWon = state.ch7 ? state.ch7.rivalWon : null;
+    var mk = function (ok) { return ok ? '✓' : '✗'; }, out = [];
+    out.push({q: 'Engineering: is your hub ten times better than the alternative?', mark: mk(cities && dests),
+      answer: cities && dests ? 'A ' + CH5.mctMin + '-minute connection against ' + CH5.rival + '\'s ' + CH5.rivalMctMin + ', and ' + (cities * dests) + ' one-stop routes to the world that did not exist.' : cities ? cities + ' cities connected to each other, but no long-haul routes: the world still changes planes in the Gulf.' : 'No bank: flights came, but they were not timed to connect.'});
+    out.push({q: 'Timing: did you build when the traffic came?', mark: mk(!slip && !lean),
+      answer: (slip ? 'Opened ' + slip + ' months late. ' : 'Opened on time. ') + (lean ? 'Built lean: widebodies waited for stands when ' + CH5.partner + ' came.' : 'There was a stand for every widebody.')});
+    out.push({q: 'Monopoly: do you own a big share of a small market first?', mark: mk(share >= 25),
+      answer: 'About ' + conns30.toLocaleString('en-IN') + ' connections a day in ' + cal(30) + ': ' + share + '% of the India-to-world connecting market in this game.'});
+    var people = [];
+    if (partner && partner !== 'decline') people.push(CH5.partner + (dec['ch5-hold'] === 'letgo' ? ' stayed, but cut a London flight' : ' stayed'));
+    if (net && net !== 'cut') people.push(collapsed ? NM.feeder + ' stopped flying in ' + cal(CH6.year) : NM.feeder + ' kept feeding the bank');
+    if (s.plateauTrust != null) people.push(NM.plateau + (s.plateauTrust >= CH3.trustLine ? ' trusted you' : ' kept its distance'));
+    out.push({q: 'People: did your partners stay?', mark: mk(people.length >= 2 && !collapsed && s.plateauTrust >= CH3.trustLine), answer: (people.join('; ') || 'You signed no partners') + '.'});
+    out.push({q: 'Distribution: how many cities feed you?', mark: mk(cities >= CH5.feeders.length && !collapsed),
+      answer: cities ? cities + ' cities signed in ' + cal(CH4.year) + (collapsed ? '; the bank came back at about 60% after ' + NM.feeder + ' stopped.' : ', still feeding at the handback.') : 'None signed: every airline flew its own timetable.'});
+    out.push({q: 'Durability: will this still be your market in year 60?', mark: mk(rivalWon === false),
+      answer: rivalWon == null ? 'Not tested: the concession ended first.' : rivalWon ? poss(NM.rival) + ' Hyderabad hub took some of your banks: your network was thin.' : poss(NM.rival) + ' Hyderabad hub never filled its banks.'});
+    out.push({q: 'Secret: did you act on something few believed?', mark: mk(cities && dests && dec['ch5-hold'] === 'hold'),
+      answer: net === 'cut' ? 'You cut charges, the obvious move, and Dubai matched it within a year.' : cities && dests && dec['ch5-hold'] === 'hold' ? 'You built banks and paid to hold connections when cutting charges was the obvious move.' : 'You built a bank, but stopped short of holding it together.'});
+    return out;
+  }
+  // the four pages as ZMMoney.debrief takes them: {return, attribution, papers, profile, thiel} (design/debrief.md §6)
+  function pages(state, opts) {
+    ensure();
+    var a = attribution(state, opts), rp = returnPage(state), pa = papers(state), pr = profile(state, a), th = thiel(state), f = state.final || {}, mo = onceLine(state);
+    rp.valueCr = f.banks ? 0 : (f.residualCr != null ? f.residualCr : 0);   // what the player's stake was worth at the handback (the cash left, its share)
+    var o = state.over || {}, banks = o.reason === 'banks';
+    // the Black Box screen's names (money/CONTRACT.md on s0b-ui)
+    var p1 = {returnPct: rp.returnPct, words: rp.words, moneyInCr: rp.investedCr, moneyOutCr: rp.returnedCr, valueCr: rp.valueCr, line: rp.line, company: rp.company,
+      ended: banks ? 'banks' : 'handback', endedYear: banks ? cal(o.year || state.year || 1) : cal(60),
+      endedOn: banks ? cal(o.year || state.year || 1) + String(state.signedOn || '2026-04-01').slice(4) : (state.endsOn || null), endedWords: rp.ending,
+      benchmarks: rp.benchmarks.map(function (b) { return {id: b.id, label: b.label, pct: b.pct, year: b.year, source: b.source, key: b.key}; })};
+    a.bars = a.barsWithWords;
+    var p2 = {method: a.method, words: a.words, bars: a.bars.map(function (b) { return {decision: b.group, label: b.label, chosen: b.chosen, npvCr: b.npvCr, sharePct: b.sharePct, sentence: b.sentence}; }),
+      everythingElsePct: a.everythingElse.sharePct, everythingElseCr: a.everythingElse.npvCr, closing: a.powerLaw, sentences: a.sentences, totalCr: a.totalCr, checkSum: a.checkSum, groups: a.groups};
+    var p3 = {frontPages: pa.map(function (x) { return {chapter: x.chapter, name: x.name, year: x.calYear, lead: x.lead, dateLine: x.dateLine, line: x.line, light: x.light}; }), once: mo};
+    var p4 = {lines: pr.map(function (l) { return {id: l.id, title: l.title, line: l.text, evidence: l.evidence}; }), thiel: th};
+    return {p1: p1, p2: p2, p3: p3, p4: p4,
+      'return': rp, attribution: a, papers: pa, profile: pr, thiel: th, moment: mo,
+      company: state.parent || 'Your company', founder: state.founder || '', signature: state.signature || null, signedOn: state.signedOn || null, endsOn: state.endsOn || null};
+  }
+  // page 3's last line: "Every moment happens once" (Zero to One, ch. 1), about the one shift that happens once per concession
+  function onceLine(state) {
+    var r = state.ch3 && state.ch3.result;
+    return r && r.otp != null ? 'Opening day happened once. You ran it at ' + Math.round(r.otp * 100) + '% on time.' : 'Every moment in business happens only once.';
+  }
+  function debriefAll(state, opts) { var a = attribution(state, opts); return {returnPage: returnPage(state), attribution: a, papers: papers(state), profile: profile(state, a)}; }
+  var debrief = {benchmarks: benchmarks, attribution: attribution, returnPage: returnPage, papers: papers, profile: profile, thiel: thiel, pages: pages, all: debriefAll, groups: function (st) { ensure(); return groupPatches(st); }};
+
+  function chApi(n, o) {
+    return Object.assign({chapter: n, eras: CH_ERAS[n].slice(), start: function (save, opts) { return chStart(n, save, opts); }, fixture: function (opts) { return chFixture(n, opts); },
+      card: function (v) { return ch5Card(n, v); }}, o);
+  }
+  var ch3 = chApi(3, {frontPage: ch3FrontPage, decision: ch3Decision, applyDecision: ch3ApplyDecision, briefing: ch3Briefing, shiftPlan: ch3ShiftPlan, applyShift: ch3ApplyShift,
+    script: {plans: CH3.plans, trustLine: CH3.trustLine}});
+  var ch4 = chApi(4, {frontPage: ch4FrontPage, decision: ch4Decision, applyDecision: ch4ApplyDecision, briefing: ch4Briefing, shiftPlan: ch4ShiftPlan, applyShift: ch4ApplyShift,
+    budget: ch4Budget, applyBudget: ch4ApplyBudget, script: {nets: CH4.nets}});
+  var ch6 = chApi(6, {start: ch6Start, fixture: ch6Fixture, pick: ch6Pick, frontPage: ch6FrontPage, decision: ch6Decision, applyDecision: ch6ApplyDecision, briefing: ch6Briefing,
+    shiftPlan: ch6ShiftPlan, applyShift: ch6ApplyShift, notice: ch6Notice, card: function (v) { return ch6Card(v); }, script: {kinds: Object.keys(CH6.kinds)}});
+  var ch7 = chApi(7, {start: ch7Start, fixture: ch7Fixture, frontPage: ch7FrontPage, decision: ch7Decision, applyDecision: ch7ApplyDecision, briefing: ch7Briefing,
+    shiftPlan: ch7ShiftPlan, applyShift: ch7ApplyShift, script: {threshold: CH7.threshold}});
+
+  ch5.chapter = 5; ch5.eras = CH_ERAS[5].slice();
   var API = {
-    ch5: ch5,
+    ch3: ch3, ch4: ch4, ch5: ch5, ch6: ch6, ch7: ch7, chapters: {3: ch3, 4: ch4, 5: ch5, 6: ch6, 7: ch7}, bridge: bridge, debrief: debrief, cliffhanger: cliffhanger, actBreak: actBreak,
     data: function (md) { load(md); _closeCache = {}; return API; },
     capexCr: capexCr, phase1Options: phase1Options, stateLoanOpt: stateLoanOpt, lenders: lenderOptions, partners: partners, bidTypes: bidTypes,
     previewBid: previewBid, previewClose: previewClose,
@@ -1870,7 +2973,8 @@
     fmtDate: function (iso) { ensure(); return fmtDate(iso); }, campaignDocs: campaignDocs, fileCard: fileCard, asBill: asBill,
     resumable: resumable, recordOf: recordOf, chapter: chapter, endBill: endBill, advance: advance, SAVE_VERSION: SAVE_VERSION,
     // for tests and bots
-    _internal: {simulate: simulate, sizeDebt: sizeDebt, shiftOps: shiftOps, opsProfile: function (n, y) { ensure(); return opsProfile(n, y); }, eraYears: eraYears, irr: irr, P: function () { ensure(); return P; }}
+    _internal: {simulate: simulate, sizeDebt: sizeDebt, shiftOps: shiftOps, opsProfile: function (n, y) { ensure(); return opsProfile(n, y); }, eraYears: eraYears, irr: irr, P: function () { ensure(); return P; },
+      playerFlows: playerFlows, companyFlows: companyFlows, networkPerDay: networkPerDay, applyPatch: applyPatch, sizeMemo: sizeMemo}
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   if (typeof window !== 'undefined') window.VSIEra = API;

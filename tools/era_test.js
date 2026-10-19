@@ -422,19 +422,19 @@ function flight(p, stopAt) {
   const fp3 = E.ch3.frontPage(st), d3 = E.ch3.decision(st); pushT(fp3, d3);
   st = E.ch3.applyDecision(rt(st), p.ch3);
   let plan = E.ch3.shiftPlan(rt(st)); log.ch3plan = plan; pushT(plan, E.ch3.briefing(st));
-  let r = E.ch3.applyShift(rt(st), played(plan, p.ch3r)); st = r.state; log.ch3 = r.bill; pushT(r.bill, r.card);
+  let r = E.ch3.applyShift(rt(st), played(plan, p.ch3r)); st = r.state; log.ch3 = r.bill; log.afterCh3 = rt(st); pushT(r.bill, r.card);
   if (stopAt === 3) return {st, log};
   let b = E.bridge(rt(st), 4); st = b.state; pushT(b.lines);
   log.ch4start = rt(st); log.ch4dec = E.ch4.decision(st); pushT(E.ch4.frontPage(st), log.ch4dec);
   st = E.ch4.applyDecision(rt(st), p.ch4); st = E.ch4.applyBudget(rt(st), p.radar);
   plan = E.ch4.shiftPlan(rt(st)); log.ch4plan = plan; pushT(plan, E.ch4.briefing(st), E.ch4.budget(st));
   r = E.ch4.applyShift(rt(st), played(plan, p.ch4r)); st = r.state; log.ch4 = r.bill; pushT(r.bill, r.card);
-  b = E.bridge(rt(st), 5); st = E.ch5.start(rt(b.state));
+  b = E.bridge(rt(st), 5); log.bridge5 = b; st = E.ch5.start(rt(b.state));
   if (!st) { fail('stage 0: ch5.start from the player\'s own save'); return null; }
   log.ch5fp = E.ch5.frontPage(st); pushT(log.ch5fp, E.ch5.decision(st));
   st = E.ch5.applyDecision(rt(st), p.ch5);
   plan = E.ch5.shiftPlan(rt(st)); log.ch5plan = plan;
-  r = E.ch5.applyShift(rt(st), ch5Result(plan, p.hold, p.ch5stars || 3, p.ch5otp || 0.86)); st = r.state; log.ch5 = r.bill; pushT(r.bill);
+  r = E.ch5.applyShift(rt(st), ch5Result(plan, p.hold, p.ch5stars || 3, p.ch5otp || 0.86)); st = r.state; log.ch5 = r.bill; log.afterCh5 = rt(st); pushT(r.bill);
   b = E.bridge(rt(st), 6); st = b.state;
   if (E.chapter(st).n !== 6) { fail('stage 0: bridge to Chapter 6 lands in chapter ' + E.chapter(st).n); return null; }
   log.pick = E.ch6.pick(st); log.ch6fp = E.ch6.frontPage(st); log.ch6dec = E.ch6.decision(st); pushT(log.ch6fp, log.ch6dec);
@@ -559,6 +559,21 @@ else {
   });
   [SM, BL].forEach(F => plans.slice(0, 4).forEach(pl => (pl.tags || []).forEach(t => { if (!(F === SM ? SM : BL).st.docs.some(d => d.id === t.docId)) fail('tag without a doc: ' + t.docId); })));
   [SM.log.ch4dec, SM.log.ch6dec, BL.log.ch4dec, E.ch3.decision(SM.log.ch3start), SM.log.ch7dec].forEach(d => { if (d.choices.length > 3) fail(d.docType + ': more than 3 choices'); });
+  // lane H's requests: the cliffhangers, the years-later pages, the debrief pages adapter
+  const a1 = E.actBreak(SM.log.afterCh3), a2 = E.actBreak(SM.log.afterCh5), ch1 = E.cliffhanger(SM.log.afterCh3), ch2b = E.cliffhanger(BL.log.afterCh5), ch2s = E.cliffhanger(SM.log.afterCh5);
+  if (a1 !== 1 || a2 !== 2 || E.actBreak(SM.log.ch4start) !== 0) fail('actBreak: want 1 after Chapter 3, 2 after Chapter 5, 0 elsewhere: ' + [a1, a2, E.actBreak(SM.log.ch4start)]);
+  if (ch1.edition !== 'Late City' || ch1.fold !== 'Act II · The Network' || !/CONNECTING HUB/.test(ch1.lead)) fail('cliffhanger act I: ' + ch1.lead);
+  if (!/RUPEE/.test(ch2b.lead) || !/VIRUS/.test(ch2s.lead) || ch2s.fold !== 'Act III · The Long Game') fail('cliffhanger act II should come from what is coming: blind ' + ch2b.lead + ', smart ' + ch2s.lead);
+  const br = SM.log.bridge5;
+  if (br.from !== 2034 || br.to !== 2039 || br.years.map(y => y.calYear).join() !== '2035,2036,2037,2038' || br.years.some(y => y.paxM <= 0 || y.connectionsPerDay == null)) fail('bridge 4→5 should span 2035-2038: ' + br.from + '→' + br.to + ' ' + br.years.map(y => y.calYear));
+  console.log('- cliffhangers: "' + ch1.lead + '" / smart "' + ch2s.lead + '" / blind "' + ch2b.lead + '"; years later 4→5: ' + br.years.map(y => y.calYear + (y.line ? ' (' + y.line + ')' : '')).join(', '));
+  const pg = E.debrief.pages(SM.st), pgR = E.debrief.pages(RF.st);
+  ['return', 'attribution', 'papers', 'profile', 'thiel'].forEach(k => { if (!pg[k] || !pgR[k]) fail('debrief.pages missing ' + k); });
+  if (pg.thiel.length !== 7 || pg.thiel.some(x => !x.q || !x.answer || !/[✓✗]/.test(x.mark))) fail('debrief: Thiel\'s seven questions');
+  const thB = E.debrief.thiel(BL.st), marks = th => th.filter(x => x.mark === '✓').length;
+  if (!(marks(pg.thiel) > marks(thB))) fail('debrief: the smart run should answer more of Thiel\'s questions than the blind run: ' + marks(pg.thiel) + ' vs ' + marks(thB));
+  pushT(ch1, ch2b, ch2s, br.years, br.lines, pg, pgR.thiel, thB);
+  console.log('- debrief.pages: Thiel ✓ smart ' + marks(pg.thiel) + '/7, blind ' + marks(thB) + '/7; "' + pg.moment + '"');
   const f2 = flight(SMART);
   if (JSON.stringify(f2.st) !== JSON.stringify(SM.st)) fail('stage 0: the flight is not deterministic');
   const fc = E.fileCard(SM.log.ch7start);

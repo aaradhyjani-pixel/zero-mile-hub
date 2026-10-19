@@ -326,3 +326,17 @@ Every chapter has the Chapter 5 shape. `VSIEra.chapters[n]` is the registry for 
 2. **Dollar bonds are close to a free lunch.** Phase 1's dollar bonds are repaid (or refinanced) before year 21, so Ch6's rupee crisis finds no dollar debt: the front page falls back to "AIRLINES CUT FLIGHTS AT VSI". Either keep part of the bonds outstanding to year 25, or move the rupee crisis earlier. That is a money.json decision (`lenders.dollar`).
 3. **L5 is priced to earn 12.2%** (the Fairfax low end, the debrief's rate), both for the cure money and for the Ch7 buyout. Neither is a free gift at that rate. With the cure, own money keeps 64% but costs about 0.1 points of return against asking L5.
 4. **The shifts group** counts only shifts the player played (not stubs), against `ops_profiles.expert`. In the blind run it is the biggest bar: bad shifts cost more than any single paper decision.
+
+### Lane E, second push: lane H's three requests, built ahead of the formal request text
+- **Cliffhanger.**
+  - `VSIEra.actBreak(state)` gives 1 right after Chapter 3's bill, 2 right after Chapter 5's, otherwise 0.
+  - `VSIEra.cliffhanger(state, act)` returns a Zero Mile Times front page plus `{edition: 'Late City', act, actName, fold: 'Act II · The Network' | 'Act III · The Long Game'}`.
+  - Act I's lead is fixed: "AIRLINES ASK: WILL VSI BECOME INDIA'S CONNECTING HUB?".
+  - Act II's lead comes from what's coming for this player (Chapter 6's pick): RUPEE AT RECORD LOW / SUTRADHAR AIR MISSES ITS FUEL PAYMENTS / A NEW VIRUS SPREADS.
+- **Bridge spanning years.** `VSIEra.bridge(state, n)` now runs from the previous chapter's shift year to chapter n's first year. For example, 4→5 is `from` 2034, `to` 2039, with `years` 2035–2038.
+  - Each year is `{year, calYear, paxM, light, connectionsPerDay, line}`.
+  - `line` is the year's one event, if there is one: the rupee falls, a refinancing, fresh money from the owners, new terminal space opening, the last loan repaid.
+- **`VSIEra.debrief.pages(state, opts)`** → `{return, attribution, papers, profile, thiel, company, founder, signature, signedOn, endsOn, moment}`, as `ZMMoney.debrief` takes it.
+  - `thiel` is Thiel's seven questions, each `{q, answer, mark: '✓'|'✗'}`. Smart gets 6/7 and blind 0/7 in the test.
+  - `moment` is page 3's "Every moment happens once" line.
+  - `opts.exact` switches page 2 to exact Shapley.

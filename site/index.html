@@ -4675,8 +4675,9 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
   pastAdd(f,st,n){const c=FL_CH[n];f.past=(f.past||[]).filter(p=>p.chapter.n!==n).concat([{chapter:{n,name:c.name,act:c.act},years:c.years,cal:c.years.map(y=>2025+Math.max(1,y)),doc:f.doc||null,stakePct:st.stake}]);},
   // one paper screen: logged for bots (window.__flightStep, FL.log); in bot mode without screens it is skipped (the default answer)
   async show(kind,payload,fn,dflt){const f=CAMP.st&&CAMP.st.flight;window.__flightStep=kind;FL.log.push({n:f&&f.n,kind,at:Date.now(),lead:payload&&(payload.lead||payload.title)||''});
-    if(FL.bot&&!(FL.bot.screens&&!/^(decision|letter|minutes|budget|handback)$/.test(kind)))return dflt;
-    const clk=FL.bot?FL.clicker():null;try{return await fn();}finally{if(clk)clearInterval(clk);}},
+    window.__flightScreen={seq:(FL.seq=(FL.seq||0)+1),n:f&&f.n,kind,dflt:dflt===undefined?null:dflt};   // for an outside driver (opts.papers)
+    if(FL.bot&&!FL.bot.papers&&!(FL.bot.screens&&!/^(decision|letter|minutes|budget|handback)$/.test(kind)))return dflt;
+    const clk=FL.bot&&!FL.bot.papers?FL.clicker():null;try{return await fn();}finally{if(clk)clearInterval(clk);}},
   // bots with screens: press the page's way on (the newest visible primary button) every FL.bot.dwell ms
   clicker(){return setInterval(()=>{const bs=[...document.querySelectorAll('#zclTurn,#zbxNext,#zsBox,.zfl-skip,#z5Turn,#z5Close,#z5Back,#zcfBack,.zdk-go')].filter(b=>b.offsetParent&&!b.disabled);
     const b=bs[bs.length-1];if(b)b.click();},(FL.bot&&FL.bot.dwell)||1200);},
@@ -4696,7 +4697,13 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
     for(let n=3;n<=7;n++){const e0=E.chapters[n].eras[0];if(e0>st.era||(e0===st.era&&!played))return {n,step:n===3?'front':'flaps',past:[]};}
     return {n:7,step:'flaps',past:[]};},
   leave(){if(!FL.live)return;FL.live=false;FL.nightOff();const st=CAMP.st;if(st&&st.flight&&!FL.bot){st.flight.left=true;FL.save();}},
-  nightOff(){try{if(FL.night){FL.night.remove();FL.night=null;}}catch(e){}},
+  nightOff(){try{if(FL.night){FL.night.remove();FL.night=null;}document.querySelectorAll('#top>.zfs-h').forEach(h=>h.remove());const l=$('#top .lvl');if(l)l.hidden=false;}catch(e){}},
+  // the night strip takes the level title's place in the ops HUD (DESIGN.md §14.1), in the header's flow: it never covers the
+  // clock, the speed buttons or the numbers, and the paper tags avoid it with the rest of #top
+  nightOn(){const Z=window.ZMMoney,top=$('#top');if(!Z||!Z.strip||!top)return null;const h=Z.strip(top,'night');if(!h)return null;
+    if(!$('#flNightCss')){const c=document.createElement('style');c.id='flNightCss';c.textContent='#top>.zfs-h.night{position:relative;left:auto;top:auto;flex:0 0 auto}';document.head.appendChild(c);}
+    top.insertBefore(h,top.firstChild);
+    const l=top.querySelector('.lvl');if(l)l.hidden=true;return h;},
 
   // ---- the run: one step at a time, saved after each ----
   async run(){if(FL.busy)return;const E=CAMP.E(),Z=window.ZMMoney;if(!CAMP.st||!CAMP.st.flight){menu('concession');return;}
@@ -4781,7 +4788,7 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
       body,circle:circ,circleNote:circ?'the hardest year':null,replies:d.choices,stepIn:FL.stepInOpts(st,nt)}));
     const r=await FL.show('letter',d,()=>Z.letter?Z.letter(o):Z.decision(FL.who(st,d)),dflt?{choice:dflt}:null);
     const c=r&&r.choice&&['own','l5','refuse'].indexOf(r.choice)>=0?r.choice:'own';
-    FL._noticeShown=!!(Z.letter&&c==='refuse'&&!FL.bot);return c;},
+    FL._noticeShown=!!(Z.letter&&c==='refuse'&&(!FL.bot||FL.bot.papers));return c;},
   stepInOpts(st,nt){return {company:st.parent,founder:st.founder,stakePct:st.stake,date:nt&&nt.date,docId:'notice-'+(nt&&nt.date?nt.date.slice(0,4):''),lines:nt&&nt.text,cta:'Open the Black Box'};},
   // Chapter 7: the board minutes, three resolutions, each adopted or rejected
   async minutes(st,d){const Z=window.ZMMoney,R=d.resolutions||d.choices||[],bot=FL.bot?FL_BOT[FL.bot.mode].pick[7]:null;
@@ -4798,14 +4805,20 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
 
   // ---- Chapter 5, Cruise: the real hub shift (startChapter5), as CH5F runs it, on the flight's state ----
   cruise(st,plan){const C=CAMP.E().ch5,Z=window.ZMMoney;FL.pile(st);window.__flightStep='5:shift';
-    startChapter5(plan,{briefing:FL.bot?null:C.briefing(st),onEnd:res=>{FL.nightOff();
+    startChapter5(plan,{briefing:FL.bot&&!FL.bot.papers?null:C.briefing(st),onEnd:res=>{FL.nightOff();
       const r=Object.assign({},res,{money:Object.assign({},res.money)});delete r.money.ledger;
       FL.log.push({n:5,kind:'shift',stars:r.stars,otp:r.otp,made:r.made,missed:r.missed,held:r.hub&&r.hub.answer});
       try{FL.shiftDone(CAMP.st,C.applyShift(CAMP.st,JSON.parse(JSON.stringify(r))),false);}catch(e){FL.err('cruise',e);}
       FL.run();}});
-    try{if(Z.strip)FL.night=Z.strip(null,'night');}catch(e){}
-    if(FL.bot)FL.cruiseBot();},
+    try{FL.night=FL.nightOn();}catch(e){}
+    if(FL.bot&&!FL.bot.papers)FL.cruiseBot();},
   // bots: the day at HUB.ff speed; the hold call answered per the column (hold for smart, let go for blind); other calls resolved
+  // an outside driver (opts.papers, or after a reload): one step of the same bot, so it can stop and look between steps
+  cruiseStep(secs,mode){if(!CH5||ended)return {ended:true};const ans=FL_BOT[mode||(FL.bot&&FL.bot.mode)||'smart'].hold;
+    if(CH5.hubAsked&&!CH5.hubAnswer)ch5Answer(ans);
+    for(const I of incidents.slice())if(I.type!=='hubhold'){const a=I.botPick!=null?I.acts[I.botPick]:I.acts.find(a=>!(a.dis&&a.dis()));if(a)a.fn();}
+    if(secs)window.HUB.ff(secs);
+    return {ended:!CH5||ended,T,made:CH5&&CH5.made,missed:CH5&&CH5.missed,hubAsked:CH5&&CH5.hubAsked,hubAnswer:CH5&&CH5.hubAnswer,incidents:incidents.map(i=>i.type)};},
   cruiseBot(){const ans=FL_BOT[FL.bot.mode].hold;
     const step=()=>{if(!CH5||ended)return;try{if(CH5.hubAsked&&!CH5.hubAnswer)ch5Answer(ans);
       for(const I of incidents.slice())if(I.type!=='hubhold'){const a=I.botPick!=null?I.acts[I.botPick]:I.acts.find(a=>!(a.dis&&a.dis()));if(a)a.fn();}
@@ -4842,7 +4855,9 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
     window.__flightResult=sum;CAMP.st=null;FL.live=false;FL.busy=false;try{ZMMoney.setStrip&&ZMMoney.setStrip(null);}catch(e){}
     window.__flightStep='done';window.__flightDone=true;const b=FL.bot;FL.bot=null;menu('concession');if(b&&b.resolve)b.resolve(sum);},
 
-  // ---- bots: HUB.flight.auto('smart'|'blind', {screens, dwell, ch6}) → Promise<summary> ----
+  // ---- bots: HUB.flight.auto('smart'|'blind', {screens, dwell, ch6, papers}) → Promise<summary> ----
+  // opts.papers: every page is shown, decisions included, and nothing is pressed: an outside driver reads window.__flightScreen,
+  // ticks and signs on the page itself, and steps Cruise with HUB.flight.cruiseStep (screenshot runs).
   // A new concession is signed with the column's deal-desk terms (any save on file goes into the record, torn up), built
   // with its construction calls, then flown: every decision per build-plan.md §3, the stub shifts (blind: a 1★ day), Cruise
   // at HUB.ff speed with the hold call answered, the Black Box. opts.screens shows the paper pages (decisions excepted) and
@@ -4850,7 +4865,7 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
   auto(mode,opts){opts=opts||{};mode=mode==='blind'?'blind':'smart';const E=CAMP.E();
     if(!FL.ok())return Promise.reject(new Error('the flight is not available in this build'));
     return new Promise(resolve=>{
-      FL.bot={mode,screens:!!opts.screens,dwell:opts.dwell||1200,ch6:opts.ch6||null,resolve,t0:Date.now()};FL.log=[];FL.errors=[];
+      FL.bot={mode,screens:!!opts.screens,papers:!!opts.papers,dwell:opts.dwell||1200,ch6:opts.ch6||null,resolve,t0:Date.now()};FL.log=[];FL.errors=[];
       const old=CAMP.load();if(old){CAMP.record(old,'torn');try{localStorage.removeItem('zm_campaign');}catch(e){}}
       const c=document.createElement('canvas');c.width=240;c.height=80;const g=c.getContext('2d');g.strokeStyle='#14161a';g.lineWidth=3;g.beginPath();g.moveTo(10,55);
       for(let x=10;x<230;x+=6)g.lineTo(x,40+Math.sin(x/9)*18*Math.cos(x/41));g.stroke();
@@ -4867,7 +4882,7 @@ window.addEventListener('load',()=>setTimeout(()=>{try{
 
 window.HUB={startChapter5,
   // the flight (design/chapters.md): auto(mode, opts) for bots; step()/state() for checks; pages() the last Black Box
-  flight:{auto:(m,o)=>FL.auto(m,o),step:()=>window.__flightStep,state:()=>CAMP.st&&CAMP.st.flight,save:()=>FL.load(),resume:()=>FL.resume(),log:()=>FL.log.slice(),errors:()=>FL.errors.slice(),pages:()=>FL.lastPages,result:()=>window.__flightResult,run:FL,legacy:FLIGHT_LEGACY},
+  flight:{auto:(m,o)=>FL.auto(m,o),cruiseStep:(s,m)=>FL.cruiseStep(s,m),screen:()=>window.__flightScreen,step:()=>window.__flightStep,state:()=>CAMP.st&&CAMP.st.flight,save:()=>FL.load(),resume:()=>FL.resume(),log:()=>FL.log.slice(),errors:()=>FL.errors.slice(),pages:()=>FL.lastPages,result:()=>window.__flightResult,run:FL,legacy:FLIGHT_LEGACY},
   ch5:{answer:k=>ch5Answer(k),get plan(){return CH5&&CH5.plan;},state:()=>CH5&&{made:CH5.made,missed:CH5.missed,byDest:CH5.byDest,held:CH5.held,hubAsked:CH5.hubAsked,hubAnswer:CH5.hubAnswer,trail:CH5.trail,tags:Object.keys(CH5.tags),hubEta:CH5.hubEta,lonStd:CH5.lonStd,firstStd:CH5.firstStd},result:()=>CH5&&CH5.result,flow:CH5F},money:()=>MNY&&MNY.snapshot(),moneyOn:on=>{MONEY_ON=!!on;mnySet(on);},moneyOff:()=>{MONEY_ON=false;mnySet(false);},campaign:()=>CAMP.st,era:()=>CAMP.E(),camp:CAMP,get T(){return T;},get S(){return S;},get LV(){return LV;},flights:()=>flights,RW,incidents:()=>incidents,setMode:(id,m)=>{const r=RW.find(x=>x.id===id||x.short===id);if(r)setMode(r,m);},startLevel,capNow,forceIncursion:()=>{const c=STO.find(o=>o.k==='fog');if(c&&c.sc)c.sc.go=true;},resolveAll:()=>{for(const I of incidents.slice()){const a=I.botPick!=null?I.acts[I.botPick]:I.acts.find(a=>!(a.dis&&a.dis()));if(a)a.fn();}},speed:s=>setSpeed(s),ops:()=>ops,cfg:CFG,
   // test hooks: run the sim forward synchronously, and point the camera
   ff:secs=>{VQ.length=0;FFING=true;try{for(let i=0;i<secs&&!ended;i++){tick(1);if(CINE&&CINE.o.until==null){const ms=1000/BASE/Math.max(0.25,speed);CINE.t0-=ms;if(CINE.landAt)CINE.landAt-=ms;}}}finally{FFING=false;}puffs.length=0;hud();drawWave();},look:(x,y,z)=>{camT.s=cam.fit*z;camT.anchor=null;camT.x=x-((cam.region.L+cam.region.R)/2)/camT.s;camT.y=y-((cam.region.Tp+cam.region.B)/2)/camT.s;clampCam(camT);Object.assign(cam,{x:camT.x,y:camT.y,s:camT.s});},spawn:(t,x)=>spawnInc(t,x),opsSpawn:(k,x)=>opsSpawn(k,x),pause:()=>{paused=true;},

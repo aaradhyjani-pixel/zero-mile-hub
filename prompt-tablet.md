@@ -4,6 +4,8 @@
 **Written:** 19 October 2026, from the code on `main` (25a8a83, the build live on Vercel) and a headless tablet run.
 **Goal:** Levels 1–4 play well on an Android tablet in Chrome: playable with fingers alone, smooth, and lighter to load. The laptop game must not change by a single pixel.
 
+**Decision (the player, 19 October 2026, 19:33): tablet mode is only for the game already made**, quick play Levels 1–4 as it is on `main` today. The concession and the flight (`money`) never get a tablet mode.
+
 **Decision (the player, 19 October 2026, 19:30): the tablet is 2D only.** No 3D on a tablet at all: no toggle, no button, no setting, and the 3D code and three.js are never downloaded. The laptop keeps its 3D as it is.
 
 ---
@@ -16,7 +18,7 @@
 - the 2D map. **On a tablet the game is 2D only.**
 
 **Out of scope:**
-- the concession and Stage 0 paper screens (`money/*`); they get their own tablet pass later. This pass must not break them.
+- the concession and the flight (`money/*`): no tablet mode, now or later (the player's decision). On a touch device their entry is hidden; on the laptop they are untouched.
 - any 3D on a tablet; new 3D work anywhere;
 - any redesign. Same look, same words. Only sizes, inputs and loading change.
 
@@ -39,7 +41,8 @@ All CSS changes go under `html.touch …`. All JS changes go under `if (TOUCH)`.
   - `tablet.js`, inside hub.js's closure at a new `/*@@TABLET@@*/` marker, like `/*@@3D@@*/`;
   - `tablet.css`, appended to the head styles.
 - `hub.js` gets only small hooks: the hit radius, the pinch handler entry, the 3D default, the DPR cap.
-- `money` is being integrated tonight. **Cut branch `tablet` from `main` after the 22:00 deploy lands.** Do not start before: `hub.js` is mid-merge.
+- **Base: `main` as it is today (25a8a83), the game already made.** It does not wait for `money` to reach `main`. Start after tonight's rebuild and deploy, so no two jobs run at once.
+- If `money` is merged into `main` later, then on a touch device the menu offers quick play only; the concession entry is hidden there.
 
 ---
 

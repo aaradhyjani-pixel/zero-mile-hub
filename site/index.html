@@ -3947,6 +3947,7 @@ function finish(){
 }
 function menu(tab){
   if(CH5F.live){CH5F.live=false;const o=CH5F.load();if(o){o.left=true;CH5F.save(o);}}
+  if(FL.live)FL.leave();
   running=false;CAMP.active=false;ch5Clear();const best=store.get('zm_stars')||{};
   const planSvg=document.getElementById('planTpl').innerHTML;
   const D=window.__DESIGN||{};
@@ -3965,7 +3966,7 @@ function menu(tab){
      <li>Click any aircraft to see where it is going, prioritise it or hold it at the gate. <span class="kbd">Space</span> pauses, <span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span> change speed. Wheel or pinch to zoom.</li>
     </ul>
    </div>
-   ${tab==='concession'?`<div id="tConc">${CAMP.html()}${CH5F.html()}</div>`:''}
+   ${tab==='concession'?`<div id="tConc">${CAMP.html()}${FL.on()?'':CH5F.html()}</div>`:''}
    <div id="tPlan" ${tab==='plan'?'':'hidden'}>
     <h1>${SPEC.name}</h1><p>${SPEC.tagline||''}</p>
     <div class="plan">${planSvg}</div>
@@ -4071,7 +4072,7 @@ const CAMP={active:false,st:null,
   ok(o){const E=CAMP.E();try{return !!(E&&E.resumable&&E.resumable(o).ok);}catch(e){return false;}},
   load(){const o=store.get('zm_campaign');return o&&CAMP.ok(o)&&typeof o.signature==='string'&&/^data:image\//.test(o.signature)?o:null;},
   // a save on file that can't be continued (an older version, unsigned): shown on the card as "can't be continued"
-  stale(){const o=store.get('zm_campaign');return o&&o.s&&!CAMP.load()&&!(o.sample||o.test)?o:null;},
+  stale(){const o=store.get('zm_campaign');return o&&o.s&&!CAMP.cur()&&!(o.sample||o.test)?o:null;},
   save(){if(!CAMP.st)return;const E=CAMP.E();if(!CAMP.st.over&&!CAMP.ok(CAMP.st))return;CAMP.st.savedAt=Date.now();try{if(E&&E.campaignDocs)CAMP.st.docs=E.campaignDocs(CAMP.st);}catch(e){}store.set('zm_campaign',CAMP.st);},
   // the record (zm_record): finished or torn-up concessions, oldest first (the card shows the last four, newest on top)
   rec(){const r=store.get('zm_record');return Array.isArray(r)?r:[];},
@@ -4093,8 +4094,11 @@ const CAMP={active:false,st:null,
       if(!r){CAMP.save();menu('concession');return;}
       CAMP.st=E.applyConstruction(CAMP.st,r);}
     else CAMP.st=E.applyConstruction(CAMP.st,null);
+    if(FL.on()){FL.begin(CAMP.st);return;}   // the flight: Takeoff on the player's own save (the old era loop: ?legacy=1)
     CAMP.save();CAMP.play();},
-  resume(){const st=CAMP.load();if(!st||!st.s){menu('concession');return;}CAMP.st=st;CAMP.play();},   // (no .s: a save from the stand-in era module, which cannot be resumed)
+  resume(){if(FL.on()){FL.resume();return;}const st=CAMP.load();if(!st||!st.s){menu('concession');return;}CAMP.st=st;CAMP.play();},
+  // the save the Concession tab shows: the player's own, or a flight that ended with its last pages still to read
+  cur(){return CAMP.load()||(FL.on()?FL.load():null);},   // (no .s: a save from the stand-in era module, which cannot be resumed)
   // before every shift: a concession that has ended (banks, or year 60) goes to its last page, never to another shift;
   // one still being built goes back to the construction years
   // an era whose books were closed but whose board never met (a reload or "Save and leave" on the bill or the minutes):
@@ -4129,23 +4133,26 @@ const CAMP={active:false,st:null,
     if(!out.report||E.isOver(CAMP.st)){await CAMP.end();return;}
     CAMP.board();},
   // a new concession: with a save, ask once on paper (ZMMoney.confirmTear) and put the torn-up one in the record
-  async fresh(o){const st=CAMP.load();
+  async fresh(o){const st=CAMP.cur();   // (a flight that ended with pages unread counts: it goes in the record as it ended)
     if(st){let ok=!!(o&&o.confirmed);if(!ok)try{ok=window.ZMMoney&&ZMMoney.confirmTear?await ZMMoney.confirmTear(st.parent||'Your company'):confirm(`This tears up ${(n=>/s$/i.test(n)?n+'’':n+'’s')(st.parent||'Your company')} concession. Start again?`);}catch(e){console.warn('confirmTear',e);}
       if(!ok){menu('concession');return;}
-      CAMP.record(st,'torn');try{localStorage.removeItem('zm_campaign');}catch(e){}CAMP.st=null;}
+      CAMP.record(st,st.over?(st.over.reason==='banks'?'banks':'handback'):'torn');try{localStorage.removeItem('zm_campaign');}catch(e){}CAMP.st=null;}
     CAMP.newGame();},
   // the Concession tab in the menu: the file card (ZMMoney.concessionFile, the Paperwork look) when this build has it
-  html(){const st=CAMP.load(),z=window.ZMMoney&&ZMMoney.cfg||{};
+  html(){const st=CAMP.cur(),z=window.ZMMoney&&ZMMoney.cfg||{};
     if(!CAMP.ready())return '<p>The concession is not available in this build.</p>';
     if(ZMMoney.concessionFile)return `<h1>Run the airport for ${z.years||60} years</h1><div id="campFile"></div>`;
     return `<h1>Run the airport for ${z.years||60} years</h1><p>Win the concession, raise the money, sign, and then run ${z.airportName||SPEC.name} shift by shift. Every few years you see the books and meet your board. Good operations are good money.</p>
      ${st?`<p><b>${st.parent||'Your company'}</b>: ${st.building?'the airport is being built':`year ${st.year||1} of 60`}${st.signedOn?`, signed ${CAMP.E().fmtDate?CAMP.E().fmtDate(st.signedOn):st.signedOn}`:''}.</p><button class="go" id="campGo">Continue as ${st.parent||'your company'}</button> `:''}
      <button class="go${st?' ghost':''}" id="campNew">${st?'Start a new concession':'Start the concession'}</button>`;},
   fileOpts(st){const E=CAMP.E(),fc=E.fileCard?E.fileCard(st):{};
+    const f=FL.on()&&st.flight,c=f&&FL_CH[f.n];
+    if(c){const yr=st.building?1:(st.year||1);Object.assign(fc,{chapter:{n:f.n,name:c.name,title:c.title,act:c.act,years:c.years.slice()},act:c.act,resumable:true,
+      line:'Signed '+(CAMP.E().fmtDate?CAMP.E().fmtDate(st.signedOn):st.signedOn)+' · now year '+yr+' of 60 · '+(f.n<=7?'Chapter '+f.n+', ':'')+c.name,docs:(st.docs&&st.docs.length?st.docs:fc.docs||[]).slice(-6)});}
     return Object.assign({},fc,{company:st.parent||'Your company',founder:st.founder,signature:st.signature,signedOn:st.signedOn,record:CAMP.rec(),
       onContinue:()=>CAMP.resume(),onNew:()=>CAMP.fresh(),onOpenDoc:d=>{try{if(ZMMoney.openDoc)ZMMoney.openDoc(d);}catch(e){}}});},
   wire(){const box=$('#campFile');
-    if(box&&window.ZMMoney&&ZMMoney.concessionFile){const st=CAMP.load();
+    if(box&&window.ZMMoney&&ZMMoney.concessionFile){const st=CAMP.cur();
       const old=st?null:CAMP.stale();
       try{ZMMoney.concessionFile(box,st?CAMP.fileOpts(st):old?{company:old.parent||'Your company',resumable:false,why:(()=>{try{return CAMP.E().resumable(old).why;}catch(e){return 'old';}})(),record:CAMP.rec(),onNew:()=>CAMP.fresh({confirmed:true})}:{record:CAMP.rec(),onNew:()=>CAMP.fresh()});}catch(e){console.warn('concessionFile',e);}
       // with no save the card shows only "Start the concession" (onNew); the contract's null form has no handler, so hand it one
@@ -4486,7 +4493,275 @@ window.addEventListener('load',()=>setTimeout(()=>{try{
   if(o&&!o.left&&CH5F.C())CH5F.run(o);   // a reload inside Chapter 5 comes back to the same screen
 }catch(e){console.error('chapter5',e);}},50));
 
-window.HUB={startChapter5,ch5:{answer:k=>ch5Answer(k),get plan(){return CH5&&CH5.plan;},state:()=>CH5&&{made:CH5.made,missed:CH5.missed,byDest:CH5.byDest,held:CH5.held,hubAsked:CH5.hubAsked,hubAnswer:CH5.hubAnswer,trail:CH5.trail,tags:Object.keys(CH5.tags),hubEta:CH5.hubEta,lonStd:CH5.lonStd,firstStd:CH5.firstStd},result:()=>CH5&&CH5.result,flow:CH5F},money:()=>MNY&&MNY.snapshot(),moneyOn:on=>{MONEY_ON=!!on;mnySet(on);},moneyOff:()=>{MONEY_ON=false;mnySet(false);},campaign:()=>CAMP.st,era:()=>CAMP.E(),camp:CAMP,get T(){return T;},get S(){return S;},get LV(){return LV;},flights:()=>flights,RW,incidents:()=>incidents,setMode:(id,m)=>{const r=RW.find(x=>x.id===id||x.short===id);if(r)setMode(r,m);},startLevel,capNow,forceIncursion:()=>{const c=STO.find(o=>o.k==='fog');if(c&&c.sc)c.sc.go=true;},resolveAll:()=>{for(const I of incidents.slice()){const a=I.botPick!=null?I.acts[I.botPick]:I.acts.find(a=>!(a.dis&&a.dis()));if(a)a.fn();}},speed:s=>setSpeed(s),ops:()=>ops,cfg:CFG,
+/* ============ The flight (design/chapters.md, money/DESIGN.md Part II): the whole concession on the player's OWN save ============
+   Clearance (the deal desk) → Pushback (the construction register) → Takeoff (ch3) → Climb (ch4, with the 2034 budget tick on its
+   bill) → Cruise (ch5, the real hub shift) → Turbulence (ch6: the banks' letter; refusing ends the concession) → Landing (ch7: the
+   board minutes, then the handover certificate) → the Black Box (VSIEra.debrief.all, four pages).
+   Each chapter: front page → decision → shift → bill → card. Between chapters the years-later split-flap (VSIEra.bridge) lands on
+   the next front page; the end of Act I (after Takeoff) and Act II (after Cruise) is a cliffhanger front page that offers, never
+   forces, closing the file for tonight.
+   The save is the concession itself (zm_campaign, save v2) with st.flight = {n, step, out?, past[], shiftYear?, moments?, left?},
+   written after every step, so a reload comes back to the same step (a shift restarts from its briefing). Stub chapters (3, 4,
+   6, 7 in Stage 0) are flown by the duty team: shiftPlan(state).auto goes straight to applyShift, and the bill says so.
+   Fixtures (?chapterN= test URLs) never come here: the flight only runs on a resumable save, and never writes a sample.
+   Screens are lane U's (money/ui.js) when present: setStrip/strip, flaps, cliffhanger, letter, stepIn, minutes, debrief; each
+   falls back to frontPage/decision/bill until they land. Bots: HUB.flight.auto('smart'|'blind', opts). */
+const FLIGHT_LEGACY=/[?&]legacy=1\b/.test(location.search);   // ?legacy=1: the Concession tab runs the old 12-era loop
+const FL_CH=[null,{name:'Clearance',title:'Win the concession',act:1,years:[0,0]},{name:'Pushback',title:'Build the airport',act:1,years:[1,4]},
+  {name:'Takeoff',title:'Open the doors',act:1,years:[5,7]},{name:'Climb',title:'Wire the country',act:2,years:[8,13]},{name:'Cruise',title:'Take on the Gulf',act:2,years:[14,18]},
+  {name:'Turbulence',title:'The crisis',act:3,years:[19,33]},{name:'Landing',title:'Hand it back',act:3,years:[34,60]},{name:'The Black Box',title:'What really happened',act:3,years:[60,60]}];
+const FL_ACT=[null,'The Deal','The Network','The Long Game'];
+// build-plan.md §3: the smart and blind columns, for HUB.flight.auto (the deal desk's terms as VSIEra.newCampaign reads them)
+const FL_BOT={
+  smart:{terms:{phase1:'lean',bid:{type:'share',value:15},gearing:70,repayment:'sculpted',lender:'banks',stateLoan:true,cure:true},con:{monsoon:'pay',overrun:'pay',trials:'full'},
+    pick:{3:'phased',4:'two',5:'three',6:'own',7:{district:true,phase2:true,l5:true}},radar:true,hold:'hold',shift:{}},
+  blind:{terms:{phase1:'lean',bid:{type:'share',value:30},gearing:75,repayment:'sculpted',lender:'dollar',stateLoan:false,cure:true},con:{monsoon:'slip',overrun:'slip',trials:'short'},
+    pick:{3:'bigbang',4:'cut',5:'decline',6:'refuse',7:{district:false,phase2:false,l5:false}},radar:false,hold:'go',
+    shift:{3:{stars:1,otp:0.7,cx:0.8,made:300,missed:200,incidents:{belt:'ignored',stands:'taxi'}},4:{stars:1,otp:0.72,cx:0.8,made:120,missed:60,incidents:{ramp:'meter'}},
+      6:{stars:1,otp:0.74,cx:0.82},7:{stars:1,otp:0.74,cx:0.82}}}};
+const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
+  on(){return !FLIGHT_LEGACY&&FL.ok();},
+  ok(){const E=CAMP.E();return !!(CAMP.ready()&&E&&E.chapters&&E.bridge&&E.debrief&&E.chapters[3]&&ZMMoney.frontPage&&ZMMoney.decision&&ZMMoney.bill);},
+  // the player's own concession, resumable; or one that ended inside the flight with pages still to read (the bill, the
+  // handover, the Black Box). Never a sample.
+  load(){const own=CAMP.load();if(own)return own;const o=store.get('zm_campaign');
+    return o&&o.s&&o.over&&o.flight&&o.flight.step!=='done'&&!o.sample&&!o.test&&o.version>=2&&typeof o.signature==='string'&&/^data:image\//.test(o.signature)?o:null;},
+  // save v2 (CAMP.save's rules), keeping the chapter papers: CAMP.save would replace st.docs with the era papers only
+  save(){const st=CAMP.st,E=CAMP.E();if(!st||st.sample||st.test)return;if(!st.over&&!CAMP.ok(st))return;st.savedAt=Date.now();
+    try{const have=new Set((st.docs||[]).map(d=>d&&d.id));st.docs=(st.docs||[]).concat((E.campaignDocs?E.campaignDocs(st):[]).filter(d=>/^board-/.test(d.id)&&!have.has(d.id)));}catch(e){}
+    store.set('zm_campaign',st);},
+  sig(o){return CH5F.sig(o);},
+  who(st,o){return FL.sig(Object.assign({founder:st.founder||'Asha Rao',parent:st.parent||'Meridian Infra',company:st.parent,signature:st.signature,pile:undefined},o));},
+  pile(st){try{ZMMoney.setPile&&ZMMoney.setPile(st.docs||[]);}catch(e){}},
+  err(where,e){console.error('flight '+where,e);FL.errors.push(where+': '+(e&&e.message||e));},
+  // the flight progress strip (DESIGN.md §14.1): the current chapter, its deciding document once signed, and the past strips only
+  strip(st){const Z=window.ZMMoney;if(!Z||!Z.setStrip)return;try{const f=st&&st.flight;if(!f){Z.setStrip(null);return;}const c=FL_CH[f.n]||FL_CH[8];
+    Z.setStrip({chapter:{n:f.n,name:c.name,act:c.act,years:c.years},years:c.years,cal:c.years.map(y=>2025+Math.max(1,y)),doc:f.doc||null,stakePct:st.stake,past:f.past||[]});}catch(e){console.warn('strip',e);}},
+  pastAdd(f,st,n){const c=FL_CH[n];f.past=(f.past||[]).filter(p=>p.chapter.n!==n).concat([{chapter:{n,name:c.name,act:c.act},years:c.years,cal:c.years.map(y=>2025+Math.max(1,y)),doc:f.doc||null,stakePct:st.stake}]);},
+  // one paper screen: logged for bots (window.__flightStep, FL.log); in bot mode without screens it is skipped (the default answer)
+  async show(kind,payload,fn,dflt){const f=CAMP.st&&CAMP.st.flight;window.__flightStep=kind;FL.log.push({n:f&&f.n,kind,at:Date.now(),lead:payload&&(payload.lead||payload.title)||''});
+    if(FL.bot&&!(FL.bot.screens&&!/^(decision|letter|minutes|budget|handback)$/.test(kind)))return dflt;
+    const clk=FL.bot?FL.clicker():null;try{return await fn();}finally{if(clk)clearInterval(clk);}},
+  // bots with screens: press the page's way on (the newest visible primary button) every FL.bot.dwell ms
+  clicker(){return setInterval(()=>{const bs=[...document.querySelectorAll('#zclTurn,#zbxNext,#zsBox,.zfl-skip,#z5Turn,#z5Close,#z5Back,#zcfBack,.zdk-go')].filter(b=>b.offsetParent&&!b.disabled);
+    const b=bs[bs.length-1];if(b)b.click();},(FL.bot&&FL.bot.dwell)||1200);},
+
+  // ---- entry ----
+  // after the construction register: Chapter 3 starts on the player's own save
+  begin(st){const E=CAMP.E();st=E.chapters[3].start(st)||st;
+    const f={n:3,step:'front',past:[]};FL.pastAdd(Object.assign(f,{doc:{title:'Concession Agreement',stamp:'Executed'}}),st,1);
+    FL.pastAdd(Object.assign(f,{doc:{title:(st.docs||[]).filter(d=>d.id==='construction').map(d=>d.title)[0]||'Construction register',stamp:'Filed'}}),st,2);f.doc=null;
+    st.flight=f;CAMP.st=st;FL.save();FL.run();},
+  // "Continue as <Company>": the save's own step; a save from before the flight starts at the next chapter it hasn't played
+  resume(){const st=FL.load();if(!st){menu('concession');return;}CAMP.st=st;
+    if(st.building){CAMP.build();return;}
+    if(!st.flight)st.flight=FL.legacyPos(st);delete st.flight.left;FL.save();FL.run();},
+  legacyPos(st){const E=CAMP.E(),h=(st.history||[])[(st.history||[]).length-1]||{},played=h.era===st.era&&!h.board&&!h.construction;
+    if(st.over)return {n:8,step:'box',past:[]};
+    for(let n=3;n<=7;n++){const e0=E.chapters[n].eras[0];if(e0>st.era||(e0===st.era&&!played))return {n,step:n===3?'front':'flaps',past:[]};}
+    return {n:7,step:'flaps',past:[]};},
+  leave(){if(!FL.live)return;FL.live=false;FL.nightOff();const st=CAMP.st;if(st&&st.flight&&!FL.bot){st.flight.left=true;FL.save();}},
+  nightOff(){try{if(FL.night){FL.night.remove();FL.night=null;}}catch(e){}},
+
+  // ---- the run: one step at a time, saved after each ----
+  async run(){if(FL.busy)return;const E=CAMP.E(),Z=window.ZMMoney;if(!CAMP.st||!CAMP.st.flight){menu('concession');return;}
+    FL.busy=true;$('#overlay').hidden=true;running=false;FL.live=true;window.__flightDone=false;
+    try{for(let guard=0;guard<60;guard++){
+      const st=CAMP.st,f=st&&st.flight;if(!st||!f)break;
+      const n=f.n,C=E.chapters[n];window.__flightStep=n+':'+f.step;FL.strip(st);FL.pile(st);
+      if(f.step==='flaps'){   // the years between chapters, landing on chapter n's front page
+        const b=E.bridge(st,n);let ns=b.state;
+        if(ns.over){ns.flight=Object.assign({},f,{step:'ended'});CAMP.st=ns;FL.save();continue;}
+        ns=C.start(ns)||ns;const fp=FL.who(ns,C.frontPage(ns));
+        const fromY=f.shiftYear?2025+f.shiftYear:+b.from,toY=+((String(fp.dateLine||'').match(/\b(\d{4})\b/)||[])[1])||+b.to;
+        const fl=Object.assign({},b,{state:undefined,fromYear:Math.min(fromY,toY),toYear:toY,lines:(f.moments||[]).concat(b.lines||[]).filter(Boolean),summary:b.lines,frontPage:fp,chapter:n});
+        FL.pile(ns);
+        await FL.show('flaps',fp,()=>Z.flaps?Z.flaps(fl):FL.flapsPaper(fl),null);
+        ns.flight=Object.assign({},f,{step:'decision',doc:null,moments:null});CAMP.st=ns;FL.save();continue;}
+      if(f.step==='front'){const fp=FL.who(st,C.frontPage(st));await FL.show('front',fp,()=>Z.frontPage(fp),null);f.step='decision';FL.save();continue;}
+      if(f.step==='decision'){const d=C.decision(st);let pick;
+        if(n===6)pick=await FL.letter(st,d);else if(n===7)pick=await FL.minutes(st,d);else pick=await FL.decide(st,d,n);
+        let ns=C.applyDecision(st,pick);
+        const doc=(ns.docs||[]).filter(x=>x.id===d.docId)[0];
+        ns.flight=Object.assign({},f,{doc:{title:doc?doc.title:d.title,stamp:doc&&doc.stamp||'Signed'},pick});
+        if(ns.over)ns.flight.step=FL._noticeShown?'box':'notice';else ns.flight.step='shift';
+        FL._noticeShown=false;CAMP.st=ns;FL.save();continue;}
+      if(f.step==='shift'){const plan=C.shiftPlan(st);f.shiftYear=plan.year||FL_CH[n].years[0];
+        if(n===5){FL.cruise(st,plan);return;}   // the real hub shift: it calls FL.run again when the day ends
+        let res=plan.auto;if(FL.bot){const x=FL_BOT[FL.bot.mode].shift[n];if(x)res=Object.assign({},plan.auto,x,{auto:false});}
+        FL.log.push({n,kind:'shift',stub:true,stars:res.stars,otp:res.otp});
+        FL.shiftDone(st,C.applyShift(st,res),true);continue;}
+      if(f.step==='bill'){const out=f.out||{};let b=out.bill?Object.assign({},out.bill):null;
+        if(b){if(f.stub)b.paragraph=['This shift was flown by your duty team.'].concat(b.paragraph?[b.paragraph]:[]);
+          if(n===4&&b.budget&&E.chapters[4].applyBudget){const bud=b.budget;
+            b.list={title:bud.title,items:[bud.line+'.',bud.text]};b.cta='Approve the budget, with the bird radar';b.cta2='Approve it without the radar';
+            const r=await FL.show('budget',b,()=>Z.bill(b),FL.bot&&FL_BOT[FL.bot.mode].radar?'cta':'cta2');
+            const ns=E.chapters[4].applyBudget(st,r==='cta');ns.flight=Object.assign({},f,{step:'card'});CAMP.st=ns;FL.save();continue;}
+          await FL.show('bill',b,()=>Z.bill(b),null);}
+        f.step='card';FL.save();continue;}
+      if(f.step==='card'){const card=f.out&&f.out.card;if(card)await FL.show('card',card,()=>Z.whatHappened(card),null);
+        const bill=f.out&&f.out.bill;f.moments=bill&&bill.moments||null;f.lastBill=bill?{cover:bill.cover||null,stake:bill.stake||null}:null;FL.pastAdd(f,st,n);delete f.out;delete f.stub;
+        if(st.over&&st.over.reason==='handback')f.step='handback';
+        else if(st.over)f.step='ended';
+        else if(n===3||n===5)f.step='cliff';
+        else {f.n=n+1;f.step='flaps';f.doc=null;}
+        FL.save();continue;}
+      if(f.step==='cliff'){const act=n===3?2:3,fp=FL.who(st,FL.cliffPage(st,act-1));
+        const r=await FL.show('cliff',fp,()=>Z.cliffhanger?Z.cliffhanger(fp,{act,actName:FL_ACT[act],file:FL.cover(st)}):FL.cliffPaper(fp,act),'turn');
+        f.n=n+1;f.step='flaps';f.doc=null;
+        if(r==='close'){f.left=true;FL.save();FL.live=false;FL.busy=false;window.__flightStep='closed';menu('concession');return;}
+        FL.save();continue;}
+      if(f.step==='notice'){   // the banks took control (Ch6, refused): the notice, then the Black Box
+        const nt=(st.ch6&&st.ch6.notice)||null;
+        await FL.show('notice',nt,()=>Z.stepIn?Z.stepIn(FL.stepInOpts(st,nt)):Z.bill({head:'Notice',title:nt?nt.title:'The banks take control',paragraph:nt?nt.text:[],cta:'Open the Black Box'}),null);
+        f.step='box';FL.save();continue;}
+      if(f.step==='ended'){   // the banks took control in the years the engine ran
+        let b=null;try{b=E.endBill(st);}catch(e){}if(b)await FL.show('ended',b,()=>Z.bill(b),null);f.step='box';FL.save();continue;}
+      if(f.step==='handback'){if(Z.handback){const ho=E.handbackOpts(st);const h=await FL.show('handback',ho,()=>Z.handback(ho),null);if(h)st.handback=h;}
+        f.step='box';f.n=8;FL.save();continue;}
+      if(f.step==='box'){f.n=8;FL.strip(st);await FL.box(st);FL.finish();return;}
+      break;}
+    }catch(e){FL.err('run',e);}
+    finally{FL.busy=false;}},
+
+  // a chapter's shift is over: its eras played, the bill and card kept for the next steps
+  shiftDone(st,out,stub){const ns=out.state,f=Object.assign({},st.flight);
+    f.out={bill:out.bill||null,card:out.card||null};f.stub=!!stub;f.step=out.bill?'bill':ns.over?'ended':'card';
+    ns.flight=f;CAMP.st=ns;FL.save();},
+
+  // ---- the decisions ----
+  async decide(st,d,n){const bot=FL.bot&&FL_BOT[FL.bot.mode].pick[n];let dflt=bot||null;
+    if(n===4&&dflt==='two'&&(d.choices||[]).some(c=>c.id==='two'&&c.disabled))dflt='anchor';
+    const r=await FL.show('decision',d,()=>ZMMoney.decision(FL.who(st,d)),dflt?{choice:dflt}:null);
+    let c=r&&r.choice;const ch=(d.choices||[]).find(x=>x.id===c);
+    if(!ch||ch.disabled)c={3:'phased',5:'decline'}[n]||null;   // (a disabled line, e.g. "Plateau Air declined", signs as the engine's default)
+    return c;},
+  // Chapter 6: the letter from the banks (three replies). Refusing shows the banks' notice before it resolves (ZMMoney.letter).
+  async letter(st,d){const Z=window.ZMMoney,E=CAMP.E(),dflt=FL.bot?(FL.bot.ch6||FL_BOT[FL.bot.mode].pick[6]):null;
+    let nt=null;try{nt=E.ch6.notice?E.ch6.notice(st):null;}catch(e){}
+    const body=(d.body||[]).join(' '),circ=(body.match(/₹[\d,]+(?= earned)/)||[])[0]||null;
+    const o=FL.who(st,Object.assign({},d,{from:{name:d.parties&&d.parties.from},signatory:d.parties&&d.parties.signatory,subject:'Fresh money for '+(st.parent||'the airport')+'\'s airport, '+(String(d.date||'').slice(0,4)),
+      body,circle:circ,circleNote:circ?'the hardest year':null,replies:d.choices,stepIn:FL.stepInOpts(st,nt)}));
+    const r=await FL.show('letter',d,()=>Z.letter?Z.letter(o):Z.decision(FL.who(st,d)),dflt?{choice:dflt}:null);
+    const c=r&&r.choice&&['own','l5','refuse'].indexOf(r.choice)>=0?r.choice:'own';
+    FL._noticeShown=!!(Z.letter&&c==='refuse'&&!FL.bot);return c;},
+  stepInOpts(st,nt){return {company:st.parent,founder:st.founder,stakePct:st.stake,date:nt&&nt.date,docId:'notice-'+(nt&&nt.date?nt.date.slice(0,4):''),lines:nt&&nt.text,cta:'Open the Black Box'};},
+  // Chapter 7: the board minutes, three resolutions, each adopted or rejected
+  async minutes(st,d){const Z=window.ZMMoney,R=d.resolutions||d.choices||[],bot=FL.bot?FL_BOT[FL.bot.mode].pick[7]:null;
+    if(Z.minutes){const o=FL.who(st,{docId:d.docId,date:d.date,year:FL_CH[7].years[0],title:d.title,present:((d.parties&&d.parties.present)||[]).map(x=>({name:x})),intro:(d.body||[]).join(' '),
+        resolutions:R.map(r=>({id:r.id,title:r.label,label:r.label,text:r.terms,slip:{yes:[r.slip&&r.slip.big,r.slip&&r.slip.money].filter(Boolean).join(' · '),no:'Rejected',line:r.slip&&r.slip.line,stake:r.slip&&r.slip.stake}})),stamp:'Approved'});
+      const r=await FL.show('minutes',d,()=>Z.minutes(o),bot?{adopted:bot}:null);const a=(r&&r.adopted)||{};return {district:!!a.district,phase2:!!a.phase2,l5:!!a.l5};}
+    // until ZMMoney.minutes lands: one short paper per resolution
+    const out={};let k=0;
+    for(const r of R){k++;const doc=FL.who(st,{docType:'board-minutes',docId:d.docId,date:d.date,title:'Resolution '+k+' of '+R.length+': '+r.label,body:[r.terms,'The board adopts or rejects the resolution.'],
+        parties:{airline:'the board of VSIAL',signatory:{name:'The company secretary',title:'For the board'}},slipQuestion:'What the resolution does',
+        choices:[{id:'adopt',label:'Adopt the resolution',slip:r.slip,act:'Adopt'},{id:'reject',label:'Reject it',slip:{big:'No change',line:'The board leaves things as they are.'},act:'Reject'}],stamps:{adopt:'APPROVED',reject:'REJECTED'}});
+      const x=await FL.show('minutes',doc,()=>Z.decision(doc),bot?{choice:bot[r.id]?'adopt':'reject'}:null);out[r.id]=!!(x&&x.choice==='adopt');}
+    return out;},
+
+  // ---- Chapter 5, Cruise: the real hub shift (startChapter5), as CH5F runs it, on the flight's state ----
+  cruise(st,plan){const C=CAMP.E().ch5,Z=window.ZMMoney;FL.pile(st);window.__flightStep='5:shift';
+    startChapter5(plan,{briefing:FL.bot?null:C.briefing(st),onEnd:res=>{FL.nightOff();
+      const r=Object.assign({},res,{money:Object.assign({},res.money)});delete r.money.ledger;
+      FL.log.push({n:5,kind:'shift',stars:r.stars,otp:r.otp,made:r.made,missed:r.missed,held:r.hub&&r.hub.answer});
+      try{FL.shiftDone(CAMP.st,C.applyShift(CAMP.st,JSON.parse(JSON.stringify(r))),false);}catch(e){FL.err('cruise',e);}
+      FL.run();}});
+    try{if(Z.strip)FL.night=Z.strip(null,'night');}catch(e){}
+    if(FL.bot)FL.cruiseBot();},
+  // bots: the day at HUB.ff speed; the hold call answered per the column (hold for smart, let go for blind); other calls resolved
+  cruiseBot(){const ans=FL_BOT[FL.bot.mode].hold;
+    const step=()=>{if(!CH5||ended)return;try{if(CH5.hubAsked&&!CH5.hubAnswer)ch5Answer(ans);
+      for(const I of incidents.slice())if(I.type!=='hubhold'){const a=I.botPick!=null?I.acts[I.botPick]:I.acts.find(a=>!(a.dis&&a.dis()));if(a)a.fn();}
+      window.HUB.ff(20);}catch(e){FL.err('cruiseBot',e);return;}
+      if(CH5&&!ended)setTimeout(step,0);};
+    setTimeout(step,30);},
+
+  // ---- the paper fallbacks (until lane U's screens are merged) ----
+  async flapsPaper(fl){const yrs=(fl.years||[]).map(y=>({label:String(y.calYear),text:y.paxM+' million passengers'}));
+    await ZMMoney.bill({head:'The Zero Mile Times · the years between',title:fl.fromYear+' → '+fl.toYear,paragraph:fl.lines&&fl.lines.length?fl.lines:['The years pass.'],table:yrs,cta:'Read the paper'});
+    await ZMMoney.frontPage(fl.frontPage);},
+  async cliffPaper(fp,act){await ZMMoney.frontPage(fp);
+    const r=await ZMMoney.bill({head:'End of Act '+['','I','II','III'][act-1],title:'Act '+['','I','II','III'][act]+' · '+FL_ACT[act],paragraph:['The file is saved after every page. Close it for tonight and it waits in the Concession tab, at this page.'],cta:'Turn the page',cta2:'Close the file for tonight'});
+    return r==='cta2'?'close':'turn';},
+  cover(st){const f=st.flight||{},c=FL_CH[f.n]||FL_CH[3];return {company:st.parent,founder:st.founder,signature:st.signature,signedOn:st.signedOn,year:st.year,act:c.act,chapter:f.n,record:CAMP.rec()};},
+
+  // the cliffhanger front pages, written from the player's state (the Late City edition). (Engine request: VSIEra.cliffhanger.)
+  cliffPage(st,act){const who=st.parent||'Your company',md=(st.signedOn||'2026-04-01').slice(4),f=st.flight||{},bill=f.lastBill||(act===1?st.ch3&&st.ch3.bill:null)||{},cov=bill.cover&&bill.cover.words;
+    const base={masthead:'The Zero Mile Times',edition:'Late City edition',price:'₹12'};
+    if(act===1){const t=st.s&&st.s.plateauTrust!=null?st.s.plateauTrust:0.75,good=t>=0.7,y=2025+7;
+      return Object.assign(base,{dateLine:ZMMoney.fmtDate(y+'-12-30')+' · Nagpur',lead:'AIRLINES ASK: WILL VSI BECOME INDIA\'S CONNECTING HUB?',
+        deck:'Three years after opening day, the airport is full in the mornings and quiet after lunch. Sutradhar Air says it can fill the afternoon, if VSI will build around it.',
+        sub:{head:good?'Plateau Air stays, and wants more':'Plateau Air is not sure',body:(good?'Plateau Air moved its Bengaluru connecting bank to VSI and kept it. Its chief says the airport "opened like an airport that had been open for years".':'Plateau Air moved its Bengaluru bank to VSI, but its chief says the first morning "had its moments", and it will think hard before moving more flights here.')+
+          '\n\nSutradhar Air, which flies to twelve smaller Indian cities, is talking to '+who+' about timing all twelve into one afternoon bank.'},
+        columns:[{head:'The banks',body:cov?'In its hardest year so far, VSI earned '+cov.replace(/ earned/,'')+'.':'VSIAL has begun paying back its banks.'},{head:'The Gulf',body:'Dubai and Doha cut their transfer charges again this month. Most Indians who change planes still do it there.'}],
+        photo:{kind:'feeder-bank',caption:'The domestic pier at three in the afternoon. Drawn by our staff artist.'}});}
+    const k=CAMP.E().ch6.pick(st),y=2025+18,share=st.s&&st.s.anchorShare?Math.round(st.s.anchorShare*100):74;
+    const P={rupee:{lead:'A STORM IS COMING: RUPEE AT RECORD LOW',deck:'The rupee has fallen for six months running. Airlines buy fuel and lease their jets in dollars, and so does part of VSI\'s debt.',
+        sub:{head:'Borrowed in dollars',body:who+' borrowed in dollars when it signed in 2026, because the money was cheaper. Every fall in the rupee makes those repayments bigger.'}},
+      airline:{lead:'SUTRADHAR AIR PAYS ITS CREWS LATE',deck:'Sutradhar Air, which carries about '+share+'% of the passengers who change planes at VSI, paid its pilots ten days late this month.',
+        sub:{head:'One airline, one afternoon',body:who+' built VSI\'s afternoon bank around Sutradhar Air in 2033. If the airline stops flying, the bank stops with it.'}},
+      pandemic:{lead:'A NEW FEVER IN THREE CITIES: AIRLINES WATCH THE BOOKINGS',deck:'Doctors in three cities report a fast-spreading fever. Airlines say next month\'s bookings are already down.',
+        sub:{head:'Nobody plans for this',body:'No airport can plan for a pandemic. What matters is how much room it has when one comes, and who will put money in if the banks ask.'}}}[k];
+    return Object.assign(base,P,{dateLine:ZMMoney.fmtDate(y+'-12-30')+' · Nagpur',
+      columns:[{head:'The banks',body:cov?'In its hardest recent year, VSI earned '+cov.replace(/ earned/,'')+'.':'The banks are watching.'},{head:'The owners',body:bill.stake&&bill.stake.words||(who+' holds '+st.stake+'% of VSIAL.')}],
+      photo:{kind:'aerial',caption:'VSI from the air at dusk. Drawn by our staff artist.'}});},
+
+  // ---- the Black Box (design/debrief.md): VSIEra.debrief.all, four pages ----
+  pages(st){const E=CAMP.E(),all=E.debrief.all(st),r=all.returnPage,a=all.attribution,o=st.over||{};
+    const sent={};(a.bars||[]).slice(0,2).forEach((b,i)=>{sent[b.group]=(a.sentences||[])[i];});
+    return {raw:all,
+      p1:{returnPct:r.returnPct,words:r.words,line:r.line,moneyInCr:r.investedCr,moneyOutCr:r.returnedCr,valueCr:st.final&&st.final.stakeValueCr!=null?st.final.stakeValueCr:null,
+        benchmarks:(r.benchmarks||[]).map(b=>({label:b.label,pct:b.pct!=null?b.pct:[b.lowPct,b.highPct],source:b.source})),ended:r.banks?'banks':'handback',lost:!!r.banks,endedYear:o.year||null,ending:r.ending},
+      p2:{method:a.method==='exact'?'shapley':'leave-one-out',bars:(a.bars||[]).map(b=>({decision:b.group,label:b.label,chosen:b.chosen,sharePct:b.sharePct,npvCr:b.npvCr,sentence:sent[b.group]||''})),
+        everythingElsePct:a.everythingElse?a.everythingElse.sharePct:0,closing:a.powerLaw,words:a.words},
+      p3:{frontPages:(all.papers||[]).map(p=>({year:p.calYear,chapter:p.chapter,lead:p.lead,line:p.line,light:p.light})),
+        once:'Every moment happened once: opening day, the banks\' letter and the handover can\'t be played again inside a concession.'},
+      p4:{lines:(all.profile||[]).map(l=>{const i=l.line.indexOf('. ');return {id:l.id,title:i>0?l.line.slice(0,i+1):l.line,line:i>0?l.line.slice(i+2):'',evidence:l.evidence};})}};},
+  async box(st){const Z=window.ZMMoney;let P=null;try{P=FL.pages(st);}catch(e){FL.err('debrief',e);}
+    FL.lastPages=P;if(!P)return;window.__flightBox=P;
+    if(Z.debrief){await FL.show('box',P.p1,()=>Z.debrief(P,{company:st.parent,founder:st.founder,start:FL.bot?1:undefined}),null);return;}
+    const pc=v=>(v>=0?'+':'−')+Math.abs(Math.round(v))+'%',bm=b=>Array.isArray(b.pct)?b.pct[0]+'–'+b.pct[1]+'% a year':b.pct+'% a year';
+    const pages=[
+      {title:'1 · The return',lead:P.p1.words,paragraph:[P.p1.line,P.p1.ending],table:[{head:'Against the sourced marks'}].concat(P.p1.benchmarks.map(b=>({label:b.label,text:bm(b)})))},
+      {title:'2 · What made the return',lead:P.p2.words||'Each decision weighed against every other.',paragraph:P.p2.bars.map(b=>b.sentence).filter(Boolean).concat([P.p2.closing]),
+        table:P.p2.bars.map(b=>({label:b.label+(b.chosen?' ('+b.chosen+')':''),text:pc(b.sharePct)})).concat([{label:'Everything else',text:pc(P.p2.everythingElsePct)}])},
+      {title:'3 · What happened',paragraph:[P.p3.once],list:{title:'Your front pages',items:P.p3.frontPages.map(p=>p.year+': '+p.lead+'. '+p.line)}},
+      {title:'4 · How you work',paragraph:['Findings, each with its evidence.'],list:{title:'',items:P.p4.lines.map(l=>l.title+' '+l.line+(l.evidence?' Evidence: '+l.evidence:''))}}];
+    for(let i=0;i<pages.length;i++){const b=Object.assign({head:'The Black Box · flight recorder',page:i+1,cta:i<3?'Pull the next page':'Close the Black Box'},pages[i]);await FL.show('box',b,()=>Z.bill(b),null);}},
+  // the end of the concession: into the record, the save kept as zm_campaign_last, back to the Concession tab
+  finish(){const st=CAMP.st;if(!st)return;const o=st.over||{};st.flight=Object.assign({},st.flight,{step:'done'});
+    CAMP.record(st,o.reason==='banks'?'banks':'handback');store.set('zm_campaign_last',st);try{localStorage.removeItem('zm_campaign');}catch(e){}
+    const sum={mode:FL.bot&&FL.bot.mode,over:o,returnPct:FL.lastPages&&FL.lastPages.p1.returnPct,pages:FL.lastPages,log:FL.log.slice(),errors:FL.errors.slice(),ms:FL.bot?Date.now()-FL.bot.t0:null};
+    window.__flightResult=sum;CAMP.st=null;FL.live=false;FL.busy=false;try{ZMMoney.setStrip&&ZMMoney.setStrip(null);}catch(e){}
+    window.__flightStep='done';window.__flightDone=true;const b=FL.bot;FL.bot=null;menu('concession');if(b&&b.resolve)b.resolve(sum);},
+
+  // ---- bots: HUB.flight.auto('smart'|'blind', {screens, dwell, ch6}) → Promise<summary> ----
+  // A new concession is signed with the column's deal-desk terms (any save on file goes into the record, torn up), built
+  // with its construction calls, then flown: every decision per build-plan.md §3, the stub shifts (blind: a 1★ day), Cruise
+  // at HUB.ff speed with the hold call answered, the Black Box. opts.screens shows the paper pages (decisions excepted) and
+  // presses on after opts.dwell ms; opts.ch6 overrides the Chapter 6 reply (blind refuses, as §3 has it; 'own' flies on).
+  auto(mode,opts){opts=opts||{};mode=mode==='blind'?'blind':'smart';const E=CAMP.E();
+    if(!FL.ok())return Promise.reject(new Error('the flight is not available in this build'));
+    return new Promise(resolve=>{
+      FL.bot={mode,screens:!!opts.screens,dwell:opts.dwell||1200,ch6:opts.ch6||null,resolve,t0:Date.now()};FL.log=[];FL.errors=[];
+      const old=CAMP.load();if(old){CAMP.record(old,'torn');try{localStorage.removeItem('zm_campaign');}catch(e){}}
+      const c=document.createElement('canvas');c.width=240;c.height=80;const g=c.getContext('2d');g.strokeStyle='#14161a';g.lineWidth=3;g.beginPath();g.moveTo(10,55);
+      for(let x=10;x<230;x+=6)g.lineTo(x,40+Math.sin(x/9)*18*Math.cos(x/41));g.stroke();
+      const B=FL_BOT[mode],r=Object.assign({parent:'Meridian Infra',founder:'Asha Rao',signature:c.toDataURL('image/png'),signedOn:'2026-04-01',endsOn:'2086-03-31'},JSON.parse(JSON.stringify(B.terms)));
+      FL.log.push({n:1,kind:'clearance',terms:B.terms});
+      let st=E.newCampaign(r,(Date.now()%100000)+1);FL.log.push({n:2,kind:'pushback',con:B.con});
+      st=E.applyConstruction(st,{choices:B.con});CAMP.st=st;FL.begin(st);});}
+};
+// a reload inside the flight comes back to the same step (unless the player left it through the menu, or closed the file)
+window.addEventListener('load',()=>setTimeout(()=>{try{
+  if(/[?&](chapter5|moneymock|level|L)\b|[?&]money\b/.test(location.search)||!FL.on())return;
+  const st=FL.load();if(st&&st.flight&&!st.flight.left&&!CH5F.live)FL.resume();
+}catch(e){console.error('flight',e);}},60));
+
+window.HUB={startChapter5,
+  // the flight (design/chapters.md): auto(mode, opts) for bots; step()/state() for checks; pages() the last Black Box
+  flight:{auto:(m,o)=>FL.auto(m,o),step:()=>window.__flightStep,state:()=>CAMP.st&&CAMP.st.flight,save:()=>FL.load(),resume:()=>FL.resume(),log:()=>FL.log.slice(),errors:()=>FL.errors.slice(),pages:()=>FL.lastPages,result:()=>window.__flightResult,run:FL,legacy:FLIGHT_LEGACY},
+  ch5:{answer:k=>ch5Answer(k),get plan(){return CH5&&CH5.plan;},state:()=>CH5&&{made:CH5.made,missed:CH5.missed,byDest:CH5.byDest,held:CH5.held,hubAsked:CH5.hubAsked,hubAnswer:CH5.hubAnswer,trail:CH5.trail,tags:Object.keys(CH5.tags),hubEta:CH5.hubEta,lonStd:CH5.lonStd,firstStd:CH5.firstStd},result:()=>CH5&&CH5.result,flow:CH5F},money:()=>MNY&&MNY.snapshot(),moneyOn:on=>{MONEY_ON=!!on;mnySet(on);},moneyOff:()=>{MONEY_ON=false;mnySet(false);},campaign:()=>CAMP.st,era:()=>CAMP.E(),camp:CAMP,get T(){return T;},get S(){return S;},get LV(){return LV;},flights:()=>flights,RW,incidents:()=>incidents,setMode:(id,m)=>{const r=RW.find(x=>x.id===id||x.short===id);if(r)setMode(r,m);},startLevel,capNow,forceIncursion:()=>{const c=STO.find(o=>o.k==='fog');if(c&&c.sc)c.sc.go=true;},resolveAll:()=>{for(const I of incidents.slice()){const a=I.botPick!=null?I.acts[I.botPick]:I.acts.find(a=>!(a.dis&&a.dis()));if(a)a.fn();}},speed:s=>setSpeed(s),ops:()=>ops,cfg:CFG,
   // test hooks: run the sim forward synchronously, and point the camera
   ff:secs=>{VQ.length=0;FFING=true;try{for(let i=0;i<secs&&!ended;i++){tick(1);if(CINE&&CINE.o.until==null){const ms=1000/BASE/Math.max(0.25,speed);CINE.t0-=ms;if(CINE.landAt)CINE.landAt-=ms;}}}finally{FFING=false;}puffs.length=0;hud();drawWave();},look:(x,y,z)=>{camT.s=cam.fit*z;camT.anchor=null;camT.x=x-((cam.region.L+cam.region.R)/2)/camT.s;camT.y=y-((cam.region.Tp+cam.region.B)/2)/camT.s;clampCam(camT);Object.assign(cam,{x:camT.x,y:camT.y,s:camT.s});},spawn:(t,x)=>spawnInc(t,x),opsSpawn:(k,x)=>opsSpawn(k,x),pause:()=>{paused=true;},
   view:v=>setView(v),ready3d:()=>new Promise(r=>{if(V3.ready||V3.failed)r(V3.ready);else{V3.waiters.push(r);init3D();}}),

@@ -440,3 +440,50 @@ Please rename these, or add the screen's names alongside your own:
     - `p2` has `{method: 'leave-one-out'|'shapley', bars[].decision, everythingElsePct, closing}`;
     - `p3` has `{frontPages[].year, once}`;
     - `p4` has `{lines[{title, line, evidence}], thiel}`.
+
+## 2026-10-19 — Stage 0, lane H: the flight (branch s0-flow)
+The Concession tab now runs the whole flight on the player's own save (hub.js `FL`): Clearance (deal desk) → Pushback
+(construction register) → Takeoff → Climb (with the 2034 budget tick on its bill) → Cruise (the real hub shift) → Turbulence
+(the banks' letter; refusing ends it) → Landing (board minutes, then the handover certificate) → the Black Box. The old
+12-era loop and the Chapter 5 playtest entry are kept for `?legacy=1` only. Stub shifts (3, 4, 6, 7) are `plan.auto`, and the
+bill says "This shift was flown by your duty team." Bots: `HUB.flight.auto('smart'|'blind', {screens, dwell, ch6})`.
+- Saves: `st.flight = {n, step, ...}` is written after every step (front, decision, shift, bill, card, cliff, flaps, notice,
+  ended, handback, box), so a reload resumes at the same step; a Cruise shift restarts from its briefing. Closing at an act
+  break (or leaving through the menu) sets `left`, and the Concession tab's file card ("Continue as ...") resumes it.
+- Act breaks: after Takeoff (Act I) and after Cruise (Act II), the Late City front page offers "Turn the page" or "Close the
+  file for tonight"; never forced. `ZMMoney.cliffhanger` when present, else a front page and a two-button paper.
+- lane U's screens are feature-checked (setStrip/strip, flaps, cliffhanger, letter + stepIn, minutes, debrief); every one falls
+  back to frontPage / decision / bill. Checked in WebKit both against this branch's ui.js and against origin/s0b-ui's ui.js.
+- Starting a new concession over a flight that ended with pages unread files it in the record as it ended (banks / handback),
+  not as torn up.
+
+### Lane H's engine requests (s0-flow, written before lane E's second and third pushes)
+(from lane H; the Mac does not edit money/era.js, money.json or tools/era_test.js)
+1. **`VSIEra.cliffhanger(state, act)`**: the Late City front page for the end of Act I (after Takeoff) and Act II (after
+   Cruise), in the frontPage shape. lane U's `ZMMoney.cliffhanger` names it; hub.js writes a stand-in from state (`FL.cliffPage`:
+   Act I from Plateau Air's trust, Act II from `ch6.pick`: rupee / Sutradhar Air / pandemic).
+2. **`bridge(state, n)` spans no years today.** Each chapter's `applyShift` already plays all its eras, so the bridge only plays
+   the pending board: `years` is always empty and `from`/`to` are one year apart (2032→2033, 2038→2039, 2043→2044, 2058→2059).
+   The split-flap should run from the chapter's shift year to the next front page (2030→2033, 2034→2039, 2040→2046,
+   2046→2059) with one headline per year, oldest first (lane U's `flaps` reads `{fromYear, toYear, lines[], frontPage}`).
+   hub.js stands in with `st.flight.shiftYear` and the previous bill's `moments`.
+3. **`VSIEra.debrief.pages(state)`** in lane U's `{p1, p2, p3, p4}` shape. hub.js adapts `debrief.all` (`FL.pages`).
+4. **`campaignDocs(state)` drops the chapter papers.** `CAMP.save` and `fileCard(state).docs` rebuild `st.docs` from the era
+   history, losing the opening plan, the network agreement, the partner agreement, the banks' letter and the minutes (which
+   the briefings, tags and Ch7's shift plan look up). hub.js's flight save keeps `st.docs` and adds only board minutes;
+   `fileCard` should list `st.docs`.
+5. **The 2034 budget tick comes after the Climb shift** (`bill.budget` from `ch4.applyShift`, as design/chapters.md puts it on
+   the bill), so `ch4.applyBudget` runs after the era-2 report (2033–35) was written without the radar's ₹45 cr. Later years
+   are simulated with it. Either accept it before `applyShift`, or re-play the report inside `applyBudget`.
+6. **`fileCard(state).chapter`** reads the era, so between chapters (after Takeoff's shift, board pending) it says Chapter 3
+   while the player is at Climb. hub.js overrides it from `st.flight.n`; an optional `fileCard(state, flight)` would do it.
+
+### Lane U notes (from lane H)
+- `ZMMoney.decision` ignores `choices[].disabled` (Climb's option C, "Plateau Air declined"): it can be ticked; hub.js then signs
+  it as the engine's default.
+- The Climb bill's budget tick is `bill.cta` / `bill.cta2` ("Approve the budget, with the bird radar" / "Approve it without the
+  radar"), with `bill.budget` and `bill.list` set; a real tick on the bill page would replace it.
+- hub.js calls `setStrip`, `strip(null,'night')` (removed when the shift ends), `flaps(bridge)`, `cliffhanger(fp, {act, actName,
+  file})`, `letter(o)` (with `stepIn` opts; on refuse hub.js skips its own notice), `stepIn`, `minutes(o)` and
+  `debrief(pages, {company, founder, start})` when present (names from the s0b-ui working tree), and falls back to
+  frontPage / decision / bill otherwise.

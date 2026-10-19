@@ -851,8 +851,8 @@
   function closeFigures(s, sz) {   // phase 1's split, in today's money so it adds up to the price on the agreement
     var eng = build(s, sz.gear, s.profile === 'equal' ? {} : sz.scheds, true, false, null);
     var sg = eng.stage_list[0], today = capexCr(s.phase1), f = today / sg.cost;
-    var debt = sg.debt * f, sl = eng.sl_amt * f, equity = today - debt - sl;
-    return {today: today, nominal: sg.cost, debtCr: Math.round(debt), stateLoanCr: Math.round(sl), equityCr: Math.round(equity), parentCr: Math.round(equity * 0.64),
+    var debt = Math.round(sg.debt * f), sl = Math.round(eng.sl_amt * f), equity = today - debt - sl;   // rounded first, so the three add up exactly
+    return {today: today, nominal: sg.cost, debtCr: debt, stateLoanCr: sl, equityCr: equity, parentCr: Math.round(equity * 0.64),
       debtNomCr: Math.round(sg.debt), eng: eng};
   }
   function sized(s) {
@@ -913,6 +913,9 @@
       if (p.bal_in < -1) sentences.push('AERA took back ' + cr(-p.bal_in) + ' you had over-collected, through lower fees for five years.');
       if (p.hard) sentences.push('Your appeal kept AERA from holding fees back, but fees stay flat for five years and airlines add fewer flights.');
     });
+    var cn = s.construction;
+    if (e === 1 && cn && cn.slipMonths) sentences.unshift('The airport opened ' + cn.slipMonths + ' months late, in ' + monthName(state.opensOn || addMonths(state.signedOn, 48 + cn.slipMonths)) + ', so its first year earned less while the loan interest fell due.');
+    if (e === 1 && cn && cn.trials === 'short') sentences.push('Short trials before opening meant a rough first year: more penalties to airlines and more passenger care.');
     var opsE = s.eraOps[e] || {}, base = opsProfile('base', ys[1]);
     var disX = sum('dis'), opening = sum('opening');
     if (worst != null && worst < P.thr.warning) {

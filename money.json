@@ -1119,6 +1119,32 @@
    "period": "game",
    "estimate": true,
    "note": "1A: 4 years building + 2 moratorium + 14 repaying = 20 years door to door. 1B repays from the year after the DEL COD, as T2 did (COD FY2023, first principal FY2024). Rate for every stage: finance.loan_rate_base. Used by tools/concession_model.py."
+  },
+  "lenders": {
+   "value": {
+    "banks": {
+     "rate_delta": 0,
+     "years_add": 0
+    },
+    "dollar": {
+     "rate_delta": -2.0,
+     "years_add": 0,
+     "fx": {
+      "year": 12,
+      "fall": 0.15
+     }
+    },
+    "infra": {
+     "rate_delta": 0.5,
+     "years_add": 6,
+     "spread": true
+    }
+   },
+   "unit": "pp on finance.loan_rate_base and the construction rate / extra repayment years, for phase 1 (stages 1A, 1B)",
+   "source": "design assumption: dollar bonds about 2 pp cheaper unhedged (finance.fx_hedge_cost 2.15% is what a hedge would cost, so the bonds are left unhedged); a 15% rupee fall in year 12 (the rupee fell about 13% in 2013 and 11% in 2022); India's infrastructure bank (NaBFID) lends for longer at about the bank rate, repaid over the whole tenor",
+   "period": "game",
+   "estimate": true,
+   "note": "Read by money/era.js (lenders, termsFor, the fx event). Later closes (1C/1D, phase 2) are with Indian banks."
   }
  },
  "capex": {
@@ -2023,6 +2049,30 @@
    "period": "FY2021-22",
    "estimate": false,
    "note": "BIAL's COVID years placed on VSI years 16-17. Sensitivity row only; the lenders' base case does not foresee it. Used by tools/concession_model.py."
+  },
+  "construction_events": {
+   "value": {
+    "monsoon": {
+     "year": 2,
+     "pay_cr": 600,
+     "slip_months": 4
+    },
+    "overrun": {
+     "year": 3,
+     "pay_cr": 3000,
+     "slip_months": 8
+    },
+    "trials": {
+     "year": 4,
+     "full_cr": 400,
+     "short_dis": 200
+    }
+   },
+   "unit": "game year / INR crore (FY2026 prices) / months / extra disruption Rs per passenger in the opening year",
+   "source": "design/onboarding.md S5, re-priced for the Rs 60,000 cr phase 1 (steel overrun 5% of 1A); slip months add up to 12, the model's 12-month delay row (tools/concession_model.py print_delay)",
+   "period": "game",
+   "estimate": true,
+   "note": "Paid choices are equity and enter 1A's asset base; slips move the opening (interest due from the planned opening)."
   }
  },
  "world": {

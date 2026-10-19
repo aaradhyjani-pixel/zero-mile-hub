@@ -181,3 +181,26 @@ The certificate reuses the duty paper, ticks, signature pad, seal and stamp from
 **For the review session (money/ui.js, not edited here):**
 - The board minutes show the investments' `why` text; fine. No banned words were found on any rendered screen in this run, including the board minutes (the old "DSCR is below the covenant" board copy is no longer reached).
 - Money amounts that round to zero print as "₹0.0 L" (e.g. Cash in hand); "₹0" would read better.
+
+## 2026-10-19 — Era engine follow-up: recalibrated close, lenders, construction years, Airport City, handback (branch money, lane W)
+| Step | What changed | Status |
+|---|---|---|
+| 1. Recalibrated model | era.js fallback stages are money.json's (1A ₹60,000 lean / ₹85,000 big, 1B 32/16k, 1C/1D 38k, P2 32k); `phase1Options()` from `capex.stages`; hub.js passes `capexCr` and `phase1.options[].capexCr`. The old stand-in (`CAMP.close`, which priced the State's loan as cost − debt − equity on the lean cost) is gone. `Tranche.ds_at`, the sizing fix and phase 2's plan were already ported (checkpoint 3) | done |
+| 2. previewClose | sized per phase 1, State loan (the desk's `stateLoan` was ignored before: now read) and lender; returns debt/equity/parent/stateLoan in today's money so they add up to the price on the agreement, and the note names the full bill (inflation and interest while building). Lenders: banks 9.5%/14 yrs; dollar bonds 7.5% with a 15% rupee fall in year 12; infrastructure bank 10%/20 yrs repaid over the whole term (`finance.lenders`). `lenders` is passed to the desk | done |
+| 3. Board | Airport City from the era-3 board (`land:{earnCr, aeraCr}`, `opens`), `partners`, `founder`, `year`, `stakeValueCr`, `aera.acceptText/orderNo`, `dividend.lastCr/blocked/reason`, `prepay.savesPct`, `pile` | done |
+| 4. Construction | `constructionOpts/applyConstruction/needsConstruction`; monsoon (pay ₹600 cr / slip 4 months), steel overrun (pay ₹3,000 cr / slip 8 months), trials (full ₹400 cr / short: rough first year), `game.construction_events`. hub.js `CAMP.build()` calls `ZMMoney.construction` if present, else builds as planned; "Not now" saves; Continue resumes mid-build | done (screen is agent S's) |
+| 5. Handback | `handbackOpts` → `ZMMoney.handback` at year 60 (guarded), after `endOpts` (the old closing statement) | done |
+| 6. Tests | era_test Parts A2 (Airport City) and A3 (12-month slip) added; ALL PASS | done |
+
+**era_test vs `python3 tools/concession_model.py vsi`** (worst year of loan cover per era, E1–E4 … ending, return):
+| Run | era.js | python |
+|---|---|---|
+| EXPERT | 1.23 / 1.25 / 1.14 / 1.14 … repaid, 12.5% | same |
+| EXPERT, Airport City | 1.23 / 1.25 / 1.14 / 1.14 / 2.05 / 1.71 / 1.58 / 1.57, 12.7% | same |
+| BAD (± Airport City) | 1.09 / 0.98 / 0.89, banks year 13 | same |
+| LAZY (± Airport City) | 1.04 / 0.97 / 0.83, banks year 13 | same |
+| EXPERT, 12 months late (monsoon + steel slips) | 0.00 / 1.25 / 1.07 / 1.08, top-up ₹1,873 cr, 11.9% | same |
+
+The construction choices are a real trade-off on the expert's return: none 12.45%, monsoon pay 12.40 / slip 12.38, steel pay 12.25 / slip 12.32 (but year 5 at ₹7 for every ₹100 due), both slips 11.93, short trials 12.37. Lenders on the expert: banks 12.5%, dollar bonds 13.1% (eras 3–4 fall to ₹104–106 after the rupee falls), infrastructure bank 13.0% (eras 2–4 at ₹173/141/127): the banks are the weakest choice; a balance call for the user.
+
+**Open:** Python has no lenders yet (era.js only; the test checks them for plain words, not against the model). A slip under 12 months is a part-year opening in era.js only (the model has whole years). Eras 5–12 still play Level 4.

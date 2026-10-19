@@ -168,10 +168,21 @@ Money is added on top of the game; nothing is removed. Quick play from the menu 
 - Waived during the summit, dust, fog and the Delhi summit. Medical, fuel and MAYDAY flights never show a price or a floater; amounts under ₹5,000 do not float.
 
 **The concession loop** (`CAMP` in hub.js):
-1. Concession tab → `ZMMoney.onboarding(...)` fed by `VSIEra.capexCr/partners/bidTypes/previewBid/previewClose` (64/16/10/10) → `VSIEra.newCampaign(result, seed)`.
-2. `CAMP.play()`: if `VSIEra.isOver(state)` → the end page; else `startLevel(VSIEra.levelFor(state))` with money on (eras 1–4 → levels 1–4; eras 5–12 → level 4 until Level 5 ships).
-3. `finish()` → "Close the books for this period" → `VSIEra.applyShift(state, shift)` where `shift` carries stars, on-time, connections, safety and the ledger's `close()` → `ZMMoney.incomeStatement(report.incomeStatement)`, with "Your shift today" added on top.
-4. If over (banks, or year 60) → `ZMMoney.incomeStatement(VSIEra.handbackOpts(state))`, the save moves to `zm_campaign_last`. Else `ZMMoney.boardMeeting(VSIEra.boardOptions(state))` → `VSIEra.applyBoard(state, decision)` → back to 2.
+1. Concession tab → `ZMMoney.onboarding(...)` fed by `VSIEra.capexCr/phase1Options/stateLoanOpt/lenders/partners/bidTypes/previewBid/previewClose` (64/16/10/10) → `VSIEra.newCampaign(result, seed)` (state.building = true).
+2. `CAMP.build()`: the construction years. If `ZMMoney.construction` exists → `ZMMoney.construction(VSIEra.constructionOpts(state))` → `VSIEra.applyConstruction(state, result)`; `null` ("Not now") saves and returns to the menu, and Continue comes back here. Without the screen, `applyConstruction(state, null)` builds as planned.
+3. `CAMP.play()`: if `VSIEra.isOver(state)` → the end page; if `VSIEra.needsConstruction(state)` → step 2; else `startLevel(VSIEra.levelFor(state))` with money on (eras 1–4 → levels 1–4; eras 5–12 → level 4 until Level 5 ships).
+4. `finish()` → "Close the books for this period" → `VSIEra.applyShift(state, shift)` where `shift` carries stars, on-time, connections, safety and the ledger's `close()` → `ZMMoney.incomeStatement(report.incomeStatement)`, with "Your shift today" added on top.
+5. If over (banks, or year 60) → `ZMMoney.incomeStatement(VSIEra.endOpts(state))`, then at year 60 `ZMMoney.handback(VSIEra.handbackOpts(state))` (guarded); the save moves to `zm_campaign_last`. Else `ZMMoney.boardMeeting(VSIEra.boardOptions(state))` → `VSIEra.applyBoard(state, decision)` → back to 3.
+
+**Close, construction and the board's extras (era.js).**
+| Piece | Where | What it does |
+|---|---|---|
+| Phase 1 | `capex.stages` 1A_lean ₹60,000 cr / 45 MPPA, 1A_big ₹85,000 cr / 70 MPPA | `previewClose` returns the bank-sized split in today's money (it adds up to the price on the agreement); the note gives the full bill with inflation and interest while building |
+| Lenders | `finance.lenders` | Indian banks 9.5%, 14 years; dollar bonds 2 pp cheaper, with a 15% rupee fall in year 12 that grows what is owed; the infrastructure bank +0.5 pp, 20 years, repaid over the whole term |
+| Construction | `game.construction_events` | monsoon (pay ₹600 cr or slip 4 months), steel overrun (pay ₹3,000 cr or slip 8 months), trial operations (full ₹400 cr or short: a rough first year). Slips port the model's `delay`: interest due from the planned opening, a part-year first year under 12 months |
+| Airport City | `airport_city` | a board item from the era-3 board: three phases on the model's plan, paid by shareholders, 30% counted by AERA; `land:{earnCr, aeraCr}` on the line |
+
+The construction choices are priced by re-running era 1 on the banks' forecast with each choice, so each effect sentence carries real rupees and months. The two slips add up to 12 months, which is the model's delay row; `tools/era_test.js` Part A3 checks it (cover by era, the shareholders' top-up and the return), and Part A2 checks Airport City against the model's rows.
 
 **How era.js works.** The save holds only the player's inputs (bid, gearing, repayment) and decisions (each era's ops summary, each board's dividend/prepay/appeal/purchases). Every call re-runs the years from financial close, so history never changes when later decisions are made. The banks size the loans on their own base case (each stage sculpted to `lbc_dscr_target` 1.30, never below `lbc_moratorium_cover` 1.20 in an interest-only year). The light is the **worst single year** of the era: green at ₹120 or more for every ₹100 due, amber below that, red below ₹100 (`game.dscr_thresholds`); the banks take control after two eras in the red. The player sees three numbers (today's money, the light in rupee words, stake and its value) and two or three board decisions; AERA's holds and recoveries surface only as one plain sentence.
 

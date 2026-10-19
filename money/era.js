@@ -2470,7 +2470,7 @@
     var l5Now = 100 - st.stake - 20, l5After = l5Now + (st.stake - m);
     return choiceDoc(st, {year: CH6.year, docType: 'banks-letter', docId: 'banks-letter-' + cal(CH6.year), title: 'Letter from the banks to ' + VSIAL,
       parties: {from: lenderName(st.s) + ' and the State Bank consortium', to: VSIAL + ', for ' + who, signatory: {name: 'The lenders\' agent', title: 'For the banks'}},
-      body: ['The crisis means the airport will earn ' + (need.worst != null ? coverWords(need.worst) : 'too little for its loan payments') + ' in ' + cal(need.worstYear || CH6.year) + '.',
+      body: ['The crisis means the airport will earn ' + (need.worst != null ? coverWords(need.worst).replace(' earned', '') : 'too little for its loan payments') + ' in ' + cal(need.worstYear || CH6.year) + '.',
         'The banks ask the owners to put in ' + cr(X) + ' of fresh money this year, enough to bring the hardest year back to ₹110 earned for every ₹100 due.',
         'If no money comes, the banks will take control of the airport and its owners\' shares will be lost.'],
       choices: [

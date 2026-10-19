@@ -524,3 +524,9 @@ hub.js now reads lane E's §3 answers directly, with no stand-ins left:
 - the 2034 budget stays a tick on the Climb bill: `ch4.applyBudget` after the shift, which now re-files Climb's reports.
 Checked: smart lands a handback (10.5%), blind the banks, 0 flight errors; the paper menu shows the capital-allocation intro above the file card, and "Start the concession" with no save opens the deal desk.
 Note for lane E: `fileCard().docs` holds two annual reports for some years (`report-1` and `report-2032`, `report-4` and `report-2043`): the era paper and the chapter's own.
+
+## lane E fix (Mac)
+- 19 October 2026, 21:0x: `ch6Decision` letter body said "the airport will earn ₹33 earned for every ₹100 due"; it now strips the second "earned", as the front page sub-story (line 2462) already did. era_test: ALL PASS, 0 Stage 0 failures. A scan of 78 Stage 0 payloads (chapters 3 to 7, front pages, decisions, briefings, incidents, tags, bills, cards, bridges) found no other doubled words, undefined, NaN or negative rupees.
+
+## After deploy
+- Black Box page 1 "What your share was worth at the end" (for example ₹4,34,141 cr) is the player's share of the cash left at handback, in 2086 rupees. It is correct, but it reads huge: label it "in 2086 rupees" or show it in today's rupees too.

@@ -166,7 +166,7 @@ const CSS=`
 .zdk-tab small{display:block;font-size:11.5px;color:var(--zpe);margin-top:2px}
 .zdk-tab .n{text-align:right;white-space:nowrap}
 .zdk-tab.kv td:first-child{width:42%;padding-right:14px;font-size:13px;color:var(--zpe)}
-.zdk-tab .h{font-size:22px}.zdk-tab .h.big{font-size:32px}
+.zdk-tab .h{font-size:22px}.zdk-tab small.zdk-cap{display:block;font-family:var(--fh);font-size:14px;line-height:1.3;color:var(--zw);margin-top:4px}.zdk-tab small.zdk-cap[hidden]{display:none}.zdk-tab .h.big{font-size:32px}
 .zdk-tab td.rl{padding:0 0 4px;border-top:0}
 .zdk-ticks{display:flex;flex-direction:column;gap:4px;margin:10px 0 6px}
 .zdk-ticks button{display:grid;grid-template-columns:17px 1fr;column-gap:12px;align-items:baseline;text-align:left;font-family:var(--ft);font-size:14.5px;color:var(--zt);padding:5px 0}
@@ -370,14 +370,15 @@ M.onboarding=function(opts){opts=opts||{};
   loadDeskFonts();
   const T=opts.bidTypes||{share:{min:10,max:50,step:0.5,def:30},ppf:{min:100,max:450,step:5,def:250}};
   const G=opts.gearing||{min:60,max:75,def:70};
-  const capex=opts.capexCr||56000;
+  const PH=opts.phase1||null,SL=opts.stateLoan||null,LN=opts.lenders||null;   // LN: who lends, if the economy offers a choice   // optional close choices: phase-1 size, and the State's interest-free loan
+  const capexNow=()=>{const o=PH&&PH.options.find(x=>x.id===st.phase1);return o&&o.capexCr||opts.capexCr||36000;};
   const coName=M.cfg.coinvestor.name.split(':')[0];
   const P=(opts.partners||[{name:'',pct:64,role:'Promoter. Builds, finances and runs the airport.'},
     {name:coName,pct:16,role:'Co-investor. Sells you its stake at board meetings, up to 80% in all.'},
     {name:'Airports Authority of India',pct:10,role:'State partner'},
     {name:'State of Maharashtra, through MADC',pct:10,role:'Gives the land on a nominal lease'}]).map(p=>Object.assign({},p));
   const pp=P[0].pct;
-  const st={parent:opts.defaultName||'',founder:opts.founderName||'',bid:{type:'share',value:T.share.def},gearing:G.def,repayment:'sculpted',sig:null,quick:false};
+  const st={parent:opts.defaultName||'',founder:opts.founderName||'',bid:{type:'share',value:T.share.def},gearing:G.def,repayment:'sculpted',sig:null,quick:false,phase1:PH?(PH.def||PH.options[0].id):null,stateLoan:SL?SL.def!==false:null,lender:LN?(LN.def||LN.options[0].id):null};
   const bidTxt=b=>b.type==='share'?(+b.value).toFixed(b.value%1?1:0)+'%':'₹'+b.value;
   const bidLong=b=>b.type==='share'?bidTxt(b)+' of everything the airport earns':bidTxt(b)+' for every passenger';
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -389,8 +390,10 @@ M.onboarding=function(opts){opts=opts||{};
   const endDate=new Date(now.getFullYear()+M.cfg.years,now.getMonth(),now.getDate()-1);   // the concession runs to the day before the anniversary
   const today=dShort(now),ends=dShort(endDate);
   const H=s=>`<span class="h">${esc(s)}</span>`;               // a handwritten fill-in
-  const pvClose=()=>opts.previewClose?opts.previewClose({gearing:st.gearing,repayment:st.repayment,bid:st.bid}):
-    {debtCr:capex*st.gearing/100,equityCr:capex*(1-st.gearing/100),parentCr:capex*(1-st.gearing/100)*pp/100,minDscr:null,note:''};
+  const pvClose=()=>{const c=capexNow(),loan=st.stateLoan?c*(SL.pct||14.17)/100:0;
+    const q=opts.previewClose?opts.previewClose({gearing:st.gearing,repayment:st.repayment,bid:st.bid,phase1:st.phase1,stateLoan:st.stateLoan,lender:st.lender}):
+      {debtCr:(c-loan)*st.gearing/100,equityCr:(c-loan)*(1-st.gearing/100),parentCr:(c-loan)*(1-st.gearing/100)*pp/100,minDscr:null,note:''};
+    if(q.stateLoanCr==null)q.stateLoanCr=loan;q.capexCr=c;q.askedCr=(c-q.stateLoanCr)*st.gearing/100;return q;};
 
   return new Promise(res=>{
   let finished=false;
@@ -506,10 +509,13 @@ M.onboarding=function(opts){opts=opts||{};
       <h2>Loan offer from the banks</h2>
       <p class="t">From a group of Indian banks, to ${esc(M.cfg.spvName)}, to build phase 1 of the airport. The rest comes from the shareholders' own money.</p>
       <table class="zdk-tab kv"><tbody>
-        <tr><td>Project cost</td><td>${fmt(capex)}</td></tr>
+        ${PH?`<tr><td>Size of phase 1</td><td><div class="zdk-ticks" role="radiogroup" aria-label="Size of phase 1">${PH.options.map(o=>`<button role="radio" data-p="${esc(o.id)}" aria-checked="${st.phase1===o.id}"><i></i>${esc(o.label)} <small>${esc(o.small||'')}</small></button>`).join('')}</div></td></tr>`:''}
+        <tr><td>Project cost</td><td><span id="zdkCap"></span></td></tr>
+        ${SL?`<tr><td>Loan from the State</td><td><div class="zdk-ticks" role="radiogroup" aria-label="Loan from the State"><button role="radio" data-s="1" aria-checked="${!!st.stateLoan}"><i></i><span>accept a loan of <span class="h" id="zdkSL"></span></span> <small>${esc(SL.text||'interest-free, repaid from year 11')}</small></button><button role="radio" data-s="0" aria-checked="${!st.stateLoan}"><i></i>decline <small>borrow more from the banks instead</small></button></div></td></tr>`:''}
+        ${LN?`<tr><td>Who lends</td><td><div class="zdk-ticks" role="radiogroup" aria-label="Who lends">${LN.options.map(o=>`<button role="radio" data-l="${esc(o.id)}" aria-checked="${st.lender===o.id}"><i></i>${esc(o.label)} <small>${esc(o.small||'')}</small></button>`).join('')}</div></td></tr>`:''}
         <tr><td>Share borrowed</td><td><span class="h big" id="zdkGV"></span></td></tr>
         <tr><td colspan="2" class="rl">${ruler('zdkGR',G.min,G.max,1,st.gearing,'Share borrowed',[],v=>Math.round(v)+'%')}</td></tr>
-        <tr><td>Bank loan</td><td><span class="h" id="zdkD"></span></td></tr>
+        <tr><td>Bank loan</td><td><span class="h" id="zdkD"></span><small class="zdk-cap" id="zdkDC" hidden></small></td></tr>
         <tr><td>Shareholders' own money</td><td><span class="h" id="zdkE"></span></td></tr>
         <tr><td>Of which ${esc(st.parent)} (${pp}%)</td><td><span class="h" id="zdkP"></span></td></tr>
         <tr><td>Repayment</td><td><div class="zdk-ticks" role="radiogroup" aria-label="Repayment">
@@ -524,6 +530,8 @@ M.onboarding=function(opts){opts=opts||{};
        <p id="zdkCN"></p><p>Borrowing more means you put in less of your own money, so you earn more on it. But there is less room if passengers come slower than planned.</p>`);
     const r=sh.querySelector('#zdkGR');
     const upd=()=>{st.gearing=+r.value;r.style.setProperty('--p',(st.gearing-G.min)/(G.max-G.min)*100+'%');const q=pvClose();
+      sh.querySelector('#zdkCap').textContent=fmt(q.capexCr);const sl=sh.querySelector('#zdkSL');if(sl)sl.textContent=fmt(SL&&(SL.amountCr||q.capexCr*(SL.pct||14.17)/100));
+      const dc=sh.querySelector('#zdkDC'),capped=q.debtCr<q.askedCr-0.5;dc.hidden=!capped;if(capped)dc.textContent=`You asked for ${fmt(q.askedCr)}. The banks will lend only what the forecast can repay; shareholders put in the rest.`;
       sh.querySelector('#zdkGV').textContent=st.gearing+'%';sh.querySelector('#zdkD').textContent=fmt(q.debtCr);sh.querySelector('#zdkE').textContent=fmt(q.equityCr);sh.querySelector('#zdkP').textContent=fmt(q.parentCr);
       const ds=sh.querySelector('#zdkDS');ds.hidden=q.minDscr==null;
       if(q.minDscr!=null){const v=q.minDscr,col=v<1?'var(--zr)':v<1.2?'var(--zw)':'var(--zg)';const mv=sh.querySelector('#zdkMV');mv.innerHTML=`₹${Math.round(v*100)} <small>for every ₹100 due</small>`;mv.style.color=col;
@@ -531,6 +539,9 @@ M.onboarding=function(opts){opts=opts||{};
       sh.querySelector('#zdkCN').textContent=q.note||'';};
     r.oninput=upd;upd();
     sh.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{st.repayment=b.dataset.r;sh.querySelectorAll('[data-r]').forEach(x=>x.setAttribute('aria-checked',x===b));upd();});
+    sh.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{st.lender=b.dataset.l;sh.querySelectorAll('[data-l]').forEach(x=>x.setAttribute('aria-checked',x===b));upd();});
+    sh.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{st.phase1=b.dataset.p;sh.querySelectorAll('[data-p]').forEach(x=>x.setAttribute('aria-checked',x===b));upd();});
+    sh.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{st.stateLoan=b.dataset.s==='1';sh.querySelectorAll('[data-s]').forEach(x=>x.setAttribute('aria-checked',x===b));upd();});
     sh.querySelector('#zdkN').onclick=()=>stampAndFile('Sanctioned','Term sheet',docCA);
     sh.querySelector('#zdkB').onclick=()=>{sh.querySelector('#zdkPile').lastElementChild?.remove();docBid();};}
 
@@ -553,7 +564,7 @@ M.onboarding=function(opts){opts=opts||{};
       <ol class="zdk-cl">
         <li>The Concessionaire will design, build, finance and operate the airport for ${M.cfg.years} years, from ${H(today)} to ${H(ends)}, and then hand it back to the State.</li>
         <li>The Concessionaire will pay the Authority ${H(bidLong(st.bid))}, every year of the concession.</li>
-        <li>Phase 1 costs ${fmt(capex)}: ${H(fmt(q.debtCr))} from lenders, repaid ${st.repayment==='sculpted'?'in instalments sculpted to traffic':'in equal instalments'}, and ${H(fmt(q.equityCr))} from shareholders, of which the Promoter provides ${H(fmt(q.parentCr))}.</li>
+        <li>Phase 1${PH?` (${esc((PH.options.find(o=>o.id===st.phase1)||{}).label||'')})`:''} costs ${fmt(q.capexCr)}: ${H(fmt(q.debtCr))} from ${esc(LN&&(LN.options.find(o=>o.id===st.lender)||{}).who||'the banks')}, repaid ${st.repayment==='sculpted'?'in instalments that grow with traffic':'in equal instalments'}${q.stateLoanCr>0.5?`, ${H(fmt(q.stateLoanCr))} as an interest-free loan from the State`:''}, and ${H(fmt(q.equityCr))} from shareholders, of which the Promoter provides ${H(fmt(q.parentCr))}.</li>
         <li>The Concessionaire's shares are held ${P.map(p=>`${p.pct}% by ${k0(p)}`).join(', ').replace(/, ([^,]*)$/,' and $1')}.</li>
         <li>Charges to airlines and passengers are set by AERA, every five years.</li></ol>
       <p class="t">Signed by the parties on the date above.</p>
@@ -576,7 +587,7 @@ M.onboarding=function(opts){opts=opts||{};
   function execute(pad){
     st.sig=pad.png();pad.lock();actsEl.querySelectorAll('button').forEach(b=>b.disabled=true);
     const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    const result={parent:st.parent,founder:st.founder,bid:Object.assign({},st.bid),gearing:st.gearing,repayment:st.repayment,signature:st.sig,signedOn:iso(now),endsOn:iso(endDate)};if(st.quick)result.quick=true;
+    const result={lender:st.lender,phase1:st.phase1,stateLoan:st.stateLoan,parent:st.parent,founder:st.founder,bid:Object.assign({},st.bid),gearing:st.gearing,repayment:st.repayment,signature:st.sig,signedOn:iso(now),endsOn:iso(endDate)};if(st.quick)result.quick=true;
     sh.querySelector('#zdkSeal').classList.add('down');
     const sigs=sh.querySelector('.zdk-sigs');
     if(reduce){sigs.insertAdjacentHTML('beforeend',stampHtml('Executed','down big'));setTimeout(()=>done(result),1200);return;}
@@ -713,7 +724,13 @@ function boot(){M.mount();if(!/[?&]moneymock\b/.test(location.search))return;
   M.setPL([{label:'Landing fees',kind:'rev',amount:3.4,term:'aero',sub:'134 landings'},{label:'Parking',kind:'rev',amount:0.6,term:'aero'},{label:'Passenger fee',kind:'rev',amount:7.9,term:'udf',sub:'12,880 departing passengers'},{label:'Shops and food',kind:'rev',amount:4.1,term:'nonaero'},{label:'Transfer incentive',kind:'rev',amount:0.8},
     {label:'Runways open',kind:'cost',amount:1.3,sub:'6 runways × 1.5 h'},{label:'Ops teams',kind:'cost',amount:0.7},{label:'Penalties to airlines',kind:'cost',amount:0.9,term:'sla'},{label:'Passenger care',kind:'cost',amount:0.4},{label:'Incidents and fuel claims',kind:'cost',amount:0.6}],{note:'Mock data: open the game without ?moneymock to see the real economy.'});
   window.__zmmDemo={
-    onboarding:()=>M.onboarding({capexCr:56000,previewBid:b=>{const p=b.type==='share'?Math.min(98,Math.max(3,(b.value-18)*3.2)):Math.min(98,Math.max(3,(b.value-110)*0.35));return{winPct:p,note:p>66?'You probably win, but every rupee of revenue carries this share for 60 years.':p>33?'A coin toss against Kármán Line Ventures.':'Too low. A rival will outbid you.'};},previewClose:c=>({debtCr:56000*c.gearing/100,equityCr:56000*(1-c.gearing/100),parentCr:56000*(1-c.gearing/100)*0.64,minDscr:(c.repayment==='sculpted'?1.32:1.08)-(c.gearing-60)*0.012,note:c.repayment==='equal'?'Equal instalments are heavy in the first years. Expect a warning from the banks before Mumbai moves in.':'Repayments grow with the passengers. Money gets tight when Mumbai and Delhi move in and you have to build more.'}),
+    onboarding:()=>M.onboarding({capexCr:60000,
+      phase1:{def:'lean',options:[{id:'lean',label:'45 million passengers a year',small:'build more when Mumbai and Delhi move in',capexCr:60000},{id:'big',label:'70 million passengers a year',small:'build it all now: more of your money up front',capexCr:85000}]},
+      lenders:{def:'banks',options:[{id:'banks',who:'Indian banks',label:'Indian banks, in rupees',small:'the usual way, repaid over 14 years'},{id:'dollar',who:'bondholders abroad',label:'dollar bonds sold abroad',small:'less interest, but if the rupee falls every repayment grows'},{id:'infra',who:'the infrastructure bank',label:'India\'s infrastructure bank',small:'lends for longer, so each year\'s repayment is smaller'}]},
+      stateLoan:{pct:14.17,def:true,text:'interest-free, repaid from year 11'},
+      previewBid:b=>{const p=b.type==='share'?Math.min(98,Math.max(3,(b.value-18)*3.2)):Math.min(98,Math.max(3,(b.value-110)*0.35));return{winPct:p,note:p>66?'You probably win, but you pay this share of everything for 60 years.':p>33?'A coin toss against Kármán Line Ventures.':'Too low. A rival will outbid you.'};},
+      previewClose:c=>{const cap=c.phase1==='big'?85000:60000,loan=c.stateLoan?cap*0.1417:0,ask=(cap-loan)*c.gearing/100,max=(cap-loan)*(c.phase1==='big'?0.62:0.72),debt=Math.min(ask,max),eq=cap-loan-debt;
+        return{debtCr:debt,equityCr:eq,parentCr:eq*0.64,stateLoanCr:loan,minDscr:(c.repayment==='sculpted'?1.32:1.08)-(c.gearing-60)*0.012-(c.stateLoan?0:0.06)+(c.lender==='infra'?0.08:c.lender==='dollar'?0.04:0),note:c.repayment==='equal'?'Equal instalments are heavy in the first years. Expect a warning from the banks before Mumbai moves in.':'Repayments grow with the passengers. Money gets tight when Mumbai and Delhi move in and you have to build more.'};},
       bidTypes:{share:{min:10,max:50,step:0.5,def:30,benchmarks:[{name:'Navi Mumbai',val:12.6},{name:'Mumbai',val:38.7},{name:'Delhi',val:45.99}]},ppf:{min:100,max:450,step:5,def:250,benchmarks:[{name:'lowest Adani bid',val:115},{name:'highest recent bid',val:401}]}}}),
     board:()=>M.boardMeeting({era:3,years:'2041–46',parent:'Meridian Infra',parentPct:64,cashCr:3120,debtCr:31400,dscr:{value:1.16,warn:1.2,covenant:1.1},aera:{title:'The regulator\'s decision for 2041–46',text:'AERA lets you charge ₹1,040 per passenger on average. Last period you earned ₹1,820 cr less than it allowed, so you get that back over these five years.',canAppeal:true,appealText:'Win and your charges rise 6%. Lose and the airlines stay angry with you for the whole period.'},
       investments:[{id:'cdm',name:'A-CDM system',costCr:420,effect:'Departures leave the gate only when the runway can take them. Shorter taxi queues.',why:'Airport collaborative decision making.',payback:'4 years'},{id:'drill',name:'Faster changeover drills',costCr:60,effect:'Runway mode changes take 75 s instead of 120 s.',payback:'1 year'},{id:'radar',name:'Bird radar',costCr:180,effect:'Fewer bird events and no closure surprises.',payback:'3 years'},{id:'ret',name:'Extra rapid-exit taxiway',costCr:240,effect:'Arrivals clear 27R faster; arrival spacing shrinks a little.',payback:'3 years'},{id:'apm',name:'APM train upgrade',costCr:900,effect:'Transfers 15% faster, so more connections are made.',payback:'6 years'},{id:'retail',name:'Retail upgrade in the Mall',costCr:650,effect:'+12% spend per passenger.',payback:'3 years'},{id:'g',name:'Satellite G (phase 1B)',costCr:7800,effect:'+40 stands for when Mumbai moves in.',disabled:true,reason:'Not enough cash: needs a debt top-up from the lenders.'},{id:'sweep',name:'Second sweeper truck',costCr:12,effect:'FOD sweeps fit into smaller gaps.',owned:true}],

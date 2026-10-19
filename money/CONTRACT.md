@@ -30,7 +30,7 @@ The defaults are:
   3. The banks' loan offer.
   4. The Concession Agreement on duty paper, where all five parties are named. AAI, the State (MADC) and L5 Capital have already signed; the player signs last with the trackpad.
 
-  Each completed document is stamped in red and joins the stack on the left. It resolves `{parent, founder, bid:{type:'share'|'ppf', value}, gearing, repayment:'sculpted'|'equal', signature, signedOn, endsOn, quick?}`, or `null` for "Not now":
+  Each completed document is stamped in red and joins the stack on the left. It resolves `{lender, phase1, stateLoan, parent, founder, bid:{type:'share'|'ppf', value}, gearing, repayment:'sculpted'|'equal', signature, signedOn, endsOn, quick?}`, or `null` for "Not now":
   - `signature` is a PNG data URL. Show it again at the handback.
   - `signedOn` and `endsOn` are YYYY-MM-DD. The agreement is dated the day the player signs, and the concession ends the day before its 60th anniversary.
   - `quick` is true when the player took "Skip to signing, on standard terms". They still sign.
@@ -43,7 +43,11 @@ The defaults are:
   - `bidTypes:{share|ppf:{min, max, step, def, benchmarks:[{name, val}]}}`
   - `gearing:{min, max, def}`
   - `previewBid(bid) → {winPct, note}`
-  - `previewClose({gearing, repayment, bid}) → {equityCr, debtCr, parentCr, minDscr, note}`. `minDscr` is shown in rupees: "₹120 for every ₹100 due". Write the `note` in plain words, never in ratios.
+  - Optional close choices, each shown only if passed:
+    - `phase1:{def, options:[{id, label, small, capexCr}]}`: the size of phase 1. The chosen `capexCr` replaces `opts.capexCr`.
+    - `stateLoan:{pct | amountCr, def, text}`: the State's interest-free loan, accept or decline.
+    - `lenders:{def, options:[{id, who, label, small}]}`: who lends, for example Indian banks, dollar bonds or the infrastructure bank. `who` is the name used in the agreement.
+  - `previewClose({gearing, repayment, bid, phase1, stateLoan, lender}) → {equityCr, debtCr, parentCr, minDscr, stateLoanCr?, note}`. If `debtCr` is below what the player asked for, the loan document says the banks will lend only what the forecast can repay. `minDscr` is shown in rupees: "₹120 for every ₹100 due". Write the `note` in plain words, never in ratios.
 - **`ZMMoney.boardMeeting(opts)`** resolves `{bought:[ids], appeal, dividendCr, prepayCr}`. `opts` takes:
   - `{era, years, parent, cashCr, debtCr}`
   - `dscr:{value, warn, covenant}`

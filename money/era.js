@@ -2166,6 +2166,7 @@
     r = r || {};
     st.s.shiftLog = (st.s.shiftLog || []).filter(function (x) { return x.chapter !== n; }).concat([{chapter: n, stars: r.stars != null ? r.stars : 2, otp: r.otp != null ? r.otp : 0.85,
       made: r.made || 0, missed: r.missed || 0, auto: !!r.auto}]);
+    pressSettle(st, n);   // a press conference from an earlier chapter: the airline has now seen whether the answers held
   }
   function addPaper(st, n, fp, cause, year) {
     year = year || st.year;
@@ -2853,6 +2854,138 @@
   }
 
   // ---------------------------------------------------------------------------------------------
+  // The press conference after a bad day (design/ideas/press-conference.md, design/fun.md idea #6). PAPER.
+  // VSIEra.press.offer(state, n) → true when chapter n's shift (s.shiftLog) was bad and the press has not met yet;
+  // .conference(state, n) → the notepad: three questions, each naming the shift's own bad numbers, three answers each;
+  // .apply(state, answers, n) → the state with the answers on file: Akasa Air's trust (s.plateauTrust, the number Takeoff
+  // sets) moves a little now, and again when the next chapter's shift is flown (logShift → pressSettle); the next front
+  // page carries the headline. Deterministic: the same save and the same answers give the same state.
+  // ---------------------------------------------------------------------------------------------
+  var PRESS = {stars: 1, otp: 0.70, missed: 20, missedShare: 0.15,
+    // (est.) points of airline trust (0-1): owning it is warm now and pays when the fix shows; deflecting looks as good
+    // tomorrow and costs more once the numbers come out; blaming others changes nothing now and costs later
+    fx: {own: {now: 0.02, later: 0.02}, blame: {now: 0, later: -0.04}, deflect: {now: 0.02, later: -0.06}},
+    when: {3: 'morning', 4: 'afternoon', 5: 'day', 6: 'day', 7: 'evening'},
+    fix: {3: 'Every belt, gate and stand gets a full rehearsal before the next big day', 4: 'The afternoon bank gets more staff at the transfer desk, from next week',
+      5: 'Late feeder flights get a plan before they land: we hold the onward flight, or we rebook every passenger', 6: 'We are keeping the full duty team on through the quiet months',
+      7: 'The evening crews start an hour earlier, before the district\'s rush hour'}};
+  function pressAirline(st, n) { return n === 3 ? NM.plateau : n === 5 && st.ch5 && st.ch5.choice && st.ch5.choice !== 'decline' ? CH5.partner : n === 4 || n === 5 ? NM.feeder : NM.plateau; }
+  function pressShift(st, n) { return ((st.s && st.s.shiftLog) || []).filter(function (x) { return x.chapter === n; })[0] || null; }
+  function pressLast(st) { var l = (st.s && st.s.shiftLog) || []; return l.length ? l.reduce(function (a, x) { return x.chapter > a ? x.chapter : a; }, 0) : null; }
+  function pressLog(st) { return (st.s && st.s.press && st.s.press.log) || []; }
+  function pressBad(r) {
+    if (!r) return false;
+    var tot = (r.made || 0) + (r.missed || 0), share = tot ? (r.missed || 0) / tot : 0;
+    return r.stars <= PRESS.stars || r.otp < PRESS.otp || ((r.missed || 0) >= PRESS.missed && share >= PRESS.missedShare);
+  }
+  function pressOffer(st, n) {
+    if (!st || !st.s || st.over) return false;
+    n = n == null ? pressLast(st) : n;
+    if (!n || n < 3 || n > 7) return false;
+    if (pressLog(st).some(function (x) { return x.chapter === n; })) return false;
+    return pressBad(pressShift(st, n));
+  }
+  // the shift's bad numbers, worst first: [{k, sev, text (a sentence), short (a phrase)}]
+  function pressNumbers(st, n) {
+    var r = pressShift(st, n) || {}, when = PRESS.when[n] || 'day', made = r.made || 0, missed = r.missed || 0, tot = made + missed, share = tot ? missed / tot : 0;
+    var air = pressAirline(st, n), out = [], otp = Math.round((r.otp != null ? r.otp : 0.85) * 100), stars = r.stars != null ? r.stars : 2;
+    var hold = (st.s.decisions || []).filter(function (d) { return d.id === 'ch5-hold'; })[0], london = n === 5 && hold && hold.chosen === 'letgo';
+    if (missed >= PRESS.missed && (share >= 0.08 || london)) {
+      var N = missed.toLocaleString('en-IN'), txt = n === 3 ? N + ' passengers missed their ' + air + ' connections on opening morning' :
+        n === 4 ? N + ' passengers missed their onward flights this afternoon' :
+        london ? CH5.hub.pax.toLocaleString('en-IN') + ' passengers from ' + CH5.hub.from + ' missed ' + CH5.hub.dest + ' today' :
+        N + ' passengers missed their connections today';
+      out.push({k: 'missed', sev: london ? 9 : share / PRESS.missedShare, text: txt, short: london ? CH5.hub.pax + ' passengers left behind by ' + CH5.hub.dest : N + ' missed connections',
+        again: (london ? CH5.hub.pax.toLocaleString('en-IN') : N) + ' people missed their flights at your airport'});
+    }
+    if (otp < 80) out.push({k: 'otp', sev: (85 - otp) / 15, text: 'Only ' + otp + '% of flights left on time this ' + when + ': ' + Math.round((100 - otp) / 10) + ' in 10 were late', short: otp + '% on time',
+      again: Math.round((100 - otp) / 10) + ' in 10 flights were late at your airport'});
+    if (stars <= PRESS.stars) out.push({k: 'stars', sev: 0.9, text: 'The airport\'s own report gives this ' + when + ' ' + stars + ' star' + (stars === 1 ? '' : 's') + ' of 3: safe, and nothing more', short: 'a ' + stars + '-star ' + when,
+      again: 'Your airport ran a ' + stars + '-star ' + when});
+    out.sort(function (a, b) { return b.sev - a.sev; });
+    return out;
+  }
+  function pressHeadline(st, n, answers) {
+    var when = (PRESS.when[n] || 'day').toUpperCase(), c = {own: 0, blame: 0, deflect: 0}, firstBlame = null, Q = pressQuestions(st, n);
+    Q.forEach(function (q) { var a = answers[q.id]; c[a]++; if (a === 'blame' && !firstBlame) firstBlame = q.blames; });
+    if (c.own >= 2) return {kind: 'own', lead: 'VSI\'S CHIEF OWNS THE BAD ' + when};
+    if (c.blame >= 2) return {kind: 'blame', lead: 'VSI BLAMES ' + firstBlame.toUpperCase()};
+    if (c.deflect >= 2) return {kind: 'deflect', lead: 'VSI POINTS TO A RECORD YEAR'};
+    return {kind: 'mixed', lead: 'VSI\'S CHIEF ANSWERS FOR A BAD ' + when};
+  }
+  function pressQuestions(st, n) {
+    var nums = pressNumbers(st, n), w = nums[0] || {text: 'The shift went badly', short: 'a bad ' + (PRESS.when[n] || 'day')}, w2 = nums[1] || {k: w.k, text: w.again || w.text}, air = pressAirline(st, n), fix = PRESS.fix[n] || PRESS.fix[3];
+    var ans = function (own, blame, deflect, blames) {
+      return [{id: 'own', label: 'Own it, and name the fix', says: own, slip: {paper: 'The chief owns it', airline: air + ': a little warmer'}},
+        {id: 'blame', label: 'Blame ' + blames, says: blame, slip: {paper: 'VSI blames ' + blames, airline: air + ': no change'}},
+        {id: 'deflect', label: 'Point to the good news', says: deflect, slip: {paper: 'VSI points to a record year', airline: air + ': a little warmer'}}];
+    };
+    return [
+      {id: 'q1', number: w.k, ask: w.text + '. What went wrong?', blames: 'the weather',
+        answers: ans('"We got it wrong. ' + fix + '."', '"The weather turned, and the whole region ran late."', '"Look at the year: more passengers than ever came through VSI."', 'the weather')},
+      {id: 'q2', number: w2.k, ask: w2.text + '. Whose fault is that?', blames: 'the airlines',
+        answers: ans('"Ours. The airport sets the plan, so the airport answers for it."', '"The airlines\' flights came in late, and we cannot turn a plane around faster than its crew."', '"It was one day. The year has been the best VSI has had."', 'the airlines')},
+      {id: 'q3', number: w.k, ask: air + ' is deciding whether to bring more flights to VSI. After ' + w.short + ', why should it?', blames: poss(air) + ' timetable',
+        answers: ans('"Because we will fix it, and we will show ' + air + ' the fix before the next ' + (PRESS.when[n] || 'day') + '."', '"' + poss(air) + ' own timetable left too little time to change planes."', '"' + air + ' has never had a better year here."', poss(air) + ' timetable')}];
+  }
+  function pressConference(st, n) {
+    ensure();
+    n = n == null ? pressLast(st) : n;
+    var y = SHIFT_YEAR[n] || st.year, d = ch5Date(st, y), prev = pressLog(st).slice(-1)[0], air = pressAirline(st, n);
+    var recall = prev ? 'In ' + prev.calYear + ' you ' + {own: 'owned the bad ' + (PRESS.when[prev.chapter] || 'day') + ' and promised a fix.', blame: 'blamed ' + prev.blamed + '.', deflect: 'pointed to a record year.', mixed: 'answered for a bad ' + (PRESS.when[prev.chapter] || 'day') + '.'}[prev.kind] : null;
+    return {chapter: n, year: y, calYear: cal(y), date: d.iso, dateWords: d.words, paper: 'The Zero Mile Times', reporter: 'Our aviation reporter', room: 'The press room, Zero Mile Hall',
+      title: 'The Zero Mile Times asks', airline: air, founder: st.founder || 'Asha Rao', company: st.parent || 'Your company', role: 'Director, VSIAL',
+      intro: 'The ' + (PRESS.when[n] || 'day') + ' went badly, and the paper wants answers before it goes to print.', recall: recall,
+      numbers: pressNumbers(st, n).map(function (x) { return {k: x.k, text: x.text}; }), questions: pressQuestions(st, n),
+      slipQuestion: 'What tomorrow\'s paper says', slipNote: 'Airlines read the paper too.', cta: 'Give the answer', done: 'On to the year\'s results'};
+  }
+  // tomorrow's headline and column for a set of answers ({q1, q2, q3}: own | blame | deflect)
+  function pressStory(st, n, a) {
+    n = n == null ? pressLast(st) : n; a = a || {};
+    var Q = pressQuestions(st, n), h = pressHeadline(st, n, a), nums = pressNumbers(st, n), w = nums[0] ? nums[0].short : 'a bad ' + (PRESS.when[n] || 'day');
+    var who = st.founder || 'VSI\'s chief', air = pressAirline(st, n), blamed = (Q.filter(function (q) { return a[q.id] === 'blame'; })[0] || {}).blames || null;
+    var body = h.kind === 'own' ? 'Asked about ' + w + ', ' + who + ' said: "We got it wrong. ' + (PRESS.fix[n] || PRESS.fix[3]) + '." The paper will check on the fix.' :
+      h.kind === 'blame' ? who + ' blamed ' + blamed + ' for ' + w + '. ' + air + ' did not comment.' :
+      h.kind === 'deflect' ? 'Asked about ' + w + ', ' + who + ' pointed to a record year for VSI. ' + air + ' did not comment.' :
+      who + ' answered three questions about ' + w + '. ' + air + ' did not comment.';
+    return {kind: h.kind, lead: h.lead, blamed: blamed, column: {head: h.lead, body: body}};
+  }
+  function pressClamp(v) { return Math.round(Math.max(0, Math.min(1, v)) * 100) / 100; }
+  function pressApply(st, answers, n) {
+    ensure();
+    n = n == null ? pressLast(st) : n;
+    if (!pressShift(st, n) || pressLog(st).some(function (x) { return x.chapter === n; })) return st;
+    st = clone(st);
+    var Q = pressQuestions(st, n), a = {}, now = 0, later = 0;
+    if (Array.isArray(answers)) answers = {q1: answers[0], q2: answers[1], q3: answers[2]};
+    Q.forEach(function (q) { var x = answers && answers[q.id]; a[q.id] = PRESS.fx[x] ? x : 'deflect'; now += PRESS.fx[a[q.id]].now; later += PRESS.fx[a[q.id]].later; });
+    now = Math.round(now * 100) / 100; later = Math.round(later * 100) / 100;
+    var y = SHIFT_YEAR[n] || st.year, h = pressStory(st, n, a), blamed = h.blamed, body = h.column.body;
+    st.s.press = st.s.press || {log: []};
+    st.s.press.log = (st.s.press.log || []).concat([{chapter: n, year: y, calYear: cal(y), answers: a, kind: h.kind, lead: h.lead, blamed: blamed, column: h.column,
+      now: now, later: later, settled: false}]);
+    if (st.s.plateauTrust != null) st.s.plateauTrust = pressClamp(st.s.plateauTrust + now);
+    st.s.pressTrust = Math.round(((st.s.pressTrust || 0) + now) * 100) / 100;
+    addDoc(st, {id: 'press-' + cal(y), title: 'Press notes, ' + cal(y), year: y, date: ch5Date(st, y).iso, kind: 'press', stamp: 'FILED', summary: 'The Zero Mile Times ran "' + h.lead + '". ' + body});
+    return st;
+  }
+  // the later half: when a later chapter's shift is flown, the airline has seen whether the answers held
+  function pressSettle(st, n) {
+    if (!st || !st.s || !st.s.press) return st;
+    (st.s.press.log || []).forEach(function (x) {
+      if (x.settled || x.chapter >= n) return;
+      x.settled = true;
+      if (st.s.plateauTrust != null) st.s.plateauTrust = pressClamp(st.s.plateauTrust + x.later);
+      st.s.pressTrust = Math.round(((st.s.pressTrust || 0) + x.later) * 100) / 100;
+    });
+    return st;
+  }
+  // the next front page after the press met: the cliffhanger after Takeoff (3) and Cruise (5), else the next chapter's
+  function pressColumn(st, n) { var x = pressLog(st).filter(function (r) { return r.chapter === n; })[0]; return x ? clone(x.column) : null; }
+  function pressFront(fp, col) { if (fp && col) fp.columns = [col].concat(fp.columns || []); return fp; }
+  var press = {offer: pressOffer, bad: pressBad, conference: pressConference, story: function (st, a, n) { ensure(); return pressStory(st, n, a); }, apply: pressApply, settle: pressSettle, column: pressColumn, rules: PRESS};
+
+  // ---------------------------------------------------------------------------------------------
   // VSIEra.bridge(state, n): the years between the end of one chapter and the start of chapter n, played by the engine
   // (pending boards at the defaults), with the facts for the "years later" split-flap: {state, from, to, years[], lines[]}
   // ---------------------------------------------------------------------------------------------
@@ -3154,8 +3287,14 @@
     shiftPlan: ch7ShiftPlan, applyShift: ch7ApplyShift, script: {threshold: CH7.threshold}});
 
   ch5.chapter = 5; ch5.eras = CH_ERAS[5].slice();
+  // the press conference's headline goes on the next front page: Chapter 5's after Climb's, Chapter 7's after Turbulence's
+  // (Takeoff's and Cruise's go on the cliffhanger)
+  [ch5, ch7].forEach(function (C) { var f0 = C.frontPage; C.frontPage = function (st) { return pressFront(f0.apply(null, arguments), st && pressColumn(st, C.chapter - 1)); }; });
+  var cliffhanger0 = cliffhanger;
+  cliffhanger = function (st, act) { act = act || actBreak(st) || 1; return pressFront(cliffhanger0(st, act), st && pressColumn(st, act === 1 ? 3 : 5)); };
   var API = {
     ch3: ch3, ch4: ch4, ch5: ch5, ch6: ch6, ch7: ch7, chapters: {3: ch3, 4: ch4, 5: ch5, 6: ch6, 7: ch7}, bridge: bridge, debrief: debrief, cliffhanger: cliffhanger, actBreak: actBreak,
+    press: press,
     data: function (md) { load(md); _closeCache = {}; return API; },
     capexCr: capexCr, phase1Options: phase1Options, stateLoanOpt: stateLoanOpt, lenders: lenderOptions, partners: partners, bidTypes: bidTypes,
     previewBid: previewBid, previewClose: previewClose, bidOpening: bidOpening, bidRivals: bidRivals, privateHouses: privateHouses, pitchPrivate: pitchPrivate, _tender: {BIDDERS: BIDDERS, reset: function () { _ceil = null; }, ceilings: function () { return rivalCeilings(); }},

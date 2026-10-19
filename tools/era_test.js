@@ -614,6 +614,73 @@ const s0hits = S0.texts.filter(t => BANNED.test(t));
 if (s0hits.length) fail('stage 0 jargon: ' + s0hits.slice(0, 3).map(t => (t.match(BANNED) || [])[0] + ' in ' + t.slice(Math.max(0, t.search(BANNED) - 60), t.search(BANNED) + 30)).join(' | '));
 console.log('- plain words: ' + S0.texts.length + ' Stage 0 payloads, ' + s0hits.length + ' with jargon; ' + (fails - S0.fails0) + ' Stage 0 failures');
 
+// ---- The press conference after a bad day (design/ideas/press-conference.md) ----
+console.log('\n## The press conference after a bad day\n');
+if (SM && BL) {
+  const P = E.press, f0 = fails, ptexts = [], combos = [];
+  ['own', 'blame', 'deflect'].forEach(a => ['own', 'blame', 'deflect'].forEach(b => ['own', 'blame', 'deflect'].forEach(c => combos.push({q1: a, q2: b, q3: c}))));
+  const trust = st => st.s.plateauTrust;
+  // 1. offered only after a bad shift: the engine's own record of the shift, against the card's rule
+  if (!P.offer(BL.log.afterCh3, 3)) fail('press: the blind opening morning (1 star, 70% on time, 200 missed) should bring the press');
+  if (P.offer(SM.log.afterCh3, 3)) fail('press: the smart opening morning should not bring the press');
+  if (P.offer(SM.log.ch3start, 3)) fail('press: no shift flown, no press');
+  const c3 = E.ch3.applyDecision(rt(SM.log.ch3start), 'phased'), plan3 = E.ch3.shiftPlan(rt(c3));
+  let grid = 0, offered = 0;
+  for (const stars of [0, 1, 2, 3]) for (const otp of [0.6, 0.69, 0.7, 0.8, 0.92]) for (const missed of [0, 19, 40, 120]) {
+    const r = {stars, otp, cx: 0.85, made: 200, missed, incidents: {}}, st = E.ch3.applyShift(rt(c3), played(plan3, r)).state;
+    const want = stars <= 1 || otp < 0.7 || (missed >= 20 && missed / (200 + missed) >= 0.15), got = P.offer(st, 3);
+    grid++; if (got) offered++;
+    if (got !== want) fail('press: offer for ' + JSON.stringify({stars, otp, missed}) + ' is ' + got + ', want ' + want);
+    if (got) {
+      const pc = P.conference(st, 3);
+      if (pc.questions.length !== 3 || pc.questions.some(q => q.answers.length > 3 || !/\d/.test(q.ask))) fail('press: three questions, ≤3 answers, each naming a number: ' + JSON.stringify(pc.questions.map(q => q.ask)));
+      // 2. honest answers never lower trust: now, and after the next chapter's shift (when the later half lands)
+      const own = P.apply(rt(st), {q1: 'own', q2: 'own', q3: 'own'}, 3);
+      if (trust(own) < trust(st)) fail('press: owning it lowered trust now: ' + trust(st) + ' → ' + trust(own));
+      if (P.offer(own, 3)) fail('press: offered twice for the same shift');
+      for (const a of combos) {
+        const x = P.apply(rt(st), a, 3), owned = Object.keys(a).filter(k => a[k] === 'own');
+        owned.forEach(k => { const y = P.apply(rt(st), Object.assign({}, a, {[k]: 'deflect'}), 3); if (trust(x) < trust(y)) fail('press: an honest answer lowered trust against deflecting: ' + JSON.stringify(a)); });
+      }
+    }
+  }
+  // the later half, flown through Chapter 4 on the blind save: honest pays, deflecting costs, and owning beats no press at all
+  const pb = BL.log.afterCh3, toCh4 = st => { let s = E.bridge(rt(st), 4).state; s = E.ch4.applyDecision(rt(s), 'cut'); return E.ch4.applyShift(rt(s), played(E.ch4.shiftPlan(rt(s)), BLIND.ch4r)).state; };
+  // a mid-trust save, so the clamp at 0 cannot hide a fall: the blind save with its opening morning at 0.5
+  const mid = rt(pb); mid.s.plateauTrust = 0.5;
+  const none = toCh4(mid), O = P.apply(rt(mid), ['own', 'own', 'own'], 3), D = P.apply(rt(mid), ['deflect', 'deflect', 'deflect'], 3), B = P.apply(rt(mid), ['blame', 'blame', 'blame'], 3);
+  const O4 = toCh4(O), D4 = toCh4(D), B4 = toCh4(B);
+  if (!(trust(O) >= trust(mid) && trust(O4) >= trust(none) && trust(O4) >= trust(O))) fail('press: honest answers lowered trust later: ' + [trust(mid), trust(O), trust(none), trust(O4)]);
+  if (!(trust(D) === trust(O))) fail('press: deflecting should look as good as owning it tomorrow: ' + trust(D) + ' vs ' + trust(O));
+  if (!(trust(D4) < trust(none) && trust(B4) < trust(none) && trust(D4) < trust(O4))) fail('press: deflecting and blaming should cost trust once the next shift is flown: ' + [trust(none), trust(O4), trust(B4), trust(D4)]);
+  if (!/OWNS THE BAD MORNING/.test(E.cliffhanger(O, 1).columns[0].head) || !/RECORD YEAR/.test(E.cliffhanger(D, 1).columns[0].head) || !/BLAMES THE WEATHER/.test(E.cliffhanger(B, 1).columns[0].head))
+    fail('press: the cliffhanger should carry the headline: ' + [O, D, B].map(s => E.cliffhanger(s, 1).columns[0].head));
+  if (E.cliffhanger(mid, 1).columns.some(c => /VSI'S CHIEF|BLAMES|RECORD YEAR/.test(c.head))) fail('press: no press, no press column');
+  const fp5 = E.ch5.frontPage(E.ch5.start(rt(E.bridge(rt(toCh4(BL.log.afterCh3)), 5).state)) || {});
+  // 3. deterministic for the same save
+  const j1 = JSON.stringify([P.conference(rt(pb), 3), P.apply(rt(pb), ['own', 'blame', 'deflect'], 3), toCh4(P.apply(rt(pb), ['deflect', 'own', 'blame'], 3)).s.press]);
+  const j2 = JSON.stringify([P.conference(rt(pb), 3), P.apply(rt(pb), ['own', 'blame', 'deflect'], 3), toCh4(P.apply(rt(pb), ['deflect', 'own', 'blame'], 3)).s.press]);
+  if (j1 !== j2) fail('press: not deterministic for the same save');
+  // Climb's press goes on Cruise's front page; a second press recalls the first
+  const c4 = toCh4(D), pc4 = P.offer(c4, 4) ? P.conference(c4, 4) : null;
+  if (!pc4 || !/^In 2030 you pointed to a record year/.test(pc4.recall || '')) fail('press: Climb\'s blind afternoon should bring the press, recalling 2030: ' + (pc4 && pc4.recall));
+  const a4 = P.apply(rt(c4), ['blame', 'blame', 'own'], 4), fp5b = E.ch5.frontPage(E.ch5.start(rt(E.bridge(rt(a4), 5).state)));
+  if (!/BLAMES THE WEATHER/.test(fp5b.columns[0].head)) fail('press: Cruise\'s front page should carry Climb\'s headline: ' + fp5b.columns[0].head);
+  // Cruise: London left without the Lucknow passengers
+  const LN = flight(Object.assign({}, SMART, {hold: false, ch5stars: 1}));
+  const pc5 = LN && P.offer(LN.log.afterCh5, 5) ? P.conference(LN.log.afterCh5, 5) : null;
+  if (!pc5 || !/^380 passengers from Lucknow missed London/.test(pc5.questions[0].ask)) fail('press: Cruise\'s bad day should lead with London: ' + (pc5 && pc5.questions[0].ask));
+  // 4. plain words in everything the player sees
+  [P.conference(pb, 3), pc4, pc5, fp5, fp5b, E.cliffhanger(O, 1), E.cliffhanger(D, 1), E.cliffhanger(B, 1), O.docs.filter(d => d.kind === 'press')].forEach(x => ptexts.push(JSON.stringify(x)));
+  combos.forEach(a => ptexts.push(JSON.stringify(P.story(pb, a, 3)), JSON.stringify(P.story(c4, a, 4))));
+  const ph = ptexts.filter(t => BANNED.test(t));
+  if (ph.length) fail('press jargon: ' + ph.slice(0, 2).map(t => (t.match(BANNED) || [])[0]).join(', '));
+  console.log('- offered on ' + offered + ' of ' + grid + ' opening mornings, exactly when the card\'s rule says; blind 2030: "' + P.conference(pb, 3).questions[0].ask + '"');
+  console.log('- trust from 0.5: no press ' + trust(none) + ' after Climb; owned ' + trust(O) + ' → ' + trust(O4) + ', deflected ' + trust(D) + ' → ' + trust(D4) + ', blamed ' + trust(B) + ' → ' + trust(B4));
+  console.log('- headlines: "' + E.cliffhanger(O, 1).columns[0].head + '", "' + E.cliffhanger(D, 1).columns[0].head + '", "' + E.cliffhanger(B, 1).columns[0].head + '"; Cruise: "' + (pc5 ? pc5.questions[0].ask : '') + '"');
+  console.log('- plain words: ' + ptexts.length + ' press payloads, ' + ph.length + ' with jargon; deterministic; ' + (fails - f0) + ' press failures');
+}
+
 // ---- Private capital: four houses, the pitch's outcomes, and an all-declined deal ----
 {
   const PH = E.privateHouses(), ban = /\b(DSCR|RAB|WACC|true-?up|EBITDA|IRR|SLA|UDF|covenant|step-?in|CFADS)\b/i;

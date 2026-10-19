@@ -248,7 +248,7 @@ body.v3 #toast{right:auto;left:max(14px,env(safe-area-inset-left,0px));width:var
 }
 @media (prefers-reduced-motion:reduce){.inc,#toast.flash{animation:none}}
 </style>
-<script>(function(){var B='b3b7844dc1c3',K=['zm_campaign','zm_ch5'];window.__BUILD=B;function cancel(){try{K.forEach(function(x){localStorage.removeItem(x);});sessionStorage.setItem('zm_updated','1');}catch(e){}}try{var o=localStorage.getItem('zm_build');if(o&&o!==B)cancel();localStorage.setItem('zm_build',B);}catch(e){}if(location.protocol.indexOf('http')===0)setInterval(function(){fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(v){if(v&&v.build&&v.build!==B){cancel();try{localStorage.setItem('zm_build',v.build);}catch(e){}location.reload();}}).catch(function(){});},30000);document.addEventListener('DOMContentLoaded',function(){try{if(sessionStorage.getItem('zm_updated')){sessionStorage.removeItem('zm_updated');var n=document.createElement('div');n.textContent='A new version of VSI is live. Games in progress were closed; start again from the menu.';n.style.cssText='position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:99999;background:#1d2024;color:#fff7ea;padding:10px 16px;font:14px Barlow Condensed,sans-serif;letter-spacing:.02em;border-radius:3px;box-shadow:0 6px 18px rgba(0,0,0,.4)';document.body.appendChild(n);setTimeout(function(){n.remove();},7000);}}catch(e){}});})();</script>
+<script>(function(){var B='aec1bb561bca',K=['zm_campaign','zm_ch5'];window.__BUILD=B;function cancel(){try{K.forEach(function(x){localStorage.removeItem(x);});sessionStorage.setItem('zm_updated','1');}catch(e){}}try{var o=localStorage.getItem('zm_build');if(o&&o!==B)cancel();localStorage.setItem('zm_build',B);}catch(e){}if(location.protocol.indexOf('http')===0)setInterval(function(){fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(v){if(v&&v.build&&v.build!==B){cancel();try{localStorage.setItem('zm_build',v.build);}catch(e){}location.reload();}}).catch(function(){});},30000);document.addEventListener('DOMContentLoaded',function(){try{if(sessionStorage.getItem('zm_updated')){sessionStorage.removeItem('zm_updated');var n=document.createElement('div');n.textContent='A new version of VSI is live. Games in progress were closed; start again from the menu.';n.style.cssText='position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:99999;background:#1d2024;color:#fff7ea;padding:10px 16px;font:14px Barlow Condensed,sans-serif;letter-spacing:.02em;border-radius:3px;box-shadow:0 6px 18px rgba(0,0,0,.4)';document.body.appendChild(n);setTimeout(function(){n.remove();},7000);}}catch(e){}});})();</script>
 <div id="app">
   <div id="zoomBox" class="hud panel" role="group" aria-label="Map zoom"><button id="zIn" title="Zoom in (+)">+</button><button id="zOut" title="Zoom out (−)">−</button><button id="zFit" title="Show the whole airport (F)">Fit</button></div>
   <canvas id="map" aria-label="Live map of the hub: six parallel runways, the terminal and concourses, and every aircraft"></canvas>
@@ -4746,7 +4746,8 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
         let res=plan.auto;if(FL.bot){const x=FL_BOT[FL.bot.mode].shift[n];if(x)res=Object.assign({},plan.auto,x,{auto:false});}
         FL.log.push({n,kind:'shift',stub:true,stars:res.stars,otp:res.otp});
         FL.shiftDone(st,C.applyShift(st,res),true);continue;}
-      if(f.step==='bill'){const out=f.out||{};let b=out.bill?Object.assign({},out.bill):null;
+      if(f.step==='bill'){if(await FL.pressConference(st,n))continue;   // a bad shift: the press first (design/ideas/press-conference.md)
+        const out=f.out||{};let b=out.bill?Object.assign({},out.bill):null;
         if(b){if(f.stub)b.paragraph=['This shift was flown by your duty team.'].concat(b.paragraph?[b.paragraph]:[]);
           if(n===4&&b.budget&&E.chapters[4].applyBudget){const bud=b.budget;
             b.list={title:bud.title,items:[bud.line+'.',bud.text]};b.cta='Approve the budget, with the bird radar';b.cta2='Approve it without the radar';
@@ -4785,6 +4786,15 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
     f.out={bill:out.bill||null,card:out.card||null};f.stub=!!stub;f.step=out.bill?'bill':ns.over?'ended':'card';
     ns.flight=f;CAMP.st=ns;FL.save();},
 
+  // ---- the press conference after a bad day (design/ideas/press-conference.md): before the bill, when VSIEra.press offers it.
+  // Three questions on a reporter's notepad (ZMMoney.press); the answers move airline trust in the engine and give the next
+  // front page its headline. Bots: smart owns every answer, blind deflects every one. True when the answers were filed.
+  async pressConference(st,n){const E=CAMP.E(),Z=window.ZMMoney,P=E&&E.press;if(!P||!Z||!Z.press||!P.offer(st,n))return false;
+    const c=P.conference(st,n),bot=FL.bot?(a=>({q1:a,q2:a,q3:a}))(FL.bot.mode==='blind'?'deflect':'own'):null;
+    const o=FL.who(st,Object.assign({},c,{story:a=>P.story(st,a,n).column,auto:bot}));
+    const r=await FL.show('press',c,()=>Z.press(o),bot?{answers:bot}:null);
+    const ns=P.apply(st,(r&&r.answers)||bot||{},n);ns.flight=Object.assign({},st.flight);
+    FL.log.push({n,kind:'press',answers:(r&&r.answers)||bot,trust:ns.s&&ns.s.plateauTrust});CAMP.st=ns;FL.save();return true;},
   // ---- the decisions ----
   async decide(st,d,n){const bot=FL.bot&&FL_BOT[FL.bot.mode].pick[n];let dflt=bot||null;
     if(n===4&&dflt==='two'&&(d.choices||[]).some(c=>c.id==='two'&&c.disabled))dflt='anchor';
@@ -14738,6 +14748,7 @@ requestAnimationFrame(frame);
     r = r || {};
     st.s.shiftLog = (st.s.shiftLog || []).filter(function (x) { return x.chapter !== n; }).concat([{chapter: n, stars: r.stars != null ? r.stars : 2, otp: r.otp != null ? r.otp : 0.85,
       made: r.made || 0, missed: r.missed || 0, auto: !!r.auto}]);
+    pressSettle(st, n);   // a press conference from an earlier chapter: the airline has now seen whether the answers held
   }
   function addPaper(st, n, fp, cause, year) {
     year = year || st.year;
@@ -15425,6 +15436,138 @@ requestAnimationFrame(frame);
   }
 
   // ---------------------------------------------------------------------------------------------
+  // The press conference after a bad day (design/ideas/press-conference.md, design/fun.md idea #6). PAPER.
+  // VSIEra.press.offer(state, n) → true when chapter n's shift (s.shiftLog) was bad and the press has not met yet;
+  // .conference(state, n) → the notepad: three questions, each naming the shift's own bad numbers, three answers each;
+  // .apply(state, answers, n) → the state with the answers on file: Akasa Air's trust (s.plateauTrust, the number Takeoff
+  // sets) moves a little now, and again when the next chapter's shift is flown (logShift → pressSettle); the next front
+  // page carries the headline. Deterministic: the same save and the same answers give the same state.
+  // ---------------------------------------------------------------------------------------------
+  var PRESS = {stars: 1, otp: 0.70, missed: 20, missedShare: 0.15,
+    // (est.) points of airline trust (0-1): owning it is warm now and pays when the fix shows; deflecting looks as good
+    // tomorrow and costs more once the numbers come out; blaming others changes nothing now and costs later
+    fx: {own: {now: 0.02, later: 0.02}, blame: {now: 0, later: -0.04}, deflect: {now: 0.02, later: -0.06}},
+    when: {3: 'morning', 4: 'afternoon', 5: 'day', 6: 'day', 7: 'evening'},
+    fix: {3: 'Every belt, gate and stand gets a full rehearsal before the next big day', 4: 'The afternoon bank gets more staff at the transfer desk, from next week',
+      5: 'Late feeder flights get a plan before they land: we hold the onward flight, or we rebook every passenger', 6: 'We are keeping the full duty team on through the quiet months',
+      7: 'The evening crews start an hour earlier, before the district\'s rush hour'}};
+  function pressAirline(st, n) { return n === 3 ? NM.plateau : n === 5 && st.ch5 && st.ch5.choice && st.ch5.choice !== 'decline' ? CH5.partner : n === 4 || n === 5 ? NM.feeder : NM.plateau; }
+  function pressShift(st, n) { return ((st.s && st.s.shiftLog) || []).filter(function (x) { return x.chapter === n; })[0] || null; }
+  function pressLast(st) { var l = (st.s && st.s.shiftLog) || []; return l.length ? l.reduce(function (a, x) { return x.chapter > a ? x.chapter : a; }, 0) : null; }
+  function pressLog(st) { return (st.s && st.s.press && st.s.press.log) || []; }
+  function pressBad(r) {
+    if (!r) return false;
+    var tot = (r.made || 0) + (r.missed || 0), share = tot ? (r.missed || 0) / tot : 0;
+    return r.stars <= PRESS.stars || r.otp < PRESS.otp || ((r.missed || 0) >= PRESS.missed && share >= PRESS.missedShare);
+  }
+  function pressOffer(st, n) {
+    if (!st || !st.s || st.over) return false;
+    n = n == null ? pressLast(st) : n;
+    if (!n || n < 3 || n > 7) return false;
+    if (pressLog(st).some(function (x) { return x.chapter === n; })) return false;
+    return pressBad(pressShift(st, n));
+  }
+  // the shift's bad numbers, worst first: [{k, sev, text (a sentence), short (a phrase)}]
+  function pressNumbers(st, n) {
+    var r = pressShift(st, n) || {}, when = PRESS.when[n] || 'day', made = r.made || 0, missed = r.missed || 0, tot = made + missed, share = tot ? missed / tot : 0;
+    var air = pressAirline(st, n), out = [], otp = Math.round((r.otp != null ? r.otp : 0.85) * 100), stars = r.stars != null ? r.stars : 2;
+    var hold = (st.s.decisions || []).filter(function (d) { return d.id === 'ch5-hold'; })[0], london = n === 5 && hold && hold.chosen === 'letgo';
+    if (missed >= PRESS.missed && (share >= 0.08 || london)) {
+      var N = missed.toLocaleString('en-IN'), txt = n === 3 ? N + ' passengers missed their ' + air + ' connections on opening morning' :
+        n === 4 ? N + ' passengers missed their onward flights this afternoon' :
+        london ? CH5.hub.pax.toLocaleString('en-IN') + ' passengers from ' + CH5.hub.from + ' missed ' + CH5.hub.dest + ' today' :
+        N + ' passengers missed their connections today';
+      out.push({k: 'missed', sev: london ? 9 : share / PRESS.missedShare, text: txt, short: london ? CH5.hub.pax + ' passengers left behind by ' + CH5.hub.dest : N + ' missed connections',
+        again: (london ? CH5.hub.pax.toLocaleString('en-IN') : N) + ' people missed their flights at your airport'});
+    }
+    if (otp < 80) out.push({k: 'otp', sev: (85 - otp) / 15, text: 'Only ' + otp + '% of flights left on time this ' + when + ': ' + Math.round((100 - otp) / 10) + ' in 10 were late', short: otp + '% on time',
+      again: Math.round((100 - otp) / 10) + ' in 10 flights were late at your airport'});
+    if (stars <= PRESS.stars) out.push({k: 'stars', sev: 0.9, text: 'The airport\'s own report gives this ' + when + ' ' + stars + ' star' + (stars === 1 ? '' : 's') + ' of 3: safe, and nothing more', short: 'a ' + stars + '-star ' + when,
+      again: 'Your airport ran a ' + stars + '-star ' + when});
+    out.sort(function (a, b) { return b.sev - a.sev; });
+    return out;
+  }
+  function pressHeadline(st, n, answers) {
+    var when = (PRESS.when[n] || 'day').toUpperCase(), c = {own: 0, blame: 0, deflect: 0}, firstBlame = null, Q = pressQuestions(st, n);
+    Q.forEach(function (q) { var a = answers[q.id]; c[a]++; if (a === 'blame' && !firstBlame) firstBlame = q.blames; });
+    if (c.own >= 2) return {kind: 'own', lead: 'VSI\'S CHIEF OWNS THE BAD ' + when};
+    if (c.blame >= 2) return {kind: 'blame', lead: 'VSI BLAMES ' + firstBlame.toUpperCase()};
+    if (c.deflect >= 2) return {kind: 'deflect', lead: 'VSI POINTS TO A RECORD YEAR'};
+    return {kind: 'mixed', lead: 'VSI\'S CHIEF ANSWERS FOR A BAD ' + when};
+  }
+  function pressQuestions(st, n) {
+    var nums = pressNumbers(st, n), w = nums[0] || {text: 'The shift went badly', short: 'a bad ' + (PRESS.when[n] || 'day')}, w2 = nums[1] || {k: w.k, text: w.again || w.text}, air = pressAirline(st, n), fix = PRESS.fix[n] || PRESS.fix[3];
+    var ans = function (own, blame, deflect, blames) {
+      return [{id: 'own', label: 'Own it, and name the fix', says: own, slip: {paper: 'The chief owns it', airline: air + ': a little warmer'}},
+        {id: 'blame', label: 'Blame ' + blames, says: blame, slip: {paper: 'VSI blames ' + blames, airline: air + ': no change'}},
+        {id: 'deflect', label: 'Point to the good news', says: deflect, slip: {paper: 'VSI points to a record year', airline: air + ': a little warmer'}}];
+    };
+    return [
+      {id: 'q1', number: w.k, ask: w.text + '. What went wrong?', blames: 'the weather',
+        answers: ans('"We got it wrong. ' + fix + '."', '"The weather turned, and the whole region ran late."', '"Look at the year: more passengers than ever came through VSI."', 'the weather')},
+      {id: 'q2', number: w2.k, ask: w2.text + '. Whose fault is that?', blames: 'the airlines',
+        answers: ans('"Ours. The airport sets the plan, so the airport answers for it."', '"The airlines\' flights came in late, and we cannot turn a plane around faster than its crew."', '"It was one day. The year has been the best VSI has had."', 'the airlines')},
+      {id: 'q3', number: w.k, ask: air + ' is deciding whether to bring more flights to VSI. After ' + w.short + ', why should it?', blames: poss(air) + ' timetable',
+        answers: ans('"Because we will fix it, and we will show ' + air + ' the fix before the next ' + (PRESS.when[n] || 'day') + '."', '"' + poss(air) + ' own timetable left too little time to change planes."', '"' + air + ' has never had a better year here."', poss(air) + ' timetable')}];
+  }
+  function pressConference(st, n) {
+    ensure();
+    n = n == null ? pressLast(st) : n;
+    var y = SHIFT_YEAR[n] || st.year, d = ch5Date(st, y), prev = pressLog(st).slice(-1)[0], air = pressAirline(st, n);
+    var recall = prev ? 'In ' + prev.calYear + ' you ' + {own: 'owned the bad ' + (PRESS.when[prev.chapter] || 'day') + ' and promised a fix.', blame: 'blamed ' + prev.blamed + '.', deflect: 'pointed to a record year.', mixed: 'answered for a bad ' + (PRESS.when[prev.chapter] || 'day') + '.'}[prev.kind] : null;
+    return {chapter: n, year: y, calYear: cal(y), date: d.iso, dateWords: d.words, paper: 'The Zero Mile Times', reporter: 'Our aviation reporter', room: 'The press room, Zero Mile Hall',
+      title: 'The Zero Mile Times asks', airline: air, founder: st.founder || 'Asha Rao', company: st.parent || 'Your company', role: 'Director, VSIAL',
+      intro: 'The ' + (PRESS.when[n] || 'day') + ' went badly, and the paper wants answers before it goes to print.', recall: recall,
+      numbers: pressNumbers(st, n).map(function (x) { return {k: x.k, text: x.text}; }), questions: pressQuestions(st, n),
+      slipQuestion: 'What tomorrow\'s paper says', slipNote: 'Airlines read the paper too.', cta: 'Give the answer', done: 'On to the year\'s results'};
+  }
+  // tomorrow's headline and column for a set of answers ({q1, q2, q3}: own | blame | deflect)
+  function pressStory(st, n, a) {
+    n = n == null ? pressLast(st) : n; a = a || {};
+    var Q = pressQuestions(st, n), h = pressHeadline(st, n, a), nums = pressNumbers(st, n), w = nums[0] ? nums[0].short : 'a bad ' + (PRESS.when[n] || 'day');
+    var who = st.founder || 'VSI\'s chief', air = pressAirline(st, n), blamed = (Q.filter(function (q) { return a[q.id] === 'blame'; })[0] || {}).blames || null;
+    var body = h.kind === 'own' ? 'Asked about ' + w + ', ' + who + ' said: "We got it wrong. ' + (PRESS.fix[n] || PRESS.fix[3]) + '." The paper will check on the fix.' :
+      h.kind === 'blame' ? who + ' blamed ' + blamed + ' for ' + w + '. ' + air + ' did not comment.' :
+      h.kind === 'deflect' ? 'Asked about ' + w + ', ' + who + ' pointed to a record year for VSI. ' + air + ' did not comment.' :
+      who + ' answered three questions about ' + w + '. ' + air + ' did not comment.';
+    return {kind: h.kind, lead: h.lead, blamed: blamed, column: {head: h.lead, body: body}};
+  }
+  function pressClamp(v) { return Math.round(Math.max(0, Math.min(1, v)) * 100) / 100; }
+  function pressApply(st, answers, n) {
+    ensure();
+    n = n == null ? pressLast(st) : n;
+    if (!pressShift(st, n) || pressLog(st).some(function (x) { return x.chapter === n; })) return st;
+    st = clone(st);
+    var Q = pressQuestions(st, n), a = {}, now = 0, later = 0;
+    if (Array.isArray(answers)) answers = {q1: answers[0], q2: answers[1], q3: answers[2]};
+    Q.forEach(function (q) { var x = answers && answers[q.id]; a[q.id] = PRESS.fx[x] ? x : 'deflect'; now += PRESS.fx[a[q.id]].now; later += PRESS.fx[a[q.id]].later; });
+    now = Math.round(now * 100) / 100; later = Math.round(later * 100) / 100;
+    var y = SHIFT_YEAR[n] || st.year, h = pressStory(st, n, a), blamed = h.blamed, body = h.column.body;
+    st.s.press = st.s.press || {log: []};
+    st.s.press.log = (st.s.press.log || []).concat([{chapter: n, year: y, calYear: cal(y), answers: a, kind: h.kind, lead: h.lead, blamed: blamed, column: h.column,
+      now: now, later: later, settled: false}]);
+    if (st.s.plateauTrust != null) st.s.plateauTrust = pressClamp(st.s.plateauTrust + now);
+    st.s.pressTrust = Math.round(((st.s.pressTrust || 0) + now) * 100) / 100;
+    addDoc(st, {id: 'press-' + cal(y), title: 'Press notes, ' + cal(y), year: y, date: ch5Date(st, y).iso, kind: 'press', stamp: 'FILED', summary: 'The Zero Mile Times ran "' + h.lead + '". ' + body});
+    return st;
+  }
+  // the later half: when a later chapter's shift is flown, the airline has seen whether the answers held
+  function pressSettle(st, n) {
+    if (!st || !st.s || !st.s.press) return st;
+    (st.s.press.log || []).forEach(function (x) {
+      if (x.settled || x.chapter >= n) return;
+      x.settled = true;
+      if (st.s.plateauTrust != null) st.s.plateauTrust = pressClamp(st.s.plateauTrust + x.later);
+      st.s.pressTrust = Math.round(((st.s.pressTrust || 0) + x.later) * 100) / 100;
+    });
+    return st;
+  }
+  // the next front page after the press met: the cliffhanger after Takeoff (3) and Cruise (5), else the next chapter's
+  function pressColumn(st, n) { var x = pressLog(st).filter(function (r) { return r.chapter === n; })[0]; return x ? clone(x.column) : null; }
+  function pressFront(fp, col) { if (fp && col) fp.columns = [col].concat(fp.columns || []); return fp; }
+  var press = {offer: pressOffer, bad: pressBad, conference: pressConference, story: function (st, a, n) { ensure(); return pressStory(st, n, a); }, apply: pressApply, settle: pressSettle, column: pressColumn, rules: PRESS};
+
+  // ---------------------------------------------------------------------------------------------
   // VSIEra.bridge(state, n): the years between the end of one chapter and the start of chapter n, played by the engine
   // (pending boards at the defaults), with the facts for the "years later" split-flap: {state, from, to, years[], lines[]}
   // ---------------------------------------------------------------------------------------------
@@ -15726,8 +15869,14 @@ requestAnimationFrame(frame);
     shiftPlan: ch7ShiftPlan, applyShift: ch7ApplyShift, script: {threshold: CH7.threshold}});
 
   ch5.chapter = 5; ch5.eras = CH_ERAS[5].slice();
+  // the press conference's headline goes on the next front page: Chapter 5's after Climb's, Chapter 7's after Turbulence's
+  // (Takeoff's and Cruise's go on the cliffhanger)
+  [ch5, ch7].forEach(function (C) { var f0 = C.frontPage; C.frontPage = function (st) { return pressFront(f0.apply(null, arguments), st && pressColumn(st, C.chapter - 1)); }; });
+  var cliffhanger0 = cliffhanger;
+  cliffhanger = function (st, act) { act = act || actBreak(st) || 1; return pressFront(cliffhanger0(st, act), st && pressColumn(st, act === 1 ? 3 : 5)); };
   var API = {
     ch3: ch3, ch4: ch4, ch5: ch5, ch6: ch6, ch7: ch7, chapters: {3: ch3, 4: ch4, 5: ch5, 6: ch6, 7: ch7}, bridge: bridge, debrief: debrief, cliffhanger: cliffhanger, actBreak: actBreak,
+    press: press,
     data: function (md) { load(md); _closeCache = {}; return API; },
     capexCr: capexCr, phase1Options: phase1Options, stateLoanOpt: stateLoanOpt, lenders: lenderOptions, partners: partners, bidTypes: bidTypes,
     previewBid: previewBid, previewClose: previewClose, bidOpening: bidOpening, bidRivals: bidRivals, privateHouses: privateHouses, pitchPrivate: pitchPrivate, _tender: {BIDDERS: BIDDERS, reset: function () { _ceil = null; }, ceilings: function () { return rivalCeilings(); }},
@@ -18652,6 +18801,86 @@ M.letter=function(o){mountS();o=o||{};return new Promise(res=>{
     setTimeout(fin,2100);};
 });};
 
+/* ZMMoney.press(o) → Promise<{answers:{q1, q2, q3}}>. The press conference after a bad day (design/ideas/press-conference.md).
+   o = VSIEra.press.conference(state): {paper, reporter, room, dateWords|date, founder, company, role, intro, recall?,
+     questions:[{id, ask, answers:[{id:'own'|'blame'|'deflect', label, says, slip:{paper, airline}}]}] (3), slipQuestion, slipNote, cta, done}.
+   optional: story(answers) → {head, body} (tomorrow's column, from VSIEra.press.story), auto:{q1,..} (a bot's ticks), pile.
+   A reporter's notepad, one question a page, the shift's bad number circled in pencil; the founder's name card on the table;
+   the adviser's slip says what tomorrow's paper prints for each answer. No stamp: the last page is tomorrow's headline. */
+const CSSP=`
+.zpc .zdk-main{grid-template-columns:minmax(220px,1fr) minmax(560px,620px) minmax(260px,1fr)}
+.zpc-pad{position:relative;flex:1 1 auto;min-height:0;overflow:auto;scrollbar-width:thin;background-color:#fdfcf4;background-image:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(70,110,150,.2) 31px 32px);background-position:0 54px;background-attachment:local;
+  padding:58px 44px 26px 48px;box-shadow:0 22px 48px rgba(30,40,50,.2),0 2px 6px rgba(30,40,50,.1);transform-origin:50% 0}
+.zpc-pad::before{content:'';position:absolute;left:0;right:0;top:0;height:30px;background:#2a2e33;background-image:radial-gradient(circle at 50% 62%,#e4e8e5 0 4.5px,transparent 5px);background-size:22px 30px;background-position:6px 0;border-bottom:2px solid #15181b}
+.zpc-pad.arrive{animation:zdkArrive .55s cubic-bezier(.2,.8,.3,1) both}
+.zpc-pad.flip{animation:zpcFlip .38s ease-in forwards}
+@keyframes zpcFlip{to{transform:translateY(-36px) rotateX(70deg);opacity:0}}
+.zpc-ph{display:flex;justify-content:space-between;gap:12px;font-family:var(--ft);font-size:11.5px;color:var(--zpe);margin:0 0 10px;line-height:22px}
+.zpc-ph b{color:var(--zt);font-weight:700}
+.zpc-recall{font-family:var(--fh);font-size:15.5px;color:var(--zpe);margin:0 0 4px;line-height:32px}
+.zpc-q{font-family:var(--fh);font-size:23px;line-height:32px;color:#3b3f44;margin:0 0 12px}
+.zpc-q .zs-circ{color:#2f3337;font-weight:700}
+.zpc-you{font-family:var(--ft);font-size:13px;color:var(--zpe);margin:4px 0 0;line-height:22px}
+.zpc .zdk-ticks{margin:2px 0 4px;background:rgba(253,252,244,.86)}
+.zpc .zdk-ticks button{padding:6px 0}
+.zpc .zdk-ticks small{font-size:12.5px;line-height:1.45;margin-top:2px}
+.zpc .zdk-ticks button[disabled]{cursor:default}
+.zpc-said{font-family:var(--fh);font-size:19px;line-height:28px;color:var(--zi);margin:10px 0 0;min-height:28px}
+.zpc-proof{border-top:3px double var(--zt);border-bottom:1px solid var(--zt);padding:12px 0 14px;margin:6px 0 12px;background:rgba(253,252,244,.92)}
+.zpc-proof small{display:block;font-family:var(--fd);font-weight:700;font-size:15px;color:var(--zt);margin:0 0 8px}
+.zpc-proof h3{font-family:var(--fd);font-weight:700;font-size:28px;line-height:1.12;letter-spacing:.01em;margin:0 0 10px;color:var(--zt)}
+.zpc-proof p{font-family:var(--ft);font-size:14px;line-height:1.6;margin:0;color:var(--zt)}
+.zpc-side{grid-column:3;align-self:start;display:flex;flex-direction:column;align-items:flex-start;gap:26px;margin:28px 0 0 34px;min-width:0}
+.zpc-side .zdk-note{margin:0;width:min(270px,100%)}
+.zpc-card{position:relative;width:min(250px,100%);padding:22px 18px 16px;background:linear-gradient(#e7eae6 0 16px,#fcfcf9 16px);box-shadow:0 14px 22px rgba(30,40,50,.18),0 1px 2px rgba(30,40,50,.14);transform:perspective(500px) rotateX(9deg) rotate(-1.2deg);text-align:center}
+.zpc-card .zdk-logo{position:absolute;left:12px;top:24px;color:var(--zt)}
+.zpc-card b{display:block;font-family:var(--fd);font-weight:700;font-size:24px;line-height:1.1;color:var(--zt);padding:0 6px 0 22px}
+.zpc-card span{display:block;font-family:var(--ft);font-size:12px;line-height:1.5;color:#3a3f44;margin-top:6px;padding-left:16px}
+.zpc .z5-sl span{font-size:15px}
+@media (max-width:1280px){.zpc .zdk-main{grid-template-columns:minmax(180px,1fr) minmax(540px,580px) minmax(230px,1fr)}.zpc-pad{padding:54px 36px 22px 40px}.zpc-q{font-size:21px}.zpc-side{margin:18px 0 0 22px;gap:20px}.zpc-card b{font-size:21px}}
+@media (max-height:820px){.zpc-side{margin-top:10px;gap:16px}.zpc-pad{padding-top:50px}.zpc-q{margin-bottom:6px}.zpc .zdk-ticks button{padding:4px 0}.zpc .zdk-acts{padding-top:12px}}
+@media (prefers-reduced-motion:reduce){.zpc-pad.arrive,.zpc-pad.flip{animation:none}}
+`;
+let cssP=false;function mountP(){mountS();if(cssP)return;cssP=true;const st=document.createElement('style');st.id='zmmCssP';st.textContent=CSSP;document.head.appendChild(st);}
+M.press=function(o){mountP();o=o||{};return new Promise(res=>{
+  const Q=(o.questions||[]).slice(0,3),pile=o.pile||PILE,sd=dayOf(o.date),dt=o.dateWords||(sd?longDay(sd):longDay(new Date())),auto=o.auto||null,out={};
+  const circ=t=>{const s=esc(t),m=/(?:₹[\d,]+(?:\s?cr)?|\d[\d,]*%?)/.exec(s);if(!m)return s;
+    return s.slice(0,m.index)+`<span class="zs-circ">${m[0]}<svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path d="M62 3 C84 3 99 10 98 20 C97 31 78 38 50 38 C22 38 2 31 2 20 C2 9 22 2 48 2 C58 2 66 4 72 6" fill="none" stroke="#5b5f63" stroke-width="1.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg></span>`+s.slice(m.index+m[0].length);};
+  const sh=desk5('z5-dec zpc',`<header class="zdk-top"><div class="zdk-mark">${vsiLogo(30)}<span>${esc(M.cfg.airportName)}</span></div></header>
+    <div class="zdk-pile" id="zdkPile" aria-label="Documents on file">${pileCards(pile)}</div>
+    <main class="zdk-main"><div class="zdk-col"><article class="zpc-pad arrive" id="zpcPad" aria-live="polite"></article>
+      <div class="zdk-acts"><button class="zdk-go" id="zpcGo" disabled>Tick one answer first</button></div></div>
+      <aside class="zpc-side"><div class="zpc-card" aria-label="Name card">${vsiLogo(20)}<b>${esc(o.founder||'Director')}</b><span>${esc(o.role||'Director, '+M.cfg.spvShort)}${o.company?`<br>${esc(o.company)}`:''}</span></div>
+        <div class="zdk-note arrive" id="zdkNote" aria-live="polite"></div></aside></main>`);
+  wirePile(sh,pile);
+  const pad=sh.querySelector('#zpcPad'),note=sh.querySelector('#zdkNote'),go=sh.querySelector('#zpcGo');
+  let k=0,pick=null,busy=false,end=false;
+  const head=()=>`<div class="zpc-ph"><span><b>${esc(o.paper||'The Zero Mile Times')}</b> · ${esc(o.reporter||'Our aviation reporter')}</span><span>${esc(hd(dt))}</span></div>`;
+  const slip=()=>{const q=Q[k];if(!q)return;
+    note.innerHTML=`<h3>${esc(o.slipQuestion||'What tomorrow\'s paper says')}</h3>${q.answers.map(a=>`<div class="z5-sl${a.id===pick?' on':''}"><b>${esc(a.label)}</b><span>${esc((a.slip&&a.slip.paper)||'')}</span><span>${esc((a.slip&&a.slip.airline)||'')}</span></div>`).join('')}${o.slipNote?`<p>${esc(o.slipNote)}</p>`:''}`;};
+  const page=()=>{const q=Q[k];pick=null;
+    pad.innerHTML=head()+(k===0&&o.recall?`<p class="zpc-recall">${esc(o.recall)}</p>`:'')+`<p class="zpc-q">${circ(q.ask)}</p><p class="zpc-you">${esc(o.founder||'You')} answers:</p>
+      <div class="zdk-ticks" role="radiogroup" aria-label="Your answer">${q.answers.map(a=>`<button role="radio" aria-checked="false" data-id="${esc(a.id)}"><i></i><span>${esc(a.label)}</span>${a.says?`<small>${esc(a.says)}</small>`:''}</button>`).join('')}</div><p class="zpc-said" id="zpcSaid"></p>`;
+    pad.scrollTop=0;go.disabled=true;go.textContent='Tick one answer first';slip();
+    pad.querySelectorAll('.zdk-ticks button').forEach(b=>b.onclick=()=>{if(busy||end)return;pick=b.dataset.id;pad.querySelectorAll('.zdk-ticks button').forEach(x=>x.setAttribute('aria-checked',x===b?'true':'false'));
+      go.disabled=false;go.textContent=o.cta||'Give the answer';slip();});
+    if(auto&&auto[q.id])setTimeout(()=>{const b=pad.querySelector(`.zdk-ticks button[data-id="${auto[q.id]}"]`);if(b&&!pick)b.click();},250);};
+  const last=()=>{end=true;const st=typeof o.story==='function'?o.story(Object.assign({},out)):null;
+    pad.innerHTML=head()+`<p class="zpc-q">The paper goes to print at midnight.</p><div class="zpc-proof"><small>${esc(o.paper||'The Zero Mile Times')}, tomorrow</small><h3>${esc(st?st.head:'VSI\'S CHIEF FACES THE PRESS')}</h3>${st&&st.body?`<p>${esc(st.body)}</p>`:''}</div>`;
+    note.innerHTML=`<h3>What you told the paper</h3>${Q.map(q=>{const a=q.answers.find(x=>x.id===out[q.id]);return a?`<div class="z5-sl on"><b>${esc(a.label)}</b></div>`:'';}).join('')}${o.slipNote?`<p>${esc(o.slipNote)}</p>`:''}`;
+    go.disabled=false;go.textContent=o.done||'On to the year\'s results';};
+  const turn=fn=>{if(reduced()){fn();return;}pad.classList.remove('arrive');pad.classList.add('flip');setTimeout(()=>{pad.classList.remove('flip');void pad.offsetWidth;pad.classList.add('arrive');fn();},380);};
+  go.onclick=()=>{if(busy)return;
+    if(end){busy=true;close();res({answers:out});return;}
+    if(!pick)return;busy=true;const q=Q[k],a=q.answers.find(x=>x.id===pick);out[q.id]=pick;
+    pad.querySelectorAll('.zdk-ticks button').forEach(b=>b.disabled=true);go.disabled=true;
+    const said=pad.querySelector('#zpcSaid');if(said)said.textContent=a&&a.says||'';M.sfx('sign');
+    if(pad.scrollHeight>pad.clientHeight)pad.scrollTo({top:pad.scrollHeight,behavior:reduced()?'auto':'smooth'});
+    setTimeout(()=>turn(()=>{k++;busy=false;if(k<Q.length)page();else last();}),reduced()?250:750);};
+  if(!Q.length){last();return;}
+  page();
+});};
+
 /* ZMMoney.stepIn(o) → Promise. The banks take control (DESIGN.md §10, §18): the notice on duty paper, in plain words; the pile
    slides off the desk and the whole desk goes grey. No stamp. "Open the Black Box" resolves.
    o = {date, company, founder, stakePct?, docId?, lines?:[sentences] (replaces the default text), cta?} */
@@ -18802,6 +19031,14 @@ const S0={
     p4:{lines:[{title:'feeders',line:'You signed the feeders before you set prices.',evidence:'12 cities × 3 destinations; 6.2 lakh connections a year by 2045.'},
       {title:'later',line:'You paid now for flights that would come later.',evidence:'Held London twice at ₹10 cr; kept 11,400 passengers a year off Doha.'},
       {title:'crisis',line:'You put money in when the banks asked.',evidence:'Put in ₹2,400 cr in 2046; the crisis shift ran 81% on time.'}]}}};
+/* ?moneymock=press: the press conference after a bad opening morning (the real one comes from VSIEra.press.conference) */
+S0.press=(()=>{const air='Akasa Air',A=(own,blame,deflect,who)=>[{id:'own',label:'Own it, and name the fix',says:own,slip:{paper:'The chief owns it',airline:air+': a little warmer'}},
+    {id:'blame',label:'Blame '+who,says:blame,slip:{paper:'VSI blames '+who,airline:air+': no change'}},{id:'deflect',label:'Point to the good news',says:deflect,slip:{paper:'VSI points to a record year',airline:air+': a little warmer'}}];
+  return {chapter:3,date:'2030-04-01',dateWords:'Monday, 1 April 2030',paper:'The Zero Mile Times',reporter:'Our aviation reporter',founder:'Asha Rao',company:'Meridian Infra',role:'Director, VSIAL',airline:air,
+    intro:'The morning went badly, and the paper wants answers before it goes to print.',recall:null,slipQuestion:'What tomorrow\'s paper says',slipNote:'Airlines read the paper too.',cta:'Give the answer',done:'On to the year\'s results',
+    questions:[{id:'q1',ask:'200 passengers missed their Akasa Air connections on opening morning. What went wrong?',answers:A('"We got it wrong. Every belt, gate and stand gets a full rehearsal before the next big day."','"The weather turned, and the whole region ran late."','"Look at the year: more passengers than ever came through VSI."','the weather')},
+      {id:'q2',ask:'Only 70% of flights left on time this morning: 3 in 10 were late. Whose fault is that?',answers:A('"Ours. The airport sets the plan, so the airport answers for it."','"The airlines\' flights came in late, and we cannot turn a plane around faster than its crew."','"It was one day. The year has been the best VSI has had."','the airlines')},
+      {id:'q3',ask:'Akasa Air is deciding whether to bring more flights to VSI. After 200 missed connections, why should it?',answers:A('"Because we will fix it, and we will show Akasa Air the fix before the next morning."','"Akasa Air\'s own timetable left too little time to change planes."','"Akasa Air has never had a better year here."','Akasa Air\'s timetable')}]};})();
 M._s0Sample=S0;
 function s0Mock(kind){mountS();
   const pileDocs=[{id:'ca',title:'Concession Agreement',date:'2026-04-01',kind:'agreement',summary:'Signed by AAI, the State through MADC, NIIF and your company.'},{id:'lic',title:'Aerodrome licence',date:'2030-11-01',stamp:'Licensed',summary:'DGCA licensed VSI on 1 November 2030.'},
@@ -18821,6 +19058,7 @@ function s0Mock(kind){mountS();
     if(kind==='tie')return M.closeFile(file);
     if(kind==='minutes'){M.setStrip(at(7,{title:'Board minutes, 2059',stamp:null},[34,60]));return M.minutes(Object.assign({signature:sig},S0.minutes));}
     if(kind==='letter'){M.setStrip(at(6,{title:'Letter from the banks',stamp:null},[19,33]));return M.letter(Object.assign({signature:sig},S0.letter));}
+    if(kind==='press'){M.setStrip(at(3,{title:'Opening plan, Akasa Air',stamp:'Signed'},[5,7]));return M.press(Object.assign({},S0.press,{story:a=>({head:a.q1==='own'?'VSI\'S CHIEF OWNS THE BAD MORNING':'VSI POINTS TO A RECORD YEAR',body:'Asked about 200 missed connections, Asha Rao said: "We got it wrong. Every belt, gate and stand gets a full rehearsal before the next big day." The paper will check on the fix.'})}));}
     if(kind==='stepin'){M.setStrip(at(6,{title:'Letter from the banks',stamp:'Refused'},[19,33]));return M.stepIn(S0.letter.stepIn);}
     const m=/^debrief([1-4])?$/.exec(kind);if(m){M.setStrip(null);return M.debrief(S0.debrief,{company:'Meridian Infra',founder:'Asha Rao',start:m[1]?+m[1]:0});}
     return Promise.resolve();});}
@@ -18830,7 +19068,7 @@ M._s0Mock=s0Mock;
 function boot(){M.mount();if(!/[?&]moneymock\b/.test(location.search))return;
   {const k=(location.search.match(/[?&]moneymock=(frontpage|decision|briefing|tags|pins|bill|card)\b/)||[])[1];if(k){ch5Mock(k).then(r=>{window.__zmmResult=r;});return;}}
   {const k=(location.search.match(/[?&]moneymock=(file0|file|tear)\b/)||[])[1];if(k){fileMock(k);}}
-  {const k=(location.search.match(/[?&]moneymock=(strip|flaps|cliff|tie|minutes|letter|stepin|debrief[1-4]?)(?![\w-])/)||[])[1];if(k){s0Mock(k).then(r=>{window.__zmmResult=r===undefined?'done':r;});return;}}
+  {const k=(location.search.match(/[?&]moneymock=(strip|flaps|cliff|tie|minutes|letter|stepin|press|debrief[1-4]?)(?![\w-])/)||[])[1];if(k){s0Mock(k).then(r=>{window.__zmmResult=r===undefined?'done':r;});return;}}
   M.enable(true);let total=0;const hs=[];
   setInterval(()=>{const d=(Math.random()-0.28)*0.9;total+=d;hs.push(total);M.setDay({total,ratePerHr:total/Math.max(1,hs.length)*60,history:hs});
     const map=$('#map');if(map){const r=map.getBoundingClientRect();M.float(r.width*(0.3+Math.random()*0.4),r.height*(0.3+Math.random()*0.4),d,{label:d>=0?'Landing':'Penalty'});}},700);

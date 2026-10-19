@@ -3158,7 +3158,8 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
         let res=plan.auto;if(FL.bot){const x=FL_BOT[FL.bot.mode].shift[n];if(x)res=Object.assign({},plan.auto,x,{auto:false});}
         FL.log.push({n,kind:'shift',stub:true,stars:res.stars,otp:res.otp});
         FL.shiftDone(st,C.applyShift(st,res),true);continue;}
-      if(f.step==='bill'){const out=f.out||{};let b=out.bill?Object.assign({},out.bill):null;
+      if(f.step==='bill'){if(await FL.pressConference(st,n))continue;   // a bad shift: the press first (design/ideas/press-conference.md)
+        const out=f.out||{};let b=out.bill?Object.assign({},out.bill):null;
         if(b){if(f.stub)b.paragraph=['This shift was flown by your duty team.'].concat(b.paragraph?[b.paragraph]:[]);
           if(n===4&&b.budget&&E.chapters[4].applyBudget){const bud=b.budget;
             b.list={title:bud.title,items:[bud.line+'.',bud.text]};b.cta='Approve the budget, with the bird radar';b.cta2='Approve it without the radar';
@@ -3197,6 +3198,15 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
     f.out={bill:out.bill||null,card:out.card||null};f.stub=!!stub;f.step=out.bill?'bill':ns.over?'ended':'card';
     ns.flight=f;CAMP.st=ns;FL.save();},
 
+  // ---- the press conference after a bad day (design/ideas/press-conference.md): before the bill, when VSIEra.press offers it.
+  // Three questions on a reporter's notepad (ZMMoney.press); the answers move airline trust in the engine and give the next
+  // front page its headline. Bots: smart owns every answer, blind deflects every one. True when the answers were filed.
+  async pressConference(st,n){const E=CAMP.E(),Z=window.ZMMoney,P=E&&E.press;if(!P||!Z||!Z.press||!P.offer(st,n))return false;
+    const c=P.conference(st,n),bot=FL.bot?(a=>({q1:a,q2:a,q3:a}))(FL.bot.mode==='blind'?'deflect':'own'):null;
+    const o=FL.who(st,Object.assign({},c,{story:a=>P.story(st,a,n).column,auto:bot}));
+    const r=await FL.show('press',c,()=>Z.press(o),bot?{answers:bot}:null);
+    const ns=P.apply(st,(r&&r.answers)||bot||{},n);ns.flight=Object.assign({},st.flight);
+    FL.log.push({n,kind:'press',answers:(r&&r.answers)||bot,trust:ns.s&&ns.s.plateauTrust});CAMP.st=ns;FL.save();return true;},
   // ---- the decisions ----
   async decide(st,d,n){const bot=FL.bot&&FL_BOT[FL.bot.mode].pick[n];let dflt=bot||null;
     if(n===4&&dflt==='two'&&(d.choices||[]).some(c=>c.id==='two'&&c.disabled))dflt='anchor';

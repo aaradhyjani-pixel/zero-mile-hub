@@ -2039,10 +2039,13 @@ const CSSS=`
 .zfs-h.night{padding:3px 3px 4px;background:rgba(10,14,17,.86);border:1px solid #2b353c;border-radius:3px;box-shadow:0 8px 20px rgba(0,0,0,.5)}
 .zfs-h.night .zfs-e>em{right:auto;left:calc(100% + 10px);color:#c9cfd3}
 #app>.zfs-h.night{position:absolute;left:12px;top:8px;z-index:7}
-#top>.zfs-h.night{padding:0;background:transparent;border:0;box-shadow:none;align-self:center}
-#top>.zfs-h.night .zfs-bay,#top>.zfs-h.night .zfs .cs,#top>.zfs-h.night .zfs .dc{display:none}
-#top>.zfs-h.night .zfs{grid-template-columns:112px 104px 52px;height:38px}
-#top>.zfs-h.night .zfs small{font-size:10px}
+#top .zfs-h.night{padding:0;background:transparent;border:0;box-shadow:none;align-self:center}
+#top .zfs-h.night .zfs-bay,#top .zfs-h.night .zfs .cs,#top .zfs-h.night .zfs .dc,#top .zfs-h.night .zfs .sk{display:none}
+#top .zfs-h.night .zfs{grid-template-columns:84px 80px;height:36px;border-left-width:4px}
+#top .zfs-h.night .zfs>span{padding:0 6px}
+#top .zfs-h.night .zfs b{font-size:14px}
+#top .zfs-h.night .zfs .yr b{font-size:11px}
+#top .zfs-h.night .zfs small{font-size:9.5px}
 @media (max-width:1280px){.zfs{grid-template-columns:78px 120px 96px minmax(150px,186px) 56px}.zdk>.zfs-h{right:20px}}
 @media (prefers-reduced-motion:reduce){.zfs.slide,.zfs-e.dropin{animation:none}}
 

@@ -1,0 +1,12 @@
+# How a new hub wins traffic (story reframe for levels 1-4)
+
+| Case | What actually happened | Source |
+|---|---|---|
+| Bengaluru HAL, 2008 | HAL stopped civil flights when Devanahalli opened, because the concession barred any rival airport within 150 km of the new one (same city) until 2033. | https://moneylife.in/article/hals-efforts-to-revive-its-bengaluru-airport-may-lead-to-legal-issues/40424.html |
+| Hyderabad Begumpet, 2008 | Begumpet closed to commercial flights on 23 Mar 2008 under the same kind of 150 km clause in GHIAL's 2004 concession. It was also the same city. | https://en.wikipedia.org/wiki/Rajiv_Gandhi_International_Airport |
+| Istanbul, Apr 2019 | Turkish Airlines moved all of Atatürk's passenger flights to the new airport in about 45 hours, but both airports serve the same city. | https://centreforaviation.com/news/turkish-airlines-moves-all-ataturk-operations-to-istanbul-airport-893715 |
+| Delhi transfers, FY23-25 | Delhi's international-to-international transfers rose 244% after IndiGo and Air India added routes timed to connect. The airlines built the hub; no other city closed. | https://www.tribuneindia.com/news/delhi/igi-airport-posts-244-rise-in-international-transfers-in-2-years |
+| Air India's hub plan, 2024 | Air India plans Delhi as its main hub, with Mumbai and Bengaluru as transit points. It aims to raise transit traffic by timing its connecting banks. | https://aviationa2z.com/index.php/2024/06/06/air-india-to-double-international-transit-traffic-by-2030-35/ |
+| IndiGo long-haul, 2024-25 | IndiGo grows international flying (including Mumbai–London) from cities that are short of space. Its connections go where there is room. | https://networkthoughts.com/2024/02/02/mumbai-leads-indigos-international-charts/ |
+
+A new airport closes an old one only when both serve the same city and a concession clause says so. No airport anywhere has closed another city's airport. A hub wins traffic another way: airlines move their connecting banks (the timed waves of flights that let passengers change planes) and their long-haul flights to where there is room and good geography. So VSI at the Zero Mile in Nagpur, the centre of India, takes each city's transfer and long-haul flying, city by city, while Bengaluru, Ahmedabad, Hyderabad, Mumbai and Delhi keep their own airports for their own passengers. Mumbai's slot shortage is the real reason its widebodies would move.

@@ -5880,5 +5880,142 @@
     "note": "Used by tools/concession_model.py."
    }
   }
+ },
+ "airport_city": {
+  "_about": "Airport City: a property district on VSI land (hotels, offices, retail, logistics), Delhi Aerocity style. A board choice from era 3. VSIAL builds the roads and services and licenses plots; developers build and pay a yearly licence fee (rent and a share of their retail takings). Income is non-aero, so AERA's hybrid till counts 30% of it against the airline charges. Paid for with equity (the airport's lenders do not lend on it). Every number is sourced or a stated assumption (estimate: true).",
+  "precedents": {
+   "value": {
+    "delhi_aerocity": {
+     "acres_leased": 45,
+     "developers": 13,
+     "security_deposits_cr": 1471,
+     "sale_value_cr_per_acre": [
+      75,
+      90
+     ],
+     "hotels": 14
+    },
+    "bengaluru_airport_city": {
+     "acres": 460,
+     "developed_or_under_way": 128
+    }
+   },
+   "unit": "acres / INR crore",
+   "source": "Delhi: Lok Sabha answer, https://eparlib.nic.in/bitstream/123456789/647110/1/146388.pdf (45 acres to 13 developers; Rs 1,471 cr deposits); https://www.business-standard.com/amp/article/companies/monetisation-of-delhi-land-gmr-could-get-over-rs-100-crore-per-acre-114071401299_1.html (Rs 75-90 cr an acre, 14 hotels). Bengaluru: money.json bial.owners.airport_city (Fairfax India AR 2025 pp.13-14)",
+   "period": "2009-2025",
+   "estimate": false,
+   "note": "Both are operator-developed districts on concession land, inside the airport fence line, earning licence fees and rent."
+  },
+  "land_share_of_site": {
+   "value": 0.05,
+   "unit": "fraction of the VSI site",
+   "source": "design assumption; DIAL's OMDA allows up to 5% of the site for commercial property (Delhi Aerocity); BIAL's 460 acres are 11% of its 4,008",
+   "period": "game",
+   "estimate": true,
+   "note": "5% of 7,100 ha = 355 ha (877 acres)."
+  },
+  "phases": {
+   "value": [
+    {
+     "name": "AC1",
+     "build": [
+      14,
+      15
+     ],
+     "opens": 16,
+     "acres": 292
+    },
+    {
+     "name": "AC2",
+     "build": [
+      19,
+      20
+     ],
+     "opens": 21,
+     "acres": 292
+    },
+    {
+     "name": "AC3",
+     "build": [
+      24,
+      25
+     ],
+     "opens": 26,
+     "acres": 293
+    }
+   ],
+   "unit": "game years / acres",
+   "source": "design assumption: three phases ordered at the E4, E5 and E6 boards (first offered at the E3 board, year 13); 877 acres = 5% of the site (land_share_of_site)",
+   "period": "game",
+   "estimate": true,
+   "note": "Spend split evenly over the two build years."
+  },
+  "infra_cost_cr_per_acre": {
+   "value": 4.0,
+   "unit": "INR crore per acre (FY2026 prices)",
+   "source": "design assumption: trunk roads, power, water, drainage and landscaping for a serviced plot; plots are licensed, developers pay for their own buildings (Delhi Aerocity: 14 hotels built by 13 developers)",
+   "period": "FY2026",
+   "estimate": true,
+   "note": ""
+  },
+  "licence_cr_per_acre_year": {
+   "value": 3.0,
+   "unit": "INR crore per acre per year at full occupancy (FY2026 prices): licence fee plus revenue share",
+   "source": "design assumption: about 4% a year of the ₹75-90 cr an acre Delhi Aerocity plots fetched in 2009 (precedents), before inflation",
+   "period": "FY2026",
+   "estimate": true,
+   "note": "Indexed to CPI after FY2026. Delhi-style deposits are ignored (refundable, so not income)."
+  },
+  "ramp_years": {
+   "value": 5,
+   "unit": "years from opening to full occupancy (linear, 20% a year)",
+   "source": "design assumption: Delhi Aerocity phase 1 opened 2009-2012 and filled over about five years (14 hotels)",
+   "period": "game",
+   "estimate": true,
+   "note": ""
+  },
+  "opex_share": {
+   "value": 0.25,
+   "unit": "fraction of Airport City income spent running it (maintenance, security, marketing, vacancy)",
+   "source": "design assumption: Grade A net operating margin about 75%",
+   "period": "game",
+   "estimate": true,
+   "note": "Not allowed in the airport ARR: the till counts income, not property costs."
+  },
+  "till_share": {
+   "value": "till.hybrid_till_nar_share",
+   "unit": "reference",
+   "source": "money.json till.hybrid_till_nar_share (0.30)",
+   "period": "game",
+   "estimate": false,
+   "note": "AERA deducts 30% of Airport City income from the aero revenue requirement, so airline charges fall by that amount."
+  },
+  "funding": {
+   "value": "equity",
+   "unit": "how it is paid for",
+   "source": "design: from VSIAL's cash first, the rest called from shareholders; the airport loans are not used",
+   "period": "game",
+   "estimate": true,
+   "note": ""
+  },
+  "concession_fee": {
+   "value": true,
+   "unit": "whether the 4% concession fee applies",
+   "source": "money.json bial.ca.concession_fee (fee on gross revenue)",
+   "period": "game",
+   "estimate": false,
+   "note": ""
+  },
+  "screen_text": {
+   "value": {
+    "income_line": "Your land earns ₹{X} cr a year; AERA counts ₹{Y} of it against your airline charges.",
+    "board_offer": "Build Airport City phase {N}: ₹{C} cr now, full rent in {R} years."
+   },
+   "unit": "template",
+   "source": "design",
+   "period": "game",
+   "estimate": false,
+   "note": "X = Airport City income this year; Y = 30% of X (till.hybrid_till_nar_share). Plain words only."
+  }
  }
 }

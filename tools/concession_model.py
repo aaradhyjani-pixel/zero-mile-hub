@@ -313,9 +313,26 @@ class Tranche:
         self.k = None
         self.ds_hist = {}
         self.int_hist = {}
+        self.open_hist = {}      # outstanding after the year's draw, before its principal
 
     def r(self, t):
         return self.rate(t) if callable(self.rate) else self.rate
+
+    def ds_at(self, t):
+        """Debt service in year t: actual if the year has run, else projected on the schedule already built
+        (None if there is none yet). Lets a later stage be sculpted on what an earlier stage really pays in its
+        last, part-sized year, instead of on the previous sizing pass."""
+        if t in self.ds_hist:
+            return self.ds_hist[t]
+        if self.sched is None or not self.open_hist:
+            return None
+        o = self.out
+        for k in range(max(self.open_hist) + 1, t):
+            o -= min(o, self.sched.get(k, 0.0))
+        if o <= 0:
+            return 0.0
+        p = o if self.sched and t == max(self.sched) else min(o, self.sched.get(t, 0.0))
+        return self.r(t) / 100 * o + p
 
     def build_schedule(self, t0):
         n, r, D = self.rep_years, self.r(t0) / 100, self.out
@@ -363,6 +380,7 @@ class Tranche:
         cap = 1.0 if t < self.cap_until else self.cap_frac.get(t, 0.0)
         interest = self.r(t) / 100 * (self.out + d / 2)
         self.out += d
+        self.open_hist[t] = self.out
         if t in self.fixed:
             prin = min(self.out, self.fixed[t])
         else:
@@ -508,7 +526,7 @@ class Engine:
             t = t0 + k
             pf = cp['fc_list'][k] if 'fc_list' in cp else self.c['fc_pax'](t) * cp.get('fc_factor', 1.0)
             paxf.append(pf)
-            nars.append(self.c['nar_bench'](t) * pf / 10)
+            nars.append(self.c['nar_bench'](t) * pf / 10 + self.c.get('nar_extra', lambda t: 0.0)(t))
         if cp.get('nar_plan_total'):                       # AERA's own planned non-aero (BIAL CP3)
             s = cp['nar_plan_total'] / sum(nars)
             nars = [x * s for x in nars]
@@ -608,7 +626,7 @@ class Engine:
             # revenue
             billed = y * pax / 10
             aero = billed * (1 - ops['sq'])
-            nar = c['nar'](t) * pax / 10
+            nar = c['nar'](t) * pax / 10 + c.get('nar_extra', lambda t: 0.0)(t)
             opex_b = c['opex_bench'](t, cap, pax)
             dis = max(0.0, ops['dis'] - c.get('dis_in_opex', 0.0))     # BIAL's fitted O&M already holds a normal level
             opex = opex_b * ops['opex'] + dis * pr * pax / 10 + c.get('opex_extra', lambda t: 0.0)(t) if pax > 0 else 0.0
@@ -1252,6 +1270,24 @@ def vsi_build(s, gear, scheds, base, with_p2, sizing_weights=None, label='?'):
     equity_need[last] = equity_need.get(last, 0.0) + (1 - g1a) * dsra0
     state_loan = {'amount': sl_amt, 'n': slt['instalments'], 'first_t': slt['first_year_after_close'] - 1,
                   'defer': slt['deferral_years'], 'defer_from': slt['defer_from_year'] - 1} if sl_amt > 0 else None
+    ac_inc = lambda t: 0.0
+    if s.get('airport_city') and not base:
+        infra, lic, ramp = J('airport_city.infra_cost_cr_per_acre'), J('airport_city.licence_cr_per_acre_year'), J('airport_city.ramp_years')
+        sc = s.get('ac_land_share', J('airport_city.land_share_of_site')) / J('airport_city.land_share_of_site')
+        phases = [dict(ph, acres=ph['acres'] * sc) for ph in J('airport_city.phases')]
+        for ph in phases:
+            gross = 0.0
+            for y in ph['build']:
+                t = y - 1
+                spend = ph['acres'] * infra / len(ph['build']) * pr(t)
+                equity_need[t] = equity_need.get(t, 0.0) + spend      # equity, not airport debt
+                gross += spend
+            vintages.append(Vintage(gross, 0.0, ph['opens'] - 1, 1.0, life=min(CALIB['dep_life'], 60 - ph['opens'] + 1)))   # taxed, not in the RAB
+
+        def ac_inc(t):
+            y = t + 1
+            return sum(ph['acres'] * lic * min(1.0, (y - ph['opens'] + 1) / ramp) * pr(t)
+                       for ph in phases if y >= ph['opens'])
     total_capex_to = lambda t: sum(sg['cost_nominal'] for sg, n in zip(stage_list, names) if st[n]['cod'] - 1 <= t)
     self_ref = {}
 
@@ -1326,7 +1362,8 @@ def vsi_build(s, gear, scheds, base, with_p2, sizing_weights=None, label='?'):
         'demand': lambda t: D(t + 1), 'fc_pax': fc_pax, 'cap': cap, 'ops': ops,
         'nar': lambda t: nar_pp_real(t + 1, prof) * ops(t)['Q'] * pr(t),
         'nar_bench': lambda t: nar_pp_real(t + 1, 'base') * ops_at('base', t + 1)['Q'] * pr(t),
-        'opex_bench': opx, 'opex_extra': lambda t: opening_cost(t) + (P['land_rent']['bial_style_cr_per_year'] * pr(t) if s.get('land') == 'bial' and t >= 4 else 0.0), 'fee': fee, 'fee_in_arr': True, 'card': card,
+        'nar_extra': ac_inc,
+        'opex_bench': opx, 'opex_extra': lambda t: opening_cost(t) + J('airport_city.opex_share') * ac_inc(t) + (P['land_rent']['bial_style_cr_per_year'] * pr(t) if s.get('land') == 'bial' and t >= 4 else 0.0), 'fee': fee, 'fee_in_arr': True, 'card': card,
         'fee_waived': (lambda t: (t + 1) in shock['years']) if shock else (lambda t: False),
         'pax_shock': {y - 1: m for y, m in shock['years'].items()} if shock else {},
         # the bank's base case has no payout policy: nothing is prepaid, so the sculpted schedules it produces sum to the loans
@@ -1347,6 +1384,7 @@ def vsi_build(s, gear, scheds, base, with_p2, sizing_weights=None, label='?'):
     eng.scen = s
     eng.stage_list = stage_list
     eng.sl_amt = sl_amt
+    eng.ac_inc = ac_inc
     eng.names = names
     eng.shock_cps = shock_cps
     return eng
@@ -1371,6 +1409,7 @@ def size_debt(s):
         cap_g = dict(gear)
         weights = {n: None for n in names}
         prev = None
+        holder = {}
         for it in range(30):
             sizing_w = {}
             if prev is not None:
@@ -1387,13 +1426,22 @@ def size_debt(s):
                     later = order[i + 1:]
 
                     def w(t, tr=tr, earlier=earlier, later=later):
-                        used = fixed_ds.get(t, 0.0) + sum(e.ds_hist.get(t, 0.0) for e in earlier)
+                        # earlier stages: what they pay in this pass (their schedules are already built), so the
+                        # year one stage finishes and the next takes over is sculpted on the real remainder
+                        cur = {x.name: x for x in holder['eng'].c['tranches']} if holder.get('eng') else {}
+                        used = fixed_ds.get(t, 0.0)
+                        for e in earlier:
+                            v = cur[e.name].ds_at(t) if e.name in cur else None
+                            used += e.ds_hist.get(t, 0.0) if v is None else v
                         used += sum(l.int_hist.get(t, 0.0) for l in later)
                         return max(1e-6, cf.get(t, 0.0) / tgt - used)
                     sizing_w[tr.name] = w
             used = dict(gear)
+            holder.clear()
             eng = vsi_build(s, used, dict(fixed_scheds), True, with_p2, sizing_w if prev is not None else
-                            {n: (lambda t: max(1.0, (t + 1) ** 1.0)) for n in names}, 'lender base case').run()
+                            {n: (lambda t: max(1.0, (t + 1) ** 1.0)) for n in names}, 'lender base case')
+            holder['eng'] = eng
+            eng.run()
             change = 0.0
             if prev is not None:
                 for tr in eng.c['tranches']:
@@ -1406,7 +1454,7 @@ def size_debt(s):
                         r = eng.rows[t]
                         own = tr.ds_hist.get(t, 0.0)
                         if own > 1e-6:
-                            room = min(room, (r['cfads'] / mc - (r['ds'] - own)) / own)
+                            room = min(room, (r['cfads'] / (mc + 1e-3) - (r['ds'] - own)) / own)   # sized just inside the test, so solver error never shows as 1.19
                     room = min(1.5, max(0.3, room))
                     newg = min(cap_g[tr.name], gear[tr.name] * room ** 0.7)
                     change = max(change, abs(newg - gear[tr.name]))
@@ -1746,7 +1794,9 @@ def print_levers():
 
 def scenario_set():
     base = dict(SCEN)
-    runs = [('EXPERT', base['EXPERT']), ('BAD', base['BAD']), ('LAZY', base['LAZY']),
+    runs = [('EXPERT', base['EXPERT']), ('EXPERT, builds Airport City', dict(base['EXPERT'], airport_city=True)),
+            ('BAD', base['BAD']), ('BAD, builds Airport City', dict(base['BAD'], airport_city=True)),
+            ('LAZY', base['LAZY']), ('LAZY, builds Airport City', dict(base['LAZY'], airport_city=True)),
             ('Comparison: Delhi card (DIAL FY26 aero yield, 45.99% revenue share)', dict(base['EXPERT'], card='DEL', fee=J('ppp.rev_share_dial'), compare=True, cure=False)),
             ('Comparison: Navi Mumbai card (opening UDF, 12.6% revenue share)', dict(base['EXPERT'], card='NMIA', fee=J('ppp.rev_share_nmia'), compare=True, cure=False))]
     sens = [
@@ -1761,11 +1811,25 @@ def scenario_set():
         ('EXPERT, prepay instead of dividends', dict(base['EXPERT'], prepay_share=1.0)),
         ('EXPERT, keeps cash to year 15, then prepays what the lock-up traps', dict(base['EXPERT'], retain_until=15, prepay_locked=True)),
         ('EXPERT, no phase 2', dict(base['EXPERT'], phase2=False)),
+        ("EXPERT, Airport City on BIAL's land share (11% of the site)", dict(base['EXPERT'], airport_city=True, ac_land_share=0.11)),
         ('EXPERT, COVID-type years 16-17 (BIAL FY21-22)', dict(base['EXPERT'], shock=True)),
         ('EXPERT, Nagpur-level fee 14.49%', dict(base['EXPERT'], fee=J('ppp.rev_share_nagpur'))),
         ('EXPERT, land at a BIAL-style cost-recovery rent', dict(base['EXPERT'], land='bial')),
     ]
     return runs, sens
+
+
+def print_airport_city(ex_ac):
+    """Airport City income and AERA's 30% share, for the board and income screens."""
+    till = J('till.hybrid_till_nar_share')
+    print('### Airport City (expert who builds it)\n')
+    print('| Year | Income ₹ cr | AERA counts ₹ cr (30%) | Aero charge per passenger ₹ |')
+    print('|---|---|---|---|')
+    for y in (16, 18, 20, 21, 26, 30, 40, 50, 60):
+        x = ex_ac.ac_inc(y - 1)
+        print(f"| {y} | {f(x)} | {f(till * x)} | {f(ex_ac.rows[y - 1]['yield'])} |")
+    x = ex_ac.ac_inc(29)
+    print('\n' + J('airport_city.screen_text')['income_line'].replace('{X}', f(x)).replace('{Y}', f(till * x)) + ' (year 30)\n')
 
 
 def print_warning_source(ex):
@@ -1895,8 +1959,9 @@ def main():
         print_opening_options(engs[0])
         print_charge(engs[0])
         print_delay(engs[0])
-        print_irr_basis(engs[:3] + sengs)
-        for e in engs[:3]:
+        print_airport_city(engs[1])
+        print_irr_basis(engs[:6] + sengs)
+        for e in (engs[0], engs[2], engs[4]):
             last = e.step_in[0] + 1 if e.step_in else 30
             print_vsi_years(e, range(1, last + 1))
         print_scale(engs[0])

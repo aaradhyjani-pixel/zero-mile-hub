@@ -126,3 +126,4 @@ Shipped in this pass:
   - The Delhi card gives −0.30 to 0.23 on the expert's debt.
   - `money-design.md` is rewritten: "BIAL, scaled", what the player sees (three numbers; two or three decisions an era; no true-up, RAB, WACC or sculpting as inputs), the side-by-side and DSCR-by-era tables. `design/finance.md` is new.
   - The PARAMS numbers are moved to new `money.json` keys.
+- 2026-10-19 capex recalibration (branch capex): VSI capex Rs 2,00,000 cr to 260 MPPA (1A 60,000 lean / 85,000 big; 1B 32,000; 1C 38,000; 1D 38,000; P2 32,000), peers Istanbul and Al Maktoum in money.json; expert lowest DSCR 1.14 (year 11), IRR 12.4 percent; bad and lazy taken over in year 13 by the two-era rule; VSI must charge about Rs 1,500 a passenger against Bengaluru's 606 and Delhi's 379.

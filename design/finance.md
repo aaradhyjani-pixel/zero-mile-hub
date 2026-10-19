@@ -2,6 +2,8 @@
 
 2026-10-19. This is the detail behind the money-design.md one-pager. Model: `tools/concession_model.py`. Run it with `python3 tools/concession_model.py all` (or `backtest`, or `vsi`; `zmi` is an old alias of `vsi`). It reads `money.json` and never writes it; every table below is pasted from its output. Where `design/eras.md` §5–7 differ (the glide cap, a WACC of 12.89%, era-average tests), this file wins.
 
+> **2026-10-19 capex recalibration.** The capex is now ₹2,00,000 cr to 260 MPPA (phase 1 ₹60,000 cr lean, ₹85,000 cr big); the stage table, the retuned levers, the charge-per-passenger comparison, the delay sensitivity and the current tables are in money-design.md (Frame and the two pasted tables). The VSI tables in §4–§7 below predate it (the BIAL back-test in §3 is unchanged): rerun `python3 tools/concession_model.py all` for the current figures.
+
 ## 1. What the player sees (binding)
 - **The model stays rich; the player sees three numbers:**
   1. Today's money.

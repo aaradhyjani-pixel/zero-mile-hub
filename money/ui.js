@@ -371,7 +371,7 @@ M.onboarding=function(opts){opts=opts||{};
   const T=opts.bidTypes||{share:{min:10,max:50,step:0.5,def:30},ppf:{min:100,max:450,step:5,def:250}};
   const G=opts.gearing||{min:60,max:75,def:70};
   const PH=opts.phase1||null,SL=opts.stateLoan||null,LN=opts.lenders||null;   // LN: who lends, if the economy offers a choice   // optional close choices: phase-1 size, and the State's interest-free loan
-  const capexNow=()=>{const o=PH&&PH.options.find(x=>x.id===st.phase1);return o&&o.capexCr||opts.capexCr||36000;};
+  const capexNow=()=>{const o=PH&&PH.options.find(x=>x.id===st.phase1);return o&&o.capexCr||opts.capexCr||60000;};
   const coName=M.cfg.coinvestor.name.split(':')[0];
   const P=(opts.partners||[{name:'',pct:64,role:'Promoter. Builds, finances and runs the airport.'},
     {name:coName,pct:16,role:'Co-investor. Sells you its stake at board meetings, up to 80% in all.'},

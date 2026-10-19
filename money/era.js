@@ -309,11 +309,12 @@
       var pax = demand > 0 ? Math.min(demand * f, P.capacity_headroom * cap) : 0;
       if (c.pax_factor) pax *= c.pax_factor(t);   // a part-year opening (construction slip of under 12 months)
       var acI = c.nar_extra ? c.nar_extra(t) : 0;   // Airport City income (non-aero)
-      var billed = y * pax / 10, aero = billed * (1 - ops.sq), nar = c.nar(t) * pax / 10 + acI;
+      var hubI = c.hub_inc ? c.hub_inc(t) : 0, hubC = c.hub_cost ? c.hub_cost(t) : 0;   // Chapter 5: connections income and its costs
+      var billed = y * pax / 10, aero = billed * (1 - ops.sq), nar = c.nar(t) * pax / 10 + acI + hubI;
       var opex_b = c.opex_bench(t, cap, pax);
       var dis = Math.max(0, ops.dis - c.dis_in_opex);
       var opening = c.opening_cost(t);
-      var opex = pax > 0 ? opex_b * ops.opex + dis * pr * pax / 10 + opening + P.ac.opex_share * acI : 0;
+      var opex = pax > 0 ? opex_b * ops.opex + dis * pr * pax / 10 + opening + P.ac.opex_share * acI + hubC : 0;
       // dollar bonds: the rupee falls, so what is owed (in rupees) grows by the fall
       if (c.fx && t === c.fx.t) {
         var hit = 0;
@@ -336,7 +337,7 @@
       if (active && pax > 0) active._acc.push([t, pax, nar, CAL.aero_opex_share * Math.min(opex, opex_b), billed, c.wacc(this, t), oi > 0 ? tax * aero / oi : 0]);
       var cfads = ebitda - tax - renew;
       var row = {t: t, year: t + 1, pax: pax, demand: demand, cap: cap, yield: y, aero: aero, nar: nar, oi: oi, opex: opex, opening: opening,
-        dis: dis * pr * pax / 10, fee: fee, ebitda: ebitda, interest: interest, principal: prin, ds: ds, dep: dep, tax: tax, renew: renew,
+        dis: dis * pr * pax / 10, hubInc: hubI, hubCost: hubC, fee: fee, ebitda: ebitda, interest: interest, principal: prin, ds: ds, dep: dep, tax: tax, renew: renew,
         cfads: cfads, dscr: ds > 1e-6 ? cfads / ds : null, debt: 0, bal: this.bal, sq: ops.sq};
       row.debt = c.tranches.reduce(function (s, x) { return s + x.out; }, 0);
       this.waterfall(t, row);
@@ -549,6 +550,20 @@
       con.pay.forEach(function (p) { var t = p.year - 1, a = p.cr * pr(t); equity_need[t] = (equity_need[t] || 0) + a; gx += a; });
       vintages.push(new Vintage(gx, gx * P.aero_asset_share, yOpen - 1, Math.min(CAL.dep_life, 60 - yOpen + 1), names[0] + '+'));
     }
+    // one-off spends the shareholders paid after opening (the bird radar in a capital budget): equity, in the asset base
+    if (!base && s.extra_pay && s.extra_pay.length) s.extra_pay.forEach(function (p) {
+      var t = p.year - 1, a = p.cr * pr(t); equity_need[t] = (equity_need[t] || 0) + a;
+      vintages.push(new Vintage(a, a * P.aero_asset_share, t + 1, Math.min(CAL.dep_life, 60 - t - 1), null));
+    });
+    // Chapter 5: Skyward's international banks (s.hub, set by VSIEra.ch5.applyShift). Income from connections made grows
+    // each year by the route growth the shift earned (new routes when connections hold, Doha wins them when they miss),
+    // through the era; after it, it rises with prices. Counted as non-aero, so AERA counts part of it (hybrid till).
+    var hubInc = null, hubCost = null;
+    if (!base && s.hub && s.hub.incCr != null) {
+      var H = s.hub, hk = function (y) { return Math.min(y, H.until) - H.from; };
+      hubInc = function (t) { var y = t + 1; return y < H.from ? 0 : H.incCr * Math.pow(1 + H.growth, hk(y)) * pr(t) / pr(H.from - 1); };
+      hubCost = function (t) { var y = t + 1; return y < H.from ? 0 : H.costCr * pr(t) / pr(H.from - 1); };
+    }
     // Airport City: ordered at a board (s.ac_year), built on money.json's plan, never before its planned first year
     var acInc = null, acPhases = [];
     if (!base && s.ac_year) {
@@ -606,7 +621,7 @@
       opex_bench: opx, opening_cost: opening, feeShare: feeShare, feePpf: feePpf, wacc: wacc,
       equity_need: equity_need, era: function (t) { return eraOf(t + 1); }, state_loan: state_loan, stage_list: stage_list,
       renewal_share: renewal, first_cod_t: st[names[0]].cod - 1, dis_in_opex: P.ops_profiles.base.dis[0], forecast: !!base,
-      nar_extra: acInc, pax_factor: frac > 0 ? function (t) { return t + 1 === yOpen ? 1 - frac : 1; } : null,
+      nar_extra: acInc, hub_inc: hubInc, hub_cost: hubCost, pax_factor: frac > 0 ? function (t) { return t + 1 === yOpen ? 1 - frac : 1; } : null,
       fx: (!base && lenderOf(s).fx) ? {t: lenderOf(s).fx.year - 1, fall: lenderOf(s).fx.fall, names: names.filter(function (n) { var k = stageKey(n); return k === '1A' || k === '1B'; })} : null,
       lever: function (t, key) {
         if (base) return key === 'cure' || (key === 'defer_state_loan' && !!s.defer_state_loan);
@@ -1240,7 +1255,275 @@
     return o;
   }
 
+  // ---------------------------------------------------------------------------------------------
+  // Chapter 5, "Take on the Gulf" (prompt-campaign.md §9): years 14-18 (era 4). VSIEra.ch5.*
+  //   fixture → frontPage → decision → applyDecision → briefing → shiftPlan → (the shift) → applyShift → {bill, card}
+  // Money comes from connections made, never from movements: each connection earns the international passenger fee,
+  // the widebody landing fee per seat and transfer shopping (money.json rates at the year's prices); a missed one costs
+  // passenger care and, through route growth, the next year's flights. Rates marked (est.) are game assumptions.
+  // ---------------------------------------------------------------------------------------------
+  var CH5 = {
+    year: 14, banksFrom: 15, banksPerDay: 2, lateDaysPerYear: 30, birdDaysPerYear: 20, holdSlotInr: 500000 /* (est.) */,
+    careInr: 1900, radarCr: 45 /* (est.) a bird-detection radar, in the 2034 budget */, radarYear: 9,
+    feederAirline: 'Narmada Air', rival: 'Doha', partner: 'Skyward',
+    signatory: {name: 'Elena Marsh', title: 'Chief Commercial Officer, Skyward'},
+    feeders: [['Lucknow', 'LKO'], ['Indore', 'IDR'], ['Patna', 'PAT'], ['Raipur', 'RPR'], ['Bhubaneswar', 'BBI'], ['Varanasi', 'VNS'], ['Jaipur', 'JAI'],
+      ['Guwahati', 'GAU'], ['Coimbatore', 'CJB'], ['Visakhapatnam', 'VTZ'], ['Chandigarh', 'IXC'], ['Kochi', 'COK']],
+    feederFlights: 16, feederPaxEach: 180, feederFrom: '12:40', feederTo: '13:40',
+    intl: {
+      London: {code: 'LHR', std: '14:10', aircraft: 'A388', connecting: 520, seats: 517, mtow: 575},
+      Singapore: {code: 'SIN', std: '14:25', aircraft: 'A359', connecting: 300, seats: 325, mtow: 280},
+      Nairobi: {code: 'NBO', std: '14:50', aircraft: 'B789', connecting: 220, seats: 290, mtow: 254}},
+    hub: {from: 'Lucknow', code: 'LKO', lateMin: 25, pax: 380, holdMin: 20, dest: 'London'},
+    stands: {need: 6, lean: 4},
+    letGoGrowthHit: 0.08   // (est.) route growth lost a year when London leaves the Lucknow passengers behind
+  };
+  function ch5Rates(year) {
+    ensure();
+    var pr = Math.pow(1 + P.cpi_forward, year - 1);
+    var udf = J('aero.udf_greenfield_opening_nmia', {dom_dep: 620, intl_dep: 1225}), land = J('aero.landing_intl_wide_per_t', 785);
+    var landDom = J('aero.landing_dom_narrow_per_t', 347), xfer = J('nonaero.transfer_vs_od_spend', 0.75), shop = P.nar0 + (P.nar1 - P.nar0) * 0.5;
+    var hold = (J('fuel.hold_cost_per_min', {A380: 20000}) || {}).A380 || 20000, care = CH5.careInr;   // meals and rebooking, as the shift ledger
+    var L = CH5.intl.London;
+    // one connection: the domestic leg's landing fee per seat, the international passenger fee, the widebody landing fee per seat, shopping in transfer
+    var perConn = (landDom * 79 / 180 + udf.intl_dep + land * L.mtow / L.seats + shop * xfer) * pr;
+    var holdCost = (hold * CH5.hub.holdMin + CH5.holdSlotInr) * pr;
+    return {pr: pr, perConnInr: perConn, careInr: care * pr, holdInr: holdCost, perConnectionCr: perConn / 1e7, missedCostCr: care * pr / 1e7, holdCostCr: holdCost / 1e7,
+      standMinInr: ((J('fuel.hold_cost_per_min', {}) || {}).B777_300ER || 12500) * pr};
+  }
+  function ch5Dests(choice) { return choice === 'three' ? ['London', 'Singapore', 'Nairobi'] : choice === 'london' ? ['London'] : []; }
+  function ch5PerBank(choice) { return ch5Dests(choice).reduce(function (a, d) { return a + CH5.intl[d].connecting; }, 0); }
+  function cal(y) { return 2025 + y; }
+  function crs(v) { return Math.abs(v) >= 1 ? cr(v) : '₹' + Math.max(1, Math.round(v * 100)) + ' lakh'; }   // small sums in lakh
+  function andList(a) { return a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]; }
+  function ch5Date(state, year) {   // the player's signing day, in the given game year
+    var md = (state.signedOn || '2026-04-01').slice(5);
+    var d = new Date(cal(year) + '-' + md + 'T12:00:00Z');
+    if (isNaN(d)) d = new Date(Date.UTC(cal(year), 3, 1, 12));
+    var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return {iso: d.toISOString().slice(0, 10), words: days[d.getUTCDay()] + ', ' + d.getUTCDate() + ' ' + MONTHS[d.getUTCMonth()] + ' ' + d.getUTCFullYear()};
+  }
+  function ch5Doc(state, id) { return (state.docs || []).filter(function (d) { return d.id === id; })[0] || null; }
+  var GULF_SRC = {label: 'AP, "Dubai International Airport, busiest for world travel, sees record 92.3 million passengers in 2024"', url: 'https://www.yahoo.com/news/dubai-international-airport-busiest-world-081648847.html'};
+  function ch5Fixture(opts) {
+    ensure();
+    opts = opts || {};
+    var phase1 = opts.phase1 === 'big' ? 'big' : 'lean', radar = opts.radar === 'bought' ? 'bought' : 'skipped';
+    var st = newCampaign({parent: opts.parent || 'Meridian Infra', founder: opts.founder || 'Asha Rao', phase1: phase1, bid: {type: 'share', value: 15},
+      gearing: 70, repayment: 'sculpted', cure: true, signedOn: opts.signedOn || '2026-04-01', endsOn: opts.endsOn || '2086-03-31'}, 1);
+    st = applyConstruction(st, {choices: {monsoon: 'pay', overrun: 'pay', trials: 'full'}, finishedOn: '2030-04-01'});
+    if (radar === 'bought') st.s.extra_pay = [{year: CH5.radarYear, cr: CH5.radarCr}];
+    var EX = {1: {stars: 3, otp: 0.88, cx: 0.93, safety: 100}, 2: {stars: 3, otp: 0.94, cx: 0.95, safety: 100}, 3: {stars: 3, otp: 0.82, cx: 0.9, safety: 100}};
+    for (var e = 1; e <= 3; e++) {
+      st = applyShift(st, Object.assign({level: e, moves: 700, sched: 720}, EX[e])).state;
+      var bo = boardOptions(st);
+      st = applyBoard(st, {appeal: false, prepayCr: 0, dividendCr: bo.dividend.maxCr, bought: bo.investments.filter(function (i) { return i.id === 'phase2'; }).map(function (i) { return i.id; })});
+    }
+    var r = ch5Rates(CH5.year);
+    var ph = P.vsi_stages['1A_' + phase1];
+    st.ch5 = {};
+    st.radar = radar;
+    st.docs = [
+      {id: 'concession', title: 'Concession Agreement', year: 0, kind: 'agreement', stamp: 'EXECUTED',
+        summary: 'Sixty years to build and run Vikram Sarabhai International, signed by ' + (st.founder || 'the director') + ' for ' + st.parent + ', with AAI, the State through MADC and L5 Capital.'},
+      {id: 'phase1', title: 'Phase 1 choice, ' + cal(1), year: 1, kind: 'phase1', stamp: 'APPROVED',
+        summary: phase1 === 'lean' ? 'You built phase 1 lean: ' + ph.cap + ' million passengers a year and ' + CH5.stands.lean + ' widebody stands at the international pier, for ' + cr(ph.cost) + '.' :
+          'You built phase 1 big: ' + ph.cap + ' million passengers a year and ' + CH5.stands.need + ' widebody stands at the international pier, for ' + cr(ph.cost) + '.'},
+      {id: 'budget-2034', title: 'Capital budget, ' + cal(CH5.radarYear), year: CH5.radarYear, kind: 'budget', stamp: 'APPROVED',
+        summary: radar === 'bought' ? 'You bought the bird radar for ' + cr(CH5.radarCr * Math.pow(1 + P.cpi_forward, CH5.radarYear - 1)) + '. It watches the lakes east of runway 3.' :
+          'You skipped the bird radar and saved ' + cr(CH5.radarCr * Math.pow(1 + P.cpi_forward, CH5.radarYear - 1)) + '. Nobody watches the lakes east of runway 3.'},
+      {id: 'feeders-2033', title: 'Feeder agreement with ' + CH5.feederAirline + ', ' + cal(8), year: 8, kind: 'route-agreement', stamp: 'SIGNED',
+        summary: CH5.feederAirline + ' flies ' + CH5.feeders.length + ' Indian cities into VSI in one bank each afternoon, timed so its passengers can change planes here.'}];
+    st.ch5.rates = {perConnectionCr: r.perConnectionCr, missedCostCr: r.missedCostCr, holdCostCr: r.holdCostCr};
+    return st;
+  }
+  function ch5Choices(state) {
+    var r = ch5Rates(CH5.banksFrom), days = P.p2a;
+    return ['three', 'london', 'decline'].map(function (id) {
+      var day = ch5PerBank(id) * CH5.banksPerDay, yr = day * days * r.perConnInr / 1e7;
+      return {id: id, day: day, yearCr: yr};
+    });
+  }
+  function ch5FrontPage(state) {
+    ensure();
+    var eng = simulate(state.s, CH5.year - 1), last = eng.rows[eng.rows.length - 1], d = ch5Date(state, CH5.year);
+    var paxM = last ? Math.round(last.pax) : 0, lr = state.lastReport || {};
+    return {masthead: 'The Zero Mile Times', dateLine: d.words + ' · Nagpur', price: '₹12',
+      lead: 'DUBAI, DOHA OR NAGPUR? THE RACE FOR INDIA\'S TRAVELLERS',
+      deck: 'Skyward wants an Indian hub for its long-haul flights. Vikram Sarabhai International has the feeder flights. Dubai and Doha have the habit.',
+      sub: {head: 'Lucknow to London, one stop, on Indian soil',
+        body: CH5.feederAirline + ' now flies ' + CH5.feeders.length + ' cities into VSI in one afternoon bank. ' + state.parent + ' says the same passengers could walk across the pier to London, Singapore or Nairobi instead of changing in the Gulf. VSI handled ' + paxM + ' million passengers in ' + cal(CH5.year - 1) + '.'},
+      columns: [
+        {head: 'Where India changes planes', body: 'Dubai\'s airport handled about 12 million passengers to and from India in 2024, more than for any other country. Doha is close behind. Both want Skyward\'s flights.'},
+        {head: 'The banks are watching', body: (lr.cover != null ? 'In its hardest recent year VSI earned ' + coverWords(lr.cover).replace(' earned', '') + ' to its banks.' : 'VSI has no loan payments due.') + ' Its owners hold ' + state.stake + '%, worth about ' + cr(lr.stakeValueCr || 0) + ' on paper.'}],
+      photo: {kind: 'intl-pier', caption: 'The international pier at VSI: ' + (state.phase1 === 'big' ? CH5.stands.need : CH5.stands.lean) + ' stands built for the biggest aircraft.'},
+      sources: [GULF_SRC]};
+  }
+  function ch5Decision(state) {
+    ensure();
+    var cs = ch5Choices(state), by = {}; cs.forEach(function (c) { by[c.id] = c; });
+    var lean = state.phase1 !== 'big', d = ch5Date(state, CH5.year);
+    var standLine = lean ? 'Skyward\'s afternoon bank needs ' + CH5.stands.need + ' widebody stands at the international pier. Your phase 1 built ' + CH5.stands.lean + '; the other widebodies will wait on the taxiways.' :
+      'Skyward\'s afternoon bank needs ' + CH5.stands.need + ' widebody stands at the international pier. Your phase 1 built ' + CH5.stands.need + '.';
+    function slip(id) {
+      var c = by[id];
+      if (id === 'decline') return {big: 'No new connections', money: '₹0 a year', line: 'Skyward signs with ' + CH5.rival + ' instead. No risk to you, and Indian travellers keep changing planes in the Gulf.'};
+      return {big: '+' + c.day.toLocaleString('en-IN') + ' connections a day', money: cr(c.yearCr) + ' a year',
+        line: id === 'three' ? 'If the connections hold. Every passenger who misses one costs you passenger care, and the next flight may go to ' + CH5.rival + '.' :
+          'One route, less to go wrong. London alone earns half as much, and Singapore and Nairobi go to ' + CH5.rival + '.'};
+    }
+    return {docType: 'route-agreement', docId: 'skyward-' + cal(CH5.year), title: 'Route agreement: ' + CH5.partner + ' at Vikram Sarabhai International', date: d.iso,
+      parties: {airport: 'Vikram Sarabhai International Airport Limited (VSIAL)', airline: CH5.partner, signatory: CH5.signatory},
+      body: [
+        CH5.partner + ' will base long-haul flights at VSI from ' + cal(CH5.banksFrom) + ', timed to leave after ' + CH5.feederAirline + '\'s afternoon feeder bank, so passengers from ' + CH5.feeders.length + ' Indian cities can change planes here.',
+        'VSIAL undertakes that connecting passengers make their flights. When a feeder bank runs late, the duty manager may hold a departure, at VSIAL\'s cost.',
+        standLine,
+        'Each bank runs twice a day. VSIAL earns the passenger fee, the landing fee and what connecting passengers spend in the terminal.'],
+      choices: [
+        {id: 'three', label: 'Sign for banks to London, Singapore and Nairobi', terms: 'Three departures per bank, two banks a day, from ' + cal(CH5.banksFrom) + '.', slip: slip('three')},
+        {id: 'london', label: 'Sign for London only', terms: 'One London departure per bank, two banks a day, from ' + cal(CH5.banksFrom) + '.', slip: slip('london')},
+        {id: 'decline', label: 'Decline', terms: CH5.partner + ' takes its flights to ' + CH5.rival + '.', slip: slip('decline')}],
+      stamps: {three: 'SIGNED', london: 'SIGNED', decline: 'DECLINED'}};
+  }
+  function ch5ApplyDecision(state, choiceId) {
+    ensure();
+    state = clone(state);
+    var id = ['three', 'london', 'decline'].indexOf(choiceId) >= 0 ? choiceId : 'decline';
+    state.ch5 = state.ch5 || {};
+    state.ch5.choice = id;
+    var c = ch5Choices(state).filter(function (x) { return x.id === id; })[0];
+    var doc = {id: 'skyward-' + cal(CH5.year), title: 'Route agreement with ' + CH5.partner + ', ' + cal(CH5.year), year: CH5.year, kind: 'route-agreement',
+      stamp: id === 'decline' ? 'DECLINED' : 'SIGNED',
+      summary: id === 'three' ? 'You signed ' + CH5.partner + ' for banks to London, Singapore and Nairobi: ' + c.day.toLocaleString('en-IN') + ' connections a day, worth about ' + cr(c.yearCr) + ' a year if they hold.' :
+        id === 'london' ? 'You signed ' + CH5.partner + ' for London only: ' + c.day.toLocaleString('en-IN') + ' connections a day, worth about ' + cr(c.yearCr) + ' a year if they hold.' :
+        'You declined ' + CH5.partner + '. Its long-haul flights went to ' + CH5.rival + '.'};
+    state.docs = (state.docs || []).filter(function (x) { return x.id !== doc.id; }).concat([doc]);
+    return state;
+  }
+  function ch5Trail(state) {
+    var c = state.ch5 && state.ch5.choice;
+    // the stand shortage needs Skyward's widebodies
+    if (state.phase1 !== 'big' && c && c !== 'decline') { var p = ch5Doc(state, 'phase1'); return {id: 'stands', docId: 'phase1', tag: {doc: p ? p.title : 'Phase 1 choice', line: 'You built phase 1 lean: ' + CH5.stands.lean + ' widebody stands for ' + CH5.stands.need + ' widebodies.'}}; }
+    if (state.radar !== 'bought') { var b = ch5Doc(state, 'budget-2034'); return {id: 'birds', docId: 'budget-2034', tag: {doc: b ? b.title : 'Capital budget', line: 'You skipped the bird radar.'}}; }
+    return null;
+  }
+  function ch5ShiftPlan(state) {
+    ensure();
+    var choice = (state.ch5 && state.ch5.choice) || 'decline', r = ch5Rates(CH5.year), dests = ch5Dests(choice);
+    var intl = dests.map(function (d) { var x = CH5.intl[d]; return {id: 'SKW-' + x.code, dest: d, code: x.code, std: x.std, aircraft: x.aircraft, connecting: x.connecting}; });
+    var tr = ch5Trail(state), sky = 'skyward-' + cal(CH5.year), skyDoc = ch5Doc(state, sky), fdoc = ch5Doc(state, 'feeders-2033');
+    var tags = [{docId: 'feeders-2033', doc: fdoc ? fdoc.title : 'Feeder agreement', line: CH5.feederAirline + '\'s bank: ' + CH5.feeders.length + ' cities, ' + CH5.feederFrom + '–' + CH5.feederTo + '.', anchor: 'transfer'}];
+    if (dests.length) tags.push({docId: sky, doc: skyDoc ? skyDoc.title : 'Route agreement', line: CH5.partner + '\'s bank: ' + ch5PerBank(choice).toLocaleString('en-IN') + ' connecting to ' + andList(dests) + '.', anchor: 'intl-pier'});
+    else tags.push({docId: sky, doc: skyDoc ? skyDoc.title : 'Route agreement', line: 'You declined. ' + CH5.partner + ' flies from ' + CH5.rival + ' today.', anchor: 'intl-pier'});
+    if (tr) tags.push({docId: tr.docId, doc: tr.tag.doc, line: tr.tag.line, anchor: tr.id === 'stands' ? 'stands' : 'runway'});
+    var H = CH5.hub, lostCr = H.pax * (r.perConnInr + r.careInr) / 1e7;
+    var hub = dests.indexOf(H.dest) < 0 ? null : {id: 'feeder-late', from: H.from, code: H.code, flights: 2, lateMin: H.lateMin, dest: H.dest, pax: H.pax, holdMin: H.holdMin,
+      holdCostCr: r.holdCostCr, letGoLostCr: lostCr,
+      holdLine: 'London leaves ' + H.holdMin + ' minutes late and misses its Heathrow slot: about ' + crs(r.holdCostCr) + '. The ' + H.pax + ' make it.',
+      letGoLine: 'London leaves on time. The ' + H.pax + ' miss it and ' + CH5.rival + ' wins them: about ' + crs(lostCr) + ' in passenger care and lost fees, and ' + CH5.partner + ' is furious.'};
+    return {level: 3, year: CH5.year,
+      feeder: {airline: CH5.feederAirline, cities: CH5.feeders.map(function (c) { return {code: c[1], name: c[0]}; }), from: CH5.feederFrom, to: CH5.feederTo, flights: CH5.feederFlights, paxEach: CH5.feederPaxEach},
+      intl: intl,
+      rates: {perConnectionCr: r.perConnectionCr, missedCostCr: r.missedCostCr, rival: CH5.rival},
+      hub: hub, trail: tr, tags: tags,
+      stands: {need: CH5.stands.need, have: state.phase1 === 'big' ? CH5.stands.need : CH5.stands.lean}};
+  }
+  function ch5Briefing(state) {
+    var plan = ch5ShiftPlan(state), d = ch5Date(state, CH5.year), sky = 'skyward-' + cal(CH5.year), lines = [];
+    var lon = plan.intl.filter(function (x) { return x.dest === 'London'; })[0];
+    lines.push(lon ? {text: CH5.partner + '\'s London bank departs ' + lon.std + ' · ' + lon.connecting + ' connecting', docId: sky} :
+      {text: 'No ' + CH5.partner + ' bank today: it flies from ' + CH5.rival, docId: sky});
+    lines.push({text: CH5.feederAirline + '\'s feeder bank lands ' + CH5.feederFrom + '–' + CH5.feederTo + ' from ' + CH5.feeders.length + ' cities', docId: 'feeders-2033'});
+    var tr = plan.trail;
+    lines.push(tr && tr.id === 'stands' ? {text: CH5.stands.lean + ' widebody stands at the international pier for ' + CH5.stands.need + ' widebodies', docId: 'phase1'} :
+      tr && tr.id === 'birds' ? {text: 'No bird radar: the lakes east of runway 3 are unwatched', docId: 'budget-2034'} :
+      {text: 'Bird radar on, and a stand for every widebody', docId: 'budget-2034'});
+    return {title: 'Duty manager\'s handover', date: d.iso, lines: lines,
+      watch: plan.hub ? 'The ' + CH5.hub.from + ' flights. If they run late, ' + CH5.hub.pax + ' people miss London.' : 'The feeder bank: get every domestic connection made.',
+      autoStartSec: 6};
+  }
+  function ch5ApplyShift(state, result) {
+    ensure();
+    state = clone(state);
+    result = result || {};
+    state.ch5 = state.ch5 || {};
+    var choice = state.ch5.choice || 'decline', plan = ch5ShiftPlan(state), r = ch5Rates(CH5.banksFrom), days = P.p2a;
+    var made = 0, missed = 0, bd = result.byDest || {};
+    var dests = Object.keys(bd);
+    if (dests.length) dests.forEach(function (k) { made += bd[k].made || 0; missed += bd[k].missed || 0; });
+    else { made = result.made || 0; missed = result.missed || 0; }
+    var H = plan.hub, held = !!(H && result.held && result.held[H.dest]);
+    // the sample day without the late Lucknow flights, every bank of the year; the Lucknow call on the late days
+    // a normal day: the Lucknow flights are on time, so their passengers connect without a hold. On the late days the
+    // 380 make London (held, at a slot cost) or miss it (let go)
+    var incMiss = H && !held ? Math.min(missed, H.pax) : 0;
+    var perDay = CH5.banksPerDay, normMade = made + incMiss, normMiss = missed - incMiss;
+    var madeYr = normMade * perDay * days - incMiss * CH5.lateDaysPerYear;
+    var missYr = normMiss * perDay * days + incMiss * CH5.lateDaysPerYear;
+    var holdsYr = H && held ? CH5.lateDaysPerYear : 0;
+    var tr = plan.trail, trailMin = tr && result.trail && result.trail.happened ? Math.max(0, result.trail.minutesLost || 0) : 0;
+    var trailDays = tr && tr.id === 'birds' ? CH5.birdDaysPerYear : days;
+    var earnedCr = madeYr * r.perConnInr / 1e7;
+    var careCr = missYr * r.careInr / 1e7, holdCr = holdsYr * r.holdInr / 1e7, trailCr = trailMin * r.standMinInr * trailDays / 1e7;
+    var spentCr = careCr + holdCr + trailCr;
+    var share = made + missed > 0 ? made / (made + missed) : null;
+    // route growth (est.): connections that hold bring new flights; misses send them to the rival
+    // the share that counts on a normal day (the Lucknow call is on the late days only)
+    var normShare = normMade + normMiss > 0 ? normMade / (normMade + normMiss) : null;
+    var yrShare = madeYr + missYr > 0 ? madeYr / (madeYr + missYr) : null;
+    // route growth (est.), a year through the era: connections that hold bring new flights, misses send them to Doha,
+    // and a partner whose flagship left without 380 of its passengers is slow to add more
+    var growth = yrShare == null ? 0 : Math.max(-0.12, Math.min(0.12, (yrShare - 0.9) * 2.4 - (H && !held ? CH5.letGoGrowthHit : 0)));
+    state.s.hub = {from: CH5.banksFrom, until: eraYears(state.era)[2], incCr: earnedCr, costCr: spentCr, growth: growth};
+    var otp = result.otp != null ? result.otp : 0.85;
+    // the whole shift's connections (domestic too, if hub.js reports them) move the Mall and passenger care for the era;
+    // one bank of the day, so a quarter weight
+    var allShare = result.made != null && result.made + (result.missed || 0) > 0 ? result.made / (result.made + (result.missed || 0)) : normShare;
+    var cx = allShare == null ? 0.9 : Math.max(0.6, Math.min(0.97, 0.9 + (allShare - 0.9) * 0.25));
+    var shift = {level: plan.level, stars: result.stars != null ? result.stars : 2, otp: otp, cx: cx, safety: 100};
+    var out = applyShift(state, shift), st = out.state, rep = out.report;
+    var eng = simulate(st.s, eraYears(4)[2]);
+    var hubRows = eng.rows.filter(function (x) { return x.year >= CH5.banksFrom && x.year <= eraYears(4)[2]; });
+    var hubEarned = hubRows.reduce(function (a, x) { return a + x.hubInc; }, 0), hubSpent = hubRows.reduce(function (a, x) { return a + x.hubCost; }, 0);
+    var y1 = cal(eraYears(4)[2]);
+    // the margin note: cause and effect, in the adviser's hand
+    var margin, routes = [];
+    if (choice === 'decline') margin = 'You declined ' + CH5.partner + '. ' + CH5.rival + ' flies its passengers now, and an Indian city that wants London still changes planes in the Gulf.';
+    else {
+      var bits = [];
+      if (H && held) bits.push('You held London for the ' + H.from + ' passengers. On the ' + CH5.lateDaysPerYear + ' or so late days a year that costs ' + cr(holdCr) + ' in Heathrow slots and keeps ' + (H.pax * CH5.lateDaysPerYear).toLocaleString('en-IN') + ' passengers off ' + CH5.rival + '.');
+      else if (H) bits.push('You let London go without the ' + H.from + ' passengers. On the ' + CH5.lateDaysPerYear + ' or so late days a year, ' + (H.pax * CH5.lateDaysPerYear).toLocaleString('en-IN') + ' people miss it and ' + CH5.rival + ' wins them.');
+      if (trailCr >= 1) bits.push(tr.id === 'stands' ? 'Widebodies waiting for a stand cost ' + cr(trailCr) + ' a year in penalties.' : 'The birds off the lakes cost ' + cr(trailCr) + ' a year in delays.');
+      if (growth >= 0.05 && choice === 'three') { routes.push('Frankfurt'); bits.push(CH5.partner + ' is adding a Frankfurt flight.'); }
+      else if (growth >= 0.05) { routes.push('Singapore'); bits.push(CH5.partner + ' wants to add Singapore.'); }
+      else if (H && !held) bits.push(CH5.partner + ' is furious, and is adding its next flight at ' + CH5.rival + '.');
+      else if (growth < 0) bits.push(CH5.partner + ' is moving a flight to ' + CH5.rival + '.');
+      margin = bits.join(' ');
+    }
+    var paragraph = choice === 'decline' ?
+      'In ' + y1 + ' Vikram Sarabhai International ran its domestic banks only. ' + CH5.partner + ' built its Indian traffic through ' + CH5.rival + '. The airport stayed full and the loans were paid, but nothing new was added to the network.' :
+      'From ' + cal(CH5.banksFrom) + ', ' + CH5.partner + ' flew ' + andList(ch5Dests(choice)) + ' out of VSI twice a day. ' +
+      Math.round(madeYr).toLocaleString('en-IN') + ' passengers a year changed planes here instead of in the Gulf' + (missYr >= 1 ? ', and ' + Math.round(missYr).toLocaleString('en-IN') + ' missed their flight' : '') + '. ' +
+      'Over ' + cal(CH5.banksFrom) + '–' + y1 + ' the connections earned ' + cr(hubEarned) + ' and cost ' + cr(hubSpent) + '.';
+    var bill = {title: 'Annual report, ' + y1, year: y1, paragraph: paragraph, per: 'a year, from ' + cal(CH5.banksFrom),
+      table: [{label: 'Earned', cr: Math.round(earnedCr)}, {label: 'Spent', cr: Math.round(spentCr)}, {label: 'Connections', made: Math.round(madeYr), missed: Math.round(missYr)}],
+      margin: margin, routes: routes,
+      cover: {ratio: rep.coverWorstExact == null ? null : Math.floor(rep.coverWorstExact * 100 + 1e-9) / 100, words: coverWords(rep.coverWorstExact), light: rep.light},
+      stake: {pct: rep.stakePct, valueCr: rep.stakeValueCr},
+      era: {earnedCr: Math.round(hubEarned), spentCr: Math.round(hubSpent), growthPct: Math.round(growth * 1000) / 10}};
+    var card = {title: 'What really happened',
+      text: 'In 1985 Dubai\'s government gave a new airline, Emirates, US$10 million and two leased aircraft; its first flight left for Karachi on 25 October. Emirates timed its flights so passengers could change planes in Dubai on the way between Europe, Asia and Africa. By 2024 Dubai International handled 92.3 million passengers, and India was its biggest market, at about 12 million.',
+      sources: [{label: 'Gulf News, "40 years of UAE: the launch of Emirates Airline"', url: 'https://gulfnews.com/news/uae/government/40-years-of-uae-the-launch-of-emirates-airline-1.920215'}, GULF_SRC]};
+    st.ch5.result = {made: made, missed: missed, held: held, share: share, growth: growth};
+    st.ch5.bill = bill;
+    st.docs = (st.docs || []).concat([{id: 'report-' + y1, title: 'Annual report, ' + y1, year: eraYears(4)[2], kind: 'report', stamp: 'FILED', summary: margin || paragraph}]);
+    return {state: st, bill: bill, card: card, report: rep};
+  }
+  var ch5 = {fixture: ch5Fixture, frontPage: ch5FrontPage, decision: ch5Decision, applyDecision: ch5ApplyDecision, briefing: ch5Briefing,
+    shiftPlan: ch5ShiftPlan, applyShift: ch5ApplyShift, rates: function (y) { var r = ch5Rates(y || CH5.year); return {perConnectionCr: r.perConnectionCr, missedCostCr: r.missedCostCr, holdCostCr: r.holdCostCr}; }};
+
   var API = {
+    ch5: ch5,
     data: function (md) { load(md); _closeCache = {}; return API; },
     capexCr: capexCr, phase1Options: phase1Options, stateLoanOpt: stateLoanOpt, lenders: lenderOptions, partners: partners, bidTypes: bidTypes,
     previewBid: previewBid, previewClose: previewClose,

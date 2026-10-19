@@ -204,5 +204,62 @@ console.log('- expert warnings: ' + (warn.map(r => r.eraLabel + ' (' + r.coverWo
 warn.forEach(r => r.sentences.filter(s => /banks warn/.test(s)).forEach(s => console.log('    "' + s + '"')));
 const bt = A.BAD.reports.find(r => r.banksTookControl);
 console.log('- bad ending: ' + (bt ? bt.eraLabel + ': "' + bt.sentences.filter(s => /take control/.test(s)).join(' ') + '"' : 'none'));
+
+// ---- Chapter 5: Take on the Gulf (VSIEra.ch5) ----
+console.log('\n## Chapter 5: three scripted players from the year-14 fixture\n');
+const C5 = E.ch5, rt = o => JSON.parse(JSON.stringify(o));
+const fx = rt(C5.fixture());
+if (fx.era !== 4 || fx.year !== 14) fail('ch5 fixture at era ' + fx.era + ', year ' + fx.year + ' (want era 4, year 14)');
+['concession', 'phase1', 'budget-2034', 'feeders-2033'].forEach(id => { if (!(fx.docs || []).some(d => d.id === id)) fail('ch5 fixture missing doc ' + id); });
+const fp = C5.frontPage(fx), dc = C5.decision(fx);
+if (fp.lead !== 'DUBAI, DOHA OR NAGPUR? THE RACE FOR INDIA\'S TRAVELLERS' || fp.masthead !== 'The Zero Mile Times') fail('ch5 front page masthead or lead');
+if (dc.choices.map(c => c.id).join() !== 'three,london,decline') fail('ch5 decision choices ' + dc.choices.map(c => c.id).join());
+// a shift as hub.js would report it: each international departure misses a few, plus London's 380 if let go
+function c5shift(plan, held, slack) {
+  const byDest = {};
+  plan.intl.forEach(x => { let miss = Math.round(x.connecting * slack); if (plan.hub && x.dest === plan.hub.dest && !held) miss += plan.hub.pax; byDest[x.dest] = {made: x.connecting - miss, missed: miss}; });
+  const dom = 900, domMiss = Math.round(dom * slack);
+  const made = Object.values(byDest).reduce((a, b) => a + b.made, 0) + dom - domMiss, missed = Object.values(byDest).reduce((a, b) => a + b.missed, 0) + domMiss;
+  return {made, missed, byDest, held: plan.hub ? {[plan.hub.dest]: !!held} : {}, holdMin: held ? 20 : 0,
+    trail: {happened: !!plan.trail, minutesLost: plan.trail ? 12 : 0}, money: {lines: []}, stars: 3, otp: 0.86};
+}
+const PLAYERS = [
+  ['hub-smart', 'three', true, 0.03, 'signs three banks, holds London for the 380'],
+  ['middle', 'three', false, 0.06, 'signs three banks, lets London go, sloppier transfers'],
+  ['hub-blind', 'decline', false, 0.03, 'declines Skyward']];
+const c5 = {}, c5texts = [JSON.stringify(fp), JSON.stringify(dc)];
+console.log('| Player | Plan | Earned ₹ cr a year | Spent ₹ cr a year | Connections made / missed a year | Earned / spent 2040-43 | Loan cover, hardest year | Your stake |\n|---|---|---|---|---|---|---|---|');
+for (const [name, choice, held, slack, what] of PLAYERS) {
+  let st = rt(C5.applyDecision(fx, choice));
+  const br = C5.briefing(st), plan = C5.shiftPlan(rt(st));
+  if (br.lines.length !== 3 || br.lines.some(l => !(st.docs || []).some(d => d.id === l.docId))) fail('ch5 briefing for ' + name + ': 3 lines, each linked to a doc');
+  if (plan.intl.length !== {three: 3, london: 1, decline: 0}[choice]) fail('ch5 plan for ' + choice + ' has ' + plan.intl.length + ' departures');
+  plan.tags.forEach(t => { if (!(st.docs || []).some(d => d.id === t.docId)) fail('ch5 tag without a doc: ' + t.docId); });
+  const r = C5.applyShift(st, c5shift(plan, held, slack));
+  rt(r.state);
+  const b = r.bill, tb = b.table;
+  c5[name] = b;
+  c5texts.push(JSON.stringify(br), JSON.stringify(plan), JSON.stringify(b), JSON.stringify(r.card));
+  console.log('| ' + name + ' | ' + what + ' | ' + tb[0].cr + ' | ' + tb[1].cr + ' | ' + tb[2].made.toLocaleString('en-IN') + ' / ' + tb[2].missed.toLocaleString('en-IN') + ' | ' +
+    b.era.earnedCr + ' / ' + b.era.spentCr + ' | ' + b.cover.words + ' | ' + b.stake.pct + '%, ₹' + b.stake.valueCr.toLocaleString('en-IN') + ' cr |');
+  console.log('|  | margin: "' + b.margin + '" | | | | | | |');
+  if (!b.margin) fail('ch5 bill for ' + name + ' has no margin note');
+  if (!r.card.sources || r.card.sources.length < 1) fail('ch5 card without sources');
+}
+const net = n => c5[n].era.earnedCr - c5[n].era.spentCr;
+if (!(c5['hub-smart'].stake.valueCr > c5['hub-blind'].stake.valueCr && net('hub-smart') > net('hub-blind') + 500)) fail('ch5: the hub-smart player does not clearly beat the hub-blind one');
+if (!(c5['hub-smart'].stake.valueCr > c5['middle'].stake.valueCr + 5000 && c5['hub-smart'].cover.ratio > c5['middle'].cover.ratio)) fail('ch5: the hub-smart player does not clearly beat the middle one');
+if (!/held London/.test(c5['hub-smart'].margin) || !/let London go/.test(c5['middle'].margin)) fail('ch5: the margin notes do not read the London call');
+console.log('\n- hub-smart over hub-blind: ₹' + (net('hub-smart') - net('hub-blind')).toLocaleString('en-IN') + ' cr more from connections over 2040-43, stake ₹' + (c5['hub-smart'].stake.valueCr - c5['hub-blind'].stake.valueCr).toLocaleString('en-IN') + ' cr higher');
+console.log('- hub-smart over middle: stake ₹' + (c5['hub-smart'].stake.valueCr - c5['middle'].stake.valueCr).toLocaleString('en-IN') + ' cr higher, loan cover ' + c5['hub-smart'].cover.words + ' against ' + c5['middle'].cover.words);
+const big = C5.shiftPlan(C5.applyDecision(rt(C5.fixture({phase1: 'big', radar: 'skipped'})), 'three'));
+const rad = C5.shiftPlan(C5.applyDecision(rt(C5.fixture({phase1: 'big', radar: 'bought'})), 'three'));
+if (!big.trail || big.trail.id !== 'birds') fail('ch5: big phase 1 with the radar skipped should give the bird trail');
+if (rad.trail !== null) fail('ch5: big phase 1 with the radar bought should have no trail incident');
+console.log('- paper trail: lean → ' + C5.shiftPlan(C5.applyDecision(fx, 'three')).trail.id + ', big + radar skipped → ' + big.trail.id + ', big + radar bought → none');
+const c5hits = c5texts.filter(t => BANNED.test(t));
+if (c5hits.length) fail('ch5 jargon: ' + c5hits.map(t => (t.match(BANNED) || [])[0]).join(', '));
+if (JSON.stringify(C5.fixture()) !== JSON.stringify(fx)) fail('ch5 fixture is not deterministic');
+console.log('- plain words: ' + c5texts.length + ' Chapter 5 payloads, ' + c5hits.length + ' with jargon; fixture deterministic');
 console.log('\n' + (fails ? fails + ' FAILED' : 'ALL PASS'));
 process.exit(fails ? 1 : 0);

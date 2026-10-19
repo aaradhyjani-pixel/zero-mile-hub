@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>Harness: the concession file (Concession tab)</title>
+<!-- Standalone harness for ZMMoney.concessionFile and ZMMoney.confirmTear. Serve the repo root over http and open
+     /money/test_file.html?moneymock=file (a saved company, three documents, two earlier concessions), ?moneymock=file0 (no save)
+     or ?moneymock=tear (the tear-it-up memo). The menu sheet below copies the game's own sheet styles (hub-head.html). -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>:root{--f-sign:'Barlow Condensed','Arial Narrow',sans-serif;--f-mono:'JetBrains Mono',monospace;--panel-edge:#26313a;--ink:#e8edf0;--ink-2:#b9c2c8;--ink-3:#7f8b93;--sign:#ffcc00;--sign-ink:#121212;--go:#3ad07f;--stop:#ff4d3f}
+html,body{margin:0;height:100%;background:#05080a;color:var(--ink);font-family:Barlow,sans-serif;font-size:14px;line-height:1.45}button{font:inherit;background:none;border:0;cursor:pointer;color:inherit}
+#app{position:fixed;inset:0;overflow:hidden;background:#0b1013}
+#overlay{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:18px max(16px,env(safe-area-inset-right,0px)) 18px max(16px,env(safe-area-inset-left,0px));background:linear-gradient(180deg,rgba(3,5,7,.6),rgba(3,5,7,.88))}
+#overlay[hidden]{display:none!important}
+.sheet{background:#0a0e11;border:1px solid var(--panel-edge);border-radius:8px;max-width:1040px;width:100%;max-height:100%;overflow:auto;box-shadow:0 30px 80px rgba(0,0,0,.7)}
+.sheet .band{background:var(--sign);color:var(--sign-ink);padding:8px 20px;font-family:var(--f-sign);font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:14px;display:flex;justify-content:space-between;gap:12px}
+.sheet .in{padding:20px 24px 24px}
+.sheet h1{font-family:var(--f-sign);font-weight:700;font-size:54px;line-height:.95;margin:0 0 10px;text-wrap:balance}
+.sheet h2{font-family:var(--f-sign);font-weight:600;font-size:22px;margin:20px 0 6px}
+.sheet p{color:var(--ink-2);max-width:72ch;margin:0 0 9px;font-size:14.5px}
+.sheet ul{margin:0 0 6px;padding-left:18px;color:var(--ink-2);font-size:14px}
+.sheet li{margin-bottom:3px}
+.sheet .src{font-size:12px;color:var(--ink-3)}.sheet .src a{color:var(--ink-2)}
+.tabs2{display:flex;gap:4px;border-bottom:1px solid var(--panel-edge);margin:0 0 12px}
+.tabs2 button{padding:8px 14px 7px;font-family:var(--f-sign);font-weight:600;letter-spacing:.05em;text-transform:uppercase;font-size:14px;color:var(--ink-3);border-bottom:2px solid transparent}
+.tabs2 button.on{color:var(--ink);border-bottom-color:var(--sign)}
+</style>
+</head><body><div id="app"><div id="overlay"><div class="sheet" id="sheet"><div class="band"><span>Vikram Sarabhai International Airport · VSI</span><span>Nagpur · six runways</span></div><div class="in">
+ <div class="tabs2" role="tablist"><button data-t="levels">Play</button><button data-t="concession" class="on">Concession</button><button data-t="plan">The airport</button></div>
+ <h1>Run the airport for 60 years</h1><p>Win the concession, raise the money, sign, and then run Vikram Sarabhai International Airport shift by shift. Every few years you see the books and meet your board. Good operations are good money.</p>
+ <div id="tConc"></div></div></div></div></div><template id="planTpl"></template>
+<script>
+fetch('../masterplan.svg').then(r=>r.ok?r.text():'').catch(()=>'').then(t=>{document.getElementById('planTpl').innerHTML=t.replace(/<\?xml[^>]*\?>/,'');
+  const s=document.createElement('script');s.src='ui.js';document.body.appendChild(s);});
+</script></body></html>

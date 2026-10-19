@@ -2357,32 +2357,167 @@ function finish(){
   if(MNY&&MNY.on){window.__hubResult.money=MNY.close();window.__hubResult.sched=MNY.sched;}
   if(CAMP.active)CAMP.finished(window.__hubResult);
 }
+/* The start menu is the airport's file on a drafting board, in the money layer's Paperwork look (money/DESIGN.md): index tabs,
+   one paper sheet per tab (white bond, duty paper, a drawing sheet), typed text, blue ink, red rubber stamps. The board is solid,
+   inside a lighter scrim, so the paper reads on any frame of the live airport and the airport still shows round its edges.
+   Everything is scoped to .vsm (menu only): the score sheet that finish() writes into the same #sheet keeps the ops look. */
+const VSM_FONTS='https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Kalam:wght@400;700&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Tiro+Devanagari+Hindi&display=swap';
+const vsmLogo=s=>`<svg class="vsm-logo" width="${s}" height="${s}" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="15" fill="none" stroke="currentColor" stroke-width="2.4"/><ellipse cx="24" cy="24" rx="22" ry="8" fill="none" stroke="currentColor" stroke-width="1.6" transform="rotate(-28 24 24)"/><circle cx="41.6" cy="14.2" r="3" fill="currentColor"/><path d="M17 18 L24 32 L31 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+function vsmGuil(){let p='';const R=10,r=3,d=7.2,k=19/(R-r+d);for(let i=0;i<=600;i++){const t=i/600*Math.PI*6;p+=(i?'L':'M')+(((R-r)*Math.cos(t)+d*Math.cos((R-r)/r*t))*k+22).toFixed(1)+','+(((R-r)*Math.sin(t)-d*Math.sin((R-r)/r*t))*k+22).toFixed(1);}
+  return 'url("data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 44 44"><rect width="44" height="44" fill="#dfeadf"/><path d="${p}" fill="none" stroke="#2e7a57" stroke-width=".55" opacity=".55"/><circle cx="22" cy="22" r="6.1" fill="none" stroke="#b23b6b" stroke-width=".5" opacity=".45"/></svg>`)+'")';}
+function vsmStyle(){if(document.getElementById('vsmCss'))return;
+  if(!document.getElementById('vsmFonts')){const l=document.createElement('link');l.id='vsmFonts';l.rel='stylesheet';l.href=VSM_FONTS;document.head.appendChild(l);}
+  const st=document.createElement('style');st.id='vsmCss';st.textContent=`
+#overlay:has(>.sheet>.vsm){background:linear-gradient(180deg,rgba(3,5,7,.38),rgba(3,5,7,.66))}
+#sheet:has(>.vsm){max-width:1240px;background:none;border:0;border-radius:0;box-shadow:none;overflow:visible}
+.vsm{--zs:#e4e8e5;--zp:#fcfcf9;--zd:#eff4ed;--zw2:#f3f6f6;--zt:#1d2024;--zi:#1f3a8a;--zr:#c22a2e;--zw:#b06d12;--zpe:#676c71;--rule:#d9dad5;
+  --ft:'Courier Prime','Courier New',monospace;--fd:'Libre Caslon Text',Georgia,serif;--fh:'Kalam','Segoe Print',cursive;--fhi:'Tiro Devanagari Hindi',serif;
+  position:relative;box-sizing:border-box;display:flex;flex-direction:column;max-height:calc(100vh - 36px);padding:0 30px 14px;color:var(--zt);background-color:var(--zs);
+  background-image:linear-gradient(rgba(40,100,140,.13) 1px,transparent 1px),linear-gradient(90deg,rgba(40,100,140,.13) 1px,transparent 1px),linear-gradient(rgba(40,100,140,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(40,100,140,.06) 1px,transparent 1px);
+  background-size:120px 120px,120px 120px,24px 24px,24px 24px;box-shadow:0 30px 80px rgba(0,0,0,.55),0 0 0 1px rgba(0,0,0,.35)}
+.vsm :focus-visible{outline:2px solid var(--zi);outline-offset:3px}
+.vsm-defs{position:absolute;width:0;height:0}
+.vsm-top{flex:none;display:flex;align-items:center;gap:12px;height:62px}
+.vsm-mark{display:flex;align-items:center;gap:12px;font-family:var(--fd);font-size:18px;color:var(--zt)}
+.vsm-mark small{font-family:var(--ft);font-size:12.5px;color:var(--zpe);margin-left:4px}
+.vsm-logo{flex:none;color:var(--zt)}
+.vsm-tb{margin-left:auto;border-collapse:collapse;font-family:var(--ft);font-size:11px;color:#3a3f44;background:rgba(252,252,249,.75)}
+.vsm-tb td{border:1.2px solid #4a4f54;padding:3px 9px;white-space:nowrap}
+.vsm-tb tr:first-child td{font-weight:700;font-size:11.5px}
+/* index tabs: each one the colour of the sheet it opens; the open one is part of its sheet */
+.vsm .tabs2{flex:none;display:flex;gap:4px;margin:0;padding:0 0 0 18px;border:0;position:relative;z-index:2}
+.vsm .tabs2 button{position:relative;min-width:132px;padding:9px 22px 8px;font-family:var(--ft);font-weight:700;font-size:14.5px;letter-spacing:0;text-transform:none;text-align:left;color:#3d4247;border:0;border-radius:7px 7px 0 0;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 -1px 3px rgba(30,40,50,.12);transform:translateY(4px);filter:brightness(.93);transition:transform .15s,filter .15s}
+.vsm .tabs2 button:hover{transform:translateY(1px);filter:brightness(.97)}
+.vsm .tabs2 button.on{transform:none;filter:none;color:var(--zt);margin-bottom:-1px;padding-bottom:9px}
+.vsm .tabs2 button.on::after{content:'';position:absolute;left:22px;right:22px;bottom:5px;height:2px;background:var(--zr);opacity:.85}
+.vsm .tabs2 .p-bond{background:var(--zp)}.vsm .tabs2 .p-duty{background:var(--zd)}.vsm .tabs2 .p-draw{background:var(--zw2)}
+/* the sheet */
+.vsm-paper{position:relative;flex:1 1 auto;min-height:0;overflow:auto;padding:26px 40px 24px;background:var(--zp);box-shadow:0 22px 48px rgba(30,40,50,.2),0 2px 6px rgba(30,40,50,.1);scrollbar-width:thin}
+.vsm-paper.duty{border:13px solid transparent;background:linear-gradient(var(--zd),var(--zd)) padding-box,var(--guil) border-box;padding:20px 36px 24px}
+.vsm-paper.draw{background-color:var(--zw2);background-image:linear-gradient(rgba(40,100,140,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(40,100,140,.07) 1px,transparent 1px);background-size:24px 24px;padding:12px}
+.vsm #tPlan{border:1.5px solid #4a4f54;padding:18px 30px 24px}
+.vsm-paper.arrive{animation:vsmArrive .5s cubic-bezier(.2,.7,.2,1) both}
+@keyframes vsmArrive{0%{opacity:0;transform:translateY(40px) rotate(.9deg)}100%{opacity:1;transform:none}}
+.vsm-dh{display:flex;align-items:center;gap:10px;font-family:var(--ft);font-size:12px;color:var(--zpe);padding-bottom:10px;margin-bottom:16px;border-bottom:1px solid var(--rule)}
+.vsm-dh .dt{margin-left:auto}
+.vsm h1,.vsm h2.t{font-family:var(--fd);font-weight:700;font-size:28px;line-height:1.12;margin:0 0 6px;color:var(--zt);text-wrap:balance}
+.vsm h2{font-family:var(--fd);font-weight:700;font-size:18px;line-height:1.2;margin:18px 0 6px;color:var(--zt)}
+.vsm p{font-family:var(--ft);font-size:14px;line-height:1.6;color:var(--zt);max-width:74ch;margin:0 0 10px}
+.vsm ul{font-family:var(--ft);font-size:13px;line-height:1.55;color:var(--zt);padding-left:18px;margin:0 0 6px}
+.vsm b{font-weight:700}
+.vsm .kbd{font-family:var(--ft);font-size:12px;color:var(--zt);border:1px solid #8b9094;border-bottom-width:2px;border-radius:2px;padding:0 4px;background:#fff}
+.vsm-h{display:flex;align-items:baseline;justify-content:space-between;gap:24px;margin:0 0 10px}.vsm-h h2.t{margin:0}
+.vsm .lede{font-size:13px;color:#3d4247;margin:0;text-align:right;max-width:none}
+/* Play: the duty roster. Four numbered entries; the best result is a red rubber stamp */
+.vsm .levels{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin:4px 0 14px;border-top:1.5px solid var(--zt);border-bottom:1px solid var(--rule)}
+.vsm .lc{position:relative;display:flex;flex-direction:column;gap:6px;padding:14px 16px 14px;border:0;border-right:1px solid var(--rule);border-radius:0;background:none;color:var(--zt);text-align:left;transition:background .15s}
+.vsm .lc:last-child{border-right:0}
+.vsm .lc:hover:not(:disabled){background:rgba(31,58,138,.045);border-color:var(--rule)}
+.vsm .lc:disabled{opacity:.45}
+.vsm .lc .hd{display:flex;align-items:center;gap:10px}
+.vsm .lc .no{flex:none;display:grid;place-items:center;width:34px;height:34px;border:1.5px solid var(--zt);border-radius:50%;font-family:var(--fd);font-weight:700;font-size:17px;line-height:1}
+.vsm .lc .no i{font-style:normal}
+.vsm .lc .n{font-family:var(--ft);font-weight:400;letter-spacing:0;font-size:12px;color:var(--zpe)}
+.vsm .lc h3{margin:2px 0 0;font-family:var(--fd);font-weight:700;font-size:19px;line-height:1.15;color:var(--zt)}
+.vsm .lc p{margin:0;font-family:var(--ft);font-size:12.5px;line-height:1.5;color:#33373b}
+.vsm .lc .meta{font-family:var(--ft);font-size:11.5px;line-height:1.45;color:var(--zpe)}
+.vsm .lc .ft{margin-top:auto;padding-top:6px;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px}
+.vsm .lc .stars{font-size:19px;letter-spacing:1px;line-height:1;color:#b3b8b5;font-family:var(--ft)}
+.vsm .lc .stars b{color:var(--zr);font-weight:400}
+.vsm .lc .stars.got{display:inline-flex;flex-direction:column;align-items:center;padding:3px 7px 2px;margin:-4px 0 -4px 2px;border:2px solid var(--zr);outline:1px solid var(--zr);outline-offset:2px;font-size:17px;letter-spacing:2px;color:rgba(194,42,46,.22);transform:rotate(-6deg);mix-blend-mode:multiply;opacity:.92}
+.vsm .lc .stars.got small{font-family:var(--f-sign);font-weight:700;font-size:9.5px;letter-spacing:.16em;color:var(--zr);margin-top:1px}
+.vsm .lc .plate{flex:none;background:var(--zt);color:#fcfcf9;font-family:var(--f-sign);font-weight:700;font-size:15px;letter-spacing:.01em;padding:6px 12px;border-radius:2px;transition:background .15s}
+.vsm .lc:hover .plate{background:#000}
+/* the shift options, as tick boxes on the form */
+.vsm .cfgrow{display:flex;align-items:center;flex-wrap:wrap;gap:4px 14px;margin:6px 0 0;font-family:var(--ft);font-size:12.5px}
+.vsm .cfgrow b{font-family:var(--ft);font-weight:700;letter-spacing:0;text-transform:none;font-size:13.5px;min-width:160px}
+.vsm .cfgrow small{font-family:var(--ft);font-size:12px;color:var(--zpe)}
+.vsm .seg2{display:inline-flex;gap:16px}
+.vsm .seg2 button{position:relative;display:inline-flex;align-items:center;gap:9px;border:0;border-radius:0;padding:4px 0;background:none;font-family:var(--ft);font-weight:400;letter-spacing:0;font-size:13.5px;color:var(--zt)}
+.vsm .seg2 button::before{content:'';flex:none;width:14px;height:14px;border:1.5px solid var(--zt);background:#fff}
+.vsm .seg2 button.on{background:none;color:var(--zt)}
+.vsm .seg2 button.on::after{content:'✓';position:absolute;left:-1px;top:-14px;font-family:var(--fh);font-weight:700;font-size:26px;color:var(--zi)}
+.vsm .hw{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;list-style:none;padding:0;margin:0}
+.vsm .hw li{margin:0;padding:0 16px;border-right:1px solid var(--rule);font-size:12px;line-height:1.5}.vsm .hw li:first-child{padding-left:0}.vsm .hw li:last-child{border-right:0;padding-right:0}
+/* Concession: the file on duty paper */
+.vsm-duty{display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;border:1.5px solid #2e7a57;padding:8px 16px;margin-bottom:18px;color:#21533c;background:rgba(255,255,255,.5)}
+.vsm-duty .den b{display:block;font-family:var(--fd);font-weight:700;font-size:26px;line-height:1}
+.vsm-duty .den span,.vsm-duty .ser span{display:block;font-family:var(--ft);font-size:10.5px;margin-top:3px}
+.vsm-duty .dc{display:flex;flex-direction:column;align-items:center;gap:2px;font-family:var(--ft);font-weight:700;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;text-align:center}
+.vsm-duty .dc span{font-family:var(--fhi);font-weight:400;letter-spacing:0;font-size:15px;text-transform:none}
+.vsm-duty .ser{text-align:right}.vsm-duty .ser b{font-family:var(--ft);font-weight:700;font-size:15px;color:var(--zr)}
+.vsm #tConc h1{font-size:32px;margin-bottom:12px}
+.vsm #tConc p{font-size:14.5px;max-width:64ch}
+.vsm #tConc p b{font-family:var(--fh);font-weight:400;font-size:1.3em;line-height:1;color:var(--zi)}
+.vsm #tConc .go{margin:14px 10px 0 0;background:var(--zt);color:#fcfcf9;font-family:var(--f-sign);font-weight:700;font-size:19px;letter-spacing:.01em;text-transform:none;padding:13px 26px;border:0;border-radius:2px;transition:background .15s}
+.vsm #tConc .go:hover{background:#000;filter:none}
+.vsm #tConc .go.ghost{background:none;color:var(--zt);font-family:var(--ft);font-weight:400;font-size:13.5px;text-decoration:underline;text-underline-offset:3px;padding:10px 6px}
+.vsm #tConc .go.ghost:hover{color:var(--zr)}
+.vsm #tConc .src{font-family:var(--fh);font-size:16px;line-height:1.35;color:var(--zw);margin-top:10px}
+.vsm-stamp{position:absolute;right:56px;top:112px;z-index:3;padding:7px 16px 6px;border:3px solid var(--zr);outline:1.5px solid var(--zr);outline-offset:3px;color:var(--zr);text-align:center;pointer-events:none;mix-blend-mode:multiply;filter:url(#vsmInk);transform:rotate(-9deg);opacity:.9}
+.vsm-stamp b{display:block;font-family:var(--f-sign);font-weight:700;font-size:32px;line-height:1;letter-spacing:.07em;text-transform:uppercase}
+.vsm-stamp small{display:block;margin-top:3px;font-family:var(--f-sign);font-weight:600;font-size:12px;letter-spacing:.14em;text-transform:uppercase}
+.vsm-stamp.down{animation:vsmStamp .3s .35s cubic-bezier(.3,1.5,.5,1) both}
+@keyframes vsmStamp{0%{opacity:0;transform:rotate(-9deg) scale(2.3)}100%{opacity:.9;transform:rotate(-9deg) scale(1)}}
+/* The airport: the general-arrangement drawing */
+.vsm #tPlan>p:first-of-type{font-size:14px}
+.vsm .plan{border:1.2px solid #4a4f54;border-radius:0;background:#fff;margin:12px 0 16px;padding:0}
+.vsm .plan svg{filter:invert(1) hue-rotate(180deg) saturate(.55) contrast(1.05)}
+.vsm .facts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;margin:8px 0 10px;border-top:1.5px solid var(--zt);border-bottom:1px solid var(--rule)}
+.vsm .facts>div{border:0;border-right:1px solid var(--rule);border-radius:0;padding:10px 14px}
+.vsm .facts>div:last-child{border-right:0}
+.vsm .facts .v{font-family:var(--fd);font-weight:700;font-size:24px;color:var(--zt)}
+.vsm .facts .k{font-family:var(--ft);font-size:11.5px;line-height:1.45;color:var(--zpe);margin-top:2px}
+.vsm .two{gap:10px 36px}
+.vsm #tPlan p{font-size:13px;line-height:1.6}
+.vsm #tPlan .src{font-size:11.5px;color:var(--zpe)}.vsm #tPlan .src a{color:var(--zi)}
+@media (max-width:1300px){.vsm{padding:0 18px 12px}.vsm-paper{padding:20px 28px 18px}.vsm .lc{padding:12px 13px}.vsm .lc p{font-size:12px;line-height:1.45}.vsm .hw li{padding:0 13px}}
+@media (max-height:860px){.vsm-top{height:50px}.vsm-dh{padding-bottom:8px;margin-bottom:12px}.vsm h2.t{font-size:25px}.vsm-h{margin-bottom:8px}.vsm .levels{margin-bottom:8px}.vsm .lc{gap:5px}.vsm h2{margin-top:10px;margin-bottom:4px}.vsm .cfgrow{margin-top:2px}.vsm .seg2 button{padding:3px 0}}
+@media (prefers-reduced-motion:reduce){.vsm-paper.arrive,.vsm-stamp.down{animation:none}}
+`;document.head.appendChild(st);}
 function menu(tab){
   if(CH5F.live){CH5F.live=false;const o=CH5F.load();if(o){o.left=true;CH5F.save(o);}}
   if(FL.live)FL.leave();
   running=false;CAMP.active=false;ch5Clear();const best=store.get('zm_stars')||{};
+  vsmStyle();
   const planSvg=document.getElementById('planTpl').innerHTML;
   const D=window.__DESIGN||{};
-  const lv=LEVELS.map(L=>`<button class="lc" data-n="${L.n}"><span class="n">LEVEL ${L.n} · ${L.from}</span><h3>${L.name}</h3><p>${L.blurb}</p><span class="meta">${L.clock} · ${L.rw} runways · ~${L.arr+L.dep} movements an hour</span><span class="stars">${starStr(best[L.n]||0)}</span></button>`).join('');
-  $('#sheet').innerHTML=`<div class="band"><span>${SPEC.name} · ${SPEC.code}</span><span>Nagpur · six runways</span></div><div class="in">
-   <div class="tabs2" role="tablist"><button data-t="levels" class="${tab!=='plan'&&tab!=='concession'?'on':''}">Play</button>${MNY?`<button data-t="concession" class="${tab==='concession'?'on':''}">Concession</button>`:''}<button data-t="plan" class="${tab==='plan'?'on':''}">The airport</button></div>
-   <div id="tLevels" ${tab==='plan'||tab==='concession'?'hidden':''}>
+  const t=tab==='plan'||tab==='concession'?tab:'levels';
+  // the sheet only slides in when it changes (or the menu opens), never when a tick box on it changes
+  const arrive=$('#overlay').hidden||menu._t!==t||!$('#sheet .vsm');menu._t=t;
+  const today=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  const camp=t==='concession'&&CAMP.ready()?CAMP.load():null;
+  const lv=LEVELS.map(L=>{const b=best[L.n]||0;return `<button class="lc" data-n="${L.n}" aria-label="Level ${L.n}: ${L.name}. Best ${b} of 3 stars."><span class="hd"><span class="no"><i>${L.n}</i></span><span class="n">Level ${L.n} · ${L.from}</span></span><h3>${L.name}</h3><p>${L.blurb}</p><span class="meta" title="About ${L.arr+L.dep} movements an hour">${L.clock} · ${L.rw} runways · ~${L.arr+L.dep} an hour</span><span class="ft"><span class="stars${b?' got':''}" title="Best: ${b} of 3 stars"><span>${starStr(b)}</span>${b?'<small>BEST SHIFT</small>':''}</span><span class="plate">Start the shift</span></span></button>`;}).join('');
+  const sheetNo={levels:'VSI-01',concession:'VSI-02',plan:'VSI-03'}[t],sheetNm={levels:'Duty roster',concession:'Concession file',plan:'General arrangement'}[t];
+  $('#sheet').innerHTML=`<div class="vsm" data-tab="${t}">
+   <svg class="vsm-defs" aria-hidden="true"><defs><filter id="vsmInk" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="7" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.1 1.55" result="m"/><feComposite in="SourceGraphic" in2="m" operator="in"/></filter></defs></svg>
+   <header class="vsm-top"><div class="vsm-mark">${vsmLogo(30)}<span>${SPEC.name}</span><small>${SPEC.code} · Nagpur · six runways</small></div>
+    <table class="vsm-tb" aria-hidden="true"><tr><td colspan="2">${SPEC.name}, Nagpur</td></tr><tr><td>${sheetNm}</td><td>Sheet ${sheetNo}</td></tr></table></header>
+   <div class="tabs2" role="tablist"><button data-t="levels" role="tab" aria-selected="${t==='levels'}" class="p-bond ${t==='levels'?'on':''}">Play</button>${MNY?`<button data-t="concession" role="tab" aria-selected="${t==='concession'}" class="p-duty ${t==='concession'?'on':''}">Concession</button>`:''}<button data-t="plan" role="tab" aria-selected="${t==='plan'}" class="p-draw ${t==='plan'?'on':''}">The airport</button></div>
+   <div class="vsm-paper ${t==='concession'?'duty':t==='plan'?'draw':'bond'}${arrive?' arrive':''}" role="tabpanel" style="${t==='concession'?`--guil:${vsmGuil()}`:''}">
+   <div id="tLevels" ${t!=='levels'?'hidden':''}>
+    <header class="vsm-dh">${vsmLogo(22)}<span>Duty roster · ${SPEC.code} operations</span><span class="dt">${today}</span></header>
+    <div class="vsm-h"><h2 class="t">Choose a shift</h2><p class="lede">You are the duty manager. Your best result is stamped on each shift.</p></div>
     <div class="levels">${lv}</div>
-    <div class="cfgrow"><b>Incidents</b><div class="seg2" role="group" aria-label="Incidents"><button data-inc="std" class="${CFG.inc!=='off'?'on':''}">Standard</button><button data-inc="off" class="${CFG.inc==='off'?'on':''}">Off: runways only</button></div><small>${CFG.inc==='off'?'Just you, the bank chart and the runways. Fuel emergencies still happen if the stack grows.':'A few real calls per level. The ops teams handle the routine.'}</small></div>
-    <div class="cfgrow"><b>Performance meter</b><div class="seg2" role="group" aria-label="Performance meter"><button data-perf="0" class="${PERFM.on?'':'on'}">Off</button><button data-perf="1" class="${PERFM.on?'on':''}">On</button></div><small>Frame rate and the slowest moments, with a report you can copy and send us. <span class="kbd">Shift</span> <span class="kbd">P</span> in game.</small></div>
+    <div class="cfgrow"><b>Incidents</b><div class="seg2" role="group" aria-label="Incidents"><button data-inc="std" aria-pressed="${CFG.inc!=='off'}" class="${CFG.inc!=='off'?'on':''}">Standard</button><button data-inc="off" aria-pressed="${CFG.inc==='off'}" class="${CFG.inc==='off'?'on':''}">Off: runways only</button></div><small>${CFG.inc==='off'?'Just you, the bank chart and the runways. Fuel emergencies still happen if the stack grows.':'A few real calls per level. The ops teams handle the routine.'}</small></div>
+    <div class="cfgrow"><b>Performance meter</b><div class="seg2" role="group" aria-label="Performance meter"><button data-perf="0" aria-pressed="${!PERFM.on}" class="${PERFM.on?'':'on'}">Off</button><button data-perf="1" aria-pressed="${!!PERFM.on}" class="${PERFM.on?'on':''}">On</button></div><small>Frame rate and the slowest moments, with a report you can copy and send us. <span class="kbd">Shift</span> <span class="kbd">P</span> in game.</small></div>
     <h2>How to play</h2>
-    <ul>
+    <ul class="hw">
      <li><b>The bank chart</b> at the bottom is your radar for the next hour. Purple bars are arrivals due, teal bars are departures due, dashed lines are what your runways can handle. When the bars poke above the line, you are about to fall behind.</li>
      <li><b>The runway desk</b> (or click a runway on the map) sets each runway to ARR, DEP, MIX or OFF. A switch takes 2 minutes. Move runways to arrivals before an arrival bank, then to departures before the departure bank.</li>
      <li><b>Calls</b> pop up on the map with a countdown ring when something needs a duty manager, only a few per level. Each card says what ops will do if you leave it. Routine birds, debris and breakdowns are handled by the ops teams: the amber vehicles on the map.</li>
      <li>Click any aircraft to see where it is going, prioritise it or hold it at the gate. <span class="kbd">Space</span> pauses, <span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span> change speed. Wheel or pinch to zoom.</li>
     </ul>
    </div>
-   ${tab==='concession'?`<div id="tConc">${CAMP.html()}${FL.on()?'':CH5F.html()}</div>`:''}
-   <div id="tPlan" ${tab==='plan'?'':'hidden'}>
+   ${t==='concession'?`<div id="tConc"><header class="vsm-duty"><div class="den"><b>60</b><span>years from signing</span></div><div class="dc">Concession file<span lang="hi">रियायत</span></div><div class="ser"><b>${SPEC.code}/${new Date().getFullYear()}/001</b><span>${today}</span></div></header>
+    ${camp?`<div class="vsm-stamp${arrive?' down':''}" aria-label="Stamped: in force"><b>In force</b><small>Year ${camp.year||1} · VSIAL</small></div>`:''}${CAMP.html()}${FL.on()?'':CH5F.html()}</div>`:''}
+   <div id="tPlan" ${t==='plan'?'':'hidden'}>
+    <header class="vsm-dh">${vsmLogo(22)}<span>Drawing ${sheetNo} · General arrangement · Scale 1 : 25,000</span><span class="dt">${today}</span></header>
     <h1>${SPEC.name}</h1><p>${SPEC.tagline||''}</p>
     <div class="plan">${planSvg}</div>
     ${D.html||''}
+   </div>
    </div>
   </div>`;
   $('#overlay').hidden=false;
@@ -2553,8 +2688,8 @@ const CAMP={active:false,st:null,
   // the Concession tab in the menu: the file card (ZMMoney.concessionFile, the Paperwork look) when this build has it
   html(){const st=CAMP.cur(),z=window.ZMMoney&&ZMMoney.cfg||{};
     if(!CAMP.ready())return '<p>The concession is not available in this build.</p>';
-    if(ZMMoney.concessionFile)return `<h1>Run the airport for ${z.years||60} years</h1><div id="campFile"></div>`;
-    return `<h1>Run the airport for ${z.years||60} years</h1><p>Win the concession, raise the money, sign, and then run ${z.airportName||SPEC.name} shift by shift. Every few years you see the books and meet your board. Good operations are good money.</p>
+    if(ZMMoney.concessionFile)return `<h1>Run the airport for ${z.years||60} years</h1><p>Win the concession, raise the money and sign, then run ${z.airportName||SPEC.name} shift by shift. Good operations make good money, and good operations start with good capital allocation: what you build, when you build it, and how you pay for it. Every few years you close the books, and your board decides where the money goes next.</p><div id="campFile"></div>`;
+    return `<h1>Run the airport for ${z.years||60} years</h1><p>Win the concession, raise the money and sign, then run ${z.airportName||SPEC.name} shift by shift. Good operations make good money, and good operations start with good capital allocation: what you build, when you build it, and how you pay for it. Every few years you close the books, and your board decides where the money goes next.</p>
      ${st?`<p><b>${st.parent||'Your company'}</b>: ${st.building?'the airport is being built':`year ${st.year||1} of 60`}${st.signedOn?`, signed ${CAMP.E().fmtDate?CAMP.E().fmtDate(st.signedOn):st.signedOn}`:''}.</p><button class="go" id="campGo">Continue as ${st.parent||'your company'}</button> `:''}
      <button class="go${st?' ghost':''}" id="campNew">${st?'Start a new concession':'Start the concession'}</button>`;},
   fileOpts(st){const E=CAMP.E(),fc=E.fileCard?E.fileCard(st):{};

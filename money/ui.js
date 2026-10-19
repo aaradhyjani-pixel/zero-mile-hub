@@ -13,7 +13,27 @@ M.cfg={airportName:'Vikram Sarabhai International Airport',airportShort:'VSI',sp
   rivals:[{name:'Kármán Line Ventures',blurb:'Aggressive. Always reaching for the edge of space. Bids high and overreaches.'},
           {name:'QNH Infragenesis',blurb:'Pension money. Sets its altimeter before every approach: never bids above what it can fund.'},
           {name:'Thakral–Wainganga Airports',blurb:'A Nagpur developer named for Sarla Thakral, India\'s first woman pilot (1936), with a European operator.'}]};
-M.config=function(o){Object.assign(M.cfg,o||{});return M.cfg;};
+/* the people who sign for the other parties: fictional officials, each with a hand of their own (see signSvg).
+   'aai', 'state' and 'coinvestor' counter-sign the concession; 'dgca' signs the aerodrome licence;
+   'aai60' and 'state60' are their successors who receive the airport back in year 60.
+   hand: {font (a script face loaded by loadDeskFonts), size, adv (average glyph width / size), slant (deg), rot (deg),
+          ink, weight (extra stroke), flourish:'under'|'dash'|'loop'|'paraph'|'dot'} */
+M.cfg.signatories={
+  aai:{name:'Meenakshi Raghavan',sign:'M. Raghavan',title:'Regional Executive Director, Western Region',org:'the Airports Authority of India',
+    hand:{font:'Mrs Saint Delafield',size:46,adv:.3,slant:6,rot:-5,ink:'#1d1f22',weight:.35,flourish:'under'}},
+  state:{name:'Shirish V. Bhonsle',sign:'S.V. Bhonsle',title:'Vice-Chairman and Managing Director, MADC',org:'the State of Maharashtra, through MADC',
+    hand:{font:'Homemade Apple',size:21,adv:.6,slant:-2,rot:-2,ink:'#1f3a8a',weight:.1,flourish:'dash'}},
+  coinvestor:{name:'Naomi Fernandes',sign:'Naomi Fernandes',title:'Managing Partner, L5 Capital',org:'L5 Capital: Lagrange Point Infrastructure Fund',
+    hand:{font:'Monsieur La Doulaise',size:38,adv:.34,slant:0,rot:-3,ink:'#23305e',weight:.2,flourish:'loop'}},
+  dgca:{name:'Rajeshwari Natarajan',sign:'R. Natarajan',title:'Joint Director General (Aerodromes)',org:'the Director General of Civil Aviation',
+    hand:{font:'La Belle Aurore',size:30,adv:.46,slant:4,rot:-6,ink:'#1d1f22',weight:.15,flourish:'paraph'}},
+  aai60:{name:'Kabir Sethna',sign:'K. Sethna',title:'Regional Executive Director, Western Region',org:'the Airports Authority of India',
+    hand:{font:'Herr Von Muellerhoff',size:50,adv:.27,slant:3,rot:-8,ink:'#14161a',weight:.35,flourish:'under'}},
+  state60:{name:'Tanvi Patwardhan',sign:'Tanvi Patwardhan',title:'Managing Director, MADC',org:'the State of Maharashtra, through MADC',
+    hand:{font:'Allura',size:36,adv:.36,slant:0,rot:-2,ink:'#1f3a8a',weight:.15,flourish:'dot'}}};
+M.config=function(o){o=Object.assign({},o||{});if(o.signatories){const sg=o.signatories;delete o.signatories;
+    for(const k in sg)M.cfg.signatories[k]=Object.assign({},M.cfg.signatories[k]||{},sg[k],{hand:Object.assign({},(M.cfg.signatories[k]||{}).hand||{},sg[k].hand||{})});}
+  Object.assign(M.cfg,o);return M.cfg;};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
@@ -362,6 +382,65 @@ const CSS=`
 .zdk-sigs.hb .zdk-flag{left:-18px}
 .zdk-sigs.hb .zdk-seal{right:-4%;width:104px;height:104px}
 /*@hb-end*/
+/*@cs construction (years 1-4): the site progress register on drafting paper, then the DGCA aerodrome licence */
+.zdk-sigs .ink{height:62px}.zdk-sigs .ink svg.zsg{height:62px;max-width:100%;overflow:visible;margin-bottom:-10px}
+.zdk-sigs .s>span b{font-weight:700}
+.zcs .zdk-main{grid-template-columns:minmax(200px,.75fr) minmax(660px,800px) minmax(250px,1fr)}
+.zcs .zdk-card{top:calc(var(--i)*52px)}.zcs .zdk-card span{font-size:13px;line-height:1.2}
+.zcs-doc{background-color:#fcfcf9;background-image:linear-gradient(rgba(40,100,140,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(40,100,140,.07) 1px,transparent 1px);background-size:12px 12px;padding:30px 40px 34px}
+.zcs-doc h2{margin-bottom:10px}
+.zcs-doc .t{font-size:14px}
+.zcs-g{--nw:228px;position:relative;display:grid;grid-template-columns:var(--nw) 1fr;margin:14px 0 6px;border-top:1.5px solid var(--zt);border-bottom:1.5px solid var(--zt)}
+.zcs-n{font-family:var(--ft);font-size:12.5px;line-height:1.2;padding:5px 10px 4px 0;border-bottom:1px dotted #c3c6c1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.zcs-n small{display:block;font-family:var(--fh);font-size:12.5px;color:var(--zpe);line-height:1.1}
+.zcs-t{position:relative;border-bottom:1px dotted #c3c6c1;border-left:1px solid #9a9fa3;background:repeating-linear-gradient(90deg,transparent 0,transparent calc(100%/var(--a,6) - 1px),rgba(29,32,36,.16) calc(100%/var(--a,6) - 1px),rgba(29,32,36,.16) calc(100%/var(--a,6)))}
+.zcs-h{font-weight:700;font-size:12px;color:var(--zpe);padding-top:6px}
+.zcs-ax{height:36px}.zcs-ax span{position:absolute;top:4px;text-align:center;font-family:var(--ft);font-size:11.5px;font-weight:700;line-height:1.1}
+.zcs-ax small{display:block;font-weight:400;font-size:10.5px;color:var(--zpe)}
+.zcs-t .bar{position:absolute;top:5px;bottom:5px;border:1.3px solid #4a4f54;background:repeating-linear-gradient(-45deg,rgba(74,79,84,.22) 0 1px,transparent 1px 5px)}
+.zcs-t .bar b{position:absolute;left:0;top:0;bottom:0;background:repeating-linear-gradient(-45deg,rgba(31,58,138,.75) 0 2px,rgba(31,58,138,.18) 2px 4px);transition:width .7s cubic-bezier(.4,0,.2,1)}
+.zcs-t .late{position:absolute;top:5px;bottom:5px;border:1.3px dashed var(--zw);border-left:0;background:repeating-linear-gradient(45deg,rgba(176,109,18,.35) 0 2px,transparent 2px 6px)}
+.zcs-t em{position:absolute;top:1px;margin-left:6px;font-family:var(--fh);font-style:normal;font-size:13.5px;color:var(--zw);white-space:nowrap}
+.zcs-lg{font-weight:700;padding-top:8px}
+.zcs-led{height:38px}.zcs-led span{position:absolute;top:0;bottom:0;display:flex;align-items:center;justify-content:center}
+.zcs-led span .h{font-size:22px;font-weight:700}.zcs-led em{font-family:var(--fh);font-style:normal;font-size:15px;color:#a9adb0}
+.zcs .zdk-doc:focus{outline:none}
+.zcs-cum{height:36px;display:flex;align-items:center}.zcs-cum i{flex:none;height:24px;display:flex;align-items:center;justify-content:flex-end;box-sizing:border-box;background:rgba(31,58,138,.82);transition:width .7s}
+.zcs-cum span{padding:0 10px;font-family:var(--ft);font-size:12.5px;line-height:1;white-space:nowrap}.zcs-cum .h{font-size:19px}.zcs-cum i span,.zcs-cum i span .h{color:#fcfcf9}
+.zcs-ph,.zcs-op{position:absolute;top:0;bottom:-6px;left:calc(var(--nw) + (100% - var(--nw)) * var(--ph));width:2px;margin-left:-1px;background:var(--zr);transition:left .7s cubic-bezier(.4,0,.2,1);z-index:2}
+.zcs-ph::before{content:'';position:absolute;left:-5px;top:-6px;width:12px;height:12px;border-radius:50%;background:var(--zr)}
+.zcs-ph span{position:absolute;bottom:-20px;left:6px;font-family:var(--fh);font-size:13.5px;color:var(--zr);white-space:nowrap}
+.zcs-op{left:calc(var(--nw) + (100% - var(--nw)) * var(--op));background:none;border-left:2px dashed var(--zt);width:0;z-index:1}
+.zcs-op span{position:absolute;top:-38px;left:-2px;padding:2px 7px;background:var(--zt);color:#fcfcf9;font-family:var(--f-sign);font-weight:700;font-size:12.5px;letter-spacing:.04em;line-height:1.1;white-space:nowrap}
+.zcs-op.late{border-left-color:var(--zw)}.zcs-op.late span{background:var(--zw)}
+.zcs-g{margin-top:46px}
+.zcs-ent{display:grid;grid-template-columns:70px 1fr;gap:6px;margin:30px 0 0;padding-top:4px}
+.zcs-ent .t{margin:0}.zcs-ent.turn{animation:zcsTurn .5s cubic-bezier(.2,.7,.2,1) both;transform-origin:left center}
+.zcs-let{position:relative;margin:22px -10px 6px 30px;padding:16px 22px 12px;background:#fffefa;transform:rotate(-.8deg);box-shadow:0 10px 22px rgba(30,40,50,.18),0 1px 3px rgba(30,40,50,.12);border-top:5px solid var(--zt)}
+.zcs-let.arrive{animation:zcsLet .55s .2s cubic-bezier(.2,.7,.2,1) both}
+.zcs-let header{padding-left:26px;display:flex;justify-content:space-between;gap:12px;font-family:var(--ft);font-size:11.5px;color:var(--zpe);margin-bottom:8px}
+.zcs-let h4{font-family:var(--fd);font-weight:700;font-size:20px;line-height:1.2;margin:0 0 6px}
+.zcs-let .t{font-size:13.5px;margin:0 0 6px}.zcs-let .zdk-ticks{margin:2px 0 0}.zcs-let .zdk-ticks small{font-size:12.5px}
+.zcs-pen{font-family:var(--fh);font-size:15px;color:var(--zw);min-height:20px;margin:4px 0 0}
+.zcs .zdk-note{margin-top:46px;padding:24px 22px 18px}
+.zcs .zdk-note h3{font-size:17px;margin:0 0 2px}.zcs .zdk-note h3:not(:first-child){margin-top:14px}
+.zcs .zdk-note p{margin:2px 0 0;font-size:15px;line-height:1.35;color:#26292c}
+.zcs-lic{padding:22px 38px 30px}
+.zcs-lic .zdk-duty .den b{font-size:26px}.zcs-lic .zdk-duty .dc .hi{font-family:var(--fhi);font-weight:400;letter-spacing:0;text-transform:none;font-size:14px}
+.zcs-rec{margin:0;padding-left:18px;font-size:13px}
+.zcs-sigs{grid-template-columns:repeat(2,minmax(0,1fr));align-items:end}
+.zcs-st{min-height:100px}.zcs-st .zdk-stamp.zcs-lst{right:auto;left:10px;top:auto;bottom:6px}
+.zcs-open{font-size:24px;padding:16px 36px;letter-spacing:.03em}
+.zcs-day{position:absolute;left:50%;top:44%;z-index:5;transform:translate(-50%,-50%) rotate(-6deg);padding:14px 40px 12px;border:5px solid var(--zr);outline:2px solid var(--zr);outline-offset:5px;color:var(--zr);text-align:center;background:rgba(252,252,249,.55);mix-blend-mode:multiply;filter:url(#zdkInk);pointer-events:none;--tf:translate(-50%,-50%) rotate(-6deg)}
+.zcs-day b{display:block;font-family:var(--f-sign);font-weight:700;font-size:112px;line-height:.95;letter-spacing:.06em;text-transform:uppercase}
+.zcs-day span{display:block;margin-top:6px;font-family:var(--f-sign);font-weight:600;font-size:20px;letter-spacing:.16em;text-transform:uppercase}
+.zcs-day.down{animation:zdkStamp .38s cubic-bezier(.3,1.5,.5,1) both}
+.zdk.finale .zcs-day{animation:none;opacity:.9}
+@keyframes zcsTurn{from{opacity:0;transform:perspective(600px) rotateY(-24deg) translateX(-12px)}to{opacity:1;transform:none}}
+@keyframes zcsLet{from{opacity:0;transform:translate(40px,30px) rotate(3deg)}to{opacity:1;transform:rotate(-.8deg)}}
+@media (max-width:1280px){.zcs .zdk-main{grid-template-columns:minmax(170px,.6fr) minmax(640px,700px) minmax(230px,1fr)}.zcs-g{--nw:200px}.zcs-n{font-size:11.5px}.zcs-doc{padding:26px 32px 30px}.zcs-day b{font-size:90px}}
+@media (prefers-reduced-motion:reduce){.zcs-ent.turn,.zcs-let.arrive,.zcs-day.down{animation:none}.zcs-ph,.zcs-t .bar b,.zcs-cum i{transition:none}}
+/*@cs-end*/
 `;
 
 /* ---------- mount ---------- */
@@ -630,7 +709,7 @@ M.onboarding=function(opts){opts=opts||{};
   /* 4 · the Concession Agreement, on duty paper */
   function docCA(){inkUp(3);
     const q=pvClose();
-    const others=[{who:'Airports Authority of India',as:'the Authority',seed:11,ink:'#1d1f22'},{who:'State of Maharashtra, through MADC',as:'the State',seed:23,ink:'#1f3a8a'},{who:esc(M.cfg.coinvestor.name),as:'the Co-investor',seed:37,ink:'#23305e'}];
+    const SG=M.cfg.signatories,others=[{p:SG.aai,as:'the Authority'},{p:SG.state,as:'the State'},{p:SG.coinvestor,as:'the Co-investor'}];
     show(3,`<div class="zdk-duty"><div class="den"><b>₹ 500</b><span>Five hundred rupees</span></div>
         <div class="dc"><span>Stamp duty paid</span><span>Concession instrument</span></div>
         <div class="ser"><span>Serial</span><b>VSI ${String(127+Math.floor(now.getTime()/8.64e7)%800).padStart(6,'0')}</b></div></div>
@@ -647,11 +726,11 @@ M.onboarding=function(opts){opts=opts||{};
         <li>The Concessionaire will design, build, finance and operate the airport for ${M.cfg.years} years, from ${H(today)} to ${H(ends)}, and then hand it back to the State.</li>
         <li>The Concessionaire will pay the Authority ${H(bidLong(st.bid))}, every year of the concession.</li>
         <li>Phase 1${PH?` (${esc((PH.options.find(o=>o.id===st.phase1)||{}).label||'')})`:''} costs ${fmt(q.capexCr)}: ${H(fmt(q.debtCr))} from ${esc(LN&&(LN.options.find(o=>o.id===st.lender)||{}).who||'the banks')}, repaid ${st.repayment==='sculpted'?'in instalments that grow with traffic':'in equal instalments'}${q.stateLoanCr>0.5?`, ${H(fmt(q.stateLoanCr))} as an interest-free loan from the State`:''}, and ${H(fmt(q.equityCr))} from shareholders, of which the Promoter provides ${H(fmt(q.parentCr))}.</li>
-        <li>The Concessionaire's shares are held ${P.map(p=>`${p.pct}% by ${k0(p)}`).join(', ').replace(/, ([^,]*)$/,' and $1')}.</li>
+        <li>The Concessionaire's shares are held ${((a)=>a.slice(0,-1).join('; ')+'; and '+a[a.length-1])(P.map(p=>`${p.pct}% by ${k0(p)}`))}.</li>
         <li>Charges to airlines and passengers are set by AERA, every five years.</li></ol>
       <p class="t">Signed by the parties on the date above.</p>
       <div class="zdk-sigs">
-        ${others.map(o=>`<div class="s"><div class="ink">${scribble(o.seed,o.ink)}</div><span>For ${o.who}</span><small>Authorised signatory, ${o.as}</small></div>`).join('')}
+        ${others.map(o=>sigBlock(o.p,o.as)).join('')}
         <div class="s me"><span class="zdk-flag" id="zdkFlag" aria-hidden="true">Sign here</span><div class="zdk-pad"><canvas id="zdkSig" aria-label="Sign here with your trackpad or mouse"></canvas><span class="hint" id="zdkHint">✕</span></div>
           <span>${H(st.founder)}</span><small>Director, for ${esc(st.parent)} and for ${esc(M.cfg.spvName)}</small>
           <div class="zdk-seal" id="zdkSeal" aria-hidden="true">${sealSvg()}</div></div>
@@ -683,7 +762,10 @@ M.onboarding=function(opts){opts=opts||{};
 
 /* the document fonts: typed legal text, Indian handwriting, the title serif and Devanagari. Added once, beside the game's own. */
 function loadDeskFonts(){if(document.getElementById('zdkFonts'))return;const l=document.createElement('link');l.id='zdkFonts';l.rel='stylesheet';
-  l.href='https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Kalam:wght@400;700&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Tiro+Devanagari+Hindi&display=swap';document.head.appendChild(l);}
+  l.href='https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Kalam:wght@400;700&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Tiro+Devanagari+Hindi&display=swap';document.head.appendChild(l);
+  // the signatories' hands: one script face per person. display=block, so a signature never flashes in a fallback face
+  const s=document.createElement('link');s.id='zdkSigFonts';s.rel='stylesheet';
+  s.href='https://fonts.googleapis.com/css2?family=Mrs+Saint+Delafield&family=Homemade+Apple&family=Monsieur+La+Doulaise&family=La+Belle+Aurore&family=Herr+Von+Muellerhoff&family=Allura&display=block';document.head.appendChild(s);}
 
 /* VSI's mark: a ring, an orbit and a satellite, for the man who launched India into space */
 function vsiLogo(s){return `<svg class="zdk-logo" width="${s}" height="${s}" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="15" fill="none" stroke="currentColor" stroke-width="2.4"/>
@@ -709,6 +791,28 @@ function scribble(seed,ink){let q=seed*7919%233280;const rnd=()=>((q=(q*9301+492
   // a trailing stroke and an underline flourish
   d+=`q8,-6 14,-3 M${f(4+rnd()*6)},${f(base+6+rnd()*3)} C${f(x*.3)},${f(base+2)} ${f(x*.7)},${f(base+10)} ${f(x+18)},${f(base+1)}`;
   return `<svg viewBox="0 0 ${Math.ceil(x+26)} 54" preserveAspectRatio="xMinYMax meet"><path d="${d}" fill="none" stroke="${ink}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;}
+
+/* a named person's signature, drawn in their own hand: their signing name set in a script face, slanted, tilted and
+   weighted per person, then a flourish seeded from the name. Deterministic: the same person always signs the same way.
+   p: a M.cfg.signatories entry, {name, sign?, hand:{...}}. Returns an SVG string. */
+function signSvg(p){p=p||{};const h=Object.assign({font:'Kalam',size:32,adv:.5,slant:0,rot:-3,ink:'#1d1f22',weight:.2,flourish:'under'},p.hand||{});
+  const txt=String(p.sign||p.name||'');let q=0;for(const c of String(p.name||txt))q=(q*31+c.charCodeAt(0))%233280;q=q||7;
+  const rnd=()=>((q=(q*9301+49297)%233280)/233280),f=n=>n.toFixed(1);
+  const tl=Math.max(30,Math.round(txt.length*h.size*h.adv)),x0=10,base=48;
+  const rise=Math.max(0,Math.sin(-h.rot*Math.PI/180)*(tl+40));
+  let fl='';const a=rnd(),b=rnd(),c=rnd();
+  if(h.flourish==='under')fl=`M${f(-4+a*8)},${f(9+b*4)} C${f(tl*.25)},${f(4+c*6)} ${f(tl*.7)},${f(16+a*4)} ${f(tl+26+b*14)},${f(-2-c*6)}`;
+  else if(h.flourish==='dash')fl=`M${f(tl*.06)},${f(10+a*3)} l${f(tl*.86)},${f(-3-b*3)} M${f(tl*.22)},${f(16+c*3)} l${f(tl*.5)},${f(-2-a*2)}`;
+  else if(h.flourish==='loop')fl=`M${f(tl-4)},${f(-6)} c${f(16+a*6)},${f(-14-b*6)} ${f(26+c*6)},${f(10)} ${f(6)},${f(16)} c${f(-20)},${f(6)} ${f(-tl*.55)},${f(2+a*3)} ${f(-tl*.95)},${f(-2)}`;
+  else if(h.flourish==='paraph')fl=`M${f(tl+2)},${f(-4)} l${f(7+a*3)},${f(10)} l${f(5)},${f(-15-b*4)} l${f(5)},${f(16)} l${f(9+c*4)},${f(-9)} M${f(-2)},${f(12+a*3)} q${f(tl*.5)},${f(-6)} ${f(tl+30)},${f(-2)}`;
+  else if(h.flourish==='dot')fl=`M${f(tl+7)},${f(-1)} m-1.6,0 a1.6,1.6 0 1,0 3.2,0 a1.6,1.6 0 1,0 -3.2,0 M${f(tl*.1)},${f(11+a*3)} q${f(tl*.35)},${f(5)} ${f(tl*.7)},${f(-1-b*3)}`;
+  const W=Math.ceil(x0+tl+52),top=-Math.ceil(10+rise);
+  return `<svg class="zsg" viewBox="0 ${top} ${W} ${66-top}" preserveAspectRatio="xMinYMax meet" role="img" aria-label="Signed: ${esc(p.name||txt)}"><g transform="rotate(${h.rot} ${x0} ${base}) translate(${x0} ${base}) skewX(${-h.slant})">
+    <text x="0" y="0" font-family="'${esc(h.font)}',cursive" font-size="${h.size}" textLength="${tl}" lengthAdjust="spacingAndGlyphs" fill="${h.ink}" stroke="${h.ink}" stroke-width="${h.weight}" stroke-linejoin="round">${esc(txt)}</text>
+    ${fl?`<path d="${fl}" fill="none" stroke="${h.ink}" stroke-width="${1.3+h.weight}" stroke-linecap="round" stroke-linejoin="round"/>`:''}</g></svg>`;}
+/* one signature block for a named signatory: their hand, their name, their title and whom they sign for */
+function sigBlock(p,forWhom,cls){p=p||{};return `<div class="s${cls?' '+cls:''}"><div class="ink">${signSvg(p)}</div><span><b>${esc(p.name||'')}</b><br>${esc(p.title||'Authorised signatory')}</span><small>for ${esc(forWhom||p.org||'')}</small></div>`;}
+M.signSvg=signSvg;
 
 /* the concession company's seal, pressed in red beside the director's signature */
 function sealSvg(){const t=(M.cfg.spvName+' · Common seal · ').toUpperCase();
@@ -921,8 +1025,8 @@ M.handback=function(o){o=o||{};
         ${o.lines&&o.lines.length?`<p class="t">The record also shows that:</p><ol class="zdk-cl">${o.lines.map(l=>`<li>${esc(l)}</li>`).join('')}</ol>`:''}
         <p class="t">Received by the parties below. The concession is closed.</p>
         <div class="zdk-sigs hb" id="zhbSigs">
-          <div class="s"><div class="ink">${scribble(11,'#1d1f22')}</div><span>For the Airports Authority of India</span><small>Authorised signatory, receiving</small></div>
-          <div class="s"><div class="ink">${scribble(23,'#1f3a8a')}</div><span>For the State of Maharashtra, through MADC</span><small>Authorised signatory, receiving</small></div>
+          ${sigBlock(M.cfg.signatories.aai60,'the Airports Authority of India, receiving')}
+          ${sigBlock(M.cfg.signatories.state60,'the State of Maharashtra, through MADC, receiving')}
           <div class="s then"><div class="ink" id="zhbThen">${o.signature?`<img alt="Your signature on the Concession Agreement" src="${esc(o.signature)}">`:`<em>on the Concession Agreement, in the stack</em>`}</div>
             <span>${H(founder)}</span><small>Day one · ${esc(dLong(d0))}</small></div>
           <div class="s now"><span class="zdk-flag" id="zhbFlag" aria-hidden="true">Sign here</span><div class="zdk-pad"><canvas id="zhbSig" aria-label="Sign again here with your trackpad or mouse"></canvas><span class="hint" id="zhbHint">✕</span></div>
@@ -971,6 +1075,172 @@ window.__zmmHandbackDemo=o=>hbSampleSig().then(sig=>M.handback(Object.assign({fo
   owners:[{name:'Meridian Infra',pct:68},{name:'L5 Capital',pct:12},{name:'Airports Authority of India',pct:10},{name:'State of Maharashtra, through MADC',pct:10}],
   lines:['The banks were repaid in full in year 24.','The tightest year was year 31, when the airport earned ₹94 for every ₹100 due, and the banks let you keep it.','Penalties to airlines came to ₹3,900 cr over sixty years.']},o||{})));
 (function(){const go=()=>{if(/[?&]moneymock=handback\b/.test(location.search))window.__zmmHandbackDemo().then(r=>{window.__zmmResult=r;});};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else setTimeout(go,0);})();
+
+/* ---------- construction (years 1–4, between signing and opening day): the site progress register ----------
+   One page per year on drafting paper: a schedule of the works with a red playhead at the end of the year, the money
+   drawn that year on a ledger strip, and the register entry for the year. A letter from the site, clipped on, asks for
+   a decision; its tick boxes carry a one-sentence effect. "Turn to year N" moves the playhead and turns the page.
+   After year 4 the register is stamped and filed, and the DGCA aerodrome licence arrives on duty paper, signed.
+   "Open the airport" stamps it, brings down OPENING DAY, and resolves.
+   opts: {founder?, parent?, signedOn, opensOn (YYYY-MM-DD), capexCr, debtCr, equityCr, stateLoanCr?, lenderName,
+          works:[{id, name, start, end (years after signing), note?}], years:[{year, drawnCr, cumDrawnCr, line}],
+          events:[{id, year, title, text, from?, options:[{id, label, effect, slipMonths?, numbers?}]}],
+          numbers:{todayCr, light:'green'|'amber'|'red', coverWords, stakePct, stakeValueCr}, atYear?, choices?}
+   resolves {choices:{[eventId]:optionId}, finishedOn (YYYY-MM-DD: opening day, after any slip), slipMonths}, or null for "Not now". */
+M.construction=function(o){o=o||{};loadDeskFonts();
+  const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const parse=s=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(s||'');return m?new Date(+m[1],+m[2]-1,+m[3]):null;};
+  const d0=parse(o.signedOn)||new Date(),open0=parse(o.opensOn)||new Date(d0.getFullYear()+4,d0.getMonth()+1,1);
+  const addM=(d,m)=>new Date(d.getFullYear(),d.getMonth()+Math.round(m),d.getDate());
+  const yrOf=d=>(d-d0)/(365.25*864e5);
+  const dLong=d=>`${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`,dMon=d=>`${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  const works=(o.works||[]).map(w=>Object.assign({},w)),years=o.years||[],events=o.events||[],N=Object.assign({},o.numbers||{});
+  const lastY=Math.max(4,...years.map(y=>y.year));
+  const maxSlip=events.reduce((s,e)=>s+Math.max(0,...e.options.map(x=>+x.slipMonths||0)),0);
+  const A=Math.max(lastY+2,Math.ceil(yrOf(open0)+maxSlip/12+.35));          // the axis, in years after signing: room for every possible slip
+  const X=v=>Math.max(0,Math.min(100,v/A*100));
+  const choices=Object.assign({},o.choices||{});
+  const optOf=e=>e.options.find(x=>x.id===choices[e.id]);
+  const slipBefore=y=>events.filter(e=>e.year<=y).reduce((s,e)=>s+(+((optOf(e)||{}).slipMonths)||0),0);   // months lost to decisions up to year y
+  const slipAll=()=>slipBefore(1e9);
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const SG=M.cfg.signatories,plan=document.getElementById('planTpl');
+  let page=Math.max(1,Math.min(lastY,o.atYear||1)),finished=false;
+  const GUIL=guilTile();
+  const LIGHT={green:['Relaxed','var(--zg)'],amber:['Watching closely','var(--zw)'],red:['Warning you','var(--zr)']};
+  return new Promise(res=>{
+  const done=v=>{if(finished)return;finished=true;close();res(v);};
+  const pile=[['Incorporation','Incorporated'],['Term sheet','Sanctioned'],['Concession Agreement','Executed']];
+  const sh=open(`<div class="zdk zcs" data-stage="cs">${INK_DEFS}
+    <div class="zdk-sheet" aria-hidden="true"><div class="zdk-plan" id="zdkPlan" style="--ink:3;animation:none">${plan?plan.innerHTML:''}</div>
+      <table class="zdk-tb"><tr><td colspan="2">${esc(M.cfg.airportName)}, Nagpur</td></tr><tr><td>Construction programme, phase 1</td><td>Sheet CP-01</td></tr><tr><td>Years 1 to ${lastY}</td><td>${esc(M.cfg.spvShort)}</td></tr></table></div>
+    <header class="zdk-top"><div class="zdk-mark">${vsiLogo(30)}<span>${esc(M.cfg.airportName)}</span></div><button class="zdk-exit" id="zcsX">Not now</button></header>
+    <div class="zdk-pile" id="zdkPile" aria-label="Documents on file">${pile.map((p,n)=>`<div class="zdk-card" style="--r:${[-4,3,-2,5][n%4]}deg;--i:${n};animation:none"><span>${esc(p[0])}</span><i></i><i></i><i class="s"></i>${stampHtml(p[1],'mini',d0)}</div>`).join('')}</div>
+    <main class="zdk-main"><div class="zdk-col"><article class="zdk-doc zcs-doc" id="zdkDoc" tabindex="-1" autofocus aria-label="Site progress register"></article><div class="zdk-acts" id="zdkActs"></div></div>
+      <aside class="zdk-note" id="zdkNote" aria-live="polite"></aside></main></div>`,'zmm-ob');
+  const $s=q=>sh.querySelector(q),docEl=$s('#zdkDoc'),actsEl=$s('#zdkActs'),noteEl=$s('#zdkNote'),desk=$s('.zdk');
+  $s('#zcsX').onclick=()=>done(null);
+
+  /* the adviser's slip: three numbers, in words */
+  function slip(){const n=Object.assign({},N);for(const e of events){const x=optOf(e);if(x&&x.numbers&&e.year<=page)Object.assign(n,x.numbers);}
+    const L=LIGHT[n.light]||LIGHT.green;
+    noteEl.innerHTML=`<h3>Today's money</h3><b class="zbm-big">${fmt(n.todayCr||0)}</b><p>in ${esc(M.cfg.spvShort)}'s account, for the works</p>
+      <h3>The banks</h3><b class="zbm-mood" style="color:${L[1]}">${L[0]}</b><p>${esc(n.coverWords||'')}</p>
+      <h3>Your stake</h3><b class="zbm-big">${esc(n.stakePct!=null?n.stakePct:64)}%</b><p>of ${esc(M.cfg.spvShort)}${n.stakeValueCr!=null?`, worth about ${fmt(n.stakeValueCr)}`:''}</p>`;}
+
+  /* the schedule: one row per work, bars shifted by any slip decided before they finish */
+  function shifted(w){let s=w.start,e=w.end;for(const ev of events){const x=optOf(ev);const m=x&&+x.slipMonths||0;if(!m||ev.year>page)continue;
+      if(e>ev.year-1){e+=m/12;if(s>=ev.year-1)s+=m/12;}}return [s,e];}
+  function gantt(){const ph=page,openD=addM(open0,slipBefore(page)),oy=yrOf(openD);
+    const axis=Array.from({length:A},(_,k)=>`<span style="left:${X(k)}%;width:${X(1)}%">Year ${k+1}<small>${d0.getFullYear()+k}–${String((d0.getFullYear()+k+1)%100).padStart(2,'0')}</small></span>`).join('');
+    const rows=works.map(w=>{const [s,e]=shifted(w),late=e-w.end>.01,fr=Math.max(0,Math.min(1,(ph-s)/((e-s)||1)));
+      return `<div class="zcs-n" title="${esc(w.note||'')}">${esc(w.name)}</div><div class="zcs-t"><i class="bar${fr>=1?' done':''}" style="left:${X(s)}%;width:${X(e-s)}%"><b style="width:${fr*100}%"></b></i>${late?`<i class="late" style="left:${X(w.end)}%;width:${X(e-w.end)}%"></i>`:''}</div>`;}).join('');
+    const led=years.map(y=>{const on=y.year<=ph;return `<span class="${on?'on':''}" style="left:${X(y.year-1)}%;width:${X(1)}%">${on?H(fmt(y.drawnCr).replace(/ cr$/,'').replace('₹','')):`<em>${esc(fmt(y.drawnCr).replace(/ cr$/,'').replace('₹',''))}</em>`}</span>`;}).join('');
+    const cy=years.filter(y=>y.year<=ph).slice(-1)[0],cum=cy?cy.cumDrawnCr:0,cap=o.capexCr||cum||1;
+    return `<div class="zcs-g" style="--a:${A};--ph:${X(ph)/100};--op:${X(oy)/100}">
+      <div class="zcs-n zcs-h">Works</div><div class="zcs-t zcs-ax">${axis}</div>${rows}
+      <div class="zcs-n zcs-lg">Money drawn, ₹ cr</div><div class="zcs-t zcs-led">${led}</div>
+      <div class="zcs-n zcs-lg">Drawn so far</div><div class="zcs-t zcs-cum">${(fc=>{const lb=`<span>${H(fmt(cum))} of ${esc(fmt(cap))}</span>`;return `<i style="width:${fc}%">${fc>55?lb:''}</i>${fc>55?'':lb}`;})(Math.min(100,cum/cap*100))}</div>
+      <i class="zcs-ph" aria-hidden="true"><span>end of year ${ph}</span></i><i class="zcs-op${slipBefore(page)>0?' late':''}" aria-hidden="true"><span>Opening day<br>${esc(dMon(openD))}${slipBefore(page)>0?` · ${slipBefore(page)} months late`:''}</span></i></div>`;}
+
+  function letter(){const e=events.find(x=>x.year===page);if(!e)return '';
+    return `<div class="zcs-let" id="zcsLet"><span class="zbm-clip" aria-hidden="true"></span>
+      <header><span>${esc(e.from||'From the site')}</span><span>${esc(dLong(new Date(d0.getFullYear()+page-1,d0.getMonth()+7,3)))}</span></header>
+      <h4>${esc(e.title)}</h4><p class="t">${esc(e.text||'')}</p><p class="t zbm-ask">${esc(M.cfg.spvShort)} instructs the site to:</p>
+      <div class="zdk-ticks" role="radiogroup" aria-label="${esc(e.title)}">${e.options.map(x=>`<button role="radio" data-e="${esc(e.id)}" data-o="${esc(x.id)}" aria-checked="${choices[e.id]===x.id}"><i></i>${esc(x.label)} <small>${esc(x.effect||'')}</small></button>`).join('')}</div>
+      <p class="zcs-pen" id="zcsPen">${choices[e.id]?'':'Tick one answer before you turn the page.'}</p></div>`;}
+
+  function drawPage(turn){const y=years.find(v=>v.year===page)||{},pd=new Date(d0.getFullYear()+page,d0.getMonth(),d0.getDate());
+    const openD=addM(open0,slipBefore(page)),late=slipBefore(page);
+    docEl.className='zdk-doc zcs-doc';docEl.style.removeProperty('--guil');
+    docEl.innerHTML=`<header class="zdk-dh">${vsiLogo(26)}<span>Site progress register · year ${page}</span><span class="dt">${esc(dLong(pd))}</span></header>
+      <h2>Building the airport</h2>
+      <p class="t">${esc(M.cfg.spvShort)} signed the concession on ${H(dLong(d0))}. It builds phase 1 for ${H(fmt(o.capexCr))}: ${H(fmt(o.equityCr))} from shareholders${o.stateLoanCr?`, ${H(fmt(o.stateLoanCr))} lent by the State`:''} and ${H(fmt(o.debtCr))} from ${esc(o.lenderName||'the banks')}. No passengers, so no income, until opening day on ${H(dLong(openD))}${late?`, ${late} months later than planned`:''}.</p>
+      ${gantt()}
+      <section class="zcs-ent${turn&&!reduce?' turn':''}"><div class="zbm-no">Year ${page}</div><p class="t">${esc(y.line||'')}</p></section>
+      ${letter()}`;
+    const ev=events.find(x=>x.year===page);
+    actsEl.innerHTML=`<button class="zdk-go" id="zcsN"${ev&&!choices[ev.id]?' disabled':''}>${page<lastY?`Turn to year ${page+1}`:'Apply for the aerodrome licence'}</button>`;
+    sh.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{choices[b.dataset.e]=b.dataset.o;
+      sh.querySelectorAll(`[data-e="${b.dataset.e}"]`).forEach(x=>x.setAttribute('aria-checked',x===b));
+      const g=docEl.querySelector('.zcs-g');g.outerHTML=gantt();$s('#zcsPen').textContent='';$s('#zcsN').disabled=false;slip();});
+    $s('#zcsN').onclick=next;slip();
+    const l=$s('#zcsLet');
+    if(l){if(!reduce)l.classList.add('arrive');setTimeout(()=>{if(!finished)docEl.scrollTo({top:Math.max(0,l.offsetTop-90),behavior:reduce?'auto':'smooth'});},reduce?0:700);}
+    else docEl.scrollTop=0;}
+
+  function file(title,word,d){const pl=$s('#zdkPile'),n=pl.children.length;const c=document.createElement('div');c.className='zdk-card';
+    c.style.setProperty('--r',[-4,3,-2,5][n%4]+'deg');c.style.setProperty('--i',Math.min(n,5));c.innerHTML=`<span>${esc(title)}</span><i></i><i></i><i class="s"></i>${stampHtml(word,'mini',d)}`;pl.appendChild(c);}
+  function next(){const b=$s('#zcsN');if(!b||b.disabled)return;b.disabled=true;
+    const ev=events.find(x=>x.year===page);if(ev)file('Site letter, year '+ev.year,'Answered',new Date(d0.getFullYear()+page-1,d0.getMonth()+7,10));
+    if(page<lastY){page++;
+      // the playhead runs to the end of the new year, then the page turns
+      const g=docEl.querySelector('.zcs-g');if(g&&!reduce){g.style.setProperty('--ph',X(page)/100);setTimeout(()=>{if(!finished)drawPage(true);},720);}else drawPage(true);return;}
+    docEl.insertAdjacentHTML('beforeend',stampHtml('Works complete','down',new Date(d0.getFullYear()+lastY,d0.getMonth(),d0.getDate())));
+    const dW=new Date(d0.getFullYear()+lastY,d0.getMonth(),d0.getDate());
+    if(reduce){file('Site progress register','Works complete',dW);licence();return;}
+    setTimeout(()=>docEl.classList.add('leave'),600);setTimeout(()=>{file('Site progress register','Works complete',dW);docEl.classList.remove('leave');licence();},1050);}
+
+  /* the DGCA aerodrome licence, on duty paper */
+  function licence(){const openD=addM(open0,slipAll()),late=slipAll(),dg=SG.dgca||{};
+    const rec=events.map(e=>{const x=optOf(e);return x?`<li>${esc(e.title)}: ${esc(x.label.replace(/^./,c=>c.toLowerCase()))}.</li>`:'';}).join('');
+    docEl.className='zdk-doc duty zcs-lic'+(reduce?'':' arrive');docEl.style.setProperty('--guil',GUIL);
+    docEl.innerHTML=`<div class="zdk-duty"><div class="den"><b>DGCA</b><span>Government of India</span></div>
+        <div class="dc"><span>Directorate General of Civil Aviation</span><span lang="hi" class="hi">नागर विमानन महानिदेशालय</span></div>
+        <div class="ser"><span>Licence no.</span><b>AL/NAG/${openD.getFullYear()}/01</b></div></div>
+      <header class="zdk-cah">${vsiLogo(44)}<div><h2>Aerodrome Licence</h2><p class="hi" lang="hi">एयरोड्रोम लाइसेंस</p></div></header>
+      <p class="t">The Director General of Civil Aviation licenses ${H(M.cfg.spvName)} to use ${esc(M.cfg.airportName)}, Nagpur, as an aerodrome for public use, by day and by night, in all weather, from ${H(dLong(openD))}.</p>
+      <table class="zdk-tab kv"><tbody>
+        <tr><td>Licensee</td><td>${esc(M.cfg.spvName)}${o.parent?`<small>promoted by ${esc(o.parent)}${o.founder?`, director ${esc(o.founder)}`:''}</small>`:''}</td></tr>
+        <tr><td>Largest aircraft</td><td>Airbus A380 and Boeing 777-9</td></tr>
+        <tr><td>Built for</td><td>${H(fmt(o.capexCr))}<small>${late?`opening ${late} months later than the concession planned`:'opening on the date the concession planned'}</small></td></tr>
+        ${rec?`<tr><td>Recorded on the site register</td><td><ol class="zdk-cl zcs-rec">${rec}</ol></td></tr>`:''}
+        <tr><td>Condition</td><td>Fire and rescue crews on duty at every hour the airport is open.</td></tr>
+      </tbody></table>
+      <div class="zdk-sigs zcs-sigs">${sigBlock(dg,dg.org||'the Director General of Civil Aviation')}<div class="s zcs-st" id="zcsSt"></div></div>`;
+    actsEl.innerHTML=`<button class="zdk-go zcs-open" id="zcsO">Open the airport</button>`;
+    noteEl.hidden=false;slip();docEl.scrollTop=0;
+    setTimeout(()=>{const t=docEl.querySelector('.zcs-sigs');if(t&&!finished)docEl.scrollTo({top:Math.max(0,t.offsetTop-300),behavior:reduce?'auto':'smooth'});},reduce?0:800);
+    $s('#zcsO').onclick=()=>{const b=$s('#zcsO');b.disabled=true;
+      const result={choices:Object.assign({},choices),finishedOn:iso(openD),slipMonths:slipAll()};
+      $s('#zcsSt').innerHTML=stampHtml('Licensed','down zcs-lst',openD);
+      docEl.scrollTo({top:docEl.scrollHeight,behavior:reduce?'auto':'smooth'});
+      const big=()=>desk.insertAdjacentHTML('beforeend',`<div class="zcs-day${reduce?'':' down'}" aria-live="assertive"><b>Opening day</b><span>${esc(dLong(openD))} · ${esc(M.cfg.airportShort||'VSI')}, Nagpur</span></div>`);
+      if(reduce){big();setTimeout(()=>done(result),1600);return;}
+      setTimeout(()=>docEl.classList.add('thud'),60);setTimeout(big,700);setTimeout(()=>desk.classList.add('finale'),2600);setTimeout(()=>done(result),4000);};}
+
+  if(!reduce){docEl.classList.add('arrive');noteEl.classList.add('arrive');}
+  drawPage(false);
+  });};
+/* ?moneymock=construction, or window.__zmmConstructionDemo(over): phase 1 at ₹60,000 cr (lean, 45 million a year), opening in year 5 */
+window.__zmmConstructionDemo=over=>M.construction(Object.assign({founder:'Asha Rao',parent:'Meridian Infra',signedOn:'2026-10-19',opensOn:'2030-11-01',
+  capexCr:60000,debtCr:36049,equityCr:15449,stateLoanCr:8502,lenderName:'Indian banks',
+  works:[{id:'land',name:'Land and resettlement',start:0,end:.9,note:'families rehoused before work starts'},
+    {id:'earth',name:'Earthworks and drainage',start:.4,end:1.8},
+    {id:'rwy',name:'Two runways and taxiways',start:1.1,end:3.2},
+    {id:'term',name:'Terminal and Zero Mile Hall',start:1.4,end:3.7,note:'Zero Mile Hall'},
+    {id:'conc',name:'Concourses A and B',start:2,end:3.8},
+    {id:'apm',name:'People mover',start:2.3,end:3.85},
+    {id:'twr',name:'Zero Mile Tower and radar',start:1.7,end:3.4,note:'Zero Mile Tower'},
+    {id:'pwr',name:'Power, water and fuel farm',start:1.3,end:3.3},
+    {id:'trial',name:'Trials with the airlines',start:3.55,end:4},
+    {id:'lic',name:'DGCA aerodrome licence',start:3.85,end:4.04}],
+  years:[{year:1,drawnCr:9600,cumDrawnCr:9600,line:'Shareholders\' money goes in first: ₹9,600 cr for the land, the families\' new homes and the earthworks. The banks lend nothing yet.'},
+    {year:2,drawnCr:16800,cumDrawnCr:26400,line:'The last ₹5,849 cr of shareholders\' money and the State\'s ₹8,502 cr loan go in, then the banks\' first ₹2,449 cr. The runways take shape.'},
+    {year:3,drawnCr:18400,cumDrawnCr:44800,line:'₹18,400 cr from the banks for the terminal, the Hall roof and the concourses. Interest builds up on every rupee drawn.'},
+    {year:4,drawnCr:15200,cumDrawnCr:60000,line:'The banks\' last ₹15,200 cr: the people mover, the tower, power and fuel. Then the airlines rehearse a full day of flights.'}],
+  events:[{id:'monsoon',year:2,from:'From the resident engineer',title:'Monsoon flooding on the runway site',text:'Nagpur had 40% more rain than normal in July. Water stands on three kilometres of the runway bed, and the earthworks have stopped.',
+      options:[{id:'pay',label:'Pay for pumps and night shifts',effect:'₹420 cr more from shareholders now, and the runways stay on time.',numbers:{todayCr:220}},
+        {id:'slip',label:'Let it slip',effect:'No cost now, but the runways finish 4 months late and opening day moves to March 2031.',slipMonths:4,numbers:{light:'green',coverWords:'₹124 earned for every ₹100 due, in their forecast.'}}]},
+    {id:'overrun',year:3,from:'From Satpura Structural Works, roof contractor',title:'The roof contractor asks for more',text:'Steel for the Hall roof costs 22% more than the contract allowed. The contractor will stop work unless the price goes up. Bengaluru\'s terminal 2 opened 21 months late.',
+      options:[{id:'pay',label:'Pay ₹2,100 cr more now',effect:'Shareholders put in ₹2,100 cr more this year, and opening day holds.',numbers:{stakeValueCr:11230}},
+        {id:'slip',label:'Refuse, and tender the roof again',effect:'No cost now, but the terminal opens 8 months late, and about ₹1,250 cr of interest falls due with no passengers to pay it.',slipMonths:8,numbers:{light:'amber',coverWords:'₹112 earned for every ₹100 due, in their forecast. They warn you below ₹120.'}}]},
+    {id:'trials',year:4,from:'From the operations director',title:'Trials with the airlines',text:'Before the first passenger, airlines, ground handlers and 6,000 volunteers can rehearse full days of flights: check-in, bags, gates and boarding.',
+      options:[{id:'full',label:'Full trials, six months',effect:'₹180 cr, already in the schedule; opening day runs on time and calm.'},
+        {id:'short',label:'Short trials, six weeks',effect:'Saves ₹120 cr, but expect lost bags and gate mix-ups in the first month after opening.'}]}],
+  numbers:{todayCr:640,light:'green',coverWords:'₹130 earned for every ₹100 due, in their forecast.',stakePct:64,stakeValueCr:9890}},over||{}));
+(function(){const go=()=>{if(/[?&]moneymock=construction\b/.test(location.search))window.__zmmConstructionDemo().then(r=>{window.__zmmResult=r;});};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else setTimeout(go,0);})();
 
 /* ---------- glossary terms the economy introduces (merge into hub.js GL) ---------- */

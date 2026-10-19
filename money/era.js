@@ -117,7 +117,20 @@
     this.cap_until = o.cap_until || 0; this.rep_start = o.rep_start; this.rep_years = o.rep_years || 10;
     this.profile = o.profile || 'sculpt'; this.weights = o.weights; this.sched = o.sched ? Object.assign({}, o.sched) : null;
     this.target_mode = !!o.target_mode; this.k = null; this.ds_hist = {}; this.int_hist = {};
+    this.open_hist = {};   // outstanding after the year's draw, before its principal
   }
+  // debt service in year t: actual if the year has run, else projected on the schedule already built (null if none yet).
+  // Lets a later stage be sculpted on what an earlier stage really pays in its last, part-sized year (model: Tranche.ds_at).
+  Tranche.prototype.dsAt = function (t) {
+    if (t in this.ds_hist) return this.ds_hist[t];
+    var ks = Object.keys(this.open_hist);
+    if (this.sched == null || !ks.length) return null;
+    var o = this.out, k0 = Math.max.apply(null, ks.map(Number));
+    for (var k = k0 + 1; k < t; k++) o -= Math.min(o, this.sched[k] || 0);
+    if (o <= 0) return 0;
+    var p = (Object.keys(this.sched).length && t === maxKey(this.sched)) ? o : Math.min(o, this.sched[t] || 0);
+    return this.rate / 100 * o + p;
+  };
   Tranche.prototype.build = function (t0) {
     var n = this.rep_years, r = this.rate / 100, D = this.out, k, o, s;
     if (D <= 0) { this.sched = {}; return; }
@@ -145,6 +158,7 @@
     var cap = t < this.cap_until ? 1 : 0;
     var interest = this.rate / 100 * (this.out + d / 2);
     this.out += d;
+    this.open_hist[t] = this.out;
     if (this.rep_start != null && t === this.rep_start && this.sched == null) this.build(t);
     var prin = this.sched ? Math.min(this.out, this.sched[t] || 0) : 0;
     if (this.sched && Object.keys(this.sched).length && t === maxKey(this.sched)) prin = this.out;
@@ -394,10 +408,15 @@
   // ---------------------------------------------------------------------------------------------
   function stageNames(s, withP2) { return ['1A_' + s.phase1, '1B_' + s.phase1, '1C', '1D'].concat(withP2 ? ['P2'] : []); }
   function stageKey(n) { return n.indexOf('1A') === 0 ? '1A' : n.indexOf('1B') === 0 ? '1B' : (n === '1C' || n === '1D') ? 'T2' : 'P2'; }
+  function p2Start() { return Math.min.apply(null, Object.keys(P.vsi_stages.P2.spend).map(Number)); }
+  // phase 2 is on the board's agenda once the next era reaches its planned first year of building
+  function p2Offer(e) { var nx = eraYears(e + 1), ye = nx ? nx[2] : eraYears(e)[2] + 5; return ye >= p2Start() && eraYears(e)[2] <= 43; }
   function stagesFor(s) {
     var st = clone(P.vsi_stages);
-    if (s.p2year) {   // ordered at the board after year p2year: built over the next two years, open the year after
-      var y = s.p2year; st.P2.spend = {}; st.P2.spend[y + 1] = 0.5; st.P2.spend[y + 2] = 0.5; st.P2.cod = y + 3;
+    if (s.p2year) {   // ordered at the board after year p2year: built on money.json's plan, never before its planned first year
+      var y0 = p2Start(), start = Math.max(y0, s.p2year + 1), sp = st.P2.spend;
+      st.P2.spend = {}; Object.keys(sp).forEach(function (k) { st.P2.spend[start + (+k - y0)] = sp[k]; });
+      st.P2.cod = start + (P.vsi_stages.P2.cod - y0);
     }
     return st;
   }
@@ -566,7 +585,7 @@
     var tgt = P.lbc_dscr_target, mc = P.lbc_moratorium_cover, lt = P.vsi_loan_terms;
     function defGear(n) { var k = stageKey(n); return (k === '1A' || k === '1B') ? s.gearing : lt[k].debt_share; }
     function solve(names, fixed, withP2, fixedGear) {
-      var gear = {}, capG = {}, prev = null, prevGear = null;
+      var gear = {}, capG = {}, prev = null, prevGear = null, holder = {};
       names.forEach(function (n) { gear[n] = (fixedGear && fixedGear[n] != null) ? fixedGear[n] : defGear(n); capG[n] = gear[n]; });
       for (var it = 0; it < 30; it++) {
         var sizingW = {};
@@ -579,14 +598,19 @@
             var earlier = order.slice(0, i), later = order.slice(i + 1);
             sizingW[tr.name] = function (t) {
               var used = (fixedDs[t] || 0);
-              earlier.forEach(function (e) { used += e.ds_hist[t] || 0; });
+              // earlier stages: what they pay in this pass (their schedules are already built), so the year one stage
+              // finishes and the next takes over is sculpted on the real remainder
+              var cur = {}; if (holder.eng) holder.eng.c.tranches.forEach(function (x) { cur[x.name] = x; });
+              earlier.forEach(function (e) { var v = cur[e.name] ? cur[e.name].dsAt(t) : null; used += v == null ? (e.ds_hist[t] || 0) : v; });
               later.forEach(function (l) { used += l.int_hist[t] || 0; });
               return Math.max(1e-6, (cf[t] || 0) / tgt - used);
             };
           });
         } else names.forEach(function (n) { sizingW[n] = function (t) { return Math.max(1, t + 1); }; });
         var used = Object.assign({}, gear);
-        var eng = build(s, used, Object.assign({}, fixed), true, withP2, sizingW).run(60);
+        holder.eng = null;
+        var eng = build(s, used, Object.assign({}, fixed), true, withP2, sizingW);
+        holder.eng = eng; eng.run(60);
         var change = 0;
         if (prev) {
           eng.c.tranches.forEach(function (tr) {
@@ -594,7 +618,7 @@
             var room = tr.k ? 1 / tr.k : 1;
             for (var t = tr.cod_t; t < tr.rep_start; t++) {
               var r = eng.rows[t], own = tr.ds_hist[t] || 0;
-              if (own > 1e-6) room = Math.min(room, (r.cfads / mc - (r.ds - own)) / own);
+              if (own > 1e-6) room = Math.min(room, (r.cfads / (mc + 1e-3) - (r.ds - own)) / own);   // just inside the test, so solver error never shows as 1.19
             }
             room = Math.min(1.5, Math.max(0.3, room));
             var ng = Math.min(capG[tr.name], gear[tr.name] * Math.pow(room, 0.7));
@@ -806,7 +830,7 @@
     });
     var spill = rows.reduce(function (a, r) { return a + Math.max(0, r.demand - r.pax); }, 0) / Math.max(1, rows.length);
     var served = rows.reduce(function (a, r) { return a + r.pax; }, 0) / Math.max(1, rows.length);
-    if (spill > 0.03 * served) sentences.push('The terminals were full: about ' + Math.round(spill) + ' million passengers a year wanted to fly from VSI and could not.' + (!s.p2year && ys[2] >= 18 ? ' Phase 2 would make room.' : ''));
+    if (spill > 0.03 * served) sentences.push('The terminals were full: about ' + Math.round(spill) + ' million passengers a year wanted to fly from VSI and could not.' + (!s.p2year && p2Offer(e) ? ' Phase 2 would make room.' : ''));
     if (repaid) sentences.push('The bank loans are fully repaid.');
     var bt = !!eng.step_in && eng.step_in.t + 1 <= ys[2];
     if (bt) sentences.push('The banks take control: ' + eng.step_in.why + '. Your company\'s stake is lost.');
@@ -836,6 +860,8 @@
           {label: 'Loan cover in the hardest year', amount: coverWords(worst), kind: light === 'green' ? 'good' : 'bad'},
           {label: 'Cash in hand', amount: Math.round(eng.cash), kind: 'total'}]}],
       moments: sentences.slice(0, 3), cta: bt ? 'See the end' : 'To the board meeting'};
+    // a line that is zero this era (no tax yet, no penalties) is left out rather than printed as ₹0.0 L
+    inc.sections.forEach(function (sec) { sec.rows = sec.rows.filter(function (r) { return !((r.kind === 'cost' || r.kind === 'rev') && typeof r.amount === 'number' && Math.abs(r.amount) < 1); }); });
     return {eraLabel: label, era: e, years: [ys[1], ys[2]], calendar: [2025 + ys[1], 2025 + ys[2]], light: light,
       coverWorst: worst == null ? null : Math.round(worst * 100) / 100, coverWorstExact: worst, coverWords: coverWords(worst), worstYear: worstRow ? worstRow.year : null,
       todayCr: Math.round(eng.cash), cashCr: Math.round(eng.cash), stakePct: state.stake, stakeValueCr: Math.round(sv),
@@ -879,17 +905,18 @@
     var e = state.era, ys = eraYears(e), lr = state.lastReport || {}, s = state.s;
     var nextStart = ys[2] + 1;
     var invest = [];
-    if (!s.p2year && ys[2] >= 18 && ys[2] <= 43) {
-      var cost = Math.round(P.gcap.phase2_cost_cr * Math.pow(1 + P.cpi_forward, nextStart - 1));
-      invest.push({id: 'phase2', name: 'Build phase 2 (satellites G and H)', costCr: 0, effect: 'Room for ' + (P.gcap.phase2_mppa - P.gcap.full_mppa) + ' million more passengers a year, open from ' + (2025 + nextStart + 2) + '.',
-        why: 'Costs about ' + cr(cost) + ', 80% lent by the banks; the rest comes from cash, then from the shareholders. Full terminals turn passengers away.', payback: 'Pays back as the new piers fill'});
+    if (!s.p2year && p2Offer(e)) {
+      var p2b = Math.max(p2Start(), nextStart), p2open = p2b + (P.vsi_stages.P2.cod - p2Start());
+      var cost = Math.round((P.vsi_stages.P2.cost || P.gcap.phase2_cost_cr) * Math.pow(1 + P.cpi_forward, p2b - 1));
+      invest.push({id: 'phase2', name: 'Build phase 2 (satellites G and H)', costCr: 0, opens: p2open, effect: 'Room for ' + (P.gcap.phase2_mppa - P.gcap.full_mppa) + ' million more passengers a year, open from ' + (2025 + p2open) + '.',
+        why: 'Costs about ' + cr(cost) + ', 80% lent by the banks; the rest comes from cash, then from the shareholders. Full terminals turn passengers away; it pays back as the new piers fill.', payback: ''});
     }
     var cureOn = leverAt(s.cure, nextStart);
     invest.push({id: cureOn ? 'cure_off' : 'cure_on', name: cureOn ? 'Stop promising the banks fresh money' : 'Promise the banks fresh money if the airport falls short',
       costCr: 0, effect: cureOn ? 'Keeps your company\'s money safe, but the banks take control after two short eras.' : 'If loan cover falls below ₹100 for every ₹100 due, your company tops it up and keeps control.',
-      why: 'Fresh money lowers your return per year, but losing the airport loses everything.', payback: '—'});
+      why: 'Fresh money lowers your return per year, but losing the airport loses everything.', payback: ''});
     var refiOn = leverAt(s.refi, nextStart);
-    if (!refiOn) invest.push({id: 'refi_on', name: 'Accept a cheaper loan once the airport is stable', costCr: 0, effect: 'After three steady years the banks offer ' + P.refi.rate + '% over ' + P.refi.tenor + ' years.', why: 'Lower interest, longer to repay.', payback: 'Immediate'});
+    if (!refiOn) invest.push({id: 'refi_on', name: 'Accept a cheaper loan once the airport is stable', costCr: 0, effect: 'After three steady years the banks offer ' + P.refi.rate + '% over ' + P.refi.tenor + ' years.', why: 'Lower interest, longer to repay, from the first year.', payback: ''});
     var cpNext = Math.floor((nextStart - 5) / 5) * 5 + 5;
     var stance = stanceAt(s, nextStart);
     var hold = (nextStart <= 14 && nextStart + 5 > 10);
@@ -900,7 +927,8 @@
       appealText: 'Fight for fees now. AERA may then disallow part of your building costs, freeze fees for five years, and airlines will grow more slowly.'};
     var cash = Math.max(0, state.cash || 0);
     var payout = lr.payoutShare != null ? lr.payoutShare : 0;
-    return {era: e, years: (2025 + ys[1]) + '–' + (2025 + ys[2]), parent: state.parent, parentPct: state.stake, cashCr: cash, debtCr: lr.debtCr || 0,
+    var nx = eraYears(e + 1) || [e + 1, nextStart, Math.min(60, nextStart + 4)];
+    return {era: e + 1, years: (2025 + nx[1]) + '–' + (2025 + nx[2]), year: nextStart, parent: state.parent, parentPct: state.stake, cashCr: cash, debtCr: lr.debtCr || 0,
       dscr: lr.cover != null ? {value: lr.cover, warn: P.thr.warning, covenant: P.thr.covenant} : null,
       aera: aera, appealNow: stance === 'hard', investments: invest,
       dividend: {maxCr: Math.floor(cash * payout)}, prepay: {maxCr: Math.floor(cash)}};

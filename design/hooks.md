@@ -33,7 +33,7 @@ The maths is in `design/eras.md`, the screens are in `design/onboarding.md`, and
 
 | File | Kind | Owner |
 |---|---|---|
-| `money/era.js` | Pure maths: `window.ZMERA` and `module.exports`. No DOM, no randomness except a seeded mulberry for Ship B. | era agent (C2) |
+| `money/era.js` | Pure maths: `window.VSIEra` and `module.exports`. No DOM, no randomness except a seeded mulberry for Ship B. | era agent (C2) |
 | `money/ledger.js` | Closure module. It reads `T`, `LV`, `S`, `RW`, `flights`, `GATES`, `SUM`, `dustNow`, `fogF`, `HOLDDEP`, `clk` and `$`, and sets `MNY`. | wiring agent |
 | `money/campaign.js` | Closure module: the era loop, `zm_campaign`, migrate/bak/best. It calls `startLevel` and `menu`. | wiring agent |
 | `money/board.js` | Closure module: the results, board, cure and step-in screens in `#sheet`. | wiring agent (or a UI agent after C3) |
@@ -179,7 +179,7 @@ This sets `I.mny`, Concession only.
 | C8 | `EXPERT`, `NEXT_TIP` | 2256–2257 | Add `5:` entries (after Step 5) |
 | C9 | `finish()` | 2322–2345 | (a) `const money=MNY?MNY.close():null;` after the leftover-links loop. (b) `const next=LEVELS[LV.n]&&!LEVELS[LV.n].concessionOnly&&!LV.campaign?LEVELS[LV.n]:null;`, and the "Before level N" label uses the same test. (c) Star note: add `LV.n===5?' This level allows for the weather.'`. (d) After `.score`, add `${money?MNY.statementHtml(money,LV.campaign):''}`. (e) If `LV.campaign`: don't render `#again`/`#nextL`; render `<button class="go" id="books">Close the books for years a–b ›</button>`, wired to `CAMPAIGN.afterShift(window.__hubResult)`. (f) `__hubResult` gains `money` and `sched:S.sched`. (g) Quick play: if this level's EBITDA beats `zm_money_best[L]`, store it. `zm_stars` logic is unchanged. |
 | C10 | `menu()` | 2351 | `LEVELS.filter(L=>!L.concessionOnly).map(...)`. Add a Concession card above `.levels`: "Run Zero Mile for 60 years", with Continue (if `zm_campaign` exists) and New campaign (with a confirm step), wired to `CAMPAIGN.open()` |
-| C11 | `window.HUB` | 2380 | Add `money:()=>MNY&&MNY.snapshot()`, `moneyOff:()=>{if(MNY)MNY.on=false;}`, `campaign:()=>CAMPAIGN&&CAMPAIGN.state()`, `era:()=>window.ZMERA`. `startLevel` already passes `patch` through. |
+| C11 | `window.HUB` | 2380 | Add `money:()=>MNY&&MNY.snapshot()`, `moneyOff:()=>{if(MNY)MNY.on=false;}`, `campaign:()=>CAMPAIGN&&CAMPAIGN.state()`, `era:()=>window.VSIEra`. `startLevel` already passes `patch` through. |
 
 ### `CAMPAIGN` (`money/campaign.js`)
 - `open()`, `newGame()`, `resume()`, `afterShift(res)`, `state()`, `save()`, `load()`, `migrate(o)`.
@@ -193,7 +193,7 @@ This sets `I.mny`, Concession only.
   - **`miser`**: the expert, but with the fewest runways open (OFF whenever forecast demand allows) and never "Clear it now" or "Inspect".
   - **`spender`**: the expert, but every unlocked runway is always on, and it always takes the closure options.
 - **Output:** each run prints `MONEY {json of HUB.money()}` next to `RESULT`. `run_all.py` adds an EBITDA column.
-- **Quick concession in node:** `node tools/concession.js <bot>`. It feeds `ZMERA.quickRun(policy, shiftRatios[L])` with the ratios measured from the bot runs, and prints the DSCR per era, IRR and step-in.
+- **Quick concession in node:** `node tools/concession.js <bot>`. It feeds `VSIEra.quickRun(policy, shiftRatios[L])` with the ratios measured from the bot runs, and prints the DSCR per era, IRR and step-in.
   - A browser check drives the same path through `HUB.campaign()` once per ship.
 - **Gate commands:**
   - The fast bot from the baseline (`/tmp/zmh/l3v2/tools/fastbot.py`) as the main measure, twice.

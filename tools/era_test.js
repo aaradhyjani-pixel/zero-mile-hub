@@ -68,7 +68,7 @@ const board = ({appeal = false, phase2 = false} = {}) => (e, bo) => ({
   appeal, dividendCr: bo.dividend.maxCr, prepayCr: 0,
   bought: bo.investments.filter(i => phase2 && i.id === 'phase2').map(i => i.id)});
 const TERMS = {
-  EXPERT: {bid: {type: 'share', value: 4}, gearing: 70, repayment: 'sculpted', cure: true},
+  EXPERT: {bid: {type: 'share', value: 4}, gearing: 75, repayment: 'sculpted', cure: true},
   BAD: {bid: {type: 'share', value: 4}, gearing: 75, repayment: 'sculpted', state_loan: false, defer_state_loan: false, aera: 'hard', refi: false, cure: false},
   LAZY: {bid: {type: 'share', value: 4}, gearing: 70, repayment: 'sculpted', state_loan: false, defer_state_loan: false, refi: false, cure: false}};
 const ob = (k, extra) => Object.assign({parent: 'Meridian Infra', founder: 'Asha Rao'}, TERMS[k], extra || {});

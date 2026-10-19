@@ -148,3 +148,36 @@ The certificate reuses the duty paper, ticks, signature pad, seal and stamp from
 | design/finance.md §4–6 tables | regenerated; §7 prose not touched |
 | money-design.md side-by-side year table | not refreshed (rows from year 17 shift slightly: phase 2 now 80% geared) |
 | Merge origin/assist/capex-ui | not done in this lane (timebox) |
+
+## 2026-10-19 — Checkpoint 3: era.js integrated, money-on concession through era 2 (branch money)
+| Item | Status |
+|---|---|
+| Merge `origin/era` (era.js, era_test.js) | done, clean |
+| Stand-in `ERA_STUB` removed; `CAMP` uses `window.VSIEra` fed `MONEY_DATA`; the Concession tab says "not available" if either is missing | done |
+| `VSIEra.isOver` checked before every shift (resume or next era) → the end page, never another shift | done |
+| era.js caught up with the capex-lane model (it was ported before it): `Tranche.ds_at` stage sculpting, the 1e-3 sizing margin, phase 2 built on money.json's plan (years 15–16, open 17), expert terms at 75% gearing in the test | done: `node tools/era_test.js` ALL PASS, every era exact vs Python (expert 1.23/1.25/1.14/1.14/2.02/1.61/1.47/1.45, then repaid, 12.5%; bad and lazy: banks take control in year 13) |
+| Board minutes numbered and dated for the era they precede ("before era 2 (2033–2035), in year 8") | done (era.js `boardOptions`) |
+| "Pays for itself in about —/Immediate/Pays back…" on board items | fixed: era.js passes no `payback` for those three |
+| Zero lines in the era books (₹0.0 L tax or penalties) | hidden |
+| The State's loan in the deal desk's agreement line | hub.js passes `stateLoanCr` = cost − debt − equity (0 for phase 1 on these numbers) |
+| build.md §9 Money (formulas, money.json, the loop, how to tune); design/hooks.md says `VSIEra` | done |
+
+**Money-off gate (expert fastbot, 2 at a time, nice -n 10):** L1 124/89 ★★★, L2 238/94 ★★★, L3 480/72 ★★★, L4 744/80 ★★★, 0 errors (baseline 123/88, 238/94, 480/72, 744/80; L1 ±1 is the known run-to-run noise). Money-on L1 fastbot: 123/88 ★★★, identical to money off.
+
+**Money-on concession run** (`/tmp/zmwire/cp3/camp3.py`, log `/tmp/zmwire/cp3/log.txt`, shots in `/tmp/zmwire/cp3/`): the deal desk filled by hand (Meridian Infra, Asha Rao; bid 15%, 70% asked, banks lend ₹36,303 cr of ₹60,000 cr), signature drawn, EXECUTED → era 1 on Level 1 → books → board (accept AERA; dividend ruler at ₹0 because cash in hand is ₹0) → era 2 on Level 2 → books → board → era 3 started on Level 3.
+- Era 1: shift ₹1.2 cr; amber, ₹119 earned for every ₹100 due (2030); stake 64% worth ₹9,067 cr. (An earlier run with a 3★ shift: green at ₹123, stake ₹11,770 cr. Good ops = good money.)
+- Era 2: shift ₹2.4 cr; amber, ₹112 for every ₹100 due (2035); stake worth ₹37,203 cr; debt ₹1,01,381 cr.
+- Jargon scan of the rendered page at 16 stages (menu, every deal-desk document, mid-shift chip, P&L tab, score sheets, books, minutes): none of DSCR, RAB, WACC, true-up, EBITDA, IRR, SLA, UDF, covenant, step-in.
+- WebKit smoke (`/tmp/zmwire/cp3/wk.py`): quick play money off, chip hidden; a handler-bot concession shift (1★) → red, ₹95 for every ₹100 due, stake worth ₹0 → board → era 2 on Level 2; 0 errors.
+
+**Open (for balance / the user):**
+- Cash in hand is ₹0 after eras 1–2 even when green, so the dividend and prepay rulers are at ₹0 and the board's real decisions are the AERA appeal and "promise the banks fresh money". Check `payoutShare`/cash sweep at balance.
+- The deal desk shows "Your odds 22%" at the default 15% bid, then the player wins anyway.
+- The term sheet: ₹36,303 cr loan + ₹24,900 cr shareholders = ₹61,203 cr against a ₹60,000 cr project cost (era.js counts interest during construction and inflation; the desk prints today's cost).
+- The era-1 warning's "why" names the opening cost even when the shift was 2★; the ops reason is added only for a negative growth bonus or above-base disruption.
+- Airport City and a late phase 1 (`airport_city`, `delay` in the model) are not in era.js (Ship B).
+- An income-statement "moments" list shows at most 3 of the sentences.
+
+**For the review session (money/ui.js, not edited here):**
+- The board minutes show the investments' `why` text; fine. No banned words were found on any rendered screen in this run, including the board minutes (the old "DSCR is below the covenant" board copy is no longer reached).
+- Money amounts that round to zero print as "₹0.0 L" (e.g. Cash in hand); "₹0" would read better.

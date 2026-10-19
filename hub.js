@@ -2460,59 +2460,38 @@ window.addEventListener('load',mnyTerms);
 MONEY_ON=/[?&]money(=1|&|$)/.test(location.search);
 function mnySet(on){on=!!on&&!!MNY;if(MNY)MNY.on=on;try{if(window.ZMMoney&&!/moneymock/.test(location.search))ZMMoney.enable(on);}catch(e){}}
 /* ============ money: the Concession mode (60 years, era by era) ============
-   A separate entry in the menu: quick play never comes here. The maths is money/era.js (window.VSIEra); the screens are
-   money/ui.js (window.ZMMoney). The campaign is saved in localStorage zm_campaign after every step. */
-// TODO(era.js): a tiny local stand-in with the agreed VSIEra API, used only until money/era.js lands. Rough numbers only.
-const ERA_STUB={stub:true,
-  data(){},
-  capexCr(){const c=window.MONEY_DATA&&MONEY_DATA.capex&&MONEY_DATA.capex.stages;return c&&c['1A_lean']&&c['1A_lean'].cost||36000;},
-  partners(){const z=window.ZMMoney&&ZMMoney.cfg||{};return [{name:'Your company',pct:64,color:'#e8b04a',role:'Lead promoter'},{name:(z.coinvestor&&z.coinvestor.name)||'L5 Capital: Lagrange Point Infrastructure Fund',pct:16,color:'#7fb4ff',role:'Co-investor'},{name:'Airports Authority of India',pct:10,color:'#9aa3ad',role:'The Authority'},{name:'State of Maharashtra, through MADC',pct:10,color:'#6fcf97',role:'The State'}];},
-  bidTypes(){return {share:{min:10,max:50,step:0.5,def:20,benchmarks:[{name:'Navi Mumbai',val:12.6},{name:'Mumbai',val:38.7},{name:'Delhi',val:45.99}]},ppf:{min:100,max:450,step:5,def:200,benchmarks:[{name:'lowest recent bid',val:115},{name:'highest recent bid',val:401}]}};},
-  previewBid(b){const p=b.type==='share'?Math.min(98,Math.max(3,(b.value-10)*3.2)):Math.min(98,Math.max(3,(b.value-110)*0.35));return {winPct:p,note:p>66?'You probably win, but you pay this share of every rupee for 60 years.':p>33?'A coin toss against the rival bidders.':'Too low. A rival will outbid you.'};},
-  previewClose(c){const cap=ERA_STUB.capexCr(),g=c.gearing/100;return {debtCr:cap*g,equityCr:cap*(1-g),parentCr:cap*(1-g)*0.64,minDscr:(c.repayment==='sculpted'?1.32:1.08)-(c.gearing-60)*0.012,note:c.repayment==='equal'?'Equal instalments are heavy in the first years. Expect the banks to warn you early.':'Repayments grow with the passengers. Money gets tight when you have to build more.'};},
-  newCampaign(r,seed){const cap=ERA_STUB.capexCr(),g=(r.gearing||70)/100;return {version:1,stub:true,parent:r.parent,founder:r.founder,signature:r.signature,signedOn:r.signedOn,endsOn:r.endsOn,quick:!!r.quick,bid:r.bid,gearing:r.gearing,repayment:r.repayment,
-    era:0,year:1,cashCr:300,debt:[{name:'Phase 1 loan',cr:cap*g}],stake:64,seed:seed||1,history:[]};},
-  levelFor(st){return Math.min(4,1+st.era);},   // Ship B: eras 5-12 play Level 5
-  applyShift(st,sh){st=JSON.parse(JSON.stringify(st));const y0=st.year,yrs=5,net=(sh.money.revenueCr-sh.money.costCr)*365*40,debt=st.debt.reduce((s,d)=>s+d.cr,0),due=debt/15;
-    const cover=Math.max(0.5,Math.min(2.5,(net*0.6)/yrs/Math.max(1,due))),light=cover>=1.2?'green':cover>=1.1?'amber':'red';
-    st.cashCr+=Math.max(0,net*0.6-due*yrs)*0.2;st.debt.forEach(d=>d.cr=Math.max(0,d.cr-due*yrs*d.cr/Math.max(1,debt)));st.era++;st.year+=yrs;
-    const words=`₹${Math.round(cover*100)} earned for every ₹100 due`;const value=Math.max(0,net*4-debt)*st.stake/100;
-    st.history.push({era:st.era,years:[y0,st.year-1],light,cover,cashCr:st.cashCr});const took=cover<1&&st.history.filter(h=>h.light==='red').length>=2;
-    const sentences=[light==='red'?'The banks warn you: in your worst year the airport did not earn enough to pay them.':light==='amber'?'The banks warn you: one more tight year and they will start asking questions.':'The banks are happy: every year paid its loans with room to spare.'];
-    if(took)sentences.push('The banks take control: two hard periods in a row.');
-    return {state:st,report:{eraLabel:`Years ${y0}–${st.year-1}`,years:[y0,st.year-1],light,coverWorst:cover,coverWords:words,todayCr:sh.money.revenueCr-sh.money.costCr,stakePct:st.stake,stakeValueCr:value,cashCr:st.cashCr,sentences,banksTookControl:took,
-      incomeStatement:{band:`Years ${y0}–${st.year-1} · ${st.parent||'Your company'}`,title:'The books for this period',hero:`In its worst year: <em>${words}</em>.`,
-        sections:[{title:'Your shift',rows:sh.money.lines.map(l=>({label:l.label,amount:l.amount,kind:l.kind})).concat([{label:'Today',amount:sh.money.revenueCr-sh.money.costCr,kind:'total'}])},
-          {title:'Your company',rows:[{label:'Your stake',amount:st.stake+'%',kind:'total'},{label:'What your stake is worth',amount:value,kind:value>0?'good':'bad'},{label:'Cash in the bank',amount:st.cashCr,kind:'total'}]}],
-        moments:sentences,cta:took?'See how it ended':'To the board meeting'}}};},
-  boardOptions(st){const debt=st.debt.reduce((s,d)=>s+d.cr,0),h=st.history[st.history.length-1]||{cover:1.3};return {era:st.era,years:h.years?`Years ${h.years[0]}–${h.years[1]}`:'',parent:st.parent,parentPct:st.stake,founder:st.founder,year:st.year,cashCr:st.cashCr,debtCr:debt,dscr:{value:h.cover,warn:1.2,covenant:1.1},
-    aera:{title:'The regulator\'s decision',text:'AERA sets what you may charge for the next five years.',canAppeal:st.era>=2,appealText:'Win and your charges rise. Lose and the airlines stay angry with you for the whole period.'},
-    investments:[],dividend:{maxCr:Math.max(0,st.cashCr*0.5)},prepay:{maxCr:Math.max(0,Math.min(st.cashCr,debt))}};},
-  applyBoard(st,d){st=JSON.parse(JSON.stringify(st));d=d||{};st.cashCr-=(d.dividendCr||0)+(d.prepayCr||0);if(d.prepayCr&&st.debt[0])st.debt[0].cr=Math.max(0,st.debt[0].cr-d.prepayCr);st.appeal=!!d.appeal;return st;},
-  isOver(st){const h=st.history[st.history.length-1];if(h&&h.cover<1&&st.history.filter(x=>x.light==='red').length>=2)return {reason:'banks'};return st.year>60?{reason:'handback'}:false;},
-  handbackOpts(st){const o=ERA_STUB.isOver(st)||{};return {band:`${st.parent||'Your company'} · year ${Math.min(60,st.year-1)}`,title:o.reason==='banks'?'The banks take control':'Handback',hero:o.reason==='banks'?'The airport could not pay its loans, and the banks took control of the company.':'The concession is over. The airport goes back to the State.',sections:[],moments:[],cta:'Back to the menu'};}
-};
+   A separate entry in the menu: quick play never comes here. The maths is money/era.js (window.VSIEra, fed window.MONEY_DATA);
+   the screens are money/ui.js (window.ZMMoney). The campaign is saved in localStorage zm_campaign after every step. */
 const CAMP={active:false,st:null,
-  E(){const E=window.VSIEra||ERA_STUB;if(!CAMP._d&&E.data&&window.MONEY_DATA){try{E.data(window.MONEY_DATA);}catch(e){}CAMP._d=true;}return E;},
-  ready(){return !!(MNY&&window.ZMMoney&&ZMMoney.onboarding);},
-  load(){const o=store.get('zm_campaign');return o&&o.version?o:null;},
+  E(){const E=window.VSIEra;if(E&&!CAMP._d&&E.data&&window.MONEY_DATA){try{E.data(window.MONEY_DATA);}catch(e){console.warn('era data',e);}CAMP._d=true;}return E;},
+  ready(){return !!(MNY&&window.ZMMoney&&ZMMoney.onboarding&&window.VSIEra&&window.MONEY_DATA);},
+  // the State's interest-free loan is the gap between the cost and the banks plus the shareholders: pass it, so the agreement adds up
+  close(E,c){const q=E.previewClose(c);if(q&&q.stateLoanCr==null)q.stateLoanCr=Math.max(0,Math.round(E.capexCr()-q.debtCr-q.equityCr));return q;},
+  load(){const o=store.get('zm_campaign');return o&&o.version&&o.s?o:null;},   // (no .s: an old save from the stand-in era module)
   save(){if(CAMP.st)store.set('zm_campaign',CAMP.st);},
   async newGame(){const E=CAMP.E();$('#overlay').hidden=true;let r=null;
-    try{r=await ZMMoney.onboarding({capexCr:E.capexCr(),partners:E.partners(),bidTypes:E.bidTypes(),gearing:{min:60,max:80,def:70},previewBid:b=>E.previewBid(b),previewClose:c=>E.previewClose(c)});}catch(e){console.warn('onboarding',e);}
+    try{r=await ZMMoney.onboarding({capexCr:E.capexCr(),partners:E.partners(),bidTypes:E.bidTypes(),gearing:{min:60,max:80,def:70},previewBid:b=>E.previewBid(b),previewClose:c=>CAMP.close(E,c)});}catch(e){console.warn('onboarding',e);}
     if(!r){menu('concession');return;}
     CAMP.st=E.newCampaign(r,(Date.now()%100000)+1);CAMP.save();CAMP.play();},
-  resume(){const st=CAMP.load();if(!st){menu('concession');return;}CAMP.st=st;CAMP.play();},
-  play(){const E=CAMP.E();CAMP.active=true;startLevel(E.levelFor(CAMP.st));},
+  resume(){const st=CAMP.load();if(!st||!st.s){menu('concession');return;}CAMP.st=st;CAMP.play();},   // (no .s: a save from the stand-in era module, which cannot be resumed)
+  // before every shift: a concession that has ended (banks, or year 60) goes to its last page, never to another shift
+  play(){const E=CAMP.E();if(E.isOver(CAMP.st)){CAMP.end();return;}CAMP.active=true;startLevel(E.levelFor(CAMP.st));},
+  async end(){const E=CAMP.E();$('#overlay').hidden=true;CAMP.active=false;try{await ZMMoney.incomeStatement(E.handbackOpts(CAMP.st));}catch(e){}
+    store.set('zm_campaign_last',CAMP.st);try{localStorage.removeItem('zm_campaign');}catch(e){}CAMP.st=null;menu('concession');},
   // called at the end of finish(): the score sheet stays, but the way on is through the books, not "next level"
   finished(res){const E=CAMP.E(),h=CAMP.st.history||[];const a=$('#again'),n=$('#nextL');if(a)a.remove();if(n)n.remove();
     const b=document.createElement('button');b.className='go';b.id='books';b.textContent='Close the books for this period ›';const m=$('#toMenu');m.parentNode.insertBefore(b,m);m.textContent='Save and leave';
     m.onclick=()=>{CAMP.active=false;menu('concession');};b.onclick=()=>CAMP.afterShift(res);},
   async afterShift(res){const E=CAMP.E();$('#overlay').hidden=true;
     const shift={level:res.level,stars:res.stars,otp:res.otp,cx:res.cx,safety:res.safety,moves:res.moves,sched:res.sched,pax:res.money?res.money.pax:0,money:res.money||{revenueCr:0,costCr:0,lines:[]}};
-    const out=E.applyShift(CAMP.st,shift);CAMP.st=out.state;CAMP.save();
-    try{await ZMMoney.incomeStatement(out.report.incomeStatement);}catch(e){}
-    if(out.report.banksTookControl||E.isOver(CAMP.st)){try{await ZMMoney.incomeStatement(E.handbackOpts(CAMP.st));}catch(e){}CAMP.active=false;store.set('zm_campaign_last',CAMP.st);try{localStorage.removeItem('zm_campaign');}catch(e){}menu('concession');return;}
-    let d=null;try{d=await ZMMoney.boardMeeting(E.boardOptions(CAMP.st));}catch(e){}
+    const out=E.applyShift(CAMP.st,shift);CAMP.st=out.state;CAMP.save();CAMP.last=out.report;
+    if(out.report){const is=Object.assign({},out.report.incomeStatement),m=shift.money;
+      // the shift the player just ran, first: good operations are good money
+      is.sections=[{title:'Your shift today',rows:[{label:'Earned',amount:m.revenueCr||0,kind:'rev'},{label:'Spent',amount:m.costCr||0,kind:'cost'},{label:'Today\'s money',amount:(m.revenueCr||0)-(m.costCr||0),kind:'total'}]}].concat(is.sections||[]);
+      try{await ZMMoney.incomeStatement(is);}catch(e){console.warn('income',e);}}
+    if(!out.report||E.isOver(CAMP.st)){await CAMP.end();return;}
+    const bo=Object.assign({founder:CAMP.st.founder||'',year:CAMP.st.year,stakeValueCr:out.report.stakeValueCr},E.boardOptions(CAMP.st));
+    let d=null;try{d=await ZMMoney.boardMeeting(bo);}catch(e){console.warn('board',e);}
     CAMP.st=E.applyBoard(CAMP.st,d||{});CAMP.save();CAMP.play();},
   // the Concession tab in the menu
   html(){const st=CAMP.load(),z=window.ZMMoney&&ZMMoney.cfg||{};

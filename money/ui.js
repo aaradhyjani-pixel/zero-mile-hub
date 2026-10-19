@@ -2731,7 +2731,7 @@ M.privateCapital=function(opts,st,done){
   const close=v=>{ov.remove();done(v);};
   const pct=v=>(+v).toFixed(2).replace(/0$/,'')+'%';
   function list(){pg.innerHTML=`<h2>Private capital</h2><p class="sub">Five family networks lend outside the banks. Each has its own way of saying yes. Choose one to pitch.</p>`+
-    D.houses.map(h=>`<div class="h"><div><h3>${esc(h.name)}</h3><small>${esc(h.home)}</small></div><button data-h="${h.id}">Pitch them</button>
+    D.houses.map(h=>`<div class="h"><div><h3>${esc(h.name)}</h3><small>${h.sub?esc(h.sub)+' · ':''}${esc(h.home)}</small></div><button data-h="${h.id}">Pitch them</button>
       <p style="grid-column:1/-1;margin:6px 0 0">${esc(h.bio)}</p>
       <dl><dt>How to pitch</dt><dd>${esc(h.pitch)}</dd><dt>They accept</dt><dd>${esc(h.accept)}</dd><dt>They refuse</dt><dd>${esc(h.refuse)}</dd><dt>They invest in</dt><dd>${esc(h.invest)}</dd></dl></div>`).join('')+
     `<p><button class="q" id="zpcX">Not now: back to the banks</button></p>`;

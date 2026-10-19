@@ -44,6 +44,18 @@ For each test a chapter fails, generate **at least 10 ideas**, using at least 4 
 9. **Scale shock.** Show the size: a whole city's flights moving overnight, 30 jets parked on your pier, one night of freight filling a field with orange crates.
 10. **The unfair rival.** Dubai, Doha or Hyderabad does something aggressive and the player must answer in one move.
 
+## The big-moment rule: big moments are played, not read
+
+**Any idea about traffic** (a surge, a diversion, a closure, a VIP day, a final, a flood) **hands the player the live airport sim.** The map, the runway desk, the stands and the bank chart come up, and the player steers through it, the way Cruise's hold-London call and Level 4's summit already work. It's never a card with buttons.
+
+- **Paper** is only for what happens on paper in real life: a deal, a letter, a pitch, a board vote, a press conference.
+- **Every live set piece:**
+  - plays as a 5–10 minute slice at 1×, with the clock compressed;
+  - is built from what the player owns: their runways, stands, terminal, cargo apron and access road;
+  - has a goal stated in one line ("Land 90 charters by 18:00 without losing the evening bank");
+  - has a result that feeds the bill (money), the front page (fame) and the next chapter (trust).
+- **Each card says `MODE: LIVE` or `MODE: PAPER`.**
+
 ## Step 3 · Filter: every idea must pass all six
 
 1. **Credible:** it could happen at an Indian airport. Name a source, or mark it "(est.)" with the reasoning.
@@ -68,6 +80,7 @@ For each test a chapter fails, generate **at least 10 ideas**, using at least 4 
 
 ```
 TITLE:          (5 words, newspaper style)
+MODE:           LIVE (the player steers the airport sim) or PAPER (a document on the desk)
 CHAPTER, WHEN:  Climb · 2034, 04:10
 CAUSE:          which past choice makes it happen, or decides how big it is (and its paper pin)
 ON SCREEN:      what the player sees in the first 10 seconds
@@ -103,6 +116,7 @@ Cruise works because it's the only chapter where a decision is felt live (hold L
 
 | # | Idea | Chapter | Lenses | Cause | Wow / Agency / Link / Cost | Priority |
 |---|---|---|---|---|---|---|
+| | *Mode: LIVE = played in the sim (#1, #4, #7, #10, and #8's inauguration day); PAPER = on the desk (#2's contract, #3, #5, #6, #9, #11, #12).* | | | | | |
 | 1 | **Fog windfall:** Delhi is fogged in at 04:00; 60 northbound jets ask to divert to VSI within 20 minutes. Open the remote stands and earn a night's fees, or refuse and protect the morning bank. | Climb | 3, 1, 9 | the stands you built (Pushback) and your trust with airlines | 3 / 3 / 2 / M | **4.0** |
 | 2 | **Orange night freight:** Nagpur's orange harvest; 40 freighters a night to the Gulf, if your cargo terminal exists. | Climb/Cruise | 5, 3, 9 | Sanchori's cargo clause, or a cargo terminal built at a board | 3 / 2 / 2 / M | **3.5** |
 | 3 | **The chip bet:** while you raise money, a chip assembly-and-test plant in MIHAN, next to your cargo apron, asks VSIAL to co-invest. Fifteen years later its chips fly out as high-value cargo, and in year 25 the stake is sold. Full card: `design/ideas/chip-bet.md`. | Climb (the fundraising board) | 7, 3, 2 | your cash, the cargo terminal (Sanchori's clause or a board), your lender | 3 / 3 / 2 / M | **4.0** |
@@ -112,7 +126,7 @@ Cruise works because it's the only chapter where a decision is felt live (hold L
 | 7 | **Mumbai floods divert to you (2005-style):** two days of Mumbai's flights; capacity test. | Cruise | 1, 4 | lean vs big phase 1 | 3 / 2 / 2 / M | 3.5 |
 | 8 | **Election inauguration:** officials want phase 2 opened before the model code of conduct, half-finished. Open early, or wait. | Landing | 5, 7 | phase 2 timing | 3 / 3 / 2 / M | **4.0** |
 | 9 | **The rival poaches your COO** in the middle of the crisis; match the offer, let them go, or counter-poach. | Turbulence | 7, 10 | Kármán Line's return | 2 / 2 / 1 / S | **5.0** |
-| 10 | **World Cup final at Nagpur's cricket stadium:** 90 charters in 6 hours. | Landing | 5, 9 | stands, the access road (Zero Mile District) | 3 / 2 / 2 / M | 3.5 |
+| 10 | **World Cup final at Nagpur's cricket stadium (LIVE):** you steer 90 charters in 6 hours through the sim. Full card: `design/ideas/world-cup-final.md`. | Landing | 5, 9 | stands, the access road (Zero Mile District) | 3 / 2 / 2 / M | 3.5 |
 | 11 | **Double-or-nothing A380 base pitch:** stake half a year's fees to win Air India's widebody base. | Cruise | 7, 3 | your connection record (the hold-London call) | 3 / 3 / 2 / M | **4.0** |
 | 12 | **Private-capital conditions bite back:** the audit-committee seat questions a bill; the cargo clause triggers #2; the test strip runs its first drone inspection mid-shift. | various | 2, 8 | the lender you chose | 2 / 2 / 2 / M | 3.0 |
 

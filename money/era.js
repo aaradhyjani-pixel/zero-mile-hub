@@ -1292,7 +1292,8 @@
     return {pr: pr, perConnInr: perConn, careInr: care * pr, holdInr: holdCost, perConnectionCr: perConn / 1e7, missedCostCr: care * pr / 1e7, holdCostCr: holdCost / 1e7,
       standMinInr: ((J('fuel.hold_cost_per_min', {}) || {}).B777_300ER || 12500) * pr};
   }
-  function ch5Dests(choice) { return choice === 'three' ? ['London', 'Singapore', 'Nairobi'] : choice === 'london' ? ['London'] : []; }
+  function ch5Opt(choice) { return CH5_SCRIPT.options.filter(function (o) { return o.id === choice; })[0] || CH5_SCRIPT.options[2]; }
+  function ch5Dests(choice) { return ch5Opt(choice).dests.slice(); }
   function ch5PerBank(choice) { return ch5Dests(choice).reduce(function (a, d) { return a + CH5.intl[d].connecting; }, 0); }
   function cal(y) { return 2025 + y; }
   function crs(v) { return Math.abs(v) >= 1 ? cr(v) : '₹' + Math.max(1, Math.round(v * 100)) + ' lakh'; }   // small sums in lakh
@@ -1306,6 +1307,83 @@
   }
   function ch5Doc(state, id) { return (state.docs || []).filter(function (d) { return d.id === id; })[0] || null; }
   var GULF_SRC = {label: 'AP, "Dubai International Airport, busiest for world travel, sees record 92.3 million passengers in 2024"', url: 'https://www.yahoo.com/news/dubai-international-airport-busiest-world-081648847.html'};
+  // VSIEra.ch5.script: the chapter as plain data. Text templates fill {name} from the state and the engine;
+  // every history card is research/history-cards.md as written (card 5: research/dubai.md), with its source.
+  var CH5_SCRIPT = {
+    frontPage: {masthead: 'The Zero Mile Times', price: '₹12',
+      lead: 'DUBAI, DOHA OR NAGPUR? THE RACE FOR INDIA\'S TRAVELLERS',
+      deck: 'Skyward wants an Indian hub for its long-haul flights. Vikram Sarabhai International has the feeder flights. Dubai and Doha want them too.',
+      sub: {head: 'Lucknow to London, one stop, on Indian soil',
+        body: '{feeder} now flies {cities} cities into VSI in one afternoon bank. {company} says the same passengers could walk across the pier to London, Singapore or Nairobi instead of changing in the Gulf. VSI handled {paxM} million passengers in {lastYear}.'},
+      columns: [
+        {head: 'Where India changes planes', body: 'Dubai\'s airport alone handled about 12 million passengers to and from India in 2024, more than any other country. Doha\'s airport wants Skyward\'s flights too.', sources: [GULF_SRC]},
+        {head: 'The banks are watching', body: '{coverLine} Its owners hold {stake}%, worth about {stakeValue} on paper.'}],
+      photo: {kind: 'intl-pier', caption: 'The international pier at VSI: {stands} stands built for the biggest aircraft.'}},
+    // the three options and what each does to the shift (distinct, visible: 3 departures / 1 / none)
+    options: [
+      {id: 'three', label: 'Sign for banks to London, Singapore and Nairobi', dests: ['London', 'Singapore', 'Nairobi'], stamp: 'SIGNED',
+        terms: 'Three departures per bank, two banks a day, from {from}.',
+        line: 'If the connections hold. Every passenger who misses one costs you passenger care, and the next flight may go to {rival}.',
+        effects: {departures: 3, lucknowCall: true, trailPossible: true}},
+      {id: 'london', label: 'Sign for London only', dests: ['London'], stamp: 'SIGNED',
+        terms: 'One London departure per bank, two banks a day, from {from}.',
+        line: 'One route, less to go wrong. Singapore and Nairobi go to {rival}.',
+        effects: {departures: 1, lucknowCall: true, trailPossible: true}},
+      {id: 'decline', label: 'Decline', dests: [], stamp: 'DECLINED',
+        terms: '{partner} takes its flights to {rival}.',
+        line: '{partner} signs with {rival} instead. No risk to you, and Indian travellers keep changing planes in the Gulf.',
+        effects: {departures: 0, lucknowCall: false, trailPossible: true}}],
+    // the incident: two Lucknow feeders land late, 380 passengers for London; hold or go
+    incident: {trigger: {from: 'Lucknow', code: 'LKO', flights: 2, lateMin: 25, dest: 'London', pax: 380, holdMin: 20, needs: 'a signed London bank'},
+      hold: 'London leaves {holdMin} minutes late and misses its Heathrow slot: about {holdCost}. The {pax} make it.',
+      go: 'London leaves on time. The {pax} miss it and {rival} wins them: about {lostCost} in passenger care and lost fees, and {partner} is furious.'},
+    // the paper trail: a past choice resurfacing in this shift (first that applies)
+    trails: [
+      {kind: 'stands', when: 'phase 1 built lean and a Skyward bank signed', doc: 'phase1', line: 'You built phase 1 lean: {lean} widebody stands for {need} widebodies.'},
+      {kind: 'birds', when: 'the bird radar skipped in the {radarYear} capital budget', doc: 'budget-2034', line: 'You skipped the bird radar.'}],
+    // the bill: margin-note lines, cause then effect
+    bill: {
+      held: 'You held London for the {from} passengers. On the {lateDays} or so late days a year that costs {holdCost} in Heathrow slots and keeps {kept} passengers off {rival}.',
+      letGo: 'You let London go without the {from} passengers. On the {lateDays} or so late days a year, {kept} people miss it and {rival} wins them.',
+      missed: '{missed} connecting passengers a year miss their flight, at {careCost} in passenger care.',
+      stands: 'Widebodies waiting for a stand cost {trailCost} a year in penalties.',
+      birds: 'The birds off the lakes cost {trailCost} a year in delays.',
+      growThree: '{partner} is adding a Frankfurt flight.',
+      growLondon: '{partner} wants to add Singapore.',
+      furious: '{partner} is furious, and is adding its next flight at {rival}.',
+      shrink: '{partner} is moving a flight to {rival}.',
+      declined: 'You declined {partner}. {rival} flies its passengers now, and an Indian city that wants London still changes planes in the Gulf.'},
+    // "What really happened", one per chapter (research/history-cards.md as written; 5 from research/dubai.md)
+    cards: {
+      1: {title: 'What really happened', text: 'Delhi\'s airport operator pays the Airports Authority of India 45.99% of its revenue, and Mumbai\'s pays 38.7%. Those bids won the concessions, and they are paid on every rupee for the whole term.',
+        sources: [{label: 'AERA consultation paper on DIAL, Table 6', url: 'https://www.aera.gov.in/uploads/consultations/17383225584994.pdf'},
+          {label: 'CRISIL rating rationale for MIAL, 20 Aug 2025', url: 'https://www.crisilratings.com/mnt/winshare/Ratings/RatingList/RatingDocs/MumbaiInternationalAirportLimited_August%2020_%202025_RR_371019.html'}]},
+      2: {title: 'What really happened', text: 'Bengaluru\'s airport, the third greenfield airport in India built as a public-private partnership, was finished 32 months after construction began in July 2005. It took nearly a decade before that to acquire the land. Its second terminal was due in March 2021. The domestic side opened in January 2023, and AERA\'s order traces part of the delay to the glass panels, the bamboo ceiling and the boarding bridges arriving late.',
+        sources: [{label: 'Kempegowda International Airport, Wikipedia', url: 'https://en.wikipedia.org/wiki/BIAL'},
+          {label: 'AERA order on BIAL, paras 5.2.12–5.2.15', url: 'https://aera.gov.in/uploads/airports/16466592165337.pdf'}]},
+      3: {title: 'What really happened', text: 'Bengaluru\'s new airport opened in May 2008: the first commercial flight landed on 23 May, and it launched officially the next day. It replaced the congested HAL airport overnight, so a whole city\'s flights moved in a single night.',
+        sources: [{label: 'Kempegowda International Airport, Wikipedia', url: 'https://en.wikipedia.org/wiki/BIAL'}]},
+      4: {title: 'What really happened', text: 'Since 1998, Atlanta has been the world\'s busiest airport by passengers, every year except 2020. It is Delta\'s main hub: Delta and its regional partners carry about 80% of its passengers, on just over 1,000 flights a day to 225 destinations. Atlanta is not a giant city. Its airport is busy because it is the place where the network connects.',
+        sources: [{label: 'Hartsfield–Jackson Atlanta International Airport, Wikipedia', url: 'https://en.wikipedia.org/wiki/Hartsfield%E2%80%93Jackson_Atlanta_International_Airport'}]},
+      5: {title: 'What really happened', text: 'In 1985 Dubai\'s government gave a new airline, Emirates, US$10 million and two leased aircraft; its first flight left Dubai for Karachi on 25 October that year. By 2024 Dubai International handled a record 92.3 million passengers, and India was its biggest market, at about 12 million.',
+        sources: [{label: 'Gulf News, "40 years of UAE: the launch of Emirates Airline"', url: 'https://gulfnews.com/news/uae/government/40-years-of-uae-the-launch-of-emirates-airline-1.920215'}, GULF_SRC]},
+      6: {title: 'What really happened', variants: {
+        airline: {text: '"On 17 April 2019, Jet Airways suspended all flight operations after lenders spurned an emergency funding request." Indian Oil had already stopped its fuel over unpaid dues.',
+          sources: [{label: 'Jet Airways, Wikipedia', url: 'https://en.wikipedia.org/wiki/Jet_Airways'}]},
+        airline2: {text: 'Go First filed for insolvency on 2 May 2023 and stopped flying the next day. It blamed engine supply problems: 28 of its aircraft were grounded.',
+          sources: [{label: 'Go First, Wikipedia', url: 'https://en.wikipedia.org/wiki/Go_First'}]},
+        pandemic: {text: 'After a 2023 arbitration award, which the Delhi High Court upheld in March 2025, Mumbai\'s airport was excused its fee to AAI from 13 March 2020 to 28 February 2022 (23.5 months), and its concession was extended by the same period.',
+          sources: [{label: 'Delhi High Court judgment OMP(COMM) 185/2024', url: 'https://delhihighcourt.nic.in/app/showFileJudgment/DIS07032025OMPCOMM1852024_184404.pdf'}]}}},
+      7: {title: 'What really happened', text: 'In FY2026, Delhi\'s airport earned more from shops, duty-free, property and parking (₹3,607 crore) than from airlines and passengers\' airport charges (₹3,011 crore). Under AERA\'s rules, 30% of that non-airline income is used to lower what airlines and passengers pay.',
+        sources: [{label: 'ICRA rating rationale for DIAL', url: 'https://www.icra.in/Rating/ShowRationalReportFilePdfViewer/145648'},
+          {label: 'AERA consultation paper, paras 3.1–3.5', url: 'https://www.aera.gov.in/uploads/consultations/59a940532d01fFinalCPNagurAirport1stSept17.pdf'}]}}
+  };
+  function fill(t, v) { return String(t).replace(/\{(\w+)\}/g, function (m, k) { return v[k] != null ? v[k] : m; }); }
+  function ch5Card(ch, variant) {   // a chapter's card, {title, text, sources}
+    var c = CH5_SCRIPT.cards[ch]; if (!c) return null;
+    if (c.variants) { var v = c.variants[variant] || c.variants.airline; return {title: c.title, text: v.text, sources: v.sources}; }
+    return {title: c.title, text: c.text, sources: c.sources};
+  }
   function ch5Fixture(opts) {
     ensure();
     opts = opts || {};
@@ -1348,16 +1426,15 @@
   function ch5FrontPage(state) {
     ensure();
     var eng = simulate(state.s, CH5.year - 1), last = eng.rows[eng.rows.length - 1], d = ch5Date(state, CH5.year);
-    var paxM = last ? Math.round(last.pax) : 0, lr = state.lastReport || {};
-    return {masthead: 'The Zero Mile Times', dateLine: d.words + ' · Nagpur', price: '₹12',
-      lead: 'DUBAI, DOHA OR NAGPUR? THE RACE FOR INDIA\'S TRAVELLERS',
-      deck: 'Skyward wants an Indian hub for its long-haul flights. Vikram Sarabhai International has the feeder flights. Dubai and Doha have the habit.',
-      sub: {head: 'Lucknow to London, one stop, on Indian soil',
-        body: CH5.feederAirline + ' now flies ' + CH5.feeders.length + ' cities into VSI in one afternoon bank. ' + state.parent + ' says the same passengers could walk across the pier to London, Singapore or Nairobi instead of changing in the Gulf. VSI handled ' + paxM + ' million passengers in ' + cal(CH5.year - 1) + '.'},
-      columns: [
-        {head: 'Where India changes planes', body: 'Dubai\'s airport handled about 12 million passengers to and from India in 2024, more than for any other country. Doha is close behind. Both want Skyward\'s flights.'},
-        {head: 'The banks are watching', body: (lr.cover != null ? 'In its hardest recent year VSI earned ' + coverWords(lr.cover).replace(' earned', '') + ' to its banks.' : 'VSI has no loan payments due.') + ' Its owners hold ' + state.stake + '%, worth about ' + cr(lr.stakeValueCr || 0) + ' on paper.'}],
-      photo: {kind: 'intl-pier', caption: 'The international pier at VSI: ' + (state.phase1 === 'big' ? CH5.stands.need : CH5.stands.lean) + ' stands built for the biggest aircraft.'},
+    var paxM = last ? Math.round(last.pax) : 0, lr = state.lastReport || {}, F = CH5_SCRIPT.frontPage;
+    var v = {feeder: CH5.feederAirline, cities: CH5.feeders.length, company: state.parent, paxM: paxM, lastYear: cal(CH5.year - 1),
+      coverLine: lr.cover != null ? 'In its hardest recent year VSI earned ' + coverWords(lr.cover).replace(' earned', '') + ' to its banks.' : 'VSI has no loan payments due.',
+      stake: state.stake, stakeValue: cr(lr.stakeValueCr || 0), stands: state.phase1 === 'big' ? CH5.stands.need : CH5.stands.lean};
+    return {masthead: F.masthead, dateLine: d.words + ' · Nagpur', price: F.price, lead: F.lead, deck: fill(F.deck, v),
+      sub: {head: F.sub.head, body: fill(F.sub.body, v)},
+      columns: F.columns.map(function (c) { return {head: c.head, body: fill(c.body, v)}; }),
+      photo: {kind: F.photo.kind, caption: fill(F.photo.caption, v)},
+      company: state.parent, founder: state.founder || 'Asha Rao', signature: state.founder || 'Asha Rao',
       sources: [GULF_SRC]};
   }
   function ch5Decision(state) {
@@ -1366,12 +1443,11 @@
     var lean = state.phase1 !== 'big', d = ch5Date(state, CH5.year);
     var standLine = lean ? 'Skyward\'s afternoon bank needs ' + CH5.stands.need + ' widebody stands at the international pier. Your phase 1 built ' + CH5.stands.lean + '; the other widebodies will wait on the taxiways.' :
       'Skyward\'s afternoon bank needs ' + CH5.stands.need + ' widebody stands at the international pier. Your phase 1 built ' + CH5.stands.need + '.';
+    var vv = {rival: CH5.rival, partner: CH5.partner, from: cal(CH5.banksFrom)};
     function slip(id) {
-      var c = by[id];
-      if (id === 'decline') return {big: 'No new connections', money: '₹0 a year', line: 'Skyward signs with ' + CH5.rival + ' instead. No risk to you, and Indian travellers keep changing planes in the Gulf.'};
-      return {big: '+' + c.day.toLocaleString('en-IN') + ' connections a day', money: cr(c.yearCr) + ' a year',
-        line: id === 'three' ? 'If the connections hold. Every passenger who misses one costs you passenger care, and the next flight may go to ' + CH5.rival + '.' :
-          'One route, less to go wrong. London alone earns half as much, and Singapore and Nairobi go to ' + CH5.rival + '.'};
+      var c = by[id], o = ch5Opt(id);
+      if (id === 'decline') return {big: 'No new connections', money: '₹0 a year', line: fill(o.line, vv)};
+      return {big: '+' + c.day.toLocaleString('en-IN') + ' connections a day', money: cr(c.yearCr) + ' a year', line: fill(o.line, vv)};
     }
     return {docType: 'route-agreement', docId: 'skyward-' + cal(CH5.year), title: 'Route agreement: ' + CH5.partner + ' at Vikram Sarabhai International', date: d.iso,
       parties: {airport: 'Vikram Sarabhai International Airport Limited (VSIAL)', airline: CH5.partner, signatory: CH5.signatory},
@@ -1380,10 +1456,7 @@
         'VSIAL undertakes that connecting passengers make their flights. When a feeder bank runs late, the duty manager may hold a departure, at VSIAL\'s cost.',
         standLine,
         'Each bank runs twice a day. VSIAL earns the passenger fee, the landing fee and what connecting passengers spend in the terminal.'],
-      choices: [
-        {id: 'three', label: 'Sign for banks to London, Singapore and Nairobi', terms: 'Three departures per bank, two banks a day, from ' + cal(CH5.banksFrom) + '.', slip: slip('three')},
-        {id: 'london', label: 'Sign for London only', terms: 'One London departure per bank, two banks a day, from ' + cal(CH5.banksFrom) + '.', slip: slip('london')},
-        {id: 'decline', label: 'Decline', terms: CH5.partner + ' takes its flights to ' + CH5.rival + '.', slip: slip('decline')}],
+      choices: CH5_SCRIPT.options.map(function (o) { return {id: o.id, label: o.label, terms: fill(o.terms, vv), slip: slip(o.id), effects: o.effects}; }),
       stamps: {three: 'SIGNED', london: 'SIGNED', decline: 'DECLINED'}};
   }
   function ch5ApplyDecision(state, choiceId) {
@@ -1404,8 +1477,8 @@
   function ch5Trail(state) {
     var c = state.ch5 && state.ch5.choice;
     // the stand shortage needs Skyward's widebodies
-    if (state.phase1 !== 'big' && c && c !== 'decline') { var p = ch5Doc(state, 'phase1'); return {id: 'stands', docId: 'phase1', tag: {doc: p ? p.title : 'Phase 1 choice', line: 'You built phase 1 lean: ' + CH5.stands.lean + ' widebody stands for ' + CH5.stands.need + ' widebodies.'}}; }
-    if (state.radar !== 'bought') { var b = ch5Doc(state, 'budget-2034'); return {id: 'birds', docId: 'budget-2034', tag: {doc: b ? b.title : 'Capital budget', line: 'You skipped the bird radar.'}}; }
+    if (state.phase1 !== 'big' && c && c !== 'decline') { var p = ch5Doc(state, 'phase1'); var sl = fill(CH5_SCRIPT.trails[0].line, {lean: CH5.stands.lean, need: CH5.stands.need}), sd = p ? p.title : 'Phase 1 choice'; return {kind: 'stands', doc: sd, line: sl, id: 'stands', docId: 'phase1', tag: {doc: sd, line: sl}}; }
+    if (state.radar !== 'bought') { var b = ch5Doc(state, 'budget-2034'); var bl = CH5_SCRIPT.trails[1].line, bdt = b ? b.title : 'Capital budget'; return {kind: 'birds', doc: bdt, line: bl, id: 'birds', docId: 'budget-2034', tag: {doc: bdt, line: bl}}; }
     return null;
   }
   function ch5ShiftPlan(state) {
@@ -1420,8 +1493,8 @@
     var H = CH5.hub, lostCr = H.pax * (r.perConnInr + r.careInr) / 1e7;
     var hub = dests.indexOf(H.dest) < 0 ? null : {id: 'feeder-late', from: H.from, code: H.code, flights: 2, lateMin: H.lateMin, dest: H.dest, pax: H.pax, holdMin: H.holdMin,
       holdCostCr: r.holdCostCr, letGoLostCr: lostCr,
-      holdLine: 'London leaves ' + H.holdMin + ' minutes late and misses its Heathrow slot: about ' + crs(r.holdCostCr) + '. The ' + H.pax + ' make it.',
-      letGoLine: 'London leaves on time. The ' + H.pax + ' miss it and ' + CH5.rival + ' wins them: about ' + crs(lostCr) + ' in passenger care and lost fees, and ' + CH5.partner + ' is furious.'};
+      holdLine: fill(CH5_SCRIPT.incident.hold, {holdMin: H.holdMin, holdCost: crs(r.holdCostCr), pax: H.pax}),
+      letGoLine: fill(CH5_SCRIPT.incident.go, {pax: H.pax, rival: CH5.rival, lostCost: crs(lostCr), partner: CH5.partner})};
     return {level: 3, year: CH5.year,
       feeder: {airline: CH5.feederAirline, cities: CH5.feeders.map(function (c) { return {code: c[1], name: c[0]}; }), from: CH5.feederFrom, to: CH5.feederTo, flights: CH5.feederFlights, paxEach: CH5.feederPaxEach},
       intl: intl,
@@ -1439,6 +1512,7 @@
     lines.push(tr && tr.id === 'stands' ? {text: CH5.stands.lean + ' widebody stands at the international pier for ' + CH5.stands.need + ' widebodies', docId: 'phase1'} :
       tr && tr.id === 'birds' ? {text: 'No bird radar: the lakes east of runway 3 are unwatched', docId: 'budget-2034'} :
       {text: 'Bird radar on, and a stand for every widebody', docId: 'budget-2034'});
+    lines.forEach(function (l) { var x = ch5Doc(state, l.docId); l.doc = x ? x.title : l.docId; });
     return {title: 'Duty manager\'s handover', date: d.iso, lines: lines,
       watch: plan.hub ? 'The ' + CH5.hub.from + ' flights. If they run late, ' + CH5.hub.pax + ' people miss London.' : 'The feeder bank: get every domestic connection made.',
       autoStartSec: 6};
@@ -1451,7 +1525,10 @@
     var choice = state.ch5.choice || 'decline', plan = ch5ShiftPlan(state), r = ch5Rates(CH5.banksFrom), days = P.p2a;
     var made = 0, missed = 0, bd = result.byDest || {};
     var dests = Object.keys(bd);
-    if (dests.length) dests.forEach(function (k) { made += bd[k].made || 0; missed += bd[k].missed || 0; });
+    // money comes from Skyward connections only: the international departures hub.js reports in byDest
+    // (the domestic transfers move passenger satisfaction below, not this income). Declined: none.
+    if (choice === 'decline') { made = 0; missed = 0; }
+    else if (dests.length) dests.forEach(function (k) { made += bd[k].made || 0; missed += bd[k].missed || 0; });
     else { made = result.made || 0; missed = result.missed || 0; }
     var H = plan.hub, held = !!(H && result.held && result.held[H.dest]);
     // the sample day without the late Lucknow flights, every bank of the year; the Lucknow call on the late days
@@ -1489,16 +1566,18 @@
     var y1 = cal(eraYears(4)[2]);
     // the margin note: cause and effect, in the adviser's hand
     var margin, routes = [];
-    if (choice === 'decline') margin = 'You declined ' + CH5.partner + '. ' + CH5.rival + ' flies its passengers now, and an Indian city that wants London still changes planes in the Gulf.';
+    var BL = CH5_SCRIPT.bill, mv = {from: H ? H.from : '', lateDays: CH5.lateDaysPerYear, holdCost: cr(holdCr), kept: H ? (H.pax * CH5.lateDaysPerYear).toLocaleString('en-IN') : '',
+      rival: CH5.rival, partner: CH5.partner, missed: Math.round(normMiss * perDay * days).toLocaleString('en-IN'), careCost: cr(normMiss * perDay * days * r.careInr / 1e7), trailCost: cr(trailCr)};
+    if (choice === 'decline') margin = fill(BL.declined, mv);
     else {
       var bits = [];
-      if (H && held) bits.push('You held London for the ' + H.from + ' passengers. On the ' + CH5.lateDaysPerYear + ' or so late days a year that costs ' + cr(holdCr) + ' in Heathrow slots and keeps ' + (H.pax * CH5.lateDaysPerYear).toLocaleString('en-IN') + ' passengers off ' + CH5.rival + '.');
-      else if (H) bits.push('You let London go without the ' + H.from + ' passengers. On the ' + CH5.lateDaysPerYear + ' or so late days a year, ' + (H.pax * CH5.lateDaysPerYear).toLocaleString('en-IN') + ' people miss it and ' + CH5.rival + ' wins them.');
-      if (trailCr >= 1) bits.push(tr.id === 'stands' ? 'Widebodies waiting for a stand cost ' + cr(trailCr) + ' a year in penalties.' : 'The birds off the lakes cost ' + cr(trailCr) + ' a year in delays.');
-      if (growth >= 0.05 && choice === 'three') { routes.push('Frankfurt'); bits.push(CH5.partner + ' is adding a Frankfurt flight.'); }
-      else if (growth >= 0.05) { routes.push('Singapore'); bits.push(CH5.partner + ' wants to add Singapore.'); }
-      else if (H && !held) bits.push(CH5.partner + ' is furious, and is adding its next flight at ' + CH5.rival + '.');
-      else if (growth < 0) bits.push(CH5.partner + ' is moving a flight to ' + CH5.rival + '.');
+      if (H) bits.push(fill(held ? BL.held : BL.letGo, mv));
+      if (normMiss * perDay * days * r.careInr / 1e7 >= 1) bits.push(fill(BL.missed, mv));
+      if (trailCr >= 1) bits.push(fill(tr.kind === 'stands' ? BL.stands : BL.birds, mv));
+      if (growth >= 0.05 && choice === 'three') { routes.push('Frankfurt'); bits.push(fill(BL.growThree, mv)); }
+      else if (growth >= 0.05) { routes.push('Singapore'); bits.push(fill(BL.growLondon, mv)); }
+      else if (H && !held) bits.push(fill(BL.furious, mv));
+      else if (growth < 0) bits.push(fill(BL.shrink, mv));
       margin = bits.join(' ');
     }
     var paragraph = choice === 'decline' ?
@@ -1512,15 +1591,13 @@
       cover: {ratio: rep.coverWorstExact == null ? null : Math.floor(rep.coverWorstExact * 100 + 1e-9) / 100, words: coverWords(rep.coverWorstExact), light: rep.light},
       stake: {pct: rep.stakePct, valueCr: rep.stakeValueCr},
       era: {earnedCr: Math.round(hubEarned), spentCr: Math.round(hubSpent), growthPct: Math.round(growth * 1000) / 10}};
-    var card = {title: 'What really happened',
-      text: 'In 1985 Dubai\'s government gave a new airline, Emirates, US$10 million and two leased aircraft; its first flight left for Karachi on 25 October. Emirates timed its flights so passengers could change planes in Dubai on the way between Europe, Asia and Africa. By 2024 Dubai International handled 92.3 million passengers, and India was its biggest market, at about 12 million.',
-      sources: [{label: 'Gulf News, "40 years of UAE: the launch of Emirates Airline"', url: 'https://gulfnews.com/news/uae/government/40-years-of-uae-the-launch-of-emirates-airline-1.920215'}, GULF_SRC]};
+    var card = ch5Card(5);
     st.ch5.result = {made: made, missed: missed, held: held, share: share, growth: growth};
     st.ch5.bill = bill;
     st.docs = (st.docs || []).concat([{id: 'report-' + y1, title: 'Annual report, ' + y1, year: eraYears(4)[2], kind: 'report', stamp: 'FILED', summary: margin || paragraph}]);
     return {state: st, bill: bill, card: card, report: rep};
   }
-  var ch5 = {fixture: ch5Fixture, frontPage: ch5FrontPage, decision: ch5Decision, applyDecision: ch5ApplyDecision, briefing: ch5Briefing,
+  var ch5 = {script: CH5_SCRIPT, card: ch5Card, fixture: ch5Fixture, frontPage: ch5FrontPage, decision: ch5Decision, applyDecision: ch5ApplyDecision, briefing: ch5Briefing,
     shiftPlan: ch5ShiftPlan, applyShift: ch5ApplyShift, rates: function (y) { var r = ch5Rates(y || CH5.year); return {perConnectionCr: r.perConnectionCr, missedCostCr: r.missedCostCr, holdCostCr: r.holdCostCr}; }};
 
   var API = {

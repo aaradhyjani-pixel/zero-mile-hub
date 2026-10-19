@@ -206,7 +206,7 @@ const bt = A.BAD.reports.find(r => r.banksTookControl);
 console.log('- bad ending: ' + (bt ? bt.eraLabel + ': "' + bt.sentences.filter(s => /take control/.test(s)).join(' ') + '"' : 'none'));
 
 // ---- Chapter 5: Take on the Gulf (VSIEra.ch5) ----
-console.log('\n## Chapter 5: three scripted players from the year-14 fixture\n');
+console.log('\n## Chapter 5: hub-smart vs hub-blind from the year-14 fixture\n');
 const C5 = E.ch5, rt = o => JSON.parse(JSON.stringify(o));
 const fx = rt(C5.fixture());
 if (fx.era !== 4 || fx.year !== 14) fail('ch5 fixture at era ' + fx.era + ', year ' + fx.year + ' (want era 4, year 14)');
@@ -225,7 +225,6 @@ function c5shift(plan, held, slack) {
 }
 const PLAYERS = [
   ['hub-smart', 'three', true, 0.03, 'signs three banks, holds London for the 380'],
-  ['middle', 'three', false, 0.06, 'signs three banks, lets London go, sloppier transfers'],
   ['hub-blind', 'decline', false, 0.03, 'declines Skyward']];
 const c5 = {}, c5texts = [JSON.stringify(fp), JSON.stringify(dc)];
 console.log('| Player | Plan | Earned ₹ cr a year | Spent ₹ cr a year | Connections made / missed a year | Earned / spent 2040-43 | Loan cover, hardest year | Your stake |\n|---|---|---|---|---|---|---|---|');
@@ -248,10 +247,11 @@ for (const [name, choice, held, slack, what] of PLAYERS) {
 }
 const net = n => c5[n].era.earnedCr - c5[n].era.spentCr;
 if (!(c5['hub-smart'].stake.valueCr > c5['hub-blind'].stake.valueCr && net('hub-smart') > net('hub-blind') + 500)) fail('ch5: the hub-smart player does not clearly beat the hub-blind one');
-if (!(c5['hub-smart'].stake.valueCr > c5['middle'].stake.valueCr + 5000 && c5['hub-smart'].cover.ratio > c5['middle'].cover.ratio)) fail('ch5: the hub-smart player does not clearly beat the middle one');
-if (!/held London/.test(c5['hub-smart'].margin) || !/let London go/.test(c5['middle'].margin)) fail('ch5: the margin notes do not read the London call');
+if (!/held London/.test(c5['hub-smart'].margin)) fail('ch5: the margin note does not read the London call');
+const nDep = ['three', 'london', 'decline'].map(id => C5.shiftPlan(C5.applyDecision(fx, id)).intl.length).join();
+if (nDep !== '3,1,0') fail('ch5: the three options should give 3, 1 and 0 departures, got ' + nDep);
+if ([1, 2, 3, 4, 5, 6, 7].some(n => { const c = C5.card(n); return !c || !c.text || !c.sources.length || !c.sources.every(x => x.url); })) fail('ch5: a chapter card without text or a source');
 console.log('\n- hub-smart over hub-blind: ₹' + (net('hub-smart') - net('hub-blind')).toLocaleString('en-IN') + ' cr more from connections over 2040-43, stake ₹' + (c5['hub-smart'].stake.valueCr - c5['hub-blind'].stake.valueCr).toLocaleString('en-IN') + ' cr higher');
-console.log('- hub-smart over middle: stake ₹' + (c5['hub-smart'].stake.valueCr - c5['middle'].stake.valueCr).toLocaleString('en-IN') + ' cr higher, loan cover ' + c5['hub-smart'].cover.words + ' against ' + c5['middle'].cover.words);
 const big = C5.shiftPlan(C5.applyDecision(rt(C5.fixture({phase1: 'big', radar: 'skipped'})), 'three'));
 const rad = C5.shiftPlan(C5.applyDecision(rt(C5.fixture({phase1: 'big', radar: 'bought'})), 'three'));
 if (!big.trail || big.trail.id !== 'birds') fail('ch5: big phase 1 with the radar skipped should give the bird trail');

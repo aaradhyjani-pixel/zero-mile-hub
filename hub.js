@@ -3190,7 +3190,7 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
   // Chapter 6: the letter from the banks (three replies). Refusing shows the banks' notice before it resolves (ZMMoney.letter).
   async letter(st,d){const Z=window.ZMMoney,E=CAMP.E(),dflt=FL.bot?(FL.bot.ch6||FL_BOT[FL.bot.mode].pick[6]):null;
     let nt=null;try{nt=E.ch6.notice?E.ch6.notice(st):null;}catch(e){}
-    const body=(d.body||[]).join(' '),circ=(body.match(/₹[\d,]+(?= earned)/)||[])[0]||null;
+    const body=(d.body||[]).join(' '),circ=(body.match(/₹[\d,]+(?= (?:earned )?for every)/)||[])[0]||null;   // '₹33 for every ₹100 due' (or the older '₹33 earned for every')
     const o=FL.who(st,Object.assign({},d,{from:{name:d.parties&&d.parties.from},signatory:d.parties&&d.parties.signatory,subject:'Fresh money for '+(st.parent||'the airport')+'\'s airport, '+(String(d.date||'').slice(0,4)),
       body,circle:circ,circleNote:circ?'the hardest year':null,replies:d.choices,stepIn:FL.stepInOpts(st,nt)}));
     const r=await FL.show('letter',d,()=>Z.letter?Z.letter(o):Z.decision(FL.who(st,d)),dflt?{choice:dflt}:null);

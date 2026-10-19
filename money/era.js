@@ -815,6 +815,7 @@
     o = o || {};
     var bid = o.bid || {type: 'share', value: 15};
     var g = o.gearing != null ? o.gearing : 70; if (g > 1) g /= 100;
+    g = Math.min(0.75, Math.max(0.60, g));   // the player borrows 60–75%; the banks' own sizing for 1C/1D and phase 2 is separate
     var sl = o.state_loan != null ? o.state_loan : o.stateLoan;   // onboarding hands back stateLoan
     return {gearing: g, phase1: o.phase1 === 'big' ? 'big' : 'lean', state_loan: sl !== false, defer_state_loan: o.defer_state_loan !== false,
       lender: P.lenders[o.lender] ? o.lender : 'banks', construction: null, ac_year: null,

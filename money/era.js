@@ -812,7 +812,7 @@
     ensure();
     var L = P.vsi_stages['1A_lean'], B = P.vsi_stages['1A_big'];
     return {def: 'lean', options: [
-      {id: 'lean', label: L.cap + ' million passengers a year', small: 'build more when Mumbai and Delhi move in', capexCr: L.cost},
+      {id: 'lean', label: L.cap + ' million passengers a year', small: 'build more when Mumbai’s widebodies and Delhi’s banks arrive', capexCr: L.cost},
       {id: 'big', label: B.cap + ' million passengers a year', small: 'build more now: ' + cr(B.cost - L.cost) + ' more up front', capexCr: B.cost}]};
   }
   function stateLoanOpt() {
@@ -920,7 +920,7 @@
     var disX = sum('dis'), opening = sum('opening');
     if (worst != null && worst < P.thr.warning) {
       var why = [];
-      if (eng.plans.some(function (p) { return p.carried > 1 && p.t0 + 1 <= ys[2] && p.t0 + p.n >= ys[1]; })) why.push('AERA is holding back part of your fees while your new Mumbai and Delhi terminals open');
+      if (eng.plans.some(function (p) { return p.carried > 1 && p.t0 + 1 <= ys[2] && p.t0 + p.n >= ys[1]; })) why.push('AERA is holding back part of your fees while the new terminals for the Mumbai and Delhi flights open');
       if (opening > 1) why.push('opening new capacity cost ' + cr(opening) + ' before its passengers arrived');
       if (disX > 1 && opsE.dis > base.dis) why.push('delays and missed connections cost ' + cr(disX) + ' in penalties to airlines and passenger care');
       if (opsE.star < 0) why.push('airlines are adding flights elsewhere because yours leave late');
@@ -1043,7 +1043,7 @@
     var stance = stanceAt(s, nextStart);
     var hold = (nextStart <= 14 && nextStart + 5 > 10);
     var aera = {title: 'AERA tariff order, ' + (2025 + Math.max(cpNext, nextStart)) + ' onward',
-      text: hold ? 'AERA plans to hold back part of your passenger fees while the Mumbai and Delhi terminals open, and pay it back later with interest. It is fair over time, but the banks see thinner years now.' :
+      text: hold ? 'AERA plans to hold back part of your passenger fees while the new terminals for the Mumbai and Delhi flights open, and pay it back later with interest. It is fair over time, but the banks see thinner years now.' :
         'AERA sets your passenger fees for the next five years from what you have built and a fair return. Anything it under-pays now comes back later with interest.',
       canAppeal: true,
       appealText: 'Fight for fees now. AERA may then disallow part of your building costs, freeze fees for five years, and airlines will grow more slowly.'};
@@ -1159,17 +1159,22 @@
       return 'The airport opens ' + months + ' months late, in ' + monthName(addMonths(opensOn, months)) + ': about ' + cr(lost) + ' less earned in its first three years' +
         (extra >= 5 ? ', and the shareholders put in about ' + cr(extra) + ' more (your share ' + share(extra) + ') to pay the loan interest while it is shut.' : '.');
     }
+    function slipNumbers(id) {   // the adviser's light once a slip is ticked: the first open year's cover on the bank's forecast
+      var ch = {}; ch[id] = 'slip';
+      var f = conRun(state, ch).first;
+      return f ? {light: lightOf(f.dscr), coverWords: coverWords(f.dscr) + ' in the first year open, in the banks\' forecast'} : undefined;
+    }
     var mp = C.monsoon.pay_cr * pr(C.monsoon.year - 1), op = C.overrun.pay_cr * pr(C.overrun.year - 1), tp = C.trials.full_cr * pr(C.trials.year - 1);
     var sh = conRun(state, {trials: 'short'}), shortCost = sh.dis - base.dis;
     var events = [
       {id: 'monsoon', year: C.monsoon.year, title: 'The monsoon floods the runway site',
         text: 'Three weeks of rain have filled the earthworks for runway 2. The contractor can pump it dry and work nights, or wait for the dry season.',
         options: [{id: 'pay', label: 'Pay for pumps and night shifts', effect: 'The shareholders put in ' + cr(mp) + ' now (your share ' + share(mp) + '), and the airport opens on time.'},
-          {id: 'slip', label: 'Wait for the dry season', effect: slipEffect('monsoon', C.monsoon.slip_months)}]},
+          {id: 'slip', label: 'Wait for the dry season', effect: slipEffect('monsoon', C.monsoon.slip_months), slipMonths: C.monsoon.slip_months, numbers: slipNumbers('monsoon')}]},
       {id: 'overrun', year: C.overrun.year, title: 'The Hall roof steel costs more than the contract',
         text: 'Steel prices have risen and the roof contractor wants more money to keep its crews on site. If you also waited out the monsoon, the two delays add up to ' + (C.monsoon.slip_months + C.overrun.slip_months) + ' months.',
         options: [{id: 'pay', label: 'Pay the contractor now', effect: 'The shareholders put in ' + cr(op) + ' now (your share ' + share(op) + '); the airport opens on time and earns it back through its fees over the years.'},
-          {id: 'slip', label: 'Renegotiate and slip', effect: slipEffect('overrun', C.overrun.slip_months)}]},
+          {id: 'slip', label: 'Renegotiate and slip', effect: slipEffect('overrun', C.overrun.slip_months), slipMonths: C.overrun.slip_months, numbers: slipNumbers('overrun')}]},
       {id: 'trials', year: C.trials.year, title: 'Trial operations before opening day',
         text: 'Before the licence, airlines, ground staff and volunteers rehearse check-in, baggage, gates and emergencies with real aircraft.',
         options: [{id: 'full', label: 'Full trials, three months', effect: 'Costs ' + cr(tp) + ' (your share ' + share(tp) + '), and opening day runs as rehearsed.'},

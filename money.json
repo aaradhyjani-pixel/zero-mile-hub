@@ -1,0 +1,1548 @@
+{
+ "_meta": {
+  "value": "Zero Mile International money constants",
+  "unit": "-",
+  "source": "research/money.md",
+  "period": "compiled 2026-10-19",
+  "estimate": false,
+  "note": "Every number the game uses. 1 crore = 1e7 INR, 1 lakh = 1e5 INR. Values are real (2025-26 rupees) unless estimate:true. The only scaling is in section 'game'. All aero tariffs exclude GST."
+ },
+ "aero": {
+  "landing_dom_narrow_per_t": {
+   "value": 347,
+   "unit": "INR per tonne MTOW per landing",
+   "source": "https://www.aera.gov.in/uploads/airports/17431676123962.pdf (Order 20/2024-25, Annexure 1A, p.419)",
+   "period": "DIAL CP4, 2025-04-16 to 2029-03-31",
+   "estimate": false,
+   "note": "No MTOW slabs in any current DEL/BOM/BLR order: DIAL splits narrow (ICAO Code A/B/C) vs wide (D/E/F). ZMI uses the DIAL card as its opening rack rate."
+  },
+  "landing_dom_wide_per_t": {
+   "value": 564,
+   "unit": "INR per tonne MTOW per landing",
+   "source": "https://www.aera.gov.in/uploads/airports/17431676123962.pdf p.419",
+   "period": "DIAL CP4, 2025-04-16 to 2029-03-31",
+   "estimate": false
+  },
+  "landing_intl_narrow_per_t": {
+   "value": 570,
+   "unit": "INR per tonne MTOW per landing",
+   "source": "https://www.aera.gov.in/uploads/airports/17431676123962.pdf p.419",
+   "period": "DIAL CP4, 2025-04-16 to 2029-03-31",
+   "estimate": false
+  },
+  "landing_intl_wide_per_t": {
+   "value": 785,
+   "unit": "INR per tonne MTOW per landing",
+   "source": "https://www.aera.gov.in/uploads/airports/17431676123962.pdf p.419",
+   "period": "DIAL CP4, 2025-04-16 to 2029-03-31",
+   "estimate": false,
+   "note": "A380 is Code F, so wide rate applies."
+  },
+  "landing_min_per_landing": {
+   "value": 8000,
+   "unit": "INR per landing",
+   "source": "https://www.aera.gov.in/uploads/airports/17431676123962.pdf p.419",
+   "period": "DIAL CP4",
+   "estimate": false,
+   "note": "Billed on next rounded-up tonne. Domestic scheduled aircraft under 80 seats exempt."
+  },
+  "landing_mial_dom_intl_per_t": {
+   "value": {
+    "dom": 402,
+    "intl": 603
+   },
+   "unit": "INR per tonne MTOW per landing",
+   "source": "https://www.aera.gov.in/uploads/airports/17466350622028.pdf (Order 01/2025-26, p.501)",
+   "period": "MIAL CP4, 2025-05-16 to 2029-03-31",
+   "estimate": false,
+   "note": "Flat, no slabs, no wide/narrow split. Reference only."
+  },
+  "landing_bial_dom_intl_per_t": {
+   "value": {
+    "dom": 442,
+    "intl": 652
+   },
+   "unit": "INR per tonne MTOW per landing",
+   "source": "https://www.aera.gov.in/uploads/airports/17872763073873.pdf (Order 14/2026-27, p.618)",
+   "period": "BIAL CP4, 2026-09-01 to 2030-04-30",
+   "estimate": false,
+   "note": "Falls to 295/374 from 2030-05-01. BIAL bills on nearest tonne. Reference only."
+  },
+  "parking_contact_per_t_hr": {
+   "value": 36,
+   "unit": "INR per tonne MTOW per hour",
+   "source": "https://www.aera.gov.in/uploads/airports/17431676123962.pdf p.420",
+   "period": "DIAL CP4",
+   "estimate": false,
+   "note": "Same for <100 t and >=100 t."
+  },
+  "parking_remote_per_t_hr": {
+   "value": 18,
+   "unit": "INR per tonne MTOW per hour",
+   "source": "https://www.aera.gov.in/uploads/airports/17431676123962.pdf p.420",
+   "period": "DIAL CP4",
+   "estimate": false
+  },
+  "parking_free_minutes": {
+   "value": 150,
+   "unit": "minutes",
+   "source": "https://www.aera.gov.in/uploads/airports/17431676123962.pdf p.420",
+   "period": "DIAL CP4",
+   "estimate": false,
+   "note": "2 h free + 15 min taxi-in + 15 min taxi-out. MIAL: 2 h on-blocks to off-blocks, no taxi allowance."
+  },
+  "parking_multipliers": {
+   "value": {
+    "0_4h": 1,
+    "4_12h": 2,
+    "12_24h": 4,
+    "over_24h": 5
+   },
+   "unit": "x base rate, hours after free period",
+   "source": "https://www.aera.gov.in/uploads/airports/17431676123962.pdf p.420",
+   "period": "DIAL CP4",
+   "estimate": false,
+   "note": "Part hours round up."
+  },
+  "udf_dom_dep": {
+   "value": 129,
+   "unit": "INR per embarking passenger",
+   "source": "https://www.aera.gov.in/uploads/airports/17431676123962.pdf p.421",
+   "period": "DIAL CP4, tickets issued from 2025-04-16",
+   "estimate": false
+  },
+  "udf_dom_arr": {
+   "value": 56,
+   "unit": "INR per disembarking passenger",
+   "source": "https://www.aera.gov.in/uploads/airports/17431676123962.pdf p.421",
+   "period": "DIAL CP4",
+   "estimate": false
+  },
+  "udf_intl_eco_dep": {
+   "value": 650,
+   "unit": "INR per embarking passenger",
+   "source": "https://www.aera.gov.in/uploads/airports/17431676123962.pdf p.421",
+   "period": "DIAL CP4",
+   "estimate": false
+  },
+  "udf_intl_eco_arr": {
+   "value": 275,
+   "unit": "INR per disembarking passenger",
+   "source": "https://www.aera.gov.in/uploads/airports/17431676123962.pdf p.421",
+   "period": "DIAL CP4",
+   "estimate": false
+  },
+  "udf_intl_biz_dep": {
+   "value": 810,
+   "unit": "INR per embarking passenger",
+   "source": "https://www.aera.gov.in/uploads/airports/17431676123962.pdf p.421",
+   "period": "DIAL CP4",
+   "estimate": false
+  },
+  "udf_intl_biz_arr": {
+   "value": 345,
+   "unit": "INR per disembarking passenger",
+   "source": "https://www.aera.gov.in/uploads/airports/17431676123962.pdf p.421",
+   "period": "DIAL CP4",
+   "estimate": false,
+   "note": "Exempt: transit within 24 h on same ticket, children under 2, crew on duty, diplomats, armed forces (p.422)."
+  },
+  "udf_mial": {
+   "value": {
+    "dom_dep": 175,
+    "dom_arr": 75,
+    "intl_eco_dep": 615,
+    "intl_eco_arr": 260,
+    "intl_biz_dep": 695,
+    "intl_biz_arr": 304
+   },
+   "unit": "INR per passenger",
+   "source": "https://www.aera.gov.in/uploads/airports/17466350622028.pdf p.502",
+   "period": "MIAL CP4, from 2025-05-16",
+   "estimate": false
+  },
+  "udf_bial": {
+   "value": {
+    "dom_dep": 300,
+    "dom_arr": 125,
+    "intl_dep": 997,
+    "intl_arr": 426
+   },
+   "unit": "INR per passenger",
+   "source": "https://www.aera.gov.in/uploads/airports/17872763073873.pdf pp.619-620",
+   "period": "BIAL CP4, 2026-09-01 to 2030-04-30",
+   "estimate": false
+  },
+  "udf_greenfield_opening_nmia": {
+   "value": {
+    "dom_dep": 620,
+    "intl_dep": 1225
+   },
+   "unit": "INR per departing passenger",
+   "source": "https://www.business-standard.com/industry/aviation/navi-mumbai-airport-rs-57000-cr-capex-aera-approves-interim-udf-125062301003_1.html",
+   "period": "NMIA ad-hoc AERA order 2025-06-20; kept in CP1 order effective 2026-06-01",
+   "estimate": false,
+   "note": "Greenfield precedent: a new airport's UDF opens far above a mature one's. ZMI era-1 UDF starts here."
+  },
+  "dial_aero_revenue_fy26_cr": {
+   "value": {
+    "total": 2981.52,
+    "landing_dom": 523.55,
+    "landing_intl": 847.02,
+    "parking": 136.31,
+    "udf": 1269.91,
+    "xray": 183.55,
+    "other": 21.17
+   },
+   "unit": "INR crore",
+   "source": "https://www.aera.gov.in/uploads/airports/17431676123962.pdf Table 349 p.414",
+   "period": "FY2025-26 AERA projection",
+   "estimate": false,
+   "note": "Landing 46%, UDF 43%, parking 4.6%."
+  },
+  "dial_yield_per_departing_pax": {
+   "value": 432.14,
+   "unit": "INR per departing passenger (PV basis)",
+   "source": "https://www.aera.gov.in/uploads/airports/17431676123962.pdf Table 348 p.413",
+   "period": "CP4 FY2025-29",
+   "estimate": false,
+   "note": "PV target revenue Rs 9,579.45 cr / 221.68 m departing pax. Total-traffic yield Rs 216.07."
+  },
+  "dial_yield_nominal_per_pax": {
+   "value": {
+    "cp3": 145,
+    "cp4": 360
+   },
+   "unit": "INR per passenger",
+   "source": "https://nsearchives.nseindia.com/corporate/GMRINFRA_29032025210341_29032025PRESS_RELEASE.pdf",
+   "period": "CP3 vs CP4 (order 2025-03-28)",
+   "estimate": false,
+   "note": "About +148%. TDSAT allowed DIAL's appeal (GMR filing 2026-09-20, https://nsearchives.nseindia.com/corporate/GMRINFRA_20092026204537_20092026-DIALTDSATORDER.pdf), so CP4 may be revised upward."
+  },
+  "mtow_t": {
+   "value": {
+    "A320neo": 79,
+    "B737MAX8": 82.6,
+    "A321neo": 97,
+    "B787_9": 259.2,
+    "A350_900": 283,
+    "B777_300ER": 351.5,
+    "B747_8I": 447.7,
+    "A380": 575
+   },
+   "unit": "tonnes MTOW",
+   "source": "https://aircraft.airbus.com/en/aircraft/a320-the-most-successful-aircraft-family-ever/a320neo ; https://www.boeing.com/commercial/787 ; https://www.boeing.com/commercial/777 ; https://en.wikipedia.org/wiki/List_of_airliners_by_maximum_takeoff_weight",
+   "period": "current production",
+   "estimate": false,
+   "note": "A321neo, A350, A380, 747-8I are secondary (Wikipedia). Legacy 787-9 airframes 254.7 t."
+  },
+  "example_landing_fee": {
+   "value": {
+    "A320neo_dom": 27413,
+    "B777_300ER_intl": 276320,
+    "A380_intl": 451375,
+    "A320neo_contact_1h": 2844
+   },
+   "unit": "INR per movement",
+   "source": "derived from https://www.aera.gov.in/uploads/airports/17431676123962.pdf pp.419-420",
+   "period": "CP4",
+   "estimate": true,
+   "note": "Arithmetic on the DIAL card and max MTOW; actual CoA MTOW may be lower."
+  }
+ },
+ "till": {
+  "hybrid_till_nar_share": {
+   "value": 0.3,
+   "unit": "fraction of non-aero revenue deducted from aero revenue requirement",
+   "source": "https://www.aera.gov.in/uploads/consultations/59a940532d01fFinalCPNagurAirport1stSept17.pdf paras 3.1-3.5",
+   "period": "AERA Order 14/2016-17 (2017-01-12) onward",
+   "estimate": false,
+   "note": "ARR = FRoR x RAB + D + O + T - 0.30 x NAR. DIAL/MIAL SSA: S = 30% of revenue-share-asset revenue. Before 2017: single till (1.0). Unverified Jul-2026 report of a move back toward single till: use only as a possible future shock."
+  },
+  "single_till_nar_share_pre2017": {
+   "value": 1.0,
+   "unit": "fraction",
+   "source": "https://www.aera.gov.in/uploads/consultations/59a940532d01fFinalCPNagurAirport1stSept17.pdf para 3.1",
+   "period": "2011-2017",
+   "estimate": false
+  },
+  "control_period_years": {
+   "value": 5,
+   "unit": "years",
+   "source": "https://www.aera.gov.in/uploads/consultations/17383225584994.pdf ; https://prsindia.org/theprsblog/understanding-the-aera-amendment-bill-2019",
+   "period": "AERA Act 2008 s.13; DIAL CP4 FY2025-29",
+   "estimate": false,
+   "note": "Mid-period review allowed in public interest (s.13(2)). Major airport = more than 35 lakh pax/yr."
+  },
+  "fair_return_on_equity": {
+   "value": 15.41,
+   "unit": "% nominal post-tax cost of equity",
+   "source": "https://www.aera.gov.in/uploads/consultations/17383225584994.pdf paras 7.2.3, Table 238",
+   "period": "DIAL CP4 consultation (2025-01-31)",
+   "estimate": false,
+   "note": "Range in AERA practice: 15.17% (HYD CP3, upheld by TDSAT 2024) to 16% (DIAL CP1/CP2)."
+  },
+  "fair_return_range": {
+   "value": {
+    "low": 15.17,
+    "high": 16.0
+   },
+   "unit": "% cost of equity",
+   "source": "https://indiankanoon.org/doc/32317059/ ; https://www.aera.gov.in/uploads/consultations/17383225584994.pdf",
+   "period": "2011-2025",
+   "estimate": false
+  },
+  "wacc_dial_cp4": {
+   "value": 12.89,
+   "unit": "% WACC (fair rate of return on RAB)",
+   "source": "https://www.aera.gov.in/uploads/consultations/17383225584994.pdf Table 238",
+   "period": "DIAL CP4 consultation",
+   "estimate": false,
+   "note": "0.52 x 15.41 + 0.48 x 10.15. Notional gearing 48:52 D:E."
+  },
+  "efficient_cost_of_debt": {
+   "value": 10.15,
+   "unit": "% (SBI 1-yr MCLR 8.65% + 150 bps)",
+   "source": "https://www.aera.gov.in/uploads/consultations/17383225584994.pdf paras 7.2.7-7.2.10",
+   "period": "DIAL CP4",
+   "estimate": false,
+   "note": "True-up uses lower of actual or MCLR+150 bps. Spread tied to AA- rating."
+  },
+  "dial_rab_fy25_cr": {
+   "value": 14072.69,
+   "unit": "INR crore average RAB",
+   "source": "https://www.aera.gov.in/uploads/consultations/17383225584994.pdf Table 234/318",
+   "period": "FY2025",
+   "estimate": false,
+   "note": "Falls to 13,258.93 (FY28), 13,407.24 (FY29). Benchmark for ZMI's AERA order screen."
+  },
+  "dial_target_revenue_cp4_cr": {
+   "value": 13655.41,
+   "unit": "INR crore over 5 years (after true-up)",
+   "source": "https://www.aera.gov.in/uploads/consultations/17383225584994.pdf Table 318",
+   "period": "CP4 consultation",
+   "estimate": false,
+   "note": "DIAL asked Rs 41,921 cr. True-up of CP3 = -852.04 cr (over-recovery refunded)."
+  },
+  "uncapitalised_project_penalty": {
+   "value": 0.01,
+   "unit": "fraction of project cost deducted",
+   "source": "https://www.aera.gov.in/uploads/consultations/17383225584994.pdf para 6.4.3",
+   "period": "CP4 proposal",
+   "estimate": false,
+   "note": "AERA deducts 1% of cost for projects not capitalised on time."
+  },
+  "sq_rebate_max_of_arr": {
+   "value": 0.05,
+   "unit": "fraction of projected ARR",
+   "source": "https://aera.gov.in/uploads/topics/17555315227226.pdf s.8.2",
+   "period": "AERA CP 03/2025-26 (draft, Aug 2025)",
+   "estimate": false,
+   "note": "Up from 4% today (1.5 obj + 2.5 subj) to 5% (4 obj + 1 subj). 0.25% per parameter group missed per month. Recovered via lower UDF in the next-but-one half-year. Draft, no final order as of Oct 2026."
+  },
+  "sq_incentive_max": {
+   "value": 0.0125,
+   "unit": "fraction",
+   "source": "https://aera.gov.in/uploads/topics/17555315227226.pdf s.8.3-8.4",
+   "period": "draft Aug 2025",
+   "estimate": false,
+   "note": "Offsets only rebates for parameters missed in <3 of 6 months; carries forward 6 months then expires."
+  },
+  "sq_targets": {
+   "value": {
+    "security_wait_min_p95": 10,
+    "checkin_wait_min_p95": 20,
+    "first_bag_min": 15,
+    "last_bag_min_codeC": 35,
+    "last_bag_min_codeE": 45,
+    "uptime_pct": 98,
+    "bridge_pct": 90
+   },
+   "unit": "SLA targets",
+   "source": "https://aera.gov.in/uploads/topics/17555315227226.pdf Annexure 13.1",
+   "period": "draft Aug 2025",
+   "estimate": false
+  }
+ },
+ "nonaero": {
+  "del_per_pax_fy25": {
+   "value": 417,
+   "unit": "INR per passenger",
+   "source": "https://www.crisilratings.com/mnt/winshare/Ratings/RatingList/RatingDocs/DelhiInternationalAirportLimited_August%2005_%202025_RR_374914.html",
+   "period": "FY2025",
+   "estimate": false,
+   "note": "Rs 3,301 cr / 79.3 m pax (ICRA confirms 3,301)."
+  },
+  "del_lines_per_pax_fy25": {
+   "value": {
+    "retail": 116,
+    "fnb": 42,
+    "advertising": 29
+   },
+   "unit": "INR per passenger",
+   "source": "https://moodiedavittreport.com/food-beverage-a-star-performer-as-gmr-airports-reports-strong-fy2024-25-results",
+   "period": "FY2025",
+   "estimate": true,
+   "note": "Derived: retail INR 9.2 bn, F&B 3.3 bn, advertising 2.3 bn / 79.3 m pax."
+  },
+  "hyd_per_pax_fy25": {
+   "value": 214,
+   "unit": "INR per passenger",
+   "source": "https://moodiedavittreport.com/food-beverage-a-star-performer-as-gmr-airports-reports-strong-fy2024-25-results",
+   "period": "FY2025",
+   "estimate": true,
+   "note": "Derived: INR 6.3 bn / 29.5 m. Lines ~ retail 68, F&B 44, parking 27, advertising 27 (attribution from context)."
+  },
+  "blr_per_pax_fy25": {
+   "value": 246,
+   "unit": "INR per passenger",
+   "source": "https://www.crisil.com/mnt/winshare/Ratings/RatingList/RatingDocs/BangaloreInternationalAirportLimited_April%2029_%202025_RR_366830.html",
+   "period": "FY2025",
+   "estimate": true,
+   "note": "Derived: Rs 1,029 cr / 41.88 m pax."
+  },
+  "bom_per_pax_fy25": {
+   "value": 515,
+   "unit": "INR per passenger",
+   "source": "https://www.crisilratings.com/mnt/winshare/Ratings/RatingList/RatingDocs/MumbaiInternationalAirportLimited_August%2020_%202025_RR_371019.html",
+   "period": "FY2025",
+   "estimate": true,
+   "note": "Derived: 62% x Rs 4,571 cr / 55 m. MIAL counts cargo, ground handling, rentals as non-aero."
+  },
+  "adani_network_per_pax_fy26": {
+   "value": 672,
+   "unit": "INR per passenger",
+   "source": "https://moodiedavittreport.com/adani-airports-buoyed-by-strong-commercial-performance-in-financial-year/",
+   "period": "FY2026",
+   "estimate": false,
+   "note": "Ceiling reference for a mature commercial hub."
+  },
+  "dutyfree_spp": {
+   "value": {
+    "DEL_9MFY25": 1026,
+    "HYD_9MFY25": 784
+   },
+   "unit": "INR per passenger (GMR SPP basis, likely intl departing)",
+   "source": "https://moodiedavittreport.com/?p=438451",
+   "period": "Apr-Dec 2024",
+   "estimate": false,
+   "note": "Full-year FY25 figures (1,010 / 727) could not be verified."
+  },
+  "zmi_per_pax_start": {
+   "value": 250,
+   "unit": "INR per passenger (all pax)",
+   "source": "https://www.crisil.com/mnt/winshare/Ratings/RatingList/RatingDocs/BangaloreInternationalAirportLimited_April%2029_%202025_RR_366830.html",
+   "period": "concession era 1-2, 2025-26 rupees",
+   "estimate": true,
+   "note": "Anchored on HYD ~214 and BLR ~246: new hub, low intl mix."
+  },
+  "zmi_per_pax_mature": {
+   "value": 450,
+   "unit": "INR per passenger (all pax)",
+   "source": "https://www.crisilratings.com/mnt/winshare/Ratings/RatingList/RatingDocs/DelhiInternationalAirportLimited_August%2005_%202025_RR_374914.html",
+   "period": "era 4+ with intl >= 20% and duty-free mature",
+   "estimate": true,
+   "note": "Between DEL 417 and BOM ~515; Adani network 672 shows headroom."
+  },
+  "zmi_mix_share": {
+   "value": {
+    "duty_free": 0.32,
+    "retail": 0.25,
+    "fnb": 0.15,
+    "advertising": 0.1,
+    "car_parking": 0.12,
+    "other": 0.06
+   },
+   "unit": "fraction of non-aero",
+   "source": "https://moodiedavittreport.com/food-beverage-a-star-performer-as-gmr-airports-reports-strong-fy2024-25-results",
+   "period": "game split",
+   "estimate": true,
+   "note": "From DEL/HYD line items (retail ~28%, F&B ~10-20%, advertising ~7-13%, parking ~13% at HYD); duty-free share assumed."
+  },
+  "zmi_per_pax_start_by_category": {
+   "value": {
+    "duty_free": 80,
+    "retail": 62,
+    "fnb": 38,
+    "advertising": 25,
+    "car_parking": 30,
+    "other": 15
+   },
+   "unit": "INR per passenger",
+   "source": "https://moodiedavittreport.com/food-beverage-a-star-performer-as-gmr-airports-reports-strong-fy2024-25-results",
+   "period": "era 1",
+   "estimate": true,
+   "note": "250 x zmi_mix_share, rounded."
+  },
+  "dwell_elasticity": {
+   "value": {
+    "total": 0.5,
+    "fnb": 0.8,
+    "retail": 0.6
+   },
+   "unit": "% change per 1% change in dwell time",
+   "source": "https://ideas.repec.org/a/eee/jaitra/v118y2024ics0969699724000851.html",
+   "period": "Wu, Morlotti & Mantin, JATM 118 (2024), 89 US airports",
+   "estimate": false,
+   "note": "Holds at linear and finger-pier terminals, not concourse airports."
+  },
+  "delay_spend_shape": {
+   "value": "inverted-U",
+   "unit": "qualitative",
+   "source": "https://ideas.repec.org/a/eee/joreco/v66y2022ics0969698922000066.html",
+   "period": "Choi & Park, JRCS 66 (2022), Incheon",
+   "estimate": false,
+   "note": "Delay raises spend up to a point, excessive delay cuts it. No threshold published."
+  },
+  "delay_spend_peak_min": {
+   "value": 60,
+   "unit": "minutes of delay at which spend uplift peaks",
+   "source": "https://ideas.repec.org/a/eee/joreco/v66y2022ics0969698922000066.html",
+   "period": "game",
+   "estimate": true,
+   "note": "No published threshold; 60 min chosen. Below it calm extra dwell adds spend; above it stress removes it, and a misconnect/cancel drops spend to ~0."
+  },
+  "delay_proximity": {
+   "value": {
+    "shops_s_per_10min": 20,
+    "dining_s_per_10min": 8
+   },
+   "unit": "seconds near outlets per 10 min of delay",
+   "source": "https://aisel.aisnet.org/treos_amcis2024/39",
+   "period": "Katona, Lu, Luo & Phan, AMCIS 2024 (preliminary)",
+   "estimate": false,
+   "note": "Proximity, not spend. Most delay time does not become shopping."
+  },
+  "satisfied_pax_shop_ratio": {
+   "value": 2.0,
+   "unit": "x likelihood to shop (most vs average satisfied)",
+   "source": "https://moodiedavittreport.com/dwell-time-choice-and-value-key-to-driving-commercial-says-dkma-survey",
+   "period": "DKMA 2013, ~30,000 pax, 15 airports",
+   "estimate": false,
+   "note": "Also +7% retail, +10% duty-free spend. Industry survey, not peer-reviewed."
+  },
+  "transfer_vs_od_spend": {
+   "value": 0.75,
+   "unit": "ratio transfer / O&D non-aero per pax",
+   "source": "https://ideas.repec.org/a/eee/joreco/v66y2022ics0969698922000066.html",
+   "period": "game",
+   "estimate": true,
+   "note": "No primary figure. Transfers generate no parking or landside spend (~13% parking at HYD). Range 0.6 (tight D-D) to 0.9 (3h+ I-I)."
+  },
+  "del_transfer_share": {
+   "value": 0.26,
+   "unit": "fraction of pax",
+   "source": "https://infrastructuretoday.co.in/delhi-airport-becomes-asias-fastest-growing-transit-hub-after-244-surge-in-international-transfers/",
+   "period": "FY2025",
+   "estimate": false,
+   "note": "20.3 m of 79.3 m. ~27% in May 2026."
+  },
+  "land_bank_acres": {
+   "value": {
+    "DEL": 230,
+    "BLR": 400
+   },
+   "unit": "acres developable",
+   "source": "https://www.crisilratings.com/mnt/winshare/Ratings/RatingList/RatingDocs/DelhiInternationalAirportLimited_August%2005_%202025_RR_374914.html ; https://www.crisil.com/mnt/winshare/Ratings/RatingList/RatingDocs/BangaloreInternationalAirportLimited_April%2029_%202025_RR_366830.html",
+   "period": "2025",
+   "estimate": false,
+   "note": "DEL ~65% monetised."
+  }
+ },
+ "costs": {
+  "opex_per_pax": {
+   "value": 199,
+   "unit": "INR per passenger (O&M excl. revenue share)",
+   "source": "https://www.aera.gov.in/uploads/consultations/17383225584994.pdf Tables 77, 135, 141, 155",
+   "period": "DIAL FY2024",
+   "estimate": true,
+   "note": "Derived: Rs 1,467.01 cr / 73.67 m pax. Manpower ~40, R&M ~33, power gross ~34 (net ~9), housekeeping+hire+security ~26. CISF security is funded by the Aviation Security Fee, not operator O&M."
+  },
+  "dial_om_fy24_cr": {
+   "value": 1467.01,
+   "unit": "INR crore per year",
+   "source": "https://www.aera.gov.in/uploads/consultations/17383225584994.pdf Table 77 p.108",
+   "period": "FY2024 (DIAL submission)",
+   "estimate": false
+  },
+  "electricity_per_kwh": {
+   "value": 10.01,
+   "unit": "INR per kWh",
+   "source": "https://www.aera.gov.in/uploads/consultations/17383225584994.pdf Table 155 p.140",
+   "period": "DIAL FY2024",
+   "estimate": false,
+   "note": "253.97 m kWh; 74% recovered from sub-concessionaires."
+  },
+  "runway_open_per_hour": {
+   "value": 26000,
+   "unit": "INR per runway-hour (excl. ATC)",
+   "source": "https://www.aera.gov.in/uploads/consultations/17383225584994.pdf Tables 64, 155, 219; https://aim.rlp.cz/eaip/html/eAIP/LK-AD-1.2-en-GB.html",
+   "period": "2025-26 prices",
+   "estimate": true,
+   "note": "No published figure. ARFF ~12,200/h (90 staff x Rs 10 lakh + 5 CFT x Rs 5 cr / 15 yr) + AGL power 1,500-2,500/h + pavement/AGL 11,000-14,000/h (Rs 106.8 cr rehab every 10-12 yr + R&M). Range 24,000-29,000. ~Rs 23 cr/yr at 24x7."
+  },
+  "atc_notional_per_hour": {
+   "value": 4000,
+   "unit": "INR per runway-hour",
+   "source": "https://cag.gov.in/uploads/download_audit_report/2012/Union_Performance_Commercial_Implementation_Public_Private_Partnership_Ministry_Civil_Aviation_5_2012_Chapter_2.pdf",
+   "period": "notional",
+   "estimate": true,
+   "note": "ATC is AAI's sovereign service billed to airlines (TNLC/RNFC), not the concessionaire. Charge it to the operator only if the game wants it; range 3,000-5,000."
+  },
+  "arff_min_vehicles_cat9_10": {
+   "value": 3,
+   "unit": "vehicles",
+   "source": "https://aim.rlp.cz/eaip/html/eAIP/LK-AD-1.2-en-GB.html",
+   "period": "ICAO Annex 14",
+   "estimate": false,
+   "note": "Cat 9 (777-300ER) 24,300 L; Cat 10 (A380) 32,300 L water at level B."
+  },
+  "cft_unit_cost_cr": {
+   "value": {
+    "cp3": 5.0,
+    "cp4": 7.6
+   },
+   "unit": "INR crore per crash fire tender",
+   "source": "https://www.aera.gov.in/uploads/consultations/17383225584994.pdf Table 64 p.97; Table 219 p.204",
+   "period": "FY2020-24 / FY2025-29",
+   "estimate": true,
+   "note": "CP3 derived from Rs 25.10 cr for 5 CFTs (Fire Station 5 for runway 11L/29R)."
+  },
+  "runway_rehab_cr": {
+   "value": 106.84,
+   "unit": "INR crore per full-length rehab programme",
+   "source": "https://www.aera.gov.in/uploads/consultations/17383225584994.pdf Table 64; para 4.4.142(ii)",
+   "period": "DIAL CP3 (RWY 10/28)",
+   "estimate": false,
+   "note": "Resurfacing 65.14 + rehabilitation 41.70."
+  },
+  "revenue_share_per_pax_dial": {
+   "value": 333,
+   "unit": "INR per passenger",
+   "source": "https://www.crisilratings.com/mnt/winshare/Ratings/RatingList/RatingDocs/DelhiInternationalAirportLimited_August%2005_%202025_RR_374914.html",
+   "period": "FY2025",
+   "estimate": true,
+   "note": "0.46 x Rs 5,734 cr / 79.3 m. Larger than all O&M per pax."
+  }
+ },
+ "fuel": {
+  "burn_arrival_narrowbody_kg_min": {
+   "value": 35.2,
+   "unit": "kg per minute",
+   "source": "https://standard-inputs.netlify.app/chapters/rate_of_fuel_burn.html Table 6.1",
+   "period": "EUROCONTROL Standard Inputs 10.0.2 (2022 flights)",
+   "estimate": false,
+   "note": "Taxi 11.7, en route 40.1."
+  },
+  "burn_arrival_widebody_kg_min": {
+   "value": 85.2,
+   "unit": "kg per minute",
+   "source": "https://standard-inputs.netlify.app/chapters/rate_of_fuel_burn.html Table 6.1",
+   "period": "EUROCONTROL 10.0.2",
+   "estimate": false,
+   "note": "Taxi 25.8, en route 113.9."
+  },
+  "hold_burn_kg_min": {
+   "value": {
+    "A320neo": 33,
+    "B777_300ER": 100,
+    "A380": 160
+   },
+   "unit": "kg per minute",
+   "source": "https://standard-inputs.netlify.app/chapters/rate_of_fuel_burn.html",
+   "period": "typical mid-weight hold FL100-200",
+   "estimate": true,
+   "note": "No public per-type table. Anchored on EUROCONTROL averages; +/-20% with weight and altitude."
+  },
+  "atf_density_kg_l": {
+   "value": 0.8,
+   "unit": "kg per litre",
+   "source": "https://standard-inputs.netlify.app/chapters/rate_of_fuel_burn.html",
+   "period": "typical (0.775-0.84)",
+   "estimate": true
+  },
+  "atf_delhi_oct2025": {
+   "value": 93766.02,
+   "unit": "INR per kL",
+   "source": "https://swarajyamag.com/amp/story/news-brief/aviation-fuel-prices-raised-by-over-3-per-cent-commercial-lpg-becomes-costlier-domestic-cooking-gas-unchanged",
+   "period": "from 2025-10-01",
+   "estimate": false,
+   "note": "Mumbai 87,714.39."
+  },
+  "atf_delhi_apr2026": {
+   "value": 104927.18,
+   "unit": "INR per kL",
+   "source": "https://oga-prod.angelone.in/news/commodities/atf-prices-raised-across-metros-from-april-1-hike-moderated-for-domestic-airlines",
+   "period": "from 2026-04-01, domestic scheduled",
+   "estimate": false,
+   "note": "Mumbai 98,247. Foreign carriers' intl uplift and non-scheduled ops: Rs 2,07,341.22/kL (+114.5%) during West Asia crisis. Centre's Rs 10,000 cr price-stabilisation advance from Jun 2026."
+  },
+  "atf_nagpur_game": {
+   "value": 100000,
+   "unit": "INR per kL",
+   "source": "https://www.taxtmi.com/news?id=72825",
+   "period": "2026",
+   "estimate": true,
+   "note": "No published Nagpur price. Mumbai Apr-2026 98,247 + inland freight; Maharashtra VAT cut 18%->7% (15 May-14 Nov 2026) lowers it ~9.3% in that window."
+  },
+  "atf_shock_multiplier": {
+   "value": 2.15,
+   "unit": "x domestic price",
+   "source": "https://www.indiatvnews.com/business/news/jet-fuel-prices-more-than-doubled-but-not-for-domestic-airlines-here-s-what-you-need-to-know-2026-04-01-1035863",
+   "period": "Apr 2026",
+   "estimate": false,
+   "note": "207,341 / 96,638. Use for the 'fuel shock' era event."
+  },
+  "hold_cost_per_min": {
+   "value": {
+    "A320neo": 4125,
+    "B777_300ER": 12500,
+    "A380": 20000
+   },
+   "unit": "INR per minute of holding",
+   "source": "https://standard-inputs.netlify.app/chapters/rate_of_fuel_burn.html",
+   "period": "at Rs 1,00,000/kL",
+   "estimate": true,
+   "note": "kg/min / 0.80 x Rs 100/L. Borne by the airline, not the airport."
+  },
+  "atf_vat_maharashtra": {
+   "value": {
+    "normal": 0.18,
+    "cut": 0.07
+   },
+   "unit": "fraction",
+   "source": "https://studycafe.in/government-of-maharashtra-notifies-vat-reduction-from-18-to-7-on-aviation-fuel-420920.html",
+   "period": "cut valid 2026-05-15 to 2026-11-14",
+   "estimate": false
+  }
+ },
+ "rights": {
+  "liable_party": {
+   "value": "airline",
+   "unit": "party",
+   "source": "https://livefromalounge.com/wp-content/uploads/2023/12/D3M-M4-1.pdf paras 1.2, 1.3",
+   "period": "CAR Sec 3 Series M Part IV, Rev. 3 (2019-02-27), amended 2023",
+   "estimate": false,
+   "note": "Airport owes nothing under the CAR; the airline may recover from third parties under contract/tort. ZMI's money exposure is via AERA SQ rebates and airline goodwill."
+  },
+  "extraordinary_exempt": {
+   "value": true,
+   "unit": "rule",
+   "source": "https://livefromalounge.com/wp-content/uploads/2023/12/D3M-M4-1.pdf paras 1.4, 1.5, 3.3.4, 3.4.4",
+   "period": "Rev. 3",
+   "estimate": false,
+   "note": "Weather, ATC, strikes, govt orders, security: no cancellation comp and no delay facilities. Refund/alternate duty remains. Not for denied boarding."
+  },
+  "meal_delay_threshold_h": {
+   "value": {
+    "block_le_2.5h": 2,
+    "block_2.5_5h": 3,
+    "block_gt_5h": 4
+   },
+   "unit": "hours of delay",
+   "source": "https://livefromalounge.com/wp-content/uploads/2023/12/D3M-M4-1.pdf paras 3.4.1, 3.7.1(a)",
+   "period": "Rev. 3",
+   "estimate": false
+  },
+  "hotel_delay_threshold_h": {
+   "value": {
+    "default": 24,
+    "std_2000_0300": 6
+   },
+   "unit": "hours of delay",
+   "source": "https://livefromalounge.com/wp-content/uploads/2023/12/D3M-M4-1.pdf paras 3.4.3, 3.7.1(b)",
+   "period": "Rev. 3",
+   "estimate": false,
+   "note": "Transfers included."
+  },
+  "refund_option_delay_h": {
+   "value": 6,
+   "unit": "hours (domestic)",
+   "source": "https://livefromalounge.com/wp-content/uploads/2023/12/D3M-M4-1.pdf para 3.4.2",
+   "period": "Rev. 3",
+   "estimate": false,
+   "note": "Alternate within 6 h or full refund."
+  },
+  "cancel_comp_inr": {
+   "value": {
+    "block_le_1h": 5000,
+    "block_1_2h": 7500,
+    "block_gt_2h": 10000
+   },
+   "unit": "INR max per pax (or fare+fuel if lower)",
+   "source": "https://livefromalounge.com/wp-content/uploads/2023/12/D3M-M4-1.pdf para 3.3.2",
+   "period": "Rev. 3",
+   "estimate": false,
+   "note": "Only with <24 h notice or missed same-ticket connection; plus full refund or alternate."
+  },
+  "cancel_notice_free_h": {
+   "value": 24,
+   "unit": "hours notice",
+   "source": "https://livefromalounge.com/wp-content/uploads/2023/12/D3M-M4-1.pdf paras 3.3.1-3.3.2",
+   "period": "Rev. 3",
+   "estimate": false
+  },
+  "denied_boarding_comp_inr": {
+   "value": {
+    "alt_within_1h": 0,
+    "alt_within_24h": 10000,
+    "alt_over_24h": 20000
+   },
+   "unit": "INR max per pax (200%/400% of fare+fuel)",
+   "source": "https://livefromalounge.com/wp-content/uploads/2023/12/D3M-M4-1.pdf para 3.2.2",
+   "period": "Rev. 3",
+   "estimate": false,
+   "note": "Connections: first-leg airline pays if final arrival >= 3 h late (3.2.3)."
+  },
+  "fog_cancel_threshold_h": {
+   "value": 3,
+   "unit": "hours anticipated delay",
+   "source": "https://www.businesstoday.in/amp/india/story/share-real-time-information-dgca-issues-sops-for-airlines-amid-flight-delays-cancellations-due-to-fog-413367-2024-01-15",
+   "period": "DGCA SOP 2024-01-15",
+   "estimate": false,
+   "note": "Permissive: airlines may cancel in advance."
+  },
+  "downgrade_refund": {
+   "value": {
+    "dom": 0.75,
+    "intl_le_1500km": 0.3,
+    "intl_1500_3500km": 0.5,
+    "intl_gt_3500km": 0.75
+   },
+   "unit": "fraction of ticket incl. taxes",
+   "source": "https://www.moneylife.in/article/dgca-amends-rules-airlines-to-reimburse-up-to-75-percentage-of-ticket-cost-to-flyers-if-downgraded-involuntarily/69635.html",
+   "period": "effective 2023-02-15",
+   "estimate": false
+  },
+  "meal_cost_inr": {
+   "value": 400,
+   "unit": "INR per pax meal voucher",
+   "source": "https://livefromalounge.com/wp-content/uploads/2023/12/D3M-M4-1.pdf",
+   "period": "Nagpur 2026",
+   "estimate": true,
+   "note": "CAR sets no amount. Range 300-500 (airport food court)."
+  },
+  "hotel_cost_inr": {
+   "value": 4500,
+   "unit": "INR per room-night incl. transfer",
+   "source": "https://livefromalounge.com/wp-content/uploads/2023/12/D3M-M4-1.pdf",
+   "period": "Nagpur 2026",
+   "estimate": true,
+   "note": "CAR sets no amount. Range 3,000-6,000 (tier-2 mid-range)."
+  },
+  "refund_timelines": {
+   "value": {
+    "card_days": 7,
+    "agent_working_days": 14,
+    "free_amend_window_h": 48
+   },
+   "unit": "deadline",
+   "source": "https://www.trayaan.com/2026/02/dgca-revises-air-ticket-refund-rules-no-additional-charges-for-cancelling-or-making-changes-within-48-hours-of-booking.html",
+   "period": "CAR M-II Rev. 3, effective 2026-03-26",
+   "estimate": false
+  }
+ },
+ "finance": {
+  "gearing_debt_share": {
+   "value": 0.7,
+   "unit": "fraction of project cost",
+   "source": "https://www.civilaviation.gov.in/sites/default/files/2023-07/1%20Concession%20Agreement_1.pdf cl. 42.4.1 ; https://www.businesstoday.in/amp/industry/aviation/story/noida-airports-first-phase-funding-signed-with-rs-3725-cr-loan-from-sbi-303859-2021-08-11",
+   "period": "greenfield precedent 2020-2025",
+   "estimate": false,
+   "note": "Noida 65:35 (Rs 3,725 cr SBI + Rs 2,005 cr Zurich equity); Noida CA caps termination Debt Due at 70% of TPC; GHIAL/DIAL expansions 70:30; BIAL CP4 80:20; NMIA ~80:20 (inferred). Game slider 60-80%."
+  },
+  "gearing_range": {
+   "value": {
+    "min": 0.6,
+    "max": 0.8
+   },
+   "unit": "debt fraction",
+   "source": "https://www.crisil.com/mnt/winshare/Ratings/RatingList/RatingDocs/BangaloreInternationalAirportLimited_April%2029_%202025_RR_366830.html",
+   "period": "FY2024-29",
+   "estimate": false,
+   "note": "80:20 BIAL; 65:35 Noida."
+  },
+  "loan_tenor_years": {
+   "value": 20,
+   "unit": "years repayment after 1-yr post-COD moratorium",
+   "source": "https://www.businesstoday.in/amp/industry/aviation/story/noida-airports-first-phase-funding-signed-with-rs-3725-cr-loan-from-sbi-303859-2021-08-11",
+   "period": "Noida financial close Aug 2021",
+   "estimate": false,
+   "note": "NMIA: 23 yrs incl. construction and moratorium, maturing Dec 2044 (CRISIL Jun 2024), Rs 12,770 cr from 8 lenders."
+  },
+  "loan_tenor_cap_fraction": {
+   "value": 0.8,
+   "unit": "fraction of initial concession period",
+   "source": "https://rbi.org.in/scripts/NotificationUser.aspx?Id=9101",
+   "period": "RBI 5/25, Jul 2014",
+   "estimate": false,
+   "note": "RBI Project Finance Directions 2025 (from 2025-10-01): 85% of economic life."
+  },
+  "loan_rate_base": {
+   "value": 9.5,
+   "unit": "% p.a. rupee term debt, post-COD",
+   "source": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=142227",
+   "period": "2022-2026",
+   "estimate": true,
+   "note": "Observed 8.7-10.2%: DAPS 9.0% (A), GHIAL NCDs 8.9-9.1% (AA+), Mopa post-COD NCD 10.0% (A), AERA benchmark 10.15% (AA-). Game: 9.5% +/- 1% by rating."
+  },
+  "loan_rate_observed": {
+   "value": {
+    "low": 8.7,
+    "high": 10.2
+   },
+   "unit": "% p.a.",
+   "source": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=133609 ; https://www.thegoan.net/goa-news/%EF%BB%BFgmr-goa-international-airport-raises-rs-2400-crore/106117.html",
+   "period": "2022-2025",
+   "estimate": false
+  },
+  "loan_rate_construction": {
+   "value": 10.5,
+   "unit": "% p.a. during construction",
+   "source": "https://www.crisil.com/mnt/winshare/Ratings/RatingList/RatingDocs/GMRGoaInternationalAirportLimited_February%2026,%202024_RR_336344.html",
+   "period": "pre-COD",
+   "estimate": true,
+   "note": "Pre-COD greenfield debt is dearer: Mopa pre-COD MLDs 13.25-13.90% (small tranches) vs 10% after COD. Bank term loans undisclosed; 10.5% chosen. RBI 2025: 1% provisioning in construction vs 0.40% operational."
+  },
+  "refi_rate_after_stability": {
+   "value": 9.0,
+   "unit": "% p.a.",
+   "source": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=133609",
+   "period": "post-COD, AA+ class",
+   "estimate": true,
+   "note": "GHIAL AA+ 10-yr NCDs 8.9-9.1%; BIAL AAA refinanced Rs 9,000 cr in a 15-yr NCD (Jul 2025)."
+  },
+  "dscr_covenant_min": {
+   "value": 1.1,
+   "unit": "x DSCR",
+   "source": "https://www.careedgeglobal.com/upload/RatingReportPDF/Rating_Rationale_Mumbai_International_Airport_Limited_13Aug2025.pdf",
+   "period": "MIAL USD bond Aug 2025",
+   "estimate": false,
+   "note": "GMR cargo term loan: 1.15x (ICRA Jul 2022). Tested every 6 months."
+  },
+  "dscr_warning": {
+   "value": 1.2,
+   "unit": "x DSCR",
+   "source": "https://www.careedgeglobal.com/upload/RatingReportPDF/Rating_Rationale_Mumbai_International_Airport_Limited_13Aug2025.pdf",
+   "period": "Aug 2025",
+   "estimate": false,
+   "note": "MIAL: no distributions below 1.20x; 50% below 1.40x; 75% below 1.55x; 100% above 1.55x. ICRA downgrade trigger for BIAL/DAPS: cumulative DSCR < 1.40x."
+  },
+  "dscr_default": {
+   "value": 1.0,
+   "unit": "x DSCR (two consecutive eras -> lender step-in)",
+   "source": "https://www.careedgeglobal.com/upload/RatingReportPDF/Rating_Rationale_Mumbai_International_Airport_Limited_13Aug2025.pdf",
+   "period": "game",
+   "estimate": true,
+   "note": "Real facilities default at the 1.10-1.15x covenant; 1.0 means operating cash cannot cover debt service at all (DSRA draw). Game uses 1.0 as the hard line, 1.10 as covenant breach."
+  },
+  "distribution_lockup": {
+   "value": {
+    "nil_below": 1.2,
+    "half_below": 1.4,
+    "three_quarters_below": 1.55
+   },
+   "unit": "x DSCR",
+   "source": "https://www.careedgeglobal.com/upload/RatingReportPDF/Rating_Rationale_Mumbai_International_Airport_Limited_13Aug2025.pdf",
+   "period": "Aug 2025",
+   "estimate": false
+  },
+  "dsra_months": {
+   "value": 6,
+   "unit": "months of debt service",
+   "source": "https://www.careedgeglobal.com/upload/RatingReportPDF/Rating_Rationale_Mumbai_International_Airport_Limited_13Aug2025.pdf ; https://www.icra.in/Rating/GetRationalReportFilePdf?id=113591",
+   "period": "2022-2025",
+   "estimate": false
+  },
+  "net_debt_ebitda_cap": {
+   "value": 5.0,
+   "unit": "x",
+   "source": "https://www.careedgeglobal.com/upload/RatingReportPDF/Rating_Rationale_Mumbai_International_Airport_Limited_13Aug2025.pdf",
+   "period": "MIAL bond",
+   "estimate": false
+  },
+  "fx_hedge_cost": {
+   "value": 2.15,
+   "unit": "% p.a. on USD debt (stress 2.5)",
+   "source": "https://www.careedgeglobal.com/upload/RatingReportPDF/Rating_Rationale_Mumbai_International_Airport_Limited_13Aug2025.pdf",
+   "period": "Aug 2025",
+   "estimate": false
+  },
+  "lender_substitution_days": {
+   "value": {
+    "notice": 15,
+    "cure": 180,
+    "extension": 90
+   },
+   "unit": "days",
+   "source": "https://www.civilaviation.gov.in/sites/default/files/2023-07/1%20Concession%20Agreement_1.pdf cl. 42.1.3",
+   "period": "Noida CA Oct 2020",
+   "estimate": false
+  },
+  "termination_concessionaire_default": {
+   "value": {
+    "debt_due_paid": 0.9,
+    "atp_paid": 0.7,
+    "equity_paid": 0.0,
+    "debt_due_cap_of_tpc": 0.7
+   },
+   "unit": "fraction",
+   "source": "https://www.civilaviation.gov.in/sites/default/files/2023-07/1%20Concession%20Agreement_1.pdf cl. 42.3.1, 42.4.1",
+   "period": "Noida CA",
+   "estimate": false,
+   "note": "Before COD nothing is paid on the first 40% of TPC spent."
+  },
+  "termination_authority_default": {
+   "value": {
+    "debt_due_paid": 1.0,
+    "adjusted_equity_paid": 1.5,
+    "atp_paid": 1.15
+   },
+   "unit": "fraction",
+   "source": "https://www.civilaviation.gov.in/sites/default/files/2023-07/1%20Concession%20Agreement_1.pdf cl. 42.3.2",
+   "period": "Noida CA",
+   "estimate": false,
+   "note": "Adjusted Equity decays 0.17%/month from 4th anniversary of COD."
+  },
+  "equity_lockin": {
+   "value": {
+    "lead_min": 0.51,
+    "member_min": 0.26,
+    "years_after_cod": 7
+   },
+   "unit": "fraction / years",
+   "source": "https://www.civilaviation.gov.in/sites/default/files/2023-07/1%20Concession%20Agreement_1.pdf",
+   "period": "Noida CA",
+   "estimate": false,
+   "note": "Limits stake sales in eras 1-2."
+  },
+  "waterfall": {
+   "value": [
+    "taxes",
+    "construction",
+    "O&M",
+    "authority O&M",
+    "concession fee",
+    "senior debt service",
+    "damages",
+    "sub debt",
+    "reserves",
+    "equity"
+   ],
+   "unit": "priority order",
+   "source": "https://www.civilaviation.gov.in/sites/default/files/2023-07/1%20Concession%20Agreement_1.pdf cl. 36.3.1",
+   "period": "Noida CA",
+   "estimate": false
+  },
+  "equity_irr_benchmark": {
+   "value": {
+    "low": 12.4,
+    "high": 17.3
+   },
+   "unit": "% after-tax discount rate",
+   "source": "https://fairfaxindia.ca/wp-content/uploads/2025/03/Fairfax-India-Annual-Report-2024.pdf",
+   "period": "BIAL valuation 2024-12-31",
+   "estimate": false,
+   "note": "Fairfax India DCF across BIAL business units; LT growth 3.5%."
+  },
+  "equity_irr_target": {
+   "value": 15.5,
+   "unit": "% equity IRR",
+   "source": "https://fairfaxindia.ca/wp-content/uploads/2025/03/Fairfax-India-Annual-Report-2024.pdf",
+   "period": "game target",
+   "estimate": true,
+   "note": "Mid of AERA allowed CoE 15.17-16% and Fairfax 12.4-17.3%. No sponsor publishes a target IRR."
+  },
+  "covid_force_majeure": {
+   "value": {
+    "fee_excused_from": "2020-03-19",
+    "fee_excused_to": "2022-02-28",
+    "refund_cr": 465,
+    "concession_extension_months": 23
+   },
+   "unit": "event",
+   "source": "https://www.icra.in/Rating/ShowRationalReportFilePdfViewer/145648",
+   "period": "award Dec 2023/Jan 2024; upheld Delhi HC 2025-03-07; DB appeal pending",
+   "estimate": false,
+   "note": "Use for the pandemic shock: revenue share excused ~23 months + concession extended. AAI deposited Rs 471 cr with the court."
+  },
+  "rbi_provisioning": {
+   "value": {
+    "construction": 0.01,
+    "operational": 0.004,
+    "dcco_cap_years": 3
+   },
+   "unit": "fraction / years",
+   "source": "https://rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=60678",
+   "period": "from 2025-10-01",
+   "estimate": false
+  }
+ },
+ "capex": {
+  "nmia_phase1": {
+   "value": {
+    "cost_cr": 19650,
+    "mppa": 20
+   },
+   "unit": "INR crore; MPPA",
+   "source": "https://ianslive.in/pm-inaugurates-navi-mumbai-international-airport--20251008154555",
+   "period": "2025-10-08 inauguration",
+   "estimate": false,
+   "note": "FPJ: Rs 19,647 cr. News figure. 1 runway. ~Rs 983 cr/MPPA."
+  },
+  "nmia_full": {
+   "value": {
+    "cost_cr_approx": 100000,
+    "mppa": 90
+   },
+   "unit": "INR crore; MPPA",
+   "source": "https://www.freepressjournal.in/amp/mumbai/first-flight-from-navi-mumbai-international-airport-set-for-december-2025-confirms-cidco-chief",
+   "period": "full build ~2035",
+   "estimate": true,
+   "note": "'Up to Rs 1 lakh crore' is a loose verbal estimate."
+  },
+  "nmia_capex_to_fy30_cr": {
+   "value": 57333,
+   "unit": "INR crore",
+   "source": "https://www.business-standard.com/industry/aviation/navi-mumbai-airport-rs-57000-cr-capex-aera-approves-interim-udf-125062301003_1.html",
+   "period": "FY2025-30 (operator filing)",
+   "estimate": false,
+   "note": "22,531 under way + 34,802 further. Operator proposal = upper bound."
+  },
+  "noida_phase1": {
+   "value": {
+    "cost_cr": 11200,
+    "mppa": 12
+   },
+   "unit": "INR crore; MPPA",
+   "source": "https://www.wionews.com/photos/what-makes-noida-s-new-airport-unique-flight-every-2-minutes-3-900m-all-weather-runway-10-min-check-in-and-more-1774695191502",
+   "period": "2026 opening",
+   "estimate": false,
+   "note": "Earlier: 10,056 and 8,916 (2021). 1 runway. ~Rs 933 cr/MPPA."
+  },
+  "noida_full": {
+   "value": {
+    "cost_cr": 29561,
+    "mppa": 70
+   },
+   "unit": "INR crore; MPPA",
+   "source": "https://content.knightfrank.com/research/3090/documents/en/the-jewar-turning-point-2026-12780.pdf",
+   "period": "master plan to FY2040-50",
+   "estimate": false,
+   "note": "Phases 4,588/5,983/8,415/10,575 cr for 12/30/50/70 MPPA; ~Rs 422 cr/MPPA; price base unstated; Phase IV includes aerotropolis."
+  },
+  "dwc_terminal": {
+   "value": {
+    "cost_aed_bn": 128,
+    "cost_usd_bn": 34.85,
+    "cost_inr_cr": 289000,
+    "mppa": 260
+   },
+   "unit": "AED bn / USD bn / INR crore / MPPA",
+   "source": "https://www.mediaoffice.ae/en/news/2024/april/28-04/al-maktoum-international-airport",
+   "period": "announced 2024-04-28",
+   "estimate": false,
+   "note": "INR at ~83/USD (estimate) -> ~Rs 1,112 cr/MPPA."
+  },
+  "greenfield_phase1_cr_per_mppa": {
+   "value": {
+    "low": 750,
+    "high": 1000
+   },
+   "unit": "INR crore per MPPA",
+   "source": "https://ianslive.in/pm-inaugurates-navi-mumbai-international-airport--20251008154555",
+   "period": "2021-2026",
+   "estimate": true,
+   "note": "NMIA 983; Noida 933 (838 at 10,056; 743 at 8,916). Single-runway phase 1s."
+  },
+  "brownfield_cr_per_added_mppa": {
+   "value": 275,
+   "unit": "INR crore per added MPPA",
+   "source": "https://gulfnews.com/business/aviation/new-delhi-airport-plans-expansion-to-increase-annual-passenger-capacity-to-100-m-by-2022-1.1565078334090",
+   "period": "2019-2024 prices",
+   "estimate": true,
+   "note": "DEL Phase 3A 9,800/34 = 288 (incl. 4th runway); BLR T2 13,000/45 = 289; range 200-300. ZMI era expansions use this."
+  },
+  "runway_new_hub_cr": {
+   "value": 1950,
+   "unit": "INR crore per hub runway (2025 prices)",
+   "source": "https://www.deccanherald.com/amp/story/india%2Fkarnataka%2Fbengaluru%2Fbengaluru-airport-mandates-lt-695973.html",
+   "period": "2025",
+   "estimate": true,
+   "note": "BLR south parallel runway L&T EPC Rs 1,358 cr (Nov 2017, incl. apron) inflated ~5%/yr. Basic 3 km runway (HAL Nashik) Rs 200 cr is the floor."
+  },
+  "zmi_phase1_mppa": {
+   "value": 70,
+   "unit": "MPPA",
+   "source": "design.md (ZMI full build 209 MPPA; phase 2 to 260)",
+   "period": "game assumption",
+   "estimate": true,
+   "note": "Phase 1 sized for Level 1-2 traffic: BLR ~44.5 m moves in at opening; HYD+AMD (~44 m) arrive in year 8, triggering the first expansion. Range given 60-80."
+  },
+  "zmi_phase1_cr_per_mppa": {
+   "value": 800,
+   "unit": "INR crore per MPPA (2025-26, excl. land)",
+   "source": "https://ianslive.in/pm-inaugurates-navi-mumbai-international-airport--20251008154555 ; https://content.knightfrank.com/research/3090/documents/en/the-jewar-turning-point-2026-12780.pdf",
+   "period": "2025-26",
+   "estimate": true,
+   "note": "Below single-runway phase 1s (930-983) because two runways and a large headhouse spread fixed site cost over 70 MPPA; above Noida full-plan 422 (bid-era prices, ~600 inflated). Land excluded: the state contributes it."
+  },
+  "zmi_phase1_capex_cr": {
+   "value": 56000,
+   "unit": "INR crore",
+   "source": "derived: zmi_phase1_mppa x zmi_phase1_cr_per_mppa",
+   "period": "2025-26",
+   "estimate": true,
+   "note": "70 x 800 = 56,000. Cross-check: NMIA operator capex to FY30 Rs 57,333 cr; Al Maktoum ~Rs 1,112 cr/MPPA would give 77,800."
+  },
+  "zmi_construction_years": {
+   "value": 4,
+   "unit": "years",
+   "source": "prompt-money.md (opening in year 5)",
+   "period": "game",
+   "estimate": true,
+   "note": "NMIA ~4 yrs from Mar-2022 close to Oct-2025; Noida ~4.5 yrs from Aug-2021 close."
+  },
+  "zmi_full_build_capex_cr": {
+   "value": 104000,
+   "unit": "INR crore (phase 1 + expansions to 209 MPPA)",
+   "source": "derived",
+   "period": "2025-26",
+   "estimate": true,
+   "note": "56,000 + 139 MPPA x 275 (~38,200) + 4 runways x 1,950 (7,800) ~ 1,02,000-1,04,000."
+  }
+ },
+ "ppp": {
+  "rev_share_dial": {
+   "value": 0.4599,
+   "unit": "fraction of gross revenue to AAI",
+   "source": "https://www.aera.gov.in/uploads/consultations/17383225584994.pdf Table 6",
+   "period": "OMDA 2006-",
+   "estimate": false,
+   "note": "Not an allowable cost in aero tariff (SSA 3.1.1)."
+  },
+  "rev_share_mial": {
+   "value": 0.387,
+   "unit": "fraction of gross revenue to AAI",
+   "source": "https://www.crisilratings.com/mnt/winshare/Ratings/RatingList/RatingDocs/MumbaiInternationalAirportLimited_August%2020_%202025_RR_371019.html",
+   "period": "concession 2006-",
+   "estimate": false
+  },
+  "rev_share_mopa": {
+   "value": 0.3699,
+   "unit": "fraction of gross revenue to Govt of Goa",
+   "source": "https://dca.goa.gov.in/about-us/",
+   "period": "CA 2016-11-08; 40 yrs from 2017-09-04",
+   "estimate": false,
+   "note": "Rival bids: AAI 32.31%, ESSEL 27%."
+  },
+  "rev_share_nagpur": {
+   "value": 0.1449,
+   "unit": "fraction of gross revenue to MIHAN India Ltd",
+   "source": "https://indianinfrastructure.com/2019/04/03/gmr-receives-loa-for-nagpur-international-airport/ ; https://www.advocatekhoj.com/library/judgments/announcement.php?WID=15060",
+   "period": "LoA 2019; 30 yrs; GMR took over 2026-06-25",
+   "estimate": false,
+   "note": "GMR's original bid was 5.76%, raised to 14.49% after negotiation (SC judgment 2022-05-09). The real Nagpur comparator."
+  },
+  "rev_share_nmia": {
+   "value": 0.126,
+   "unit": "fraction of gross revenue to CIDCO",
+   "source": "https://indianinfrastructure.com/2017/11/05/cidco-issued-loa-to-mial-for-navi-mumbai-international-airport-project-phase-i/",
+   "period": "LoA 2017-10-26",
+   "estimate": false,
+   "note": "GMR bid 10.44%."
+  },
+  "rev_share_bid_range": {
+   "value": {
+    "low": 0.126,
+    "high": 0.4599
+   },
+   "unit": "fraction of gross revenue",
+   "source": "see rev_share_* keys",
+   "period": "2006-2019",
+   "estimate": false,
+   "note": "Game slider 10-50%; rivals cluster 25-40%."
+  },
+  "ppf_aai_2019": {
+   "value": {
+    "AMD": 177,
+    "JAI": 174,
+    "LKO": 171,
+    "TRV": 168,
+    "GAU": 160,
+    "IXE": 115
+   },
+   "unit": "INR per domestic passenger",
+   "source": "https://indianinfrastructure.com/2019/03/08/adani-emerges-highest-bidder-for-all-six-airports-on-ppp/",
+   "period": "bids Feb 2019",
+   "estimate": false,
+   "note": "International pax pay 2x; indexed annually to CPI-IW (https://www.itln.in/adani-to-takeover-ahmedabad-lucknow-and-mangaluru-airports-for-50-years-aviation). 50-year leases."
+  },
+  "ppf_noida": {
+   "value": 400.97,
+   "unit": "INR per passenger to the state (YIAPL)",
+   "source": "https://www.udayavani.com/english-news/swiss-firm-to-develop-indias-biggest-airport-near-delhi-outbids-adani",
+   "period": "bid Nov 2019",
+   "estimate": false,
+   "note": "Rivals: Adani 360, DIAL 351, Anchorage 205 (https://scroll.in/latest/945313/zurich-airport-outbids-adani-dial-to-build-delhi-ncrs-second-airport-in-jewar-town)."
+  },
+  "ppf_bid_range": {
+   "value": {
+    "low": 115,
+    "high": 400.97
+   },
+   "unit": "INR per passenger",
+   "source": "see ppf_* keys",
+   "period": "2019",
+   "estimate": false,
+   "note": "Game slider Rs 100-450."
+  },
+  "aai_lease_years_2019": {
+   "value": 50,
+   "unit": "years",
+   "source": "https://www.itln.in/adani-to-takeover-ahmedabad-lucknow-and-mangaluru-airports-for-50-years-aviation",
+   "period": "CA 2020-02-14",
+   "estimate": false
+  },
+  "concession_terms": {
+   "value": {
+    "DIAL": "30 + right to seek 30",
+    "BIAL": "30 + 30 (exercised, to 2068)",
+    "Noida": "40 + 30 by re-bid (ROFR within 10%)",
+    "Mopa": "40 + 20",
+    "Nagpur_GMR": "30"
+   },
+   "unit": "years",
+   "source": "https://www.icra.in/Rating/ShowRationalReportFilePdfViewer/145648 ; https://www.icra.in/Rating/GetRationalReportFilePdf?id=143328 ; https://www.civilaviation.gov.in/sites/default/files/2023-07/1%20Concession%20Agreement_1.pdf",
+   "period": "various",
+   "estimate": false,
+   "note": "ZMI's 60 years = the DIAL/BIAL 30+30 structure."
+  },
+  "state_stake_precedent": {
+   "value": {
+    "AAI_in_DIAL": 0.26,
+    "AAI_in_MIAL": 0.26,
+    "CIDCO_in_NMIA": 0.26,
+    "AAI_KSIIDC_in_BIAL": 0.26
+   },
+   "unit": "fraction",
+   "source": "https://www.icra.in/Rating/ShowRationalReportFilePdfViewer/145648",
+   "period": "2025-26",
+   "estimate": false,
+   "note": "ZMI's 20% state stake (AAI 10% + state 10%) is below the 26% norm (game choice)."
+  },
+  "madc_role": {
+   "value": "Maharashtra Airport Development Company: Govt of Maharashtra company that spearheads MIHAN; holds 51% of MIHAN India Ltd (AAI 49%), which owned/ran Nagpur airport and awarded GMR its 30-yr concession",
+   "unit": "verified role",
+   "source": "https://mihanindia.in/ ; https://www.advocatekhoj.com/library/judgments/announcement.php?WID=15060",
+   "period": "2006 MoU; SC judgment 2022-05-09; GMR took over 2026-06-25",
+   "estimate": false,
+   "note": "Role verified, so 'MADC' may be named as the state's 10% partner. MADC does not run the airport itself (MIL did, GMR now does); say 'MADC, the State of Maharashtra's airport and MIHAN developer'."
+  },
+  "fairfax_bial_stake": {
+   "value": {
+    "fairfax": 0.64,
+    "aai": 0.13,
+    "ksiidc": 0.13
+   },
+   "unit": "fraction",
+   "source": "https://fairfaxindia.ca/wp-content/uploads/2025/03/Fairfax-India-Annual-Report-2024.pdf",
+   "period": "2024-12-31",
+   "estimate": false,
+   "note": "Brief's 74% includes the 10% Siemens stake bought for USD 255 m; Fairfax AR reports 64% held at 2024-12-31 with the Siemens 10% purchase setting the price; AAI/KSIIDC 13% each per the brief (not re-verified)."
+  }
+ },
+ "benchmarks": {
+  "revenue_per_pax": {
+   "value": {
+    "DEL_FY26": 962,
+    "BLR_FY26": 953,
+    "BOM_FY25": 831
+   },
+   "unit": "INR per passenger",
+   "source": "https://www.icra.in/Rating/ShowRationalReportFilePdfViewer/145648 ; https://www.icra.in/Rating/GetRationalReportFilePdf?id=143328 ; https://www.crisilratings.com/mnt/winshare/Ratings/RatingList/RatingDocs/MumbaiInternationalAirportLimited_August%2020_%202025_RR_371019.html",
+   "period": "FY2025-26",
+   "estimate": true,
+   "note": "Derived: DEL 7,568 cr / 78.7 m; BLR 4,239 cr / 44.5 m; BOM 4,571 cr / 55 m."
+  },
+  "ebitda_margin": {
+   "value": {
+    "DEL_FY26": 0.37,
+    "DEL_FY25": 0.267,
+    "BLR_FY25": 0.681,
+    "BLR_FY26": 0.72,
+    "BOM_FY24": 0.398
+   },
+   "unit": "fraction (OPBDIT/OI)",
+   "source": "https://www.icra.in/Rating/ShowRationalReportFilePdfViewer/145648 ; https://www.icra.in/Rating/GetRationalReportFilePdf?id=143328 ; https://www.careratings.com/upload/CompanyFiles/PR/202412141202_Mumbai_International_Airport_Limited.pdf",
+   "period": "FY2024-26",
+   "estimate": false,
+   "note": "BOM derived: PBILDT 1,599 / TOI 4,021 (CARE). DEL and BOM margins are after 46% / 38.7% revenue share; BLR's modest revenue share explains ~70%."
+  },
+  "dial_revenue_fy26_cr": {
+   "value": {
+    "aero": 3011,
+    "nonaero": 3607,
+    "total_ind_as": 7568,
+    "pax_m": 78.7,
+    "capacity_mppa": 100
+   },
+   "unit": "INR crore / m pax",
+   "source": "https://www.icra.in/Rating/ShowRationalReportFilePdfViewer/145648",
+   "period": "FY2026",
+   "estimate": false
+  },
+  "bial_valuation": {
+   "value": {
+    "usd_bn_100pct": 2.55,
+    "inr_cr_100pct": 21800
+   },
+   "unit": "USD bn / INR crore",
+   "source": "https://fairfaxindia.ca/wp-content/uploads/2025/03/Fairfax-India-Annual-Report-2024.pdf",
+   "period": "2024-12-31",
+   "estimate": true,
+   "note": "USD 2.55 bn from Fairfax (Siemens 10% for USD 255 m, DCF-supported); INR at ~85.5/USD is my conversion (estimate). BIAL ROE 14% (2024)."
+  },
+  "debt_to_ebitda": {
+   "value": {
+    "DEL_FY26": 5.8,
+    "BLR_FY25": 4.1,
+    "BOM_FY25_net": 3.6
+   },
+   "unit": "x",
+   "source": "https://www.icra.in/Rating/ShowRationalReportFilePdfViewer/145648 ; https://www.icra.in/Rating/GetRationalReportFilePdf?id=143328 ; https://www.careedgeglobal.com/upload/RatingReportPDF/Rating_Rationale_Mumbai_International_Airport_Limited_13Aug2025.pdf",
+   "period": "FY2025-26",
+   "estimate": false
+  }
+ },
+ "game": {
+  "peak_day_to_annual": {
+   "value": 311,
+   "unit": "annual pax / peak-day pax",
+   "source": "https://nsearchives.nseindia.com/corporate/GMRINFRA_15122025214736_15122025-monthlytrafficdataNov.pdf ; https://www.icra.in/Rating/ShowRationalReportFilePdfViewer/145648",
+   "period": "Delhi FY2026",
+   "estimate": false,
+   "note": "Derived from reported figures: 78.7 m (FY26) / 2.53 lakh (record day 30 Nov 2025). Peak day is 1.17x the average day. ATM equivalent: 455,169 / 1,392 = 327."
+  },
+  "design_day_movements_by_level": {
+   "value": {
+    "1": 837,
+    "2": 1744,
+    "3": 2780,
+    "4": 4194
+   },
+   "unit": "movements on a peak day for the traffic moved in",
+   "source": "build.md (BLR record 837, HYD 607, BOM 1,036) ; https://nsearchives.nseindia.com/corporate/GMRINFRA_15122025214736_15122025-monthlytrafficdataNov.pdf (DEL 1,414 on 22 Dec 2025)",
+   "period": "2025-26",
+   "estimate": true,
+   "note": "AMD ~300 is an estimate (13.4 m pax/yr). L1 BLR; L2 +HYD+AMD; L3 +BOM; L4 +DEL."
+  },
+  "shift_to_day": {
+   "value": "design_day_movements_by_level[L] / LEVELS[L].target",
+   "unit": "formula",
+   "source": "hub.js LEVELS target (110/205/450/~750)",
+   "period": "game",
+   "estimate": true,
+   "note": "A shift samples part of the peak day; scale its money to the whole day by movements."
+  },
+  "annualise": {
+   "value": "annual = shift_money x shift_to_day x peak_day_to_annual; era = 5 x annual (growth applied per year)",
+   "unit": "formula",
+   "source": "research/money.md 'Game multiplier'",
+   "period": "game",
+   "estimate": true
+  },
+  "shift_money_multiplier": {
+   "value": 1.0,
+   "unit": "x on per-shift rupee amounts",
+   "source": "research/money.md 'Game multiplier'",
+   "period": "game",
+   "estimate": true,
+   "note": "No inflation needed: a Level-1 shift (~110 movements, ~16,500 pax) is already ~Rs 1 crore of revenue, and single calls swing Rs 0.3-5 lakh. Keep real rupees; if tuning needs more bite, raise this one number and show it in the UI."
+  },
+  "pax_per_movement": {
+   "value": {
+    "narrow": 153,
+    "wide": 280
+   },
+   "unit": "passengers",
+   "source": "https://www.aera.gov.in/uploads/consultations/17383225584994.pdf",
+   "period": "game",
+   "estimate": true,
+   "note": "~180 / ~330 seats at ~85% load factor."
+  },
+  "concession_years": {
+   "value": 60,
+   "unit": "years",
+   "source": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=143328",
+   "period": "game",
+   "estimate": false,
+   "note": "30 + 30 like DIAL/BIAL."
+  },
+  "era_years": {
+   "value": 5,
+   "unit": "years",
+   "source": "https://www.aera.gov.in/uploads/consultations/17383225584994.pdf",
+   "period": "= AERA control period",
+   "estimate": false
+  },
+  "ownership": {
+   "value": {
+    "parent": 0.8,
+    "AAI": 0.1,
+    "MADC": 0.1
+   },
+   "unit": "fraction of ZMIAL equity",
+   "source": "prompt-money.md",
+   "period": "game",
+   "estimate": true,
+   "note": "MADC role verified (see ppp.madc_role)."
+  },
+  "financial_close": {
+   "value": {
+    "capex_cr": 56000,
+    "debt_share": 0.7,
+    "debt_cr": 39200,
+    "equity_cr": 16800,
+    "parent_equity_cr": 13440,
+    "aai_equity_cr": 1680,
+    "madc_equity_cr": 1680,
+    "construction_rate": 10.5,
+    "operating_rate": 9.5,
+    "tenor_years": 20,
+    "moratorium_years": 1
+   },
+   "unit": "INR crore / % / years",
+   "source": "derived from capex and finance",
+   "period": "game",
+   "estimate": true,
+   "note": "Default gearing 70:30; slider 60-80%. Repayment: sculpted (default) or equal instalments."
+  },
+  "dscr_thresholds": {
+   "value": {
+    "warning": 1.2,
+    "covenant": 1.1,
+    "step_in": 1.0,
+    "step_in_eras": 2
+   },
+   "unit": "x DSCR",
+   "source": "https://www.careedgeglobal.com/upload/RatingReportPDF/Rating_Rationale_Mumbai_International_Airport_Limited_13Aug2025.pdf",
+   "period": "game",
+   "estimate": true,
+   "note": "1.20 and 1.10 sourced; 1.0 game line."
+  },
+  "opening_tariff": {
+   "value": {
+    "udf_dom_dep": 620,
+    "udf_intl_dep": 1225,
+    "landing": "DIAL card",
+    "parking": "DIAL card"
+   },
+   "unit": "INR",
+   "source": "see aero.udf_greenfield_opening_nmia",
+   "period": "era 1",
+   "estimate": true,
+   "note": "Greenfield UDF precedent (NMIA); AERA resets it each era from RAB x 15.41% RoE (WACC 12.89%) less 30% of non-aero."
+  }
+ }
+}

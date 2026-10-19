@@ -126,7 +126,7 @@ Cruise works because it's the only chapter where a decision is felt live (hold L
 | 7 | **Mumbai floods divert to you (2005-style):** two days of Mumbai's flights; capacity test. | Cruise | 1, 4 | lean vs big phase 1 | 3 / 2 / 2 / M | 3.5 |
 | 8 | **Election inauguration:** officials want phase 2 opened before the model code of conduct, half-finished. Open early, or wait. | Landing | 5, 7 | phase 2 timing | 3 / 3 / 2 / M | **4.0** |
 | 9 | **The rival poaches your COO** in the middle of the crisis; match the offer, let them go, or counter-poach. | Turbulence | 7, 10 | Kármán Line's return | 2 / 2 / 1 / S | **5.0** |
-| 10 | **World Cup final at Nagpur's cricket stadium (LIVE):** you steer 90 charters in 6 hours through the sim. Full card: `design/ideas/world-cup-final.md`. | Landing | 5, 9 | stands, the access road (Zero Mile District) | 3 / 2 / 2 / M | 3.5 |
+| 10 | **World Cup final at Nagpur's cricket stadium (LIVE):** you steer 90 charters in 6 hours through the sim. Full card: `design/ideas/world-cup-final.md`. | Landing | 5, 9 | stands, the access road (Zero Mile District) | 3 / 3 / 2 / M | **4.0** |
 | 11 | **Double-or-nothing A380 base pitch:** stake half a year's fees to win Air India's widebody base. | Cruise | 7, 3 | your connection record (the hold-London call) | 3 / 3 / 2 / M | **4.0** |
 | 12 | **Private-capital conditions bite back:** the audit-committee seat questions a bill; the cargo clause triggers #2; the test strip runs its first drone inspection mid-shift. | various | 2, 8 | the lender you chose | 2 / 2 / 2 / M | 3.0 |
 

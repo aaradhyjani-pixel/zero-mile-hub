@@ -227,7 +227,7 @@ function c5shift(plan, held, slack) {
 const PLAYERS = [
   ['hub-smart', 'three', true, 0.03, 'signs three banks, holds London for the 380'],
   ['hub-letgo', 'three', false, 0.03, 'signs three banks, lets London go'],
-  ['hub-blind', 'decline', false, 0.03, 'declines Skyward']];
+  ['hub-blind', 'decline', false, 0.03, 'declines Haversine Airways']];
 const c5 = {}, c5texts = [JSON.stringify(fp), JSON.stringify(dc)];
 console.log('| Player | Plan | Earned ₹ cr a year | Spent ₹ cr a year | Connections made / missed a year | Earned / spent 2040-43 | Loan cover, hardest year | Your stake |\n|---|---|---|---|---|---|---|---|');
 for (const [name, choice, held, slack, what] of PLAYERS) {

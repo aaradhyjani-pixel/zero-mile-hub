@@ -105,3 +105,15 @@ Shipped in this pass:
 - Voice: `voice/lines/l3.json` (the l3voice script merged); voiced lines use say(); guard() speaks for any character whose lines all have clips.
 - Checked: ff runs reach the end screen with no page errors (only the 404s for india.mp3/dj.mp3, not supplied yet). 3D shots in /tmp/zmh/l3v2/shots (summit_*, wedding_*, fog_*, crash_*). WebKit pass (wk_*): no page errors.
 - Tools: /tmp/zmh/l3v2/tools/fastbot.py (synchronous expert/handler/lazy, within about 2 OTP points of run.py), probe.py (a real-time event log), cine.py and crash3.py (3D shots on events), wkst3.py.
+
+### Money: design decisions (2026-10-19)
+- Design written: `money-design.md` (one page), `design/onboarding.md` (screens), `design/eras.md` (era maths, `zm_campaign` v1, Level 5, Ship B systems from `research/money-world.md` §9), `design/hooks.md` (every hub.js / hub3d.js / build.py touch point, in wiring order W1–W5).
+- Base: the "simple" draft (passive per-shift ledger, pure `money/era.js`), with the regulator, fun and eras grafts from the judge memo.
+- SPV 64/16/10/10: the parent, Tamarind Long-Horizon Infrastructure Fund (nominee Meera Kesar), AAI, MADC. The climb to 80% is 4% per era from the year-14 board (Ship B).
+- Capex in stages: 1A ₹36,000 cr / 45 MPPA at close; 1B ₹20,000 cr (yr 7), 1C ₹24,000 cr (yr 10), 1D ₹24,000 cr (yr 13); phase 2 G/H ₹14,025 cr (option, from the yr-14 board). The bank sizes debt at min(gearing × cost, PV(base-case CFADS ÷ 1.30)).
+- Eras: E0 construction; E1–E4 on L1–L4 (Delhi stays at yr 14); E5–E12 on the new concession-only Level 5. Quick concession: 6 eras. Levels 1–4 are not edited.
+- AERA runs silently in Ship A: hybrid till 0.30, WACC 12.89%, glide cap ₹900/850/800 per pax (the one labelled game assumption), shortfall to a receivable at WACC, volume true-up, O&M ratchet, service-quality rebate (4 airside groups + safety). Shift aero is display only (tariffK).
+- Ledger: 5 revenue lines (landing, parking, UDF, Mall, hub incentive) and 5 cost lines (runways open ₹26k/h, ops jobs, SLA fuel credits, passenger care, fuel claims). It never calls SIMR and never writes sim state, so money off equals the baseline.
+- Ship B, designed now from money-world: shocks with hybrid correlations and market cycle, stake pricing (EV multiple × life factor, ×1.35 control block), appeals (20% win), mid-level incidents on L5/L6 only, Level 6 "Handback", the handback asset classes and the endgame score weights.
+- Open question for the user: "sixth level". It is L5 here (`LEVELS[4]`), plus L6 "Handback" in Ship B. Confirm the numbering.
+- GitHub checkpoints: C1 design (this), C2 money.json fixes + era.js + node balance table, C3 ledger hooks + chip (gate green), C4 Ship A live (push), C5 Ship B.

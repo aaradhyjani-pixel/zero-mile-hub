@@ -2233,6 +2233,8 @@ const CSSS=`
 .zs-step .zdk-card.z5c{animation:zsOff .9s cubic-bezier(.5,0,.75,.3) calc(.4s + var(--i)*.09s) forwards!important}
 @keyframes zsOff{to{opacity:0;transform:translate(-40px,70vh) rotate(calc(var(--r) * -6))}}
 .zs-step .zdk-doc.duty .t{font-size:14px}
+.zs-step .zdk-duty .den b{font-size:21px;white-space:nowrap}.zs-step .zdk-duty span,.zs-step .zdk-duty .ser b{white-space:nowrap}
+@media (max-height:820px){.zs-step .zdk-duty{margin-bottom:14px}.zs-step .zdk-cah h2{font-size:27px;margin-bottom:2px}.zs-step .zdk-doc.duty .t{font-size:13.5px;line-height:1.45;margin-bottom:8px}}
 .zs-step .zdk-cah .hi{font-size:19px}
 @media (prefers-reduced-motion:reduce){.zs-step .zdk-card.z5c{animation:none!important;opacity:0}.zs-grey{transition:none}}
 
@@ -2247,7 +2249,7 @@ const CSSS=`
 .zbx-case .sten{font-family:var(--f-sign,'Barlow Condensed'),sans-serif;font-weight:700;font-size:30px;line-height:1.02;letter-spacing:.1em;text-align:center;text-transform:uppercase}
 .zbx-case .sten.s{font-size:19px;letter-spacing:.14em;margin-top:6px}
 .zbx-case .op{margin-top:10px;padding:2px 6px;font-family:var(--fh);font-size:20px;color:#121314;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:4px;background:none;cursor:pointer}
-.zbx-case .op:hover{color:#fff}.zbx-case .op:focus-visible{outline:none;text-decoration-thickness:3px}
+.zbx-case .op:hover{color:#fff}.zbx-case .op:focus-visible{outline:none;text-decoration-thickness:3px}.zbx-case .op.zpf:focus-visible{text-decoration-thickness:1px}
 .zbx-case .slot{position:absolute;right:-1px;top:16%;bottom:16%;width:9px;border-radius:0 3px 3px 0;background:#2a1d14;box-shadow:inset 2px 0 3px rgba(0,0,0,.6)}
 .zbx.shut .zbx-case{left:calc(50% - 170px);width:340px;top:150px;bottom:110px}
 .zbx.shut .zbx-pg,.zbx.shut .zbx-acts{display:none}
@@ -2296,7 +2298,8 @@ const CSSS=`
   box-shadow:0 8px 18px rgba(30,40,50,.22),0 1px 2px rgba(30,40,50,.18);transition:transform .25s,box-shadow .25s;z-index:var(--z);cursor:zoom-in}
 .zbx-pp:hover,.zbx-pp:focus-visible{z-index:20;transform:rotate(0) translateY(-8px)}
 .zbx-pp.open{z-index:30;transform:rotate(0) translateY(-10px) scale(1.55);transform-origin:50% 20%;cursor:zoom-out;box-shadow:0 26px 50px rgba(30,40,50,.35)}
-.zbx-pp .ms{display:block;text-align:center;font-family:var(--fd);font-weight:700;font-size:11.5px;white-space:nowrap;border-bottom:1px solid #16181a;padding-bottom:4px}
+.zbx-pp:not(:last-child){padding-right:26px}
+.zbx-pp .ms{display:block;text-align:center;font-family:var(--fd);font-weight:700;font-size:11px;white-space:nowrap;border-bottom:1px solid #16181a;padding-bottom:4px}
 .zbx-pp .dy{display:flex;justify-content:space-between;gap:4px;border-bottom:2px double #16181a;padding:2px 0;font-family:var(--fd);font-size:9px;white-space:nowrap}
 .zbx-pp b{display:block;margin-top:7px;font-family:var(--fd);font-weight:700;font-size:13.5px;line-height:1.13;text-wrap:balance;overflow-wrap:break-word;hyphens:manual}
 .zbx-pp .rl{display:block;margin-top:8px;height:60px;background:repeating-linear-gradient(180deg,rgba(22,24,26,.15) 0 1px,transparent 1px 7px)}
@@ -2574,7 +2577,7 @@ M.stepIn=function(o){mountS();o=o||{};return new Promise(res=>{
   const sh=desk5('z5-dec zs-step',`<header class="zdk-top"><div class="zdk-mark">${vsiLogo(30)}<span>${esc(M.cfg.airportName)}</span></div></header>
     <div class="zdk-pile" id="zdkPile" aria-hidden="true">${pileCards(o.pile||PILE)}</div>
     <main class="zdk-main"><div class="zdk-col"><article class="zdk-doc duty arrive" id="zdkDoc">
-      <div class="zdk-duty"><div class="den"><b>${esc('The lenders to '+M.cfg.spvShort)}</b><span>Through their agent · Nariman Point, Mumbai 400 021</span></div><div class="dc"><span>Notice</span><span style="font-family:var(--fhi);letter-spacing:0;text-transform:none;font-weight:400;font-size:14px">सूचना</span></div><div class="ser"><b>${esc(o.docId||'N-'+(sd?sd.getFullYear():'')+'-01')}</b><span>${esc(dt)}</span></div></div>
+      <div class="zdk-duty"><div class="den"><b>${esc('The lenders to '+M.cfg.spvShort)}</b><span>Through their agent · Nariman Point, Mumbai</span></div><div class="dc"><span>Notice</span><span style="font-family:var(--fhi);letter-spacing:0;text-transform:none;font-weight:400;font-size:14px">सूचना</span></div><div class="ser"><b>${esc(o.docId||'N-'+(sd?sd.getFullYear():'')+'-01')}</b><span>${esc(dt)}</span></div></div>
       <div class="zdk-cah"><div><h2>The banks take control of ${esc(M.cfg.spvShort)}</h2><p class="hi">नियंत्रण की सूचना</p></div></div>
       ${lines.map(p=>`<p class="t">${esc(hd(p))}</p>`).join('')}
       <div class="zdk-sigs" style="grid-template-columns:minmax(0,300px)">${sigBlock(ag,'the lenders to '+M.cfg.spvShort)}</div>

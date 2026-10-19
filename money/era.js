@@ -1148,10 +1148,12 @@
     var div = {maxCr: Math.floor(cash * payout), lastCr: lastDiv || undefined};
     if (cash >= 1 && payout <= 0) { div.blocked = true; div.reason = 'The banks hold back dividends while the airport earns under ₹' + Math.round(P.lockup.nil_below * 100) + ' for every ₹100 due.'; }
     var pr = partners(); pr[0] = Object.assign({}, pr[0], {name: state.parent || pr[0].name, pct: state.stake});
-    var pile = [{title: 'Concession Agreement', stamp: 'Executed'}];
-    if (state.construction) pile.push({title: 'Construction record', stamp: 'Filed'});
-    for (var k = 2; k <= e; k++) pile.push({title: 'Board minutes, era ' + k, stamp: 'Approved'});
-    return {era: e + 1, years: (2025 + nx[1]) + '–' + (2025 + nx[2]), year: nextStart, parent: state.parent, parentPct: state.stake, founder: state.founder || undefined,
+    // dated in the game: the meeting sits on the last day of the era just run, on the signing day's month and day
+    var md = String(state.signedOn || '2026-04-01').slice(4), meet = cal(ys[2]) + md, con = (state.history || []).filter(function (h) { return h.construction; })[0];
+    var pile = [{title: 'Concession Agreement', stamp: 'Executed', date: state.signedOn || undefined}];
+    if (state.construction) pile.push({title: 'Construction record', stamp: 'Filed', date: (con && con.construction.finishedOn) || state.opensOn || undefined});
+    for (var k = 2; k <= e; k++) pile.push({title: 'Board minutes, ' + cal(eraYears(k - 1)[2]), stamp: 'Approved', date: cal(eraYears(k - 1)[2]) + md});
+    return {era: e + 1, years: (2025 + nx[1]) + '–' + (2025 + nx[2]), year: nextStart, date: meet, parent: state.parent, parentPct: state.stake, founder: state.founder || undefined,
       partners: pr.map(function (x) { return {name: x.name, pct: x.pct}; }), stakeValueCr: lr.stakeValueCr, cashCr: cash, debtCr: lr.debtCr || 0,
       dscr: lr.cover != null ? {value: lr.cover, warn: P.thr.warning, covenant: P.thr.covenant} : null,
       aera: aera, appealNow: stance === 'hard', investments: invest,
@@ -1236,7 +1238,7 @@
       diffPct: Math.round((implied - valueCr) / valueCr * 1000) / 10};
   }
   function stakeSentence(company, pct, valueCr, chk, when) {   // the stake line every bill uses, with its reconciliation
-    var w = (company || 'Your company') + '\'s ' + pct + '% is worth about ' + stakeWords(valueCr) + (when ? ' ' + when : '') + '.';
+    var w = poss(company || 'Your company') + ' ' + pct + '% is worth about ' + stakeWords(valueCr) + (when ? ' ' + when : '') + '.';
     if (!chk) return w;
     return w + ' ' + (company ? 'It has' : 'You have') + ' put in ' + stakeWords(chk.moneyInCr) + ' since ' + chk.fromYear +
       (chk.dividendsCr >= 1 ? ' and taken out ' + stakeWords(chk.dividendsCr) + ' in dividends' : '') +
@@ -1302,9 +1304,13 @@
       director: (state.founder || 'The founder') + ', director', chapter: ch, resumable: resumable(state).ok,
       line: 'Signed ' + fmtDate(state.signedOn || '2026-04-01') + ' · now year ' + yr + ' of 60 · ' + (ch.n <= 7 ? 'Chapter ' + ch.n + ', ' : '') + ch.name,
       year: state.year || 1, calYear: cal(state.year || 1), era: state.era || 1, building: !!state.building,
-      stake: {pct: state.stake || 0, valueCr: lr.stakeValueCr != null ? lr.stakeValueCr : null},
+      stake: {pct: state.stake || 0, valueCr: lr.stakeValueCr != null ? lr.stakeValueCr : null, inCr: lr.stakeValueCr != null ? null : putIn(state)},
       cover: {words: state.building ? 'No loan payments due until the airport opens' : coverWords(cov), light: lr.light || 'green'},
       cashCr: h.cashCr != null ? h.cashCr : Math.round(state.cash || 0), docs: campaignDocs(state)};
+  }
+  // the player's share of what the shareholders have put in so far (the file card's stake before the first books close)
+  function putIn(state) {
+    try { var q = closeFigures(state.s, state.s.sizing); return Math.round(q.equityCr * (state.stake || 64) / 100); } catch (e) { return null; }
   }
   // The save (zm_campaign). A concession is resumable only if it is the player's own: signed (signature, founder and
   // signing day), from this version of the game, not the sample company, and not over. VSIEra.resumable(save) → {ok, why}
@@ -1333,7 +1339,7 @@
       yearsRun: yearsRun, how: how,
       howWords: how === 'handback' ? 'Handed back after 60 years' : how === 'banks' ? 'The banks took control in ' + cal(o.year || state.year || 1) : 'Torn up in year ' + (state.year || 1),
       finalReturnPct: ret, stakeValueCr: how === 'banks' ? 0 : (lr.stakeValueCr != null ? lr.stakeValueCr : null),
-      endedOn: how === 'handback' ? (state.endsOn || null) : null};
+      endedOn: how === 'handback' ? (state.endsOn || null) : cal(o.year || state.year || 1) + String(state.signedOn || '2026-04-01').slice(4)};
   }
   function addMonths(iso, m) {
     var d = iso ? new Date(iso + 'T12:00:00Z') : new Date(Date.UTC(2026, 3, 1, 12));
@@ -2710,7 +2716,7 @@
     if (lr.cover != null) lines.push('The banks: ' + coverWords(lr.cover) + ' in the hardest recent year.');
     // the split-flap: one headline per year, oldest first (the year's event, or its passengers and connections)
     var headlines = years.map(function (y) { return y.calYear + ': ' + (y.line || y.paxM + ' million passengers, ' + y.connectionsPerDay.toLocaleString('en-IN') + ' changing planes here each day.'); });
-    return {state: st, from: cal(y0), to: cal(y1), fromYear: cal(y0), toYear: cal(y1), years: years, headlines: headlines, lines: lines, chapter: n};
+    return {state: st, from: cal(y0), to: cal(y1), fromYear: cal(y0), toYear: cal(y1), years: years, lines: headlines, headlines: headlines, summary: lines, chapter: n};
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -2762,7 +2768,7 @@
     var dcf = J('bial.owners.dcf_inputs', {}) || {}, roe = J('till.fair_return_on_equity', null), cod = J('till.efficient_cost_of_debt', null);
     var src = function (p) { var n = MD; p.split('.').forEach(function (k) { n = n && n[k]; }); return n && n.source ? n.source.split(' ; ')[0] : null; };
     var out = [];
-    if (dcf.discount_rate) out.push({id: 'fairfax', label: 'What Fairfax\'s own valuation of Bengaluru\'s airport assumes it earns', lowPct: dcf.discount_rate[0] * 100, highPct: dcf.discount_rate[1] * 100, year: 2025, source: src('bial.owners.dcf_inputs'), key: 'bial.owners.dcf_inputs'});
+    if (dcf.discount_rate) out.push({id: 'fairfax', label: 'What Fairfax\'s own valuation of Bengaluru\'s airport assumes it earns', lowPct: dcf.discount_rate[0] * 100, highPct: dcf.discount_rate[1] * 100, pct: [Math.round(dcf.discount_rate[0] * 1000) / 10, Math.round(dcf.discount_rate[1] * 1000) / 10], year: 2025, source: src('bial.owners.dcf_inputs'), key: 'bial.owners.dcf_inputs'});
     if (roe != null) out.push({id: 'aera', label: 'What AERA allows Delhi\'s airport on its shareholders\' money', pct: roe, source: src('till.fair_return_on_equity'), key: 'till.fair_return_on_equity'});
     if (cod != null) out.push({id: 'banks', label: 'What the banks charged', pct: cod, source: src('till.efficient_cost_of_debt'), key: 'till.efficient_cost_of_debt'});
     return out;
@@ -2809,7 +2815,7 @@
     opts = opts || {};
     var G = groupPatches(state), ids = GROUPS.filter(function (k) { return G[k]; }), n = ids.length, all = {}, none = {}, phi = {};
     ids.forEach(function (k) { all[k] = true; });
-    var vN = valueOf(state, G, all), v0 = valueOf(state, G, none), total = vN - v0, method = opts.exact ? 'exact' : 'quick';
+    var vN = valueOf(state, G, all), v0 = valueOf(state, G, none), total = vN - v0, method = opts.exact ? 'shapley' : 'leave-one-out';
     if (opts.exact && n) {
       var memo = {}, fact = [1]; for (var i = 1; i <= n; i++) fact[i] = fact[i - 1] * i;
       var V = function (mask) { if (memo[mask] == null) { var keep = {}; ids.forEach(function (k, j) { if (mask & (1 << j)) keep[k] = true; }); memo[mask] = valueOf(state, G, keep); } return memo[mask]; };
@@ -2837,11 +2843,11 @@
       return w + (x.npvCr >= 0 ? ' made ' : ' cost you ') + Math.abs(Math.round(x.sharePct)) + '% of your return.';
     };
     var absSum = groups.reduce(function (a, x) { return a + Math.abs(phi[x.group]); }, 0) + Math.abs(rest), top2 = groups.slice(0, 2).reduce(function (a, x) { return a + Math.abs(phi[x.group]); }, 0);
-    return {method: method, words: method === 'quick' ? 'A quick estimate: each decision undone on its own.' : '', rate: npvRate(), playerNpvCr: Math.round(vN), passiveNpvCr: Math.round(v0), totalCr: Math.round(total),
+    return {method: method, words: method === 'leave-one-out' ? 'A quick estimate: each decision undone on its own.' : '', rate: npvRate(), playerNpvCr: Math.round(vN), passiveNpvCr: Math.round(v0), totalCr: Math.round(total),
       groups: groups, everythingElse: {npvCr: Math.round(pooled), sharePct: Math.round(pooled / den * 1000) / 10}, restCr: Math.round(rest), bars: bars,
       sentences: bars.slice(0, 2).map(sentence), barSentences: bars.map(sentence),
       barsWithWords: bars.map(function (x) { return Object.assign({sentence: sentence(x)}, x); }), powerLaw: absSum > 0 && top2 / absSum >= 0.5 ? 'Two decisions made most of your sixty years. Most decisions barely mattered. That is how big returns work.' : 'No single decision made your sixty years: it was many small ones.',
-      top2Share: absSum > 0 ? Math.round(top2 / absSum * 1000) / 10 : 0, checkSum: Math.abs(sumPhi + rest - total) / (Math.abs(total) || 1), runs: method === 'exact' ? Math.pow(2, n) : n + 2};
+      top2Share: absSum > 0 ? Math.round(top2 / absSum * 1000) / 10 : 0, checkSum: Math.abs(sumPhi + rest - total) / (Math.abs(total) || 1), runs: method === 'shapley' ? Math.pow(2, n) : n + 2};
   }
   // page 1: the return against the sourced benchmarks
   function returnPage(state) {
@@ -2919,8 +2925,18 @@
     ensure();
     var a = attribution(state, opts), rp = returnPage(state), pa = papers(state), pr = profile(state, a), th = thiel(state), f = state.final || {}, mo = onceLine(state);
     rp.valueCr = f.banks ? 0 : (f.residualCr != null ? f.residualCr : 0);   // what the player's stake was worth at the handback (the cash left, its share)
+    var o = state.over || {}, banks = o.reason === 'banks';
+    // the Black Box screen's names (money/CONTRACT.md on s0b-ui)
+    var p1 = {returnPct: rp.returnPct, words: rp.words, moneyInCr: rp.investedCr, moneyOutCr: rp.returnedCr, valueCr: rp.valueCr, line: rp.line, company: rp.company,
+      ended: banks ? 'banks' : 'handback', endedYear: banks ? cal(o.year || state.year || 1) : cal(60),
+      endedOn: banks ? cal(o.year || state.year || 1) + String(state.signedOn || '2026-04-01').slice(4) : (state.endsOn || null), endedWords: rp.ending,
+      benchmarks: rp.benchmarks.map(function (b) { return {id: b.id, label: b.label, pct: b.pct, year: b.year, source: b.source, key: b.key}; })};
     a.bars = a.barsWithWords;
-    return {p1: rp, p2: a, p3: {papers: pa, moment: mo}, p4: {profile: pr, thiel: th},
+    var p2 = {method: a.method, words: a.words, bars: a.bars.map(function (b) { return {decision: b.group, label: b.label, chosen: b.chosen, npvCr: b.npvCr, sharePct: b.sharePct, sentence: b.sentence}; }),
+      everythingElsePct: a.everythingElse.sharePct, everythingElseCr: a.everythingElse.npvCr, closing: a.powerLaw, sentences: a.sentences, totalCr: a.totalCr, checkSum: a.checkSum, groups: a.groups};
+    var p3 = {frontPages: pa.map(function (x) { return {chapter: x.chapter, name: x.name, year: x.calYear, lead: x.lead, dateLine: x.dateLine, line: x.line, light: x.light}; }), once: mo};
+    var p4 = {lines: pr.map(function (l) { return {id: l.id, title: l.title, line: l.text, evidence: l.evidence}; }), thiel: th};
+    return {p1: p1, p2: p2, p3: p3, p4: p4,
       'return': rp, attribution: a, papers: pa, profile: pr, thiel: th, moment: mo,
       company: state.parent || 'Your company', founder: state.founder || '', signature: state.signature || null, signedOn: state.signedOn || null, endsOn: state.endsOn || null};
   }

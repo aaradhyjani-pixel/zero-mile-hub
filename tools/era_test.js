@@ -229,7 +229,7 @@ function c5shift(plan, held, slack) {
 const PLAYERS = [
   ['hub-smart', 'three', true, 0.03, 'signs three banks, holds London for the 380'],
   ['hub-letgo', 'three', false, 0.03, 'signs three banks, lets London go'],
-  ['hub-blind', 'decline', false, 0.03, 'declines Skyward']];
+  ['hub-blind', 'decline', false, 0.03, 'declines Haversine Airways']];
 const c5 = {}, c5texts = [JSON.stringify(fp), JSON.stringify(dc)];
 console.log('| Player | Plan | Earned ₹ cr a year | Spent ₹ cr a year | Connections made / missed a year | Earned / spent 2040-43 | Loan cover, hardest year | Your stake |\n|---|---|---|---|---|---|---|---|');
 for (const [name, choice, held, slack, what] of PLAYERS) {
@@ -240,7 +240,7 @@ for (const [name, choice, held, slack, what] of PLAYERS) {
   plan.tags.forEach(t => { if (!(st.docs || []).some(d => d.id === t.docId)) fail('ch5 tag without a doc: ' + t.docId); });
   const r = C5.applyShift(st, c5shift(plan, held, slack));
   rt(r.state);
-  const b = r.bill, row = l => b.table.find(t => t.label.indexOf(l) === 0) || {cr: 0, made: 0, missed: 0}, tb = [row('Earned'), row('Spent'), row('Connections to Skyward')];
+  const b = r.bill, row = l => b.table.find(t => t.label.indexOf(l) === 0) || {cr: 0, made: 0, missed: 0}, tb = [row('Earned'), row('Spent'), row('Connections to ')];
   c5[name] = b;
   c5texts.push(JSON.stringify(br), JSON.stringify(plan), JSON.stringify(b), JSON.stringify(r.card));
   console.log('| ' + name + ' | ' + what + ' | ' + tb[0].cr + ' | ' + tb[1].cr + ' | ' + tb[2].made.toLocaleString('en-IN') + ' / ' + tb[2].missed.toLocaleString('en-IN') + ' | ' +
@@ -536,7 +536,7 @@ else {
   if (!(aS.top2Share >= 50)) fail('debrief: the two largest decisions should hold half the attribution in the smart run, got ' + aS.top2Share + '%');
   const bNet = aB.groups.find(g => g.group === 'network');
   if (!bNet || bNet.npvCr >= 0) fail('debrief: the blind run\'s bar for cutting charges should be negative');
-  if (aBx.method !== 'exact' || aBx.runs !== Math.pow(2, aBx.groups.length)) fail('debrief: the exact method');
+  if (aBx.method !== 'shapley' || aB.method !== 'leave-one-out' || aBx.runs !== Math.pow(2, aBx.groups.length)) fail('debrief: the exact method');
   const prS = E.debrief.profile(SM.st, aS), prB = E.debrief.profile(BL.st, aB);
   [...prS, ...prB].forEach(l => { if (l.id !== 'defaults' && !l.evidence) fail('debrief: a profile line without evidence: ' + l.line); });
   if (!prB.some(l => l.id === 'risk-cost')) fail('debrief: the blind run should read "a risk-taker, and it cost you"');
@@ -567,7 +567,7 @@ else {
   const br = SM.log.bridge5;
   if (br.from !== 2034 || br.to !== 2039 || br.years.map(y => y.calYear).join() !== '2035,2036,2037,2038' || br.years.some(y => y.paxM <= 0 || y.connectionsPerDay == null)) fail('bridge 4→5 should span 2035-2038: ' + br.from + '→' + br.to + ' ' + br.years.map(y => y.calYear));
   console.log('- cliffhangers: "' + ch1.lead + '" / smart "' + ch2s.lead + '" / blind "' + ch2b.lead + '"; years later 4→5: ' + br.years.map(y => y.calYear + (y.line ? ' (' + y.line + ')' : '')).join(', '));
-  if (br.fromYear !== 2034 || br.toYear !== 2039 || br.headlines.length !== 4 || !/^2035: /.test(br.headlines[0])) fail('bridge: fromYear/toYear and one headline a year, oldest first: ' + JSON.stringify(br.headlines));
+  if (br.fromYear !== 2034 || br.toYear !== 2039 || br.lines.length !== 4 || !/^2035: /.test(br.lines[0]) || br.summary.length < 2) fail('bridge: fromYear/toYear and one headline a year, oldest first: ' + JSON.stringify(br.headlines));
   // the engine playing over Chapters 3-4 without their decisions still builds a network (the "0 changing planes" bug)
   let skip = E.applyConstruction(E.newCampaign(Object.assign({}, SIGN, SMART.terms), 1), {choices: SMART.con});
   const skipB = E.bridge(E.ch3.start(skip), 5);
@@ -576,8 +576,20 @@ else {
   const pg = E.debrief.pages(SM.st), pgR = E.debrief.pages(RF.st);
   ['return', 'attribution', 'papers', 'profile', 'thiel'].forEach(k => { if (!pg[k] || !pgR[k]) fail('debrief.pages missing ' + k); });
   ['p1', 'p2', 'p3', 'p4'].forEach(k => { if (!pg[k] || !pgR[k]) fail('debrief.pages missing ' + k); });
-  if (pg.p1.valueCr == null || pgR.p1.valueCr !== 0 || pg.p2.bars.some(b => !b.sentence) || pg.p4.profile.some(l => !l.title) || !pg.p3.papers.length || pg.p4.thiel.length !== 7) fail('debrief.pages: p1.valueCr, a sentence on every bar, a title on every profile line');
+  if (pg.p1.valueCr == null || pgR.p1.valueCr !== 0 || pg.p2.bars.some(b => !b.sentence || !b.decision) || pg.p4.lines.some(l => !l.title || l.line == null) || !pg.p3.frontPages.length || !pg.p3.once || pg.p4.thiel.length !== 7) fail('debrief.pages: p1.valueCr, a sentence on every bar, a title on every profile line');
   if (pg.thiel.length !== 7 || pg.thiel.some(x => !x.q || !x.answer || !/[✓✗]/.test(x.mark))) fail('debrief: Thiel\'s seven questions');
+  const P1 = pg.p1, F = pg.p1.benchmarks.find(b => b.id === 'fairfax');
+  if (P1.ended !== 'handback' || P1.endedYear !== 2085 || pgR.p1.ended !== 'banks' || pgR.p1.endedYear !== 2046 || !/^2046-04-01$/.test(pgR.p1.endedOn) || P1.moneyInCr == null || P1.moneyOutCr == null) fail('debrief.pages p1 names: ' + JSON.stringify([P1.ended, P1.endedYear, pgR.p1.ended, pgR.p1.endedYear, pgR.p1.endedOn]));
+  if (!F || !Array.isArray(F.pct) || F.pct.join() !== '12.2,17.5' || typeof pg.p1.benchmarks.find(b => b.id === 'aera').pct !== 'number') fail('debrief.pages p1 benchmarks: pct a number, or [low, high]');
+  if (pg.p2.everythingElsePct == null || !pg.p2.closing || pg.p3.frontPages.some(x => !x.year)) fail('debrief.pages p2/p3 names');
+  // the test agent's four fixes (ported)
+  const bo2 = E.boardOptions(SM.log.ch4start);
+  if (!/^\d{4}-04-01$/.test(bo2.date) || bo2.pile.some(x => !x.date) || !bo2.pile.some(x => /^Board minutes, \d{4}$/.test(x.title))) fail('boardOptions: the meeting and its pile dated in the game: ' + JSON.stringify(bo2.pile));
+  const rec = E.recordOf(RF.st), recT = E.recordOf(SM.log.ch4start, 'torn-up');
+  if (rec.endedOn !== '2046-04-01' || !/^\d{4}-04-01$/.test(recT.endedOn || '')) fail('recordOf: torn-up and taken concessions carry an end date: ' + [rec.endedOn, recT.endedOn]);
+  const fcB = E.fileCard(E.newCampaign(Object.assign({}, SIGN, SMART.terms), 1));
+  if (!(fcB.stake.valueCr == null && fcB.stake.inCr > 0)) fail('fileCard: while building, the stake shows what has been put in so far: ' + JSON.stringify(fcB.stake));
+  if (/Airways's|Ventures's/.test(JSON.stringify([SM.log.ch3, SM.log.ch4, SM.log.ch5, SM.log.ch6, SM.log.ch7, E.endBill(SM.st)]))) fail('possessives: "Airways\'s"');
   const thB = E.debrief.thiel(BL.st), marks = th => th.filter(x => x.mark === '✓').length;
   if (!(marks(pg.thiel) > marks(thB))) fail('debrief: the smart run should answer more of Thiel\'s questions than the blind run: ' + marks(pg.thiel) + ' vs ' + marks(thB));
   pushT(ch1, ch2b, ch2s, br.years, br.lines, pg, pgR.thiel, thB);

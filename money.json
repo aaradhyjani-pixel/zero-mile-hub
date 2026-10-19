@@ -1223,20 +1223,20 @@
    "note": "Phase 1 sized for Level 1-2 traffic: BLR ~44.5 m moves in at opening; HYD+AMD (~44 m) arrive in year 8, triggering the first expansion. Range given 60-80."
   },
   "zmi_phase1_cr_per_mppa": {
-   "value": 800,
+   "value": 1214,
    "unit": "INR crore per MPPA (2025-26, excl. land)",
    "source": "https://ianslive.in/pm-inaugurates-navi-mumbai-international-airport--20251008154555 ; https://content.knightfrank.com/research/3090/documents/en/the-jewar-turning-point-2026-12780.pdf",
    "period": "2025-26",
    "estimate": true,
-   "note": "Below single-runway phase 1s (930-983) because two runways and a large headhouse spread fixed site cost over 70 MPPA; above Noida full-plan 422 (bid-era prices, ~600 inflated). Land excluded: the state contributes it."
+   "note": "Recalibrated 2026-10-19: big phase 1 85,000 / 70 MPPA. See capex.vsi_capex_frame."
   },
   "zmi_phase1_capex_cr": {
-   "value": 56000,
+   "value": 85000,
    "unit": "INR crore",
    "source": "derived: zmi_phase1_mppa x zmi_phase1_cr_per_mppa",
    "period": "2025-26",
    "estimate": true,
-   "note": "70 x 800 = 56,000. Cross-check: NMIA operator capex to FY30 Rs 57,333 cr; Al Maktoum ~Rs 1,112 cr/MPPA would give 77,800."
+   "note": "Big phase 1 (70 MPPA) = capex.stages 1A_big. Lean phase 1 is 60,000 for 45 MPPA. See capex.vsi_capex_frame."
   },
   "zmi_construction_years": {
    "value": 4,
@@ -1247,89 +1247,140 @@
    "note": "NMIA ~4 yrs from Mar-2022 close to Oct-2025; Noida ~4.5 yrs from Aug-2021 close."
   },
   "zmi_full_build_capex_cr": {
-   "value": 104000,
+   "value": 200000,
    "unit": "INR crore (phase 1 + expansions to 209 MPPA)",
    "source": "derived",
    "period": "2025-26",
    "estimate": true,
-   "note": "56,000 + 139 MPPA x 275 (~38,200) + 4 runways x 1,950 (7,800) ~ 1,02,000-1,04,000."
+   "note": "Lean path to 260 MPPA incl. phase 2 (168,000 to 209 MPPA). See capex.vsi_capex_frame."
   },
   "stages": {
    "value": {
     "1A_lean": {
-     "cost": 36000,
+     "cost": 60000,
      "spend": {
-      "1": 0.25,
-      "2": 0.25,
-      "3": 0.25,
-      "4": 0.25
+      "1": 0.1,
+      "2": 0.2,
+      "3": 0.3,
+      "4": 0.4
      },
      "cod": 5,
      "cap": 45
     },
     "1A_big": {
-     "cost": 56000,
+     "cost": 85000,
      "spend": {
-      "1": 0.25,
-      "2": 0.25,
-      "3": 0.25,
-      "4": 0.25
+      "1": 0.1,
+      "2": 0.2,
+      "3": 0.3,
+      "4": 0.4
      },
      "cod": 5,
      "cap": 70
     },
     "1B_lean": {
-     "cost": 20000,
+     "cost": 32000,
      "spend": {
-      "6": 0.5,
-      "7": 0.5
+      "6": 0.4,
+      "7": 0.6
      },
      "cod": 8,
      "cap": 95
     },
     "1B_big": {
-     "cost": 6875,
+     "cost": 16000,
      "spend": {
-      "6": 0.5,
-      "7": 0.5
+      "6": 0.4,
+      "7": 0.6
      },
      "cod": 8,
      "cap": 95
     },
     "1C": {
-     "cost": 24000,
+     "cost": 38000,
      "spend": {
-      "9": 0.5,
-      "10": 0.5
+      "9": 0.4,
+      "10": 0.6
      },
      "cod": 11,
      "cap": 150
     },
     "1D": {
-     "cost": 24000,
+     "cost": 38000,
      "spend": {
-      "11": 0.3333333333333333,
-      "12": 0.3333333333333333,
-      "13": 0.3333333333333333
+      "11": 0.2,
+      "12": 0.3,
+      "13": 0.5
      },
      "cod": 14,
      "cap": 209
     },
     "P2": {
-     "cost": 14025,
+     "cost": 32000,
      "spend": {
-      "19": 0.5,
-      "20": 0.5
+      "15": 0.4,
+      "16": 0.6
      },
-     "cod": 21,
+     "cod": 17,
      "cap": 260
     }
    },
    "unit": "INR crore (FY2026 prices) / mppa",
-   "source": "design/eras.md capex.stages; money.json capex.zmi_phase1_capex_cr, capex.brownfield_cr_per_added_mppa, world.game_capacity",
+   "source": "capex.peer_istanbul, capex.peer_al_maktoum (peers at ~Rs 1,050-1,180 cr/MPPA, discounted by about a third for Indian costs and free land); bial.t2.funding_split (back-loaded spend: 18% of T2 in its first 3 of 7 years)",
    "period": "game",
    "estimate": true,
-   "note": "Names as money-design.md: 1A = BIAL phase 1; 1B (AMD+HYD) = BIAL T1 expansion (FY2014, op year 6); 1C (BOM) + 1D (DEL) = the T2 programme (one close in year 9, 80:20, 1-yr moratorium after completion, 10-yr repayment). Used by tools/concession_model.py."
+   "note": "Recalibrated 2026-10-19 to the user's call: lean path Rs 2,00,000 cr to 260 MPPA (Rs 769 cr/MPPA; sensitivity 1.8-2.3 lakh cr). 1A (60,000): 2 runways, the whole Hall and Mall roof (cannot be phased), concourses A and B, people mover, tower, site works and access. 1A_big (85,000, 70 MPPA): the same plus 25 MPPA of concourse and apron at the marginal rate; 1B_big (16,000) completes 95. 1B (32,000): runways 3-4 + concourse C. 1C (38,000): runway 5 + concourses D/E. 1D (38,000): runway 6 + concourse F. P2 (32,000): satellites G/H. Spend is back-loaded (S-curve) as BIAL's T2 was. P2: expert orders it at the year-14 board, built years 15-16, opens 17. Names as money-design.md: 1A = BIAL phase 1; 1B = BIAL T1 expansion; 1C+1D = the T2 programme (one close in year 9, 80:20). Used by tools/concession_model.py."
+  },
+  "peer_istanbul": {
+   "value": {
+    "cost_eur_bn": 22,
+    "cost_inr_cr": 220000,
+    "area_ha": 7600,
+    "mppa": 200,
+    "runways": 6,
+    "inr_cr_per_mppa": 1100
+   },
+   "unit": "EUR bn / INR crore at world.fx_inr EUR 100 / ha / MPPA",
+   "source": "https://en.wikipedia.org/wiki/Istanbul_Airport",
+   "period": "opened 2018; final phases to 2028",
+   "estimate": false,
+   "note": "Figures as agreed with the user. Caveat: Turkey's investment office splits the EUR 32.4 bn total into EUR 10.2 bn investment and EUR 22.2 bn rent to the state over the concession (https://www.invest.gov.tr/en/News/News-from-Turkey/Pages/istanbul-airport-worlds-new-hub-officially-opened.aspx), and gives 76.5 km2, 6 runways, 150 MPPA contract capacity (200 possible, iGA Feb 2024). On build cost alone Istanbul is ~Rs 510 cr/MPPA."
+  },
+  "peer_al_maktoum": {
+   "value": {
+    "cost_usd_bn": 35,
+    "cost_inr_cr": 308000,
+    "mppa": 260,
+    "area_ha": 7000,
+    "runways": 5,
+    "inr_cr_per_mppa": 1185
+   },
+   "unit": "USD bn / INR crore at world.fx_inr USD 88 / MPPA / ha",
+   "source": "https://www.aljazeera.com/economy/2024/4/28/dubai-announces-plans-for-35bn-airport-to-become-worlds-largest ; https://www.mediaoffice.ae/en/news/2024/april/28-04/al-maktoum-international-airport",
+   "period": "announced 2024-04-28",
+   "estimate": false,
+   "note": "AED 128 bn new terminal; 400 gates, five runways, 70 km2 (capex.dwc_terminal)."
+  },
+  "vsi_capex_frame": {
+   "value": {
+    "full_build_cr": 200000,
+    "full_build_sensitivity_cr": [
+     180000,
+     230000
+    ],
+    "phase1_lean_cr": 60000,
+    "phase1_big_cr": 85000,
+    "mandatory_to_209_cr": 168000,
+    "cr_per_mppa": 769,
+    "peer_discount": 0.33,
+    "site_ha": 7100,
+    "runways": 6
+   },
+   "unit": "INR crore (FY2026)",
+   "source": "capex.peer_istanbul, capex.peer_al_maktoum; capex.stages",
+   "period": "game",
+   "estimate": true,
+   "note": "Peers ~Rs 1,100-1,180 cr/MPPA less about a third for Indian construction costs and state land = ~Rs 770 cr/MPPA x 260 MPPA."
   }
  },
  "ppp": {
@@ -1620,23 +1671,25 @@
   },
   "financial_close": {
    "value": {
-    "capex_cr": 56000,
+    "capex_cr": 60000,
     "debt_share": 0.7,
-    "debt_cr": 39200,
-    "equity_cr": 16800,
-    "parent_equity_cr": 13440,
-    "aai_equity_cr": 1680,
-    "madc_equity_cr": 1680,
+    "debt_cr": 42000,
+    "equity_cr": 18000,
+    "parent_equity_cr": 14400,
+    "aai_equity_cr": 1800,
+    "madc_equity_cr": 1800,
     "construction_rate": 10.5,
     "operating_rate": 9.5,
     "tenor_years": 20,
-    "moratorium_years": 1
+    "moratorium_years": 1,
+    "capex_big_cr": 85000,
+    "full_build_cr": 200000
    },
    "unit": "INR crore / % / years",
    "source": "derived from capex and finance",
    "period": "game",
    "estimate": true,
-   "note": "Default gearing 70:30; slider 60-80%. Repayment: sculpted (default) or equal instalments."
+   "note": "Lean 1A basis (60,000 cr, 45 MPPA); big phase 1 85,000 cr (70 MPPA). Default gearing 70:30; slider 60-75%. Bank sizing in tools/concession_model.py may lend less. Repayment: sculpted (default) or equal instalments."
   },
   "dscr_thresholds": {
    "value": {
@@ -1716,12 +1769,12 @@
    "note": "Deducted from CFADS and capitalised into RAB. Keeps the asset base from decaying in the late game. Not applied in the back-test (BIAL RAB anchors already include it). Used by tools/concession_model.py."
   },
   "lbc_dscr_target": {
-   "value": 1.3,
+   "value": 1.25,
    "unit": "x base-case CFADS / debt service the bank sculpts and sizes to",
    "source": "design/eras.md section 7 (game.lbc_dscr_target); BIAL covenant context: money.json bial.debt.covenants (1.40 cumulative downgrade trigger, 1.5 expected)",
    "period": "game",
    "estimate": true,
-   "note": "Used by tools/concession_model.py."
+   "note": "Used by tools/concession_model.py. 1.25 since the 2026-10-19 capex recalibration (sculpting lever, inside the 1.10 covenant to 1.40 ICRA trigger band): at 1.30 bad and lazy fell by an unfunded instalment before the two-era rule."
   },
   "lbc_interest_only_cover": {
    "value": 1.2,
@@ -3620,7 +3673,7 @@
     "slot_cut_per_hour": 2,
     "phase2_trigger": 0.8,
     "phase2_early_option": 0.7,
-    "phase2_cost_cr": 14025,
+    "phase2_cost_cr": 32000,
     "phase2_build_eras": 1,
     "slip_p": 0.3,
     "slip_years": 1,
@@ -3636,7 +3689,7 @@
    "source": "research/money-world.md section 9",
    "period": "game",
    "estimate": true,
-   "note": "Phase 2 cost = 51 mppa x capex.brownfield_cr_per_added_mppa (275)."
+   "note": "Phase 2 cost = capex.stages P2 (32,000 cr, satellites G/H, 51 MPPA)."
   },
   "game_incidents": {
    "value": {

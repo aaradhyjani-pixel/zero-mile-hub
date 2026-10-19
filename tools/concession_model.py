@@ -1124,7 +1124,7 @@ def vsi_demand_fn(profile, drag_by_year=None):
 
 
 SCEN = {
-    'EXPERT': {'gearing': 0.70, 'phase1': 'lean', 'state_loan': True, 'defer_state_loan': True, 'push': 'normal',
+    'EXPERT': {'gearing': 0.75, 'phase1': 'lean', 'state_loan': True, 'defer_state_loan': True, 'push': 'normal',
                'profile': 'sculpt', 'refi': True, 'cure': True, 'retain_until': 0, 'prepay_share': 0.0,
                'phase2': True, 'ops': 'expert', 'fee': None, 'card': None, 'shock': False, 'prepay_locked': False},
     'BAD': {'gearing': 0.75, 'phase1': 'lean', 'state_loan': False, 'defer_state_loan': False, 'push': 'hard',
@@ -1155,6 +1155,12 @@ def vsi_build(s, gear, scheds, base, with_p2, sizing_weights=None, label='?'):
     st = P['vsi_stages']
     lt = P['vsi_loan_terms']
     names = stage_names(s, with_p2)
+    delay = 0 if base else s.get('delay', 0)      # 1A opens late (BIAL's T2: 21 months); the bank sized on time
+    planned_cod1 = st[names[0]]['cod']
+    if delay:
+        st = {k: dict(v) for k, v in st.items()}
+        st[names[0]]['cod'] += delay
+    y_open = st[names[0]]['cod']
     prof = 'base' if base else s['ops']
     ops = lambda t: ops_at(prof, t + 1)
     push = PUSH['normal'] if base else PUSH[s['push']]
@@ -1188,12 +1194,12 @@ def vsi_build(s, gear, scheds, base, with_p2, sizing_weights=None, label='?'):
         """BIAL's opening cost: greenfield in years 5 (full) and 6 (half); expansions in their first two years.
         Borne by the operator: AERA does not allow it (see bial_opening_cost)."""
         y = t + 1
-        if y < 5:
+        if y < y_open:
             return 0.0
-        new_g = cap_year(5) if y == 5 else cap_year(5) * P['opening_cost']['greenfield_year2_share'] if y == 6 else 0.0
+        new_g = cap_year(y_open) if y == y_open else cap_year(y_open) * P['opening_cost']['greenfield_year2_share'] if y == y_open + 1 else 0.0
         new_e = 0.0
         for k in (0, 1) if not (s.get('no_expansion_opening') and not base) else ():
-            if y - k > 5:
+            if y - k > y_open:
                 new_e += max(0.0, cap_year(y - k) - cap_year(y - k - 1))
         kg = CALIB['open_k_greenfield_alone'] if s.get('greenfield_alone') else CALIB['open_k_greenfield']
         return pr(t) * a_fix * (kg * new_g + CALIB['open_k_expansion'] * new_e)
@@ -1225,12 +1231,13 @@ def vsi_build(s, gear, scheds, base, with_p2, sizing_weights=None, label='?'):
                                 life=min(CALIB['dep_life'], 60 - cod_t)))
         stage_list.append({'name': n, 'spend_t': [y - 1 for y in sd['spend']], 'cost_nominal': total, 'idc': idc_tot, 'debt': out, 'gearing': g})
         terms = lt[stage_key(n)]
-        rep_start = terms['rep_start'] - 1 if 'rep_start' in terms else cod_t + terms['mor']
+        rep_start = terms['rep_start'] - 1 if 'rep_start' in terms else (planned_cod1 - 1 if (delay and n == names[0]) else cod_t) + terms['mor']
+        cap_t = planned_cod1 - 1 if (delay and n == names[0]) else cod_t   # late: interest falls due from the planned COD
         if scheds.get(n) is not None:
-            trn = Tranche(n, terms['rate'], draws=draws, cap_until=cod_t, rep_start=rep_start, rep_years=terms['years'],
+            trn = Tranche(n, terms['rate'], draws=draws, cap_until=cap_t, rep_start=rep_start, rep_years=terms['years'],
                           profile='fixed', sched=scheds[n])
         else:
-            trn = Tranche(n, terms['rate'], draws=draws, cap_until=cod_t, rep_start=rep_start, rep_years=terms['years'],
+            trn = Tranche(n, terms['rate'], draws=draws, cap_until=cap_t, rep_start=rep_start, rep_years=terms['years'],
                           profile=s['profile'], weights=(sizing_weights or {}).get(n, lambda t, pr=pr: 1.0),
                           target_mode=sizing_weights is not None and n in sizing_weights and n != 'P2')
         trn.out_planned = out
@@ -1603,8 +1610,11 @@ def zrow(ex, year):
 def vsi_events(ex):
     ev = {5: 'opens (1A); BLR moves in (L1); CP1', 6: 'opening costs (half year)', 8: 'AMD+HYD move in (L2); 1B opens',
           9: 'T2-style close for 1C+1D (80:20)', 10: 'CP2: AERA carries 13.9% of PV ARR', 11: 'BOM moves in (L3); 1C opens',
-          14: 'DEL moves in (L4); 1D opens', 15: 'CP3: CP2 true-up recovered; 1C/1D repaying', 19: 'phase 2 build',
-          20: 'CP4', 21: 'phase 2 opens'}
+          14: 'DEL moves in (L4); 1D opens', 15: 'CP3: CP2 true-up recovered; 1C/1D repaying', 20: 'CP4'}
+    p2 = P['vsi_stages']['P2']
+    y0 = min(p2['spend'])
+    ev[y0] = (ev[y0] + '; ' if y0 in ev else '') + 'phase 2 build'
+    ev[p2['cod']] = (ev[p2['cod']] + '; ' if p2['cod'] in ev else '') + 'phase 2 opens'
     if getattr(ex, 'refi_done', 0):
         y = ex.refi_done + 1
         ev[y] = (ev[y] + '; ' if y in ev else '') + 'refinanced (8.15%, 15 yrs)'
@@ -1728,7 +1738,7 @@ def print_levers():
     print('|---|---|---|---|---|---|---|---|---|---|---|---|')
     for n, s in SCEN.items():
         pu = PUSH[s['push']]
-        print(f"| {n} | {s['gearing']:.0%} (1C/1D at 80%) | {s['phase1']} | {'yes' if s['state_loan'] else 'no'} | {'yes' if s['defer_state_loan'] else 'no'} | {s['push']} ({pu['shock_carry']:.1%} / {'CPI' if pu['esc'] is None else 'flat nominal'} / {P['push_hard_disallowance'] if pu['hard'] else 0:.1%} / {P['airline_relations_drag'] * 100 if pu['hard'] else 0:+.0f} pp a year) | {s['profile']} | {'yes' if s['refi'] else 'no'} | {'yes' if s['cure'] else 'no'} | {('year ' + str(s['retain_until'])) if s['retain_until'] else 'no'} | {'years 19-20' if s['phase2'] else 'no'} | {s['ops']} |")
+        print(f"| {n} | {s['gearing']:.0%} (1C/1D at 80%) | {s['phase1']} | {'yes' if s['state_loan'] else 'no'} | {'yes' if s['defer_state_loan'] else 'no'} | {s['push']} ({pu['shock_carry']:.1%} / {'CPI' if pu['esc'] is None else 'flat nominal'} / {P['push_hard_disallowance'] if pu['hard'] else 0:.1%} / {P['airline_relations_drag'] * 100 if pu['hard'] else 0:+.0f} pp a year) | {s['profile']} | {'yes' if s['refi'] else 'no'} | {'yes' if s['cure'] else 'no'} | {('year ' + str(s['retain_until'])) if s['retain_until'] else 'no'} | {('years ' + '-'.join(str(y) for y in sorted(P['vsi_stages']['P2']['spend']))) if s['phase2'] else 'no'} | {s['ops']} |")
     print()
     print('Ops profiles by level (L1, L2, L3, L4, L5), hand-set stand-ins for the shift results (estimates): ' + '; '.join(
         f"{k}: Q {v['Q']}, disruption ₹/pax {v['dis']}, SQ rebate {v['sq']}, growth bonus {v['star']}, O&M × {v['opex']}" for k, v in P['ops_profiles'].items()) + '\n')
@@ -1769,7 +1779,8 @@ def print_warning_source(ex):
             ('EXPERT, pushes AERA hard', vsi_engine(dict(s, push='hard'), 'x'))]
     print('### Where the expert\'s lender warning comes from\n')
     bmin = min(r['dscr'] for r in ex.base_mand.rows if r['dscr'] is not None)
-    print(f'Worst single year of lender DSCR in E2-E4 (years 8-18). The bank sculpts every tranche to 1.30 on its base case and will not lend into an interest-only year below 1.20, so its own base case never warns (lowest year {bmin:.2f}, at opening). A dip below 1.20 therefore cannot come from the debt\'s shape: it comes from the run.\n')
+    by = min((r['dscr'], r['t'] + 1) for r in ex.base_mand.rows if r['dscr'] is not None)[1]
+    print(f'Worst single year of lender DSCR in E2-E4 (years 8-18). The bank sculpts every tranche to {P["lbc_dscr_target"]:.2f} on its base case and will not lend into an interest-only year below {P["lbc_moratorium_cover"]:.2f} (lowest base-case year {bmin:.2f}, year {by}). The expert\'s dip below that comes from the run.\n')
     print('| Run | E2 (8-10) | E3 (11-13) | E4 (14-18) | Worst year |')
     print('|---|---|---|---|---|')
     for lab, e in rows:
@@ -1800,14 +1811,51 @@ def print_scale(ex):
     pax_r = [(2008 + n, ex.rows[n + 3]['pax'] / PAX[2008 + n]) for n in range(1, 19) if n + 3 < len(ex.rows)]
     pax_nc = [x for fy, x in pax_r if fy not in (2021, 2022)]
     capex = sum(s['cost'] for k, s in P['vsi_stages'].items() if k in ('1A_lean', '1B_lean', '1C', '1D'))
+    p1 = P['vsi_stages']['1A_lean']['cost']
     sc = J('bial.scale.capex_factor_real')
     print(f"There is no single ×5. VSI is its own premise (design-day traffic, the capex stages in money-design.md) run on BIAL's unit costs and mechanisms. "
-          f"Capex (FY2026 ₹): phase 1 ₹36,000 cr vs BIAL ~₹{sc['bial_phase1_2025_cr']:,} cr = ×{36000 / sc['bial_phase1_2025_cr']:.1f}; "
+          f"Capex (FY2026 ₹): phase 1 ₹{p1:,} cr vs BIAL ~₹{sc['bial_phase1_2025_cr']:,} cr = ×{p1 / sc['bial_phase1_2025_cr']:.1f}; "
           f"full build ₹{capex:,.0f} cr vs ~₹{sc['bial_full_build_2025_cr']:,} cr = ×{capex / sc['bial_full_build_2025_cr']:.1f}. "
           f"Traffic by operating year: ×{min(pax_nc):.1f} to ×{max(pax_nc):.1f} (×{max(x for _, x in pax_r):.0f} against BIAL's COVID year). "
           f"Mature traffic (op year 18): VSI {ex.rows[21]['pax']:.0f} m vs BIAL {PAX[2026]:.1f} m = ×{ex.rows[21]['pax'] / PAX[2026]:.1f}. "
-          f"So VSI is ×5 on full-build capex, ×7 on phase 1 and ×4-10 on traffic; it reaches its mature traffic in 10 operating years where BIAL took 18, "
-          f"so in the middle of the arc it carries more passengers per rupee of capex than BIAL did.\n")
+          f"So VSI is ×{capex / sc['bial_full_build_2025_cr']:.0f} on full-build capex, ×{p1 / sc['bial_phase1_2025_cr']:.0f} on phase 1 and ×4-10 on traffic; it reaches its mature traffic in 10 operating years where BIAL took 18, "
+          f"so it carries fewer passengers per rupee of capex than BIAL did, which is why its charge per passenger is higher.\n")
+
+
+def print_charge(ex):
+    """The AERA building-block aero yield VSI needs, against Delhi's and Bengaluru's today (FY2026 rupees)."""
+    pr = lambda t: (1 + P['cpi_forward']) ** t
+    yv = [r['yield'] / pr(r['t']) for r in ex.rows if r['pax'] > 0]
+    cp1 = yv[0]
+    dial = J('aero.dial_aero_revenue_fy26_cr')['total'] / J('benchmarks.dial_revenue_fy26_cr')['pax_m'] * 10
+    blr = P['yield_market_norm']
+    print('### What VSI must charge per passenger (aero yield, FY2026 ₹)\n')
+    print('| Airport | Aero charge per passenger | Basis |')
+    print('|---|---|---|')
+    print(f"| VSI, first control period (expert) | ₹{cp1:,.0f} | AERA building block on VSI's own new RAB |")
+    print(f"| VSI, average years 5-23 | ₹{sum(yv[:19]) / len(yv[:19]):,.0f} | same |")
+    print(f"| Bengaluru (BIAL FY2026) | ₹{blr:,.0f} | `bial.path` |")
+    print(f"| Delhi (DIAL FY2026) | ₹{dial:,.0f} | `aero.dial_aero_revenue_fy26_cr` |")
+    print(f"\nVSI must charge about ₹{cp1:,.0f} per passenger to pay for itself; Bengaluru charges ₹{blr:,.0f} and Delhi ₹{dial:,.0f}, "
+          f"because their airports were built far cheaper and long ago, and most of their cost is already paid off. That is {cp1 / blr:.1f}× Bengaluru and {cp1 / dial:.1f}× Delhi.\n")
+    return cp1, blr, dial
+
+
+def print_delay(ex):
+    """1A opens late (BIAL's T2 slipped 21 months: money.json bial.t2.timeline). The bank sized the debt on time;
+    interest falls due from the planned COD, there is no traffic until the doors open."""
+    s = SCEN['EXPERT']
+    rows = [('EXPERT, on time', ex),
+            ('EXPERT, phase 1 opens 12 months late', vsi_engine(dict(s, delay=1), 'x')),
+            ('EXPERT, phase 1 opens 21 months late (BIAL T2; modelled as 2 years)', vsi_engine(dict(s, delay=2), 'x')),
+            ('BAD, phase 1 opens 12 months late', vsi_engine(dict(SCEN['BAD'], delay=1), 'x'))]
+    print('### Construction delay (phase 1 opens late)\n')
+    print('| Run | E1 (5-7) | E2 (8-10) | E3 (11-13) | E4 (14-18) | Cure money ₹ cr | Outcome | Equity IRR |')
+    print('|---|---|---|---|---|---|---|---|')
+    for lab, e in rows:
+        c = era_cells(e)
+        print(f"| {lab} | {c[0]} | {c[1]} | {c[2]} | {c[3]} | {e.cures:,.0f} | {outcome(e)} | {irr_txt(e)} |")
+    print()
 
 
 def print_irr_basis(engs):
@@ -1845,6 +1893,8 @@ def main():
         print_eras([engs[0]] + sengs, 'Lever sensitivities (one change from EXPERT each)', note=False)
         print_warning_source(engs[0])
         print_opening_options(engs[0])
+        print_charge(engs[0])
+        print_delay(engs[0])
         print_irr_basis(engs[:3] + sengs)
         for e in engs[:3]:
             last = e.step_in[0] + 1 if e.step_in else 30

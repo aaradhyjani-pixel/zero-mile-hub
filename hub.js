@@ -2355,6 +2355,7 @@ function finish(){
   if(CAMP.active)CAMP.finished(window.__hubResult);
 }
 function menu(tab){
+  if(CH5F.live){CH5F.live=false;const o=CH5F.load();if(o){o.left=true;CH5F.save(o);}}
   running=false;CAMP.active=false;ch5Clear();const best=store.get('zm_stars')||{};
   const planSvg=document.getElementById('planTpl').innerHTML;
   const D=window.__DESIGN||{};
@@ -2373,7 +2374,7 @@ function menu(tab){
      <li>Click any aircraft to see where it is going, prioritise it or hold it at the gate. <span class="kbd">Space</span> pauses, <span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span> change speed. Wheel or pinch to zoom.</li>
     </ul>
    </div>
-   ${tab==='concession'?`<div id="tConc">${CAMP.html()}</div>`:''}
+   ${tab==='concession'?`<div id="tConc">${CAMP.html()}${CH5F.html()}</div>`:''}
    <div id="tPlan" ${tab==='plan'?'':'hidden'}>
     <h1>${SPEC.name}</h1><p>${SPEC.tagline||''}</p>
     <div class="plan">${planSvg}</div>
@@ -2381,7 +2382,7 @@ function menu(tab){
    </div>
   </div>`;
   $('#overlay').hidden=false;
-  $('#sheet').querySelectorAll('.tabs2 button').forEach(b=>b.onclick=()=>menu(b.dataset.t));if(tab==='concession')CAMP.wire();
+  $('#sheet').querySelectorAll('.tabs2 button').forEach(b=>b.onclick=()=>menu(b.dataset.t));if(tab==='concession'){CAMP.wire();CH5F.wire();}
   $('#sheet').querySelectorAll('.lc').forEach(b=>b.onclick=()=>startLevel(+b.dataset.n));
   $('#sheet').querySelectorAll('[data-inc]').forEach(b=>b.onclick=()=>{CFG.inc=b.dataset.inc;store.set('zm_cfg',CFG);menu('levels');});
   $('#sheet').querySelectorAll('[data-perf]').forEach(b=>b.onclick=()=>{perfSet(b.dataset.perf==='1');menu('levels');});
@@ -2448,6 +2449,8 @@ MNY=(()=>{
     offload:g(n=>{add('care',n*R.deny,null);}),
     inc:g((type,I)=>{if(type==='medical'||type==='fuel'){for(const f of [I.f].concat(I.fs||[]))if(f)M.safe.add(f.id);}}),
     hud:g(()=>{if(!window.ZMMoney)return;const now=performance.now();if(now-M.lastHud<250)return;M.lastHud=now;const t=totals(),hrs=Math.max(1/60,(T+30)/3600);
+      // Chapter 5: the day's money is the connections made (made × the rate from era.js), never the movements
+      if(CH5){const per=(CH5.plan.rates&&CH5.plan.rates.perConnectionCr)||0,v=CH5.made*per;ZMMoney.setDay({total:v,ratePerHr:v/hrs});return;}
       ZMMoney.setDay({total:cr(t.net),ratePerHr:cr(t.net/hrs),history:M.hist.map(h=>h.v)});
       if(now-M.lastPL>2000){M.lastPL=now;ZMMoney.setPL(plLines(),{title:'This shift',note:'Money in and out since the shift began, in today\'s prices.'});}}),
     close(){const t=totals();return {revenueCr:cr(t.rev),costCr:cr(t.cost),netCr:cr(t.net),lines:plLines().map(l=>({key:l.key,label:l.label,kind:l.kind,amount:l.amount})),
@@ -2526,13 +2529,6 @@ const CAMP={active:false,st:null,
    plan.hub.pax for London (hold London or let it go), and the paper-trail incident (plan.trail.id: 'stands' or 'birds')
    in the international bank, with a paper tag pinned where it happens. The level entry is CH5_LEVEL (data); the 2D map
    shows the connection stream (ch5Stream). Quick play never sets CH5. */
-// TODO(lane C): the stand-in plan used only when money/era.js has no VSIEra.ch5 yet (the contract's sample figures)
-const CH5_STUB={level:3,feeder:{airline:'Narmada Air',cities:[{code:'LKO',name:'Lucknow'},{code:'IDR',name:'Indore'},{code:'PAT',name:'Patna'},{code:'RPR',name:'Raipur'},{code:'BBI',name:'Bhubaneswar'},{code:'VNS',name:'Varanasi'},{code:'JAI',name:'Jaipur'},{code:'GAU',name:'Guwahati'},{code:'CJB',name:'Coimbatore'},{code:'VTZ',name:'Visakhapatnam'},{code:'IXC',name:'Chandigarh'},{code:'TRV',name:'Thiruvananthapuram'}],from:'14:10',to:'14:45',flights:24,paxEach:170},
-  intl:[{id:'SKW101',dest:'London',code:'LHR',std:'15:35',aircraft:'Boeing 777-300ER',connecting:520},{id:'SKW205',dest:'Singapore',code:'SIN',std:'15:45',aircraft:'Airbus A350-900',connecting:260},{id:'SKW311',dest:'Nairobi',code:'NBO',std:'15:55',aircraft:'Boeing 787-9',connecting:190}],
-  rates:{perConnectionCr:0.0085,missedCostCr:0.0019,rival:'Doha'},
-  hub:{id:'feeder-late',from:'Lucknow',code:'LKO',lateMin:25,dest:'London',pax:380,holdMin:20,holdCostCr:1.9,letGoLostCr:3.2,letGoLine:'Doha wins them'},
-  trail:{id:'stands',docId:'phase1',tag:{doc:'Phase 1 plan, 2029',line:'You built lean: no stand for this widebody.'}},
-  tags:[{docId:'skyward',doc:'Route agreement, 2044',line:'Skyward\'s London bank: 380 connecting.',anchor:'intl-pier'}]};
 // Chapter 5's level entry: Level 3's airfield (runways, concourses, heat) with its traffic reshaped as two banks. Times and
 // sizes of the banks come from the plan (money/era.js); this entry holds what the level itself fixes.
 const CH5_LEVEL={base:3,ch5:true,name:'Take on the Gulf',sub:'The international bank',from:'CHAPTER 5',windDown:true,
@@ -2607,7 +2603,7 @@ function ch5Norm(plan){plan=Object.assign({},plan);const tr=plan.trail;
   else if(!H.code){const d=DOMC.find(c=>c[0]===H.from);plan.hub=Object.assign({},H,{code:d?d[1]:'LKO'});}
   return plan;}
 function startChapter5(plan,hooks){
-  ch5Clear();plan=ch5Norm(plan||CH5_STUB);hooks=hooks||{};
+  if(!plan)return false;ch5Clear();plan=ch5Norm(plan);hooks=hooks||{};
   const clock=(t=>t-t%300)(CH5_HM(plan.feeder.from,0)-900);   // the shift opens 15 minutes before the first feeder lands
   const lastStd=Math.max(CH5_HM(plan.feeder.to,0)+3600,...(plan.intl||[]).map(i=>CH5_HM(i.std,0)));
   const len=Math.max(4800,lastStd+20*60-clock);
@@ -2625,20 +2621,20 @@ function startChapter5(plan,hooks){
   if(hooks.briefing&&window.ZMMoney&&ZMMoney.briefing){paused=true;setSpeed(1,true);Promise.resolve(ZMMoney.briefing(hooks.briefing)).catch(e=>console.warn('briefing',e)).then(()=>{if(CH5===keep&&running&&!ended){paused=false;setSpeed(1);}});}
   return true;
 }
-// paper tags: ZMMoney.tag(x, y, docTitle, line) → {move(x,y), remove()} (lane B), moved every frame; without ui.js, a stand-in drawn on the canvas
+// paper tags: ZMMoney.tag(x, y, docTitle, line) → {move(x,y), remove()}, moved every frame
 function ch5Tag(id,opts,where){if(!CH5||CH5.tags[id])return;const t=CH5.tags[id]=Object.assign({id,opts:{doc:opts.doc,line:opts.line,docId:opts.docId}},where);
   const a=ch5Anchor(t),p=ch5Scr(a.x,a.y,a.h)||{X:-999,Y:-999};
   try{if(CH5.hooks.onTag)t.h=CH5.hooks.onTag(p.X,p.Y,t.opts.doc,t.opts.line);else if(window.ZMMoney&&ZMMoney.tag)t.h=ZMMoney.tag(p.X,p.Y,t.opts.doc,t.opts.line);}catch(e){console.warn('tag',e);}
-  if(!t.h||typeof t.h.move!=='function')t.canvas=true;
   logE(`${opts.doc}: ${opts.line}`);}
 function ch5TagOff(id){if(!CH5||!CH5.tags[id])return;const t=CH5.tags[id];delete CH5.tags[id];try{if(t.h&&t.h.remove)t.h.remove();}catch(e){}}
 function ch5Anchor(t){if(t.f&&!['gone','towed','cancelled'].includes(t.f.state))return{x:t.f.x,y:t.f.y,h:t.f.alt||0};if(t.x!=null)return{x:t.x,y:t.y,h:0};
   const a=t.anchor;if(a==='runway'){const r=t.r||LONGEST;return{x:lerp(r.x0,r.x1,0.5),y:r.y,h:0};}
   if(a==='transfer')return{x:procC.x,y:procC.y,h:0};
   const ids=a==='stands'?['ES','FS']:['EN','ES'],c=ids.map(i=>CONCI[i]).find(c=>c&&c.open!==false)||CONCI.EN;return c?{x:c.lx,y:c.ly,h:0}:{x:0,y:0,h:0};}
-function ch5Frame(){if(!CH5)return;ctx.save();screenT();ch5DrawStream();ctx.restore();screenT();for(const id in CH5.tags){const t=CH5.tags[id],a=ch5Anchor(t),p=ch5Scr(a.x,a.y,a.h);
-  if(t.canvas){if(p){ctx.font='600 11px Barlow, sans-serif';const w=Math.max(ctx.measureText(t.opts.doc).width,ctx.measureText(t.opts.line).width)+14;ctx.fillStyle='#fbf5d3';ctx.fillRect(p.X+8,p.Y-44,w,34);ctx.fillStyle='#c22a2e';ctx.beginPath();ctx.arc(p.X+8+w/2,p.Y-44,3,0,7);ctx.fill();ctx.fillStyle='#1d2024';ctx.fillText(t.opts.doc,p.X+15,p.Y-30);ctx.fillStyle='#1f3a8a';ctx.fillText(t.opts.line,p.X+15,p.Y-16);ctx.strokeStyle='#1d2024';ctx.beginPath();ctx.moveTo(p.X,p.Y);ctx.lineTo(p.X+8,p.Y-10);ctx.stroke();}continue;}
-  try{t.h.move(p?p.X:-999,p?p.Y:-999);}catch(e){}}}
+function ch5Frame(){if(!CH5)return;ctx.save();screenT();ch5DrawStream();ctx.restore();screenT();const placed=[];for(const id in CH5.tags){const t=CH5.tags[id],a=ch5Anchor(t),p=ch5Scr(a.x,a.y,a.h);
+  // tags pinned near one another fan out to the right, so none covers another
+  let X=p?p.X:-999,Y=p?p.Y:-999;if(p){for(let k=0;k<4&&placed.some(q=>Math.abs(q.X-X)<150&&Math.abs(q.Y-Y)<135);k++)X+=152;placed.push({X,Y});}
+  try{if(t.h&&t.h.move)t.h.move(X,Y);}catch(e){}}}
 function ch5ConnHud(){try{if(window.ZMMoney&&ZMMoney.setConnections)ZMMoney.setConnections({made:CH5.made,missed:CH5.missed});}catch(e){}}
 function ch5Float(x,y,h,data){const p=ch5Scr(x,y,h);if(!p)return;
   try{if(CH5.hooks.onConn){CH5.hooks.onConn(p.X,p.Y,data);return;}if(window.ZMMoney&&ZMMoney.connFloat){ZMMoney.connFloat(p.X,p.Y,data);return;}}catch(e){console.warn('connFloat',e);}
@@ -2715,24 +2711,59 @@ function ch5End(){const P=CH5.plan;
   CH5.result=res;window.__hubResult=Object.assign({level:LV.n,chapter:5,target:LV.target},res);
   for(const id in CH5.tags)ch5TagOff(id);
   const h=CH5.hooks;try{if(h.onEnd){h.onEnd(res);return;}}catch(e){console.warn('onEnd',e);}
-  ch5Stub(res);}
-// a plain stand-in for the bill when lane B's screens are not in the build (never the old dark sheet)
-function ch5Stub(res){$('#sheet').innerHTML=`<div class="in" style="background:#fcfcf9;color:#1d2024;font-family:'Courier Prime',monospace;padding:28px"><h1 style="font-family:'Libre Caslon Text',serif;color:#1d2024">Chapter 5: the shift is over</h1>
-  <p>${res.made} connections made, ${res.missed} missed. ${Object.entries(res.byDest).map(([d,v])=>`${d}: ${v.made} made, ${v.missed} missed.`).join(' ')} ${CH5.plan.hub.none?'':res.held[CH5.plan.hub.dest]?`You held ${CH5.plan.hub.dest}.`:`You let ${CH5.plan.hub.dest} go.`}</p>
-  <p style="color:#676c71">(The bill appears here once money/ui.js has ZMMoney.bill.)</p><button class="go" id="toMenu">Back to the menu</button></div>`;$('#overlay').hidden=false;$('#toMenu').onclick=()=>menu('levels');}
-// the test entry: ?chapter5[=lean|big][&radar=bought|skipped][&choice=three|london|decline] runs fixture → decision → shiftPlan → the shift
-async function ch5Test(){const q=new URLSearchParams(location.search),ph=q.get('chapter5')==='big'?'big':'lean',radar=q.get('radar')==='bought'?'bought':'skipped',choice=q.get('choice')||'three';
-  const E=CAMP.E(),C=E&&E.ch5;let st=null,plan=null,brief=null;
-  try{if(C){st=C.fixture({phase1:ph,radar});st=C.applyDecision(st,choice);plan=C.shiftPlan(st);brief=C.briefing&&C.briefing(st);}}catch(e){console.warn('VSIEra.ch5',e);plan=null;}
-  if(!plan){plan=JSON.parse(JSON.stringify(CH5_STUB));plan.trail=ph==='lean'?CH5_STUB.trail:radar==='skipped'?{id:'birds',docId:'capex-2034',tag:{doc:'Capital budget, 2034',line:'You skipped the bird radar.'}}:null;
-    if(choice==='london')plan.intl=plan.intl.slice(0,1);if(choice==='decline'){plan.intl=[];plan.tags=[];}}
-  const hooks={briefing:/[?&]brief=0/.test(location.search)?null:brief,onEnd:async res=>{window.__ch5Done=false;
-    try{if(C&&st&&C.applyShift){const out=C.applyShift(st,res);window.__ch5Bill=out;if(window.ZMMoney&&ZMMoney.bill)await ZMMoney.bill(out.bill);if(window.ZMMoney&&ZMMoney.whatHappened)await ZMMoney.whatHappened(out.card);if(ZMMoney.bill){window.__ch5Done=true;menu('levels');return;}}}catch(e){console.warn('ch5 bill',e);}
-    ch5Stub(res);window.__ch5Done=true;}};
-  window.__ch5State=st;startChapter5(plan,hooks);}
-if(/[?&]chapter5\b/.test(location.search))window.addEventListener('load',()=>setTimeout(()=>{try{ch5Test();}catch(e){console.error('chapter5',e);}},50));
+  menu('concession');}
+/* Chapter 5's playtest flow (the Concession tab's "Chapter 5 · Take on the Gulf (playtest)", or ?chapter5):
+   VSIEra.ch5.fixture → ZMMoney.frontPage → ZMMoney.decision → applyDecision → ZMMoney.briefing pinned over the live ops
+   view → the shift → applyShift → ZMMoney.bill → ZMMoney.whatHappened → the menu. Saved in localStorage zm_ch5
+   {phase1, radar, step:'front'|'decision'|'shift'|'bill'|'card', choice, result} after every screen, so a reload resumes
+   at the screen it was on (a shift restarts from its briefing). Leaving through the menu keeps the save (left:true) for
+   the Concession tab's "Continue", and a reload then doesn't jump back in.
+   Test entry: ?chapter5[=lean|big][&radar=bought|skipped][&choice=three|london|decline][&brief=0]; with &choice the
+   front page and the decision are skipped (for bots). */
+const CH5F={live:false,
+  load(){const o=store.get('zm_ch5');return o&&o.step&&o.phase1?o:null;},
+  save(o){o.at=Date.now();store.set('zm_ch5',o);},
+  clear(){try{localStorage.removeItem('zm_ch5');}catch(e){}},
+  C(){const E=CAMP.E();return E&&E.ch5&&window.ZMMoney&&ZMMoney.frontPage&&ZMMoney.bill?E.ch5:null;},
+  // the founder's signature: only a drawn one (a data URL) goes on paper; the era engine's name string is printed as type
+  sig(o){o=Object.assign({},o);if(typeof o.signature!=='string'||!/^data:image\//.test(o.signature))delete o.signature;return o;},
+  start(phase1,radar){const o={phase1:phase1==='big'?'big':'lean',radar:radar==='bought'?'bought':'skipped',step:'front'};CH5F.save(o);CH5F.run(o);},
+  resume(){const o=CH5F.load();if(!o){menu('concession');return;}delete o.left;CH5F.save(o);CH5F.run(o);},
+  async run(o){const C=CH5F.C(),Z=window.ZMMoney;window.__ch5Done=false;window.__ch5Step=o.step;
+    if(!C){CH5F.clear();menu('concession');return;}   // (no era engine or paper screens in this build: the Concession tab doesn't offer the chapter)
+    $('#overlay').hidden=true;running=false;CH5F.live=true;
+    let st=C.fixture({phase1:o.phase1,radar:o.radar});try{Z.setPile&&Z.setPile(st.docs||[]);}catch(e){}
+    try{
+      if(o.step==='front'){window.__ch5Step='front';await Z.frontPage(CH5F.sig(C.frontPage(st)));o.step='decision';CH5F.save(o);}
+      if(o.step==='decision'){window.__ch5Step='decision';const d=C.decision(st);
+        const r=await Z.decision(CH5F.sig(Object.assign({founder:st.founder||'Asha Rao',parent:st.parent||'Meridian Infra'},d)));
+        o.choice=(r&&r.choice)||'decline';o.signedOn=r&&r.signedOn;o.step='shift';CH5F.save(o);}
+      st=C.applyDecision(st,o.choice||'decline');try{Z.setPile&&Z.setPile(st.docs||[]);}catch(e){}
+      window.__ch5State=st;
+      if(o.step==='shift'){window.__ch5Step='shift';const plan=C.shiftPlan(st);
+        startChapter5(plan,{briefing:o.brief===false?null:C.briefing(st),onEnd:res=>{const r=Object.assign({},res,{money:Object.assign({},res.money)});delete r.money.ledger;
+          o.result=JSON.parse(JSON.stringify(r));o.step='bill';CH5F.save(o);CH5F.run(o);}});
+        return;}
+      const out=C.applyShift(st,o.result||{made:0,missed:0,byDest:{},held:{},trail:{happened:false,minutesLost:0},money:{lines:[]},stars:0,otp:0});window.__ch5Bill=out;
+      if(o.step==='bill'){window.__ch5Step='bill';await Z.bill(out.bill);o.step='card';CH5F.save(o);}
+      if(o.step==='card'){window.__ch5Step='card';await Z.whatHappened(out.card);}
+    }catch(e){console.error('chapter 5',e);}
+    CH5F.clear();CH5F.live=false;window.__ch5Step='done';window.__ch5Done=true;menu('concession');},
+  // the Concession tab's entry: below the concession itself, the same green buttons
+  html(){if(!CH5F.C())return '';const o=CH5F.load(),at={front:'the newspaper',decision:'the route agreement',shift:'the shift',bill:'the year\'s results',card:'the last page'};
+    return `<h2>Chapter 5 · Take on the Gulf (playtest)</h2><p>Year 14. Skyward wants to base long-haul flights at VSI and race Dubai and Doha for India's travellers. Read the paper, sign (or don't), then run the afternoon when the connections have to work.</p>
+     ${o?`<p>Saved at ${at[o.step]||'the start'}.</p><button class="go" id="ch5Go">Continue Chapter 5</button> `:''}<button class="go${o?' ghost':''}" id="ch5New">${o?'Start Chapter 5 again':'Play Chapter 5'}</button>`;},
+  wire(){const g=$('#ch5Go'),n=$('#ch5New');if(g)g.onclick=()=>CH5F.resume();if(n)n.onclick=()=>CH5F.start('lean','skipped');}
+};
+async function ch5Test(){const q=new URLSearchParams(location.search),ph=q.get('chapter5')==='big'?'big':'lean',radar=q.get('radar')==='bought'?'bought':'skipped',choice=q.get('choice');
+  const o={phase1:ph,radar,step:choice?'shift':'front'};if(choice)o.choice=choice;if(/[?&]brief=0/.test(location.search))o.brief=false;CH5F.save(o);CH5F.run(o);}
+window.addEventListener('load',()=>setTimeout(()=>{try{
+  if(/[?&]chapter5\b/.test(location.search)){ch5Test();return;}
+  if(/[?&](moneymock|level|L)\b|[?&]money\b/.test(location.search))return;
+  const o=CH5F.load();if(o&&!o.left&&CH5F.C())CH5F.run(o);   // a reload inside Chapter 5 comes back to the same screen
+}catch(e){console.error('chapter5',e);}},50));
 
-window.HUB={startChapter5,ch5:{answer:k=>ch5Answer(k),get plan(){return CH5&&CH5.plan;},state:()=>CH5&&{made:CH5.made,missed:CH5.missed,byDest:CH5.byDest,held:CH5.held,hubAsked:CH5.hubAsked,hubAnswer:CH5.hubAnswer,trail:CH5.trail,tags:Object.keys(CH5.tags),hubEta:CH5.hubEta,lonStd:CH5.lonStd,firstStd:CH5.firstStd},result:()=>CH5&&CH5.result,stub:CH5_STUB},money:()=>MNY&&MNY.snapshot(),moneyOn:on=>{MONEY_ON=!!on;mnySet(on);},moneyOff:()=>{MONEY_ON=false;mnySet(false);},campaign:()=>CAMP.st,era:()=>CAMP.E(),camp:CAMP,get T(){return T;},get S(){return S;},get LV(){return LV;},flights:()=>flights,RW,incidents:()=>incidents,setMode:(id,m)=>{const r=RW.find(x=>x.id===id||x.short===id);if(r)setMode(r,m);},startLevel,capNow,forceIncursion:()=>{const c=STO.find(o=>o.k==='fog');if(c&&c.sc)c.sc.go=true;},resolveAll:()=>{for(const I of incidents.slice()){const a=I.botPick!=null?I.acts[I.botPick]:I.acts.find(a=>!(a.dis&&a.dis()));if(a)a.fn();}},speed:s=>setSpeed(s),ops:()=>ops,cfg:CFG,
+window.HUB={startChapter5,ch5:{answer:k=>ch5Answer(k),get plan(){return CH5&&CH5.plan;},state:()=>CH5&&{made:CH5.made,missed:CH5.missed,byDest:CH5.byDest,held:CH5.held,hubAsked:CH5.hubAsked,hubAnswer:CH5.hubAnswer,trail:CH5.trail,tags:Object.keys(CH5.tags),hubEta:CH5.hubEta,lonStd:CH5.lonStd,firstStd:CH5.firstStd},result:()=>CH5&&CH5.result,flow:CH5F},money:()=>MNY&&MNY.snapshot(),moneyOn:on=>{MONEY_ON=!!on;mnySet(on);},moneyOff:()=>{MONEY_ON=false;mnySet(false);},campaign:()=>CAMP.st,era:()=>CAMP.E(),camp:CAMP,get T(){return T;},get S(){return S;},get LV(){return LV;},flights:()=>flights,RW,incidents:()=>incidents,setMode:(id,m)=>{const r=RW.find(x=>x.id===id||x.short===id);if(r)setMode(r,m);},startLevel,capNow,forceIncursion:()=>{const c=STO.find(o=>o.k==='fog');if(c&&c.sc)c.sc.go=true;},resolveAll:()=>{for(const I of incidents.slice()){const a=I.botPick!=null?I.acts[I.botPick]:I.acts.find(a=>!(a.dis&&a.dis()));if(a)a.fn();}},speed:s=>setSpeed(s),ops:()=>ops,cfg:CFG,
   // test hooks: run the sim forward synchronously, and point the camera
   ff:secs=>{VQ.length=0;FFING=true;try{for(let i=0;i<secs&&!ended;i++){tick(1);if(CINE&&CINE.o.until==null){const ms=1000/BASE/Math.max(0.25,speed);CINE.t0-=ms;if(CINE.landAt)CINE.landAt-=ms;}}}finally{FFING=false;}puffs.length=0;hud();drawWave();},look:(x,y,z)=>{camT.s=cam.fit*z;camT.anchor=null;camT.x=x-((cam.region.L+cam.region.R)/2)/camT.s;camT.y=y-((cam.region.Tp+cam.region.B)/2)/camT.s;clampCam(camT);Object.assign(cam,{x:camT.x,y:camT.y,s:camT.s});},spawn:(t,x)=>spawnInc(t,x),opsSpawn:(k,x)=>opsSpawn(k,x),pause:()=>{paused=true;},
   view:v=>setView(v),ready3d:()=>new Promise(r=>{if(V3.ready||V3.failed)r(V3.ready);else{V3.waiters.push(r);init3D();}}),

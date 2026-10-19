@@ -218,3 +218,23 @@ L3's on-time figure moves by 1–2 points from run to run: the previous commit (
 ## Chapter 5, lane A (hub.js), branch ch5-hub
 Works: `?chapter5[=lean|big][&radar=bought][&choice=three|london|decline][&brief=0]` and `HUB.startChapter5(plan, hooks)`; `CH5_LEVEL` data entry (Level 3 airfield, feeder bank then international bank); the late Lucknow pair (380 for London) is deterministic, `HUB.ch5.answer('hold'|'go')`; hold saves them, go loses them ("380 missed · Doha wins them"); connection floaters only (no landing/take-off floaters in Chapter 5, fees still booked); `ZMMoney.setConnections`; the paper-trail tag via `ZMMoney.tag(x,y,doc,line)` handle, moved every frame (canvas stand-in without ui.js); the 2D connection stream (white dots walk gate → Mall → international gate; made fade in sign yellow; missed turn red and drift to a "◀ DOHA" label). Screenshot /tmp/zmh/ch5/hub_stream.png.
 Open: the two plan tags at the international pier and the stands overlap on the map (anchor offsets); the stream is 2D only (3D shows the floaters and tags); not yet run against lane B's ui.js or lane C's era.js (both absent on money at merge time, so the TODO stubs CH5_STUB / canvas tag ran); the hold call is Chapter 5's own 'hubhold' card, not the generic f.cnxAsked card (generic cards are off in Chapter 5).
+
+## 2026-10-19 — Chapter 5 wired end to end (branch money, wire lane)
+| Step | Status |
+|---|---|
+| Entry: Concession tab → "Chapter 5 · Take on the Gulf (playtest)" (Play Chapter 5 / Continue / Start again); menu otherwise unchanged; `?chapter5[=lean\|big][&radar=bought][&choice=…][&brief=0]` (with `&choice`, the paper screens are skipped for bots) | done |
+| Flow (`CH5F` in hub.js): fixture → frontPage → decision → applyDecision → setPile → briefing pinned over the live ops view → startChapter5 → applyShift → bill → whatHappened → Concession tab | done |
+| Save `zm_ch5` {phase1, radar, step, choice, result}: a reload resumes at the front page / decision / shift (from its briefing) / bill / card (tested at front, shift, bill); leaving through the menu keeps the save for "Continue" without auto-jumping back | done |
+| Stubs removed: `CH5_STUB`, the canvas tag stand-in, the old shift-over sheet (`ch5Stub`). No dark banded sheet in the flow (checked on every screen) | done |
+| Chapter 5's money chip shows connection money only (made × era.js's rate), never movement fees | done |
+| Plan tags no longer overlap (tags near one another fan out to the right) | done |
+
+Final money-off gate (expert fastbot, nice -n 10, one at a time): L1 124/89 ★★★, L3 480/73 ★★★, 0 errors.
+
+Runs (lean, radar skipped; HUB.ff + HUB.ch5.answer): hub-smart (three banks, hold): shift 1,194 made / 0 missed, London held, stands trail 21 min; bill ₹281 cr earned / ₹19 cr spent a year, 6,46,880 connections a year, 2040–43 ₹1,436 / ₹80 cr, stake ₹3,88,501 cr. hub-blind (decline, 'go' never asked because no London): ₹0 / ₹0, 0 connections, 2040–43 ₹0 / ₹1 cr, stake ₹3,85,180 cr. Smart earns clearly more. No banned word on any screen; real fonts loaded on every screen.
+
+**Open**
+- Money-off gate L2 gives 238/94 (band 234/93) on every build since lane C's era.js. Not a game change: adding only a 36 KB comment to the old era.js gives the same 238/94 (the clean a2160e9 build gives 234/93). The fastbot result depends on page size/load timing; likely performance.now() reads inside the sim under HUB.ff (VIP announcement/cinematic timing, hub.js ~935–983). Fix: make those waits use sim time while FFING, then re-baseline all four levels.
+- Engine scale: the year-14 fixture's stake value (₹3.9 lakh cr on the bill, ₹1.1 lakh cr on the front page) and 165 million passengers in 2038 look far too high, and the two screens disagree. From era.js's engine, not Chapter 5.
+- A connection floater can sit under a plan tag; the 2D stream dots are faint at the default zoom; the decision body prints the date as 2039-04-01.
+- Clicking the briefing sheet's middle can land on a document link (opens the doc instead of starting); "Start the shift" or the countdown always work.

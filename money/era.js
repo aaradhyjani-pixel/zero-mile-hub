@@ -571,8 +571,8 @@
       hubInc = function (t) { var y = t + 1; return y < H.from ? 0 : H.incCr * Math.pow(1 + H.growth, hk(y)) * pr(t) / pr(H.from - 1); };
       hubCost = function (t) { var y = t + 1; return y < H.from ? 0 : H.costCr * pr(t) / pr(H.from - 1); };
     }
-    // Chapters 3-7: connection streams (s.streams, keyed by what made them: Plateau Air's bank, Chapter 4's network, Chapter
-    // 7's dated plan), priced like s.hub; Kármán Line's Hyderabad hub can take a share of them (s.rivalTake)
+    // Chapters 3-7: connection streams (s.streams, keyed by what made them: Akasa Air's bank, Chapter 4's network, Chapter
+    // 7's dated plan), priced like s.hub; GMR's Hyderabad hub can take a share of them (s.rivalTake)
     var streams = (!base && s.streams) ? Object.keys(s.streams).map(function (k) { return s.streams[k]; }).filter(Boolean) : [], rt = !base && s.rivalTake;
     if (streams.length || rt) {
       var hubInc0 = hubInc, hubCost0 = hubCost;
@@ -830,7 +830,7 @@
   // ---------------------------------------------------------------------------------------------
   function partners() {
     var cfg = (typeof window !== 'undefined' && window.ZMMoney && window.ZMMoney.cfg) || {};
-    var co = (cfg.coinvestor && cfg.coinvestor.name) || 'L5 Capital: Lagrange Point Infrastructure Fund';
+    var co = (cfg.coinvestor && cfg.coinvestor.name) || 'NIIF: National Investment and Infrastructure Fund';
     return [
       {name: 'Your company', pct: 64, color: '#c8a46a', role: 'Promoter. Builds, finances and runs the airport.'},
       {name: co, pct: 16, color: '#23305e', role: 'Co-investor. Puts in money beside you.'},
@@ -1488,10 +1488,10 @@
   var CH5 = {
     year: 14, banksFrom: 15, banksPerDay: 2, lateDaysPerYear: 30, birdDaysPerYear: 20, holdSlotInr: 500000 /* (est.) */,
     careInr: 1900, radarCr: 45 /* (est.) a bird-detection radar, in the 2034 budget */, radarYear: 9,
-    feederAirline: 'Sutradhar Air', rival: 'Doha', partner: 'Haversine Airways',   // design/chapters.md §0
-    signatory: {name: 'Elena Marsh', title: 'Chief Commercial Officer, Haversine Airways'},
+    feederAirline: 'IndiGo', rival: 'Doha', partner: 'Air India',   // design/chapters.md §0
+    signatory: {name: 'Elena Marsh', title: 'Network planning, Air India'},
     // fictional callsigns for hub.js (plan.feeder.code/radio, plan.partnerCode/partnerRadio): three letters, radio name
-    feederCode: 'STD', feederRadio: 'SUTRADHAR', partnerCode: 'HVA', partnerRadio: 'HAVERSINE', docId: 'partner-',
+    feederCode: '6E', feederRadio: 'IFLY', partnerCode: 'AI', partnerRadio: 'AIR INDIA', docId: 'partner-',
     feeders: [['Lucknow', 'LKO'], ['Indore', 'IDR'], ['Patna', 'PAT'], ['Raipur', 'RPR'], ['Bhubaneswar', 'BBI'], ['Varanasi', 'VNS'], ['Jaipur', 'JAI'],
       ['Guwahati', 'GAU'], ['Coimbatore', 'CJB'], ['Visakhapatnam', 'VTZ'], ['Chandigarh', 'IXC'], ['Kochi', 'COK']],
     feederFlights: 16, feederPaxEach: 180, feederFrom: '12:40', feederTo: '13:40',
@@ -1527,7 +1527,7 @@
     var a = Math.abs(v || 0);
     return a >= 1e5 ? '₹' + (a / 1e5).toFixed(2) + ' lakh cr' : '₹' + (Math.round(a / 100) * 100).toLocaleString('en-IN') + ' cr';
   }
-  function poss(n) { return /s$/.test(n) ? n + '\'' : n + '\'s'; }   // Haversine Airways' (not Airways's)
+  function poss(n) { return /s$/.test(n) ? n + '\'' : n + '\'s'; }   // Air India' (not Airways's)
   function andList(a) { return a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]; }
   function ch5Date(state, year) {   // the player's signing day, in the given game year (the chapter's one date set)
     var md = (state.signedOn || '2026-04-01').slice(5);
@@ -1652,7 +1652,7 @@
     var phase1 = st.phase1 === 'big' ? 'big' : 'lean', radar = st.radar === 'bought' ? 'bought' : 'skipped', ph = P.vsi_stages['1A_' + phase1];
     var base = [
       {id: 'concession', title: 'Concession Agreement', year: 0, date: st.signedOn || ch5Date(st, 1).iso, kind: 'agreement', stamp: 'EXECUTED',
-        summary: 'Sixty years to build and run Vikram Sarabhai International, signed by ' + (st.founder || 'the director') + ' for ' + st.parent + ', with AAI, the State through MADC and L5 Capital.'},
+        summary: 'Sixty years to build and run Vikram Sarabhai International, signed by ' + (st.founder || 'the director') + ' for ' + st.parent + ', with AAI, the State through MADC and NIIF.'},
       {id: 'phase1', title: 'Phase 1 choice, ' + cal(1), year: 1, date: ch5Date(st, 1).iso, kind: 'phase1', stamp: 'APPROVED',
         summary: phase1 === 'lean' ? 'You built phase 1 lean: ' + ph.cap + ' million passengers a year and ' + CH5.stands.lean + ' widebody stands at the international pier, for ' + cr(ph.cost) + '.' :
           'You built phase 1 big: ' + ph.cap + ' million passengers a year and ' + CH5.stands.need + ' widebody stands at the international pier, for ' + cr(ph.cost) + '.'},
@@ -1951,7 +1951,7 @@
   // applyShift. Money still comes from connections, routes, land and shops (s.streams, s.hub, s.ac_year), never from movements.
   // Numbers marked (est.) are game assumptions; every history card is research/history-cards.md as written.
   // =============================================================================================
-  var NM = {plateau: 'Plateau Air', feeder: CH5.feederAirline, partner: CH5.partner, rival: 'Kármán Line Ventures', district: 'Zero Mile District', l5: 'L5 Capital'};
+  var NM = {plateau: 'Akasa Air', feeder: CH5.feederAirline, partner: CH5.partner, rival: 'GMR Airports', district: 'Zero Mile District', l5: 'NIIF'};
   var CH_ERAS = {3: [1], 4: [2, 3], 5: [4], 6: [5, 6, 7], 7: [8, 9, 10, 11, 12]};
   function firstEra(n) { return CH_ERAS[n][0]; }
   function chYears(n) { var e = CH_ERAS[n]; return [eraYears(e[0])[1], eraYears(e[e.length - 1])[2]]; }
@@ -2122,14 +2122,14 @@
   // ---------------------------------------------------------------------------------------------
   // Chapter 3 · Takeoff: open the doors (years 5-7, era 1). design/chapters.md §2
   // ---------------------------------------------------------------------------------------------
-  var CH3 = {year: 5, perDay: 600 /* (est.) Plateau Air's Bengaluru connecting bank, connections a day */, growth: 0.02, until: 18, trustLine: 0.7,
+  var CH3 = {year: 5, perDay: 600 /* (est.) Akasa Air's Bengaluru connecting bank, connections a day */, growth: 0.02, until: 18, trustLine: 0.7,
     plans: {
       bigbang: {label: 'Big bang: every flight moves in on day one', volume: 1, adj: null, from: 5, delayMin: 14,
-        terms: 'Every Plateau Air flight moves to VSI overnight, as Bengaluru\'s did in May 2008.', line: 'The fullest first bank. Every system is tested on the day, for real.'},
+        terms: 'Every Akasa Air flight moves to VSI overnight, as Bengaluru\'s did in May 2008.', line: 'The fullest first bank. Every system is tested on the day, for real.'},
       phased: {label: 'Phased: half the flights in week 1, the rest in week 3', volume: 0.6, adj: [{from: 5, until: 5, f: 0.97}], from: 5, delayMin: 6,
-        terms: 'Half of Plateau Air\'s flights move in week 1, the rest in week 3.', line: 'A lighter day one. Plateau Air pays its crews twice while it runs two airports.'},
+        terms: 'Half of Akasa Air\'s flights move in week 1, the rest in week 3.', line: 'A lighter day one. Akasa Air pays its crews twice while it runs two airports.'},
       soft: {label: 'Soft open: one airline\'s flights first', volume: 0.3, adj: [{from: 5, until: 5, f: 0.8}], from: 6, delayMin: 2, lag: 0.2,
-        terms: 'Only Plateau Air\'s first wave flies from VSI; its full move waits a year.', line: 'A quiet day one, but Plateau Air delays its full move by a year.'}},
+        terms: 'Only Akasa Air\'s first wave flies from VSI; its full move waits a year.', line: 'A quiet day one, but Akasa Air delays its full move by a year.'}},
     shortTrialsMin: 8, beltCarryCr: 4, beltHoldCr: 1.5, towCr: 0.6, taxiCr: 0.3 /* (est.) */};
   function ch3Plan(id) { return CH3.plans[id] ? id : 'phased'; }
   function ch3Stream(id, made, growth) { var p = CH3.plans[ch3Plan(id)]; return streamOf(CH3.perDay, p.from, {made: made, growth: growth, until: CH3.until}); }

@@ -229,7 +229,7 @@ function c5shift(plan, held, slack) {
 const PLAYERS = [
   ['hub-smart', 'three', true, 0.03, 'signs three banks, holds London for the 380'],
   ['hub-letgo', 'three', false, 0.03, 'signs three banks, lets London go'],
-  ['hub-blind', 'decline', false, 0.03, 'declines Haversine Airways']];
+  ['hub-blind', 'decline', false, 0.03, 'declines Air India']];
 const c5 = {}, c5texts = [JSON.stringify(fp), JSON.stringify(dc)];
 console.log('| Player | Plan | Earned ₹ cr a year | Spent ₹ cr a year | Connections made / missed a year | Earned / spent 2040-43 | Loan cover, hardest year | Your stake |\n|---|---|---|---|---|---|---|---|');
 for (const [name, choice, held, slack, what] of PLAYERS) {
@@ -307,7 +307,7 @@ let pay0 = [];
   const hits = pay.map(x => JSON.stringify(x)).filter(t => OLD.test(t)).map(t => t.match(OLD)[0]);
   if (hits.length) fail('a: old names on screen: ' + hits.join(', '));
   if (c5texts.some(t => OLD.test(t))) fail('a: old names in a Chapter 5 bill or card');
-  if (!/Sutradhar Air/.test(JSON.stringify(planA.feeder)) || planA.partner !== 'Haversine Airways' || !/Haversine Airways/.test(JSON.stringify(C5.decision(fxA)))) fail('a: Sutradhar Air / Haversine Airways missing');
+  if (!/IndiGo/.test(JSON.stringify(planA.feeder)) || planA.partner !== 'Air India' || !/Air India/.test(JSON.stringify(C5.decision(fxA)))) fail('a: IndiGo / Air Indie Airways missing');
   if (!planA.partnerCode || !planA.partnerRadio || !planA.feeder.code || !planA.feeder.radio || /SKY|NMA/.test(planA.partnerCode + planA.feeder.code)) fail('a: callsigns: ' + planA.partnerCode + '/' + planA.feeder.code);
   // the board's land offer, from a concession at the era-3 board
   let sB = E.applyConstruction(E.newCampaign(ob('EXPERT'), 1), null);
@@ -315,7 +315,7 @@ let pay0 = [];
   const land = E.boardOptions(sB).investments.find(i => i.id === 'airport_city');
   if (!land || !/Zero Mile District/.test(land.name) || OLD.test(JSON.stringify(E.boardOptions(sB)))) fail('a: the land offer is not called Zero Mile District: ' + (land && land.name));
   if (A.EXPERT.texts.concat(A.BAD.texts).some(t => OLD.test(t))) fail('a: an old name in an era report, board or handback');
-  console.log('- a: Sutradhar Air (' + planA.feeder.code + ', "' + planA.feeder.radio + '"), Haversine Airways (' + planA.partnerCode + ', "' + planA.partnerRadio + '"), Zero Mile District; no old names in ' + (pay.length + c5texts.length + A.EXPERT.texts.length + A.BAD.texts.length) + ' payloads');
+  console.log('- a: IndiGo (' + planA.feeder.code + ', "' + planA.feeder.radio + '"), Air India (' + planA.partnerCode + ', "' + planA.partnerRadio + '"), Zero Mile District; no old names in ' + (pay.length + c5texts.length + A.EXPERT.texts.length + A.BAD.texts.length) + ' payloads');
 }
 // ---- fix c: every chapter starts from the player's own save; the sample only for test URLs ----
 {
@@ -482,9 +482,9 @@ else {
   console.log('- ch2: the blind build opens ' + late + ' months later; belt 3 fails in its opening shift only');
   // Chapter 3: trust and Chapter 4's option C
   const tS = SM.log.ch4start.s.plateauTrust, tB = BL.log.ch4start.s.plateauTrust, cS = SM.log.ch4dec.choices.find(c => c.id === 'two'), cB = BL.log.ch4dec.choices.find(c => c.id === 'two');
-  if (!(tS >= 0.7 && tB < 0.7)) fail('ch3: Plateau Air trust smart ' + tS + ' (want >= 0.7), blind ' + tB + ' (want < 0.7)');
-  if (cS.disabled || !cB.disabled || !/Plateau Air declined/.test(cB.label)) fail('ch3: Chapter 4 option C should be open for smart and read "Plateau Air declined" for blind');
-  console.log('- ch3: Plateau Air trust smart ' + tS + ', blind ' + tB + '; blind sees "' + cB.label + '"');
+  if (!(tS >= 0.7 && tB < 0.7)) fail('ch3: Akasa Air trust smart ' + tS + ' (want >= 0.7), blind ' + tB + ' (want < 0.7)');
+  if (cS.disabled || !cB.disabled || !/Akasa Air declined/.test(cB.label)) fail('ch3: Chapter 4 option C should be open for smart and read "Akasa Air declined" for blind');
+  console.log('- ch3: Akasa Air trust smart ' + tS + ', blind ' + tB + '; blind sees "' + cB.label + '"');
   // Chapter 4
   const nS = SM.log.ch4.table.find(t => /^Connections a day/.test(t.label)).made, nB = BL.log.ch4.table.find(t => /^Connections a day/.test(t.label)).made;
   if (!(nS >= nB * 1.5)) fail('ch4: smart connections a day ' + nS + ' should be 1.5× blind\'s ' + nB);
@@ -497,7 +497,7 @@ else {
   console.log('- ch4: connections a day smart ' + nS.toLocaleString('en-IN') + ', blind ' + nB.toLocaleString('en-IN') + '; blind earns less per passenger in ' + lower + ' of the cut\'s 10 years');
   // Chapter 5 from the Chapter 4 state
   if (SM.log.ch5plan.network !== 'two' || SM.log.ch5plan.feeder.to !== '14:10' || BL.log.ch5plan.network !== 'cut') fail('ch5: the feeder bank should come from the Chapter 4 network: ' + [SM.log.ch5plan.network, SM.log.ch5plan.feeder.to, BL.log.ch5plan.network]);
-  if (!/Plateau Air share/.test((SM.st.docs.find(d => d.id === 'feeders-2033') || {}).summary || '')) fail('ch5: the feeder agreement in the pile should be the Chapter 4 one');
+  if (!/Akasa Air share/.test((SM.st.docs.find(d => d.id === 'feeders-2033') || {}).summary || '')) fail('ch5: the feeder agreement in the pile should be the Chapter 4 one');
   console.log('- ch5: the feeder bank comes from Chapter 4 (smart: two feeders to ' + SM.log.ch5plan.feeder.to + '; blind: ' + BL.log.ch5plan.network + ')');
   // Chapter 6
   const pk = o => E.ch6.pick({s: o});
@@ -517,7 +517,7 @@ else {
   const run7 = picks => { let x = E.ch7.applyDecision(rt(c7), picks); return E.ch7.applyShift(x).state; };
   const h7S = handover(run7({district: true, phase2: true, l5: true})), h7B = handover(run7({}));
   if (!(h7S >= h7B * 1.3)) fail('ch7: adopting all three should hand over 1.3× rejecting all: ' + Math.round(h7S) + ' vs ' + Math.round(h7B));
-  if (SM.log.ch7start.ch7.rivalWon || !BL.log.ch7start.ch7.rivalWon) fail('ch7: Kármán Line\'s hub should fail against smart (' + SM.log.ch7start.ch7.score + ' a day) and take some of blind\'s banks (' + BL.log.ch7start.ch7.score + ')');
+  if (SM.log.ch7start.ch7.rivalWon || !BL.log.ch7start.ch7.rivalWon) fail('ch7: GMR\'s hub should fail against smart (' + SM.log.ch7start.ch7.score + ' a day) and take some of blind\'s banks (' + BL.log.ch7start.ch7.score + ')');
   if (!/struggling/.test(SM.log.ch7fp.sub.body) || !/thin enough/.test(BL.log.ch7fp.sub.body)) fail('ch7: the front page should report the last-mover test');
   if (SM.log.ch7dec.resolutions.length < 2 || SM.log.ch7dec.resolutions.length > 3) fail('ch7: two or three resolutions');
   console.log('- ch7: from year 34, adopting all three hands back ₹' + Math.round(h7S).toLocaleString('en-IN') + ' cr to the owner, rejecting all ₹' + Math.round(h7B).toLocaleString('en-IN') + ' cr (' + (h7S / h7B).toFixed(2) + '×); Kármán Line: smart network ' + SM.log.ch7start.ch7.score.toLocaleString('en-IN') + ' a day (holds), blind ' + BL.log.ch7start.ch7.score.toLocaleString('en-IN') + ' (taken)');

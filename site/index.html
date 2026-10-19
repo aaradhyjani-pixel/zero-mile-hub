@@ -4330,8 +4330,8 @@ const CH5_LEVEL={base:3,ch5:true,name:'Take on the Gulf',sub:'The international 
 const CH5_TYPE=s=>{s=String(s||'');return /380/.test(s)?'A388':/777/.test(s)?'B77W':/787-8/.test(s)?'B788':/787/.test(s)?'B789':/330/.test(s)?'A333':/350/.test(s)?'A359':/321/.test(s)?'A21N':/320/.test(s)?'A20N':/737/.test(s)?'B38M':/ATR|72/.test(s)?'AT76':'B789';};
 const CH5_HM=(hm,clock)=>{const [h,m]=String(hm).split(':').map(Number);let t=(h*3600+m*60)-clock;if(t<-43200)t+=86400;return t;};   // 'HH:MM' → sim seconds from the shift's clock
 // fictional airlines only in a chapter (prompt-campaign.md §0.5): the partner, the feeder airline and the background carrier
-// (the partner's and the feeder's codes and radio callsigns come from era.js's plan: Haversine Airways HVA "HAVERSINE",
-// Sutradhar Air STD "SUTRADHAR")
+// (the partner's and the feeder's codes and radio callsigns come from era.js's plan: Air India HVA "AIR INDIA",
+// IndiGo STD "IFLY")
 function ch5Airline(name,radio,tail,code){for(const k in AL)if(AL[k].name===name)return k;const w=name.toUpperCase().replace(/[^A-Z ]/g,'').split(/\s+/).filter(Boolean);
   const pre=code||{'DECCAN BLUE':'DBL'}[w.join(' ')];const j=w.join('');
   let c=pre||(j[0]+j.slice(1).replace(/[AEIOU]/g,'')+j.slice(1)).slice(0,3);for(let i=2;AL[c];i++)c=c.slice(0,2)+i;AL[c]={name,radio:radio||w.join(' '),tail:tail||'#3d7a6a'};return c;}
@@ -4403,7 +4403,7 @@ function startChapter5(plan,hooks){
   const lv=Object.assign({},L3,CH5_LEVEL,{clock:`${String(Math.floor(clock/3600)).padStart(2,'0')}:${String(Math.floor(clock%3600/60)).padStart(2,'0')}`,len});
   CH5={plan,hooks,tags:{},made:0,missed:0,byDest:{},held:{},holdMin:0,dom:{made:0,missed:0},trail:{happened:false,minutesLost:0,id:plan.trail&&plan.trail.id},
     hubAsked:false,hubAnswer:null,result:null,tagFall:{}};
-  CH5.feederAl=ch5Airline(plan.feeder.airline||'Sutradhar Air',plan.feeder.radio||'SUTRADHAR','#2d6e5a',plan.feeder.code||'STD');CH5.skyAl=ch5Airline(plan.partner||'Haversine Airways',plan.partnerRadio||'HAVERSINE','#16557a',plan.partnerCode||'HVA');CH5.bgAl=ch5Airline(plan.background||'Deccan Blue','DECCAN BLUE','#3b5e9c');
+  CH5.feederAl=ch5Airline(plan.feeder.airline||'IndiGo',plan.feeder.radio||'IFLY','#2d6e5a',plan.feeder.code||'6E');CH5.skyAl=ch5Airline(plan.partner||'Air India',plan.partnerRadio||'AIR INDIA','#16557a',plan.partnerCode||'AI');CH5.bgAl=ch5Airline(plan.background||'Deccan Blue','DECCAN BLUE','#3b5e9c');
   for(const it of plan.intl||[])CH5.byDest[it.dest]={made:0,missed:0};
   const keep=CH5;startLevel(lv.n,{lv,build:ch5Build});CH5=keep;   // (startLevel's resetState doesn't know CH5; it is set again here)
   mnySet(true);$('#lvCode').textContent='CHAPTER 5 · TAKE ON THE GULF';$('#lvName').textContent=plan.intl&&plan.intl.length?`Feeder bank, then ${plan.intl.map(i=>i.dest).join(', ')}`:'Feeder bank, no international bank';
@@ -4629,7 +4629,7 @@ const CH5F={live:false,
   // the Concession tab's entry: below the concession itself, the same green buttons
   html(){if(!CH5F.C())return '';const o=(x=>x&&!x.test&&(!x.company||!CAMP.load()||x.company===CAMP.load().parent)?x:null)(CH5F.load()),at={front:'the newspaper',decision:'the route agreement',shift:'the shift',bill:'the year\'s results',card:'the last page'};
     const own=CAMP.load();if(!own)return '';   // a chapter is only ever played from the player's own concession
-    return `<h2>Chapter 5 · Cruise: take on the Gulf</h2><p>Played as <b>${own.parent||'your company'}</b>, from your own deal.</p><p>Year 14. Haversine Airways wants to base long-haul flights at VSI and race Dubai and Doha for India's travellers. Read the paper, sign (or don't), then run the afternoon when the connections have to work.</p>
+    return `<h2>Chapter 5 · Cruise: take on the Gulf</h2><p>Played as <b>${own.parent||'your company'}</b>, from your own deal.</p><p>Year 14. Air India wants to base long-haul flights at VSI and race Dubai and Doha for India's travellers. Read the paper, sign (or don't), then run the afternoon when the connections have to work.</p>
      ${o?`<p>Saved at ${at[o.step]||'the start'}.</p><button class="go" id="ch5Go">Continue Chapter 5</button> `:''}<button class="go${o?' ghost':''}" id="ch5New">${o?'Start Chapter 5 again':'Play Chapter 5'}</button>`;},
   wire(){const g=$('#ch5Go'),n=$('#ch5New');if(g)g.onclick=()=>CH5F.resume();if(n)n.onclick=()=>CH5F.start('lean','skipped');}
 };
@@ -4790,7 +4790,7 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
     if(n===4&&dflt==='two'&&(d.choices||[]).some(c=>c.id==='two'&&c.disabled))dflt='anchor';
     const r=await FL.show('decision',d,()=>ZMMoney.decision(FL.who(st,d)),dflt?{choice:dflt}:null);
     let c=r&&r.choice;const ch=(d.choices||[]).find(x=>x.id===c);
-    if(!ch||ch.disabled)c={3:'phased',5:'decline'}[n]||null;   // (a disabled line, e.g. "Plateau Air declined", signs as the engine's default)
+    if(!ch||ch.disabled)c={3:'phased',5:'decline'}[n]||null;   // (a disabled line, e.g. "Akasa Air declined", signs as the engine's default)
     return c;},
   // Chapter 6: the letter from the banks (three replies). Refusing shows the banks' notice before it resolves (ZMMoney.letter).
   async letter(st,d){const Z=window.ZMMoney,E=CAMP.E(),dflt=FL.bot?(FL.bot.ch6||FL_BOT[FL.bot.mode].pick[6]):null;
@@ -13143,8 +13143,8 @@ requestAnimationFrame(frame);
       hubInc = function (t) { var y = t + 1; return y < H.from ? 0 : H.incCr * Math.pow(1 + H.growth, hk(y)) * pr(t) / pr(H.from - 1); };
       hubCost = function (t) { var y = t + 1; return y < H.from ? 0 : H.costCr * pr(t) / pr(H.from - 1); };
     }
-    // Chapters 3-7: connection streams (s.streams, keyed by what made them: Plateau Air's bank, Chapter 4's network, Chapter
-    // 7's dated plan), priced like s.hub; Kármán Line's Hyderabad hub can take a share of them (s.rivalTake)
+    // Chapters 3-7: connection streams (s.streams, keyed by what made them: Akasa Air's bank, Chapter 4's network, Chapter
+    // 7's dated plan), priced like s.hub; GMR's Hyderabad hub can take a share of them (s.rivalTake)
     var streams = (!base && s.streams) ? Object.keys(s.streams).map(function (k) { return s.streams[k]; }).filter(Boolean) : [], rt = !base && s.rivalTake;
     if (streams.length || rt) {
       var hubInc0 = hubInc, hubCost0 = hubCost;
@@ -13402,7 +13402,7 @@ requestAnimationFrame(frame);
   // ---------------------------------------------------------------------------------------------
   function partners() {
     var cfg = (typeof window !== 'undefined' && window.ZMMoney && window.ZMMoney.cfg) || {};
-    var co = (cfg.coinvestor && cfg.coinvestor.name) || 'L5 Capital: Lagrange Point Infrastructure Fund';
+    var co = (cfg.coinvestor && cfg.coinvestor.name) || 'NIIF: National Investment and Infrastructure Fund';
     return [
       {name: 'Your company', pct: 64, color: '#c8a46a', role: 'Promoter. Builds, finances and runs the airport.'},
       {name: co, pct: 16, color: '#23305e', role: 'Co-investor. Puts in money beside you.'},
@@ -14060,10 +14060,10 @@ requestAnimationFrame(frame);
   var CH5 = {
     year: 14, banksFrom: 15, banksPerDay: 2, lateDaysPerYear: 30, birdDaysPerYear: 20, holdSlotInr: 500000 /* (est.) */,
     careInr: 1900, radarCr: 45 /* (est.) a bird-detection radar, in the 2034 budget */, radarYear: 9,
-    feederAirline: 'Sutradhar Air', rival: 'Doha', partner: 'Haversine Airways',   // design/chapters.md §0
-    signatory: {name: 'Elena Marsh', title: 'Chief Commercial Officer, Haversine Airways'},
+    feederAirline: 'IndiGo', rival: 'Doha', partner: 'Air India',   // design/chapters.md §0
+    signatory: {name: 'Elena Marsh', title: 'Network planning, Air India'},
     // fictional callsigns for hub.js (plan.feeder.code/radio, plan.partnerCode/partnerRadio): three letters, radio name
-    feederCode: 'STD', feederRadio: 'SUTRADHAR', partnerCode: 'HVA', partnerRadio: 'HAVERSINE', docId: 'partner-',
+    feederCode: '6E', feederRadio: 'IFLY', partnerCode: 'AI', partnerRadio: 'AIR INDIA', docId: 'partner-',
     feeders: [['Lucknow', 'LKO'], ['Indore', 'IDR'], ['Patna', 'PAT'], ['Raipur', 'RPR'], ['Bhubaneswar', 'BBI'], ['Varanasi', 'VNS'], ['Jaipur', 'JAI'],
       ['Guwahati', 'GAU'], ['Coimbatore', 'CJB'], ['Visakhapatnam', 'VTZ'], ['Chandigarh', 'IXC'], ['Kochi', 'COK']],
     feederFlights: 16, feederPaxEach: 180, feederFrom: '12:40', feederTo: '13:40',
@@ -14099,7 +14099,7 @@ requestAnimationFrame(frame);
     var a = Math.abs(v || 0);
     return a >= 1e5 ? '₹' + (a / 1e5).toFixed(2) + ' lakh cr' : '₹' + (Math.round(a / 100) * 100).toLocaleString('en-IN') + ' cr';
   }
-  function poss(n) { return /s$/.test(n) ? n + '\'' : n + '\'s'; }   // Haversine Airways' (not Airways's)
+  function poss(n) { return /s$/.test(n) ? n + '\'' : n + '\'s'; }   // Air India' (not Airways's)
   function andList(a) { return a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]; }
   function ch5Date(state, year) {   // the player's signing day, in the given game year (the chapter's one date set)
     var md = (state.signedOn || '2026-04-01').slice(5);
@@ -14224,7 +14224,7 @@ requestAnimationFrame(frame);
     var phase1 = st.phase1 === 'big' ? 'big' : 'lean', radar = st.radar === 'bought' ? 'bought' : 'skipped', ph = P.vsi_stages['1A_' + phase1];
     var base = [
       {id: 'concession', title: 'Concession Agreement', year: 0, date: st.signedOn || ch5Date(st, 1).iso, kind: 'agreement', stamp: 'EXECUTED',
-        summary: 'Sixty years to build and run Vikram Sarabhai International, signed by ' + (st.founder || 'the director') + ' for ' + st.parent + ', with AAI, the State through MADC and L5 Capital.'},
+        summary: 'Sixty years to build and run Vikram Sarabhai International, signed by ' + (st.founder || 'the director') + ' for ' + st.parent + ', with AAI, the State through MADC and NIIF.'},
       {id: 'phase1', title: 'Phase 1 choice, ' + cal(1), year: 1, date: ch5Date(st, 1).iso, kind: 'phase1', stamp: 'APPROVED',
         summary: phase1 === 'lean' ? 'You built phase 1 lean: ' + ph.cap + ' million passengers a year and ' + CH5.stands.lean + ' widebody stands at the international pier, for ' + cr(ph.cost) + '.' :
           'You built phase 1 big: ' + ph.cap + ' million passengers a year and ' + CH5.stands.need + ' widebody stands at the international pier, for ' + cr(ph.cost) + '.'},
@@ -14523,7 +14523,7 @@ requestAnimationFrame(frame);
   // applyShift. Money still comes from connections, routes, land and shops (s.streams, s.hub, s.ac_year), never from movements.
   // Numbers marked (est.) are game assumptions; every history card is research/history-cards.md as written.
   // =============================================================================================
-  var NM = {plateau: 'Plateau Air', feeder: CH5.feederAirline, partner: CH5.partner, rival: 'Kármán Line Ventures', district: 'Zero Mile District', l5: 'L5 Capital'};
+  var NM = {plateau: 'Akasa Air', feeder: CH5.feederAirline, partner: CH5.partner, rival: 'GMR Airports', district: 'Zero Mile District', l5: 'NIIF'};
   var CH_ERAS = {3: [1], 4: [2, 3], 5: [4], 6: [5, 6, 7], 7: [8, 9, 10, 11, 12]};
   function firstEra(n) { return CH_ERAS[n][0]; }
   function chYears(n) { var e = CH_ERAS[n]; return [eraYears(e[0])[1], eraYears(e[e.length - 1])[2]]; }
@@ -14694,14 +14694,14 @@ requestAnimationFrame(frame);
   // ---------------------------------------------------------------------------------------------
   // Chapter 3 · Takeoff: open the doors (years 5-7, era 1). design/chapters.md §2
   // ---------------------------------------------------------------------------------------------
-  var CH3 = {year: 5, perDay: 600 /* (est.) Plateau Air's Bengaluru connecting bank, connections a day */, growth: 0.02, until: 18, trustLine: 0.7,
+  var CH3 = {year: 5, perDay: 600 /* (est.) Akasa Air's Bengaluru connecting bank, connections a day */, growth: 0.02, until: 18, trustLine: 0.7,
     plans: {
       bigbang: {label: 'Big bang: every flight moves in on day one', volume: 1, adj: null, from: 5, delayMin: 14,
-        terms: 'Every Plateau Air flight moves to VSI overnight, as Bengaluru\'s did in May 2008.', line: 'The fullest first bank. Every system is tested on the day, for real.'},
+        terms: 'Every Akasa Air flight moves to VSI overnight, as Bengaluru\'s did in May 2008.', line: 'The fullest first bank. Every system is tested on the day, for real.'},
       phased: {label: 'Phased: half the flights in week 1, the rest in week 3', volume: 0.6, adj: [{from: 5, until: 5, f: 0.97}], from: 5, delayMin: 6,
-        terms: 'Half of Plateau Air\'s flights move in week 1, the rest in week 3.', line: 'A lighter day one. Plateau Air pays its crews twice while it runs two airports.'},
+        terms: 'Half of Akasa Air\'s flights move in week 1, the rest in week 3.', line: 'A lighter day one. Akasa Air pays its crews twice while it runs two airports.'},
       soft: {label: 'Soft open: one airline\'s flights first', volume: 0.3, adj: [{from: 5, until: 5, f: 0.8}], from: 6, delayMin: 2, lag: 0.2,
-        terms: 'Only Plateau Air\'s first wave flies from VSI; its full move waits a year.', line: 'A quiet day one, but Plateau Air delays its full move by a year.'}},
+        terms: 'Only Akasa Air\'s first wave flies from VSI; its full move waits a year.', line: 'A quiet day one, but Akasa Air delays its full move by a year.'}},
     shortTrialsMin: 8, beltCarryCr: 4, beltHoldCr: 1.5, towCr: 0.6, taxiCr: 0.3 /* (est.) */};
   function ch3Plan(id) { return CH3.plans[id] ? id : 'phased'; }
   function ch3Stream(id, made, growth) { var p = CH3.plans[ch3Plan(id)]; return streamOf(CH3.perDay, p.from, {made: made, growth: growth, until: CH3.until}); }
@@ -15593,10 +15593,10 @@ if(window.ZMMoney)return;
 const M=window.ZMMoney={version:1};
 /* names live in one place, so renaming the airport is one call: ZMMoney.config({...}) */
 M.cfg={airportName:'Vikram Sarabhai International Airport',airportShort:'VSI',spvName:'Vikram Sarabhai International Airport Limited',spvShort:'VSIAL',years:60,
-  coinvestor:{name:'L5 Capital: Lagrange Point Infrastructure Fund',blurb:'Patient money. Like a body parked at the L5 point, it stays put for decades.'},
-  rivals:[{name:'Kármán Line Ventures',blurb:'Aggressive. Always reaching for the edge of space. Bids high and overreaches.'},
-          {name:'QNH Infragenesis',blurb:'Pension money. Sets its altimeter before every approach: never bids above what it can fund.'},
-          {name:'Thakral–Wainganga Airports',blurb:'A Nagpur developer named for Sarla Thakral, India\'s first woman pilot (1936), with a European operator.'}]};
+  coinvestor:{name:'NIIF: National Investment and Infrastructure Fund',blurb:'India\'s government-anchored infrastructure fund. Patient money: it stays put for decades.'},
+  rivals:[{name:'Adani Airport Holdings',blurb:'Runs Mumbai and Navi Mumbai, and six AAI airports won in the 2019 bids.'},
+          {name:'GMR Airports',blurb:'Runs Delhi and Hyderabad airports.'},
+          {name:'Zurich Airport International',blurb:'Building Noida International Airport at Jewar.'}]};
 /* the people who sign for the other parties: fictional officials, each with a hand of their own (see signSvg).
    'aai', 'state' and 'coinvestor' counter-sign the concession; 'dgca' signs the aerodrome licence;
    'aai60' and 'state60' are their successors who receive the airport back in year 60; 'lenders' is the banks' agent (Ch6).
@@ -15607,7 +15607,7 @@ M.cfg.signatories={
     hand:{font:'Mrs Saint Delafield',size:46,adv:.3,slant:6,rot:-5,ink:'#1d1f22',weight:.35,flourish:'under'}},
   state:{name:'Shirish V. Bhonsle',sign:'S.V. Bhonsle',title:'Vice-Chairman and Managing Director, MADC',org:'the State of Maharashtra, through MADC',
     hand:{font:'Homemade Apple',size:21,adv:.6,slant:-2,rot:-2,ink:'#1f3a8a',weight:.1,flourish:'dash'}},
-  coinvestor:{name:'Naomi Fernandes',sign:'Naomi Fernandes',title:'Managing Partner, L5 Capital',org:'L5 Capital: Lagrange Point Infrastructure Fund',
+  coinvestor:{name:'Naomi Fernandes',sign:'Naomi Fernandes',title:'Managing Director, NIIF',org:'NIIF: National Investment and Infrastructure Fund',
     hand:{font:'Monsieur La Doulaise',size:38,adv:.34,slant:0,rot:-3,ink:'#23305e',weight:.2,flourish:'loop'}},
   dgca:{name:'Rajeshwari Natarajan',sign:'R. Natarajan',title:'Joint Director General (Aerodromes)',org:'the Director General of Civil Aviation',
     hand:{font:'La Belle Aurore',size:30,adv:.46,slant:4,rot:-6,ink:'#1d1f22',weight:.15,flourish:'paraph'}},
@@ -16130,7 +16130,7 @@ const INK_DEFS=`<svg class="zdk-defs" width="0" height="0" aria-hidden="true"><d
    Four documents cross it one at a time, and only the current one is shown: incorporation, the financial bid,
    the lenders' term sheet, and the Concession Agreement on duty paper. Each is filled in by hand and stamped,
    then joins the stack on the left. The player signs the agreement with the trackpad, after AAI, the state and
-   L5 Capital, and the game begins.
+   NIIF, and the game begins.
    opts: {defaultName, founderName, capexCr, partners:[{name,pct,color,role}], rivals:[{name,blurb}],
           bidTypes:{share|ppf:{min,max,step,def,benchmarks:[{name,val}]}}, gearing:{min,max,def},
           previewBid(bid)->{winPct,note}, previewClose({gearing,repayment,bid})->{equityCr,debtCr,parentCr,minDscr,note}}
@@ -16666,7 +16666,7 @@ function hbSampleSig(){return new Promise(r=>{const svg=scribble(53,'#1f3a8a').r
 window.__zmmHandbackDemo=o=>hbSampleSig().then(sig=>M.handback(Object.assign({founder:'Asha Rao',parent:'Meridian Infra',signature:sig,signedOn:'2026-10-19',endsOn:'2086-10-18',
   stakePct:68,stakeValueCr:21400,returnPct:14.6,paxTotalM:4180,paidToStateCr:198000,condition:'good',
   assets:['four runways','Terminals 1 and 2','Satellites G and H','Zero Mile Tower','the APM train','the airport city'],
-  owners:[{name:'Meridian Infra',pct:68},{name:'L5 Capital',pct:12},{name:'Airports Authority of India',pct:10},{name:'State of Maharashtra, through MADC',pct:10}],
+  owners:[{name:'Meridian Infra',pct:68},{name:'NIIF',pct:12},{name:'Airports Authority of India',pct:10},{name:'State of Maharashtra, through MADC',pct:10}],
   lines:['The banks were repaid in full in year 24.','The tightest year was year 31, when the airport earned ₹94 for every ₹100 due, and the banks let you keep it.','Penalties to airlines came to ₹3,900 cr over sixty years.']},o||{})));
 (function(){const go=()=>{if(/[?&]moneymock=handback\b/.test(location.search))window.__zmmHandbackDemo().then(r=>{window.__zmmResult=r;});};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else setTimeout(go,0);})();
@@ -17246,7 +17246,7 @@ M.decision=function(o){o=o||{};return new Promise(res=>{
       ${paras(o.body).map(p=>`<p class="t">${esc(p)}</p>`).join('')}
       <p class="t">The parties agree to the line ticked below.</p>
       <div class="zdk-ticks" role="radiogroup" aria-label="The terms">${ch.map(c=>`<button role="radio" aria-checked="false" data-id="${esc(c.id)}"${c.disabled?' disabled aria-disabled="true" class="off"':''}><i></i><span>${esc(c.label)}</span>${c.terms?`<small>${esc(c.terms)}</small>`:''}</button>`).join('')}</div>
-      <div class="zdk-sigs"><div class="s"><div class="ink">${signSvg(sg)}</div><span><b>${esc(sg.name||'')}</b><br>${esc(sg.title||'Authorised signatory')}</span><small>for ${esc(pa.airline||'Haversine Airways')}</small></div>
+      <div class="zdk-sigs"><div class="s"><div class="ink">${signSvg(sg)}</div><span><b>${esc(sg.name||'')}</b><br>${esc(sg.title||'Authorised signatory')}</span><small>for ${esc(pa.airline||'Air India')}</small></div>
         <div class="s" id="z5Me"><div class="ink"></div><span><b>${esc(o.founder||'Director')}</b><br>Director${o.parent?', for '+esc(o.parent):''}</span><small>for ${esc(M.cfg.spvShort)}</small></div></div>
     </article><div class="zdk-acts"><button class="zdk-go" id="z5Sign" disabled>Tick one line first</button></div></div>
     <aside class="zdk-note arrive" id="zdkNote" aria-live="polite"></aside></main>`);
@@ -17328,7 +17328,7 @@ let tagCv=null;
 function tagWidth(a,b){const f=(t,bold)=>{t=String(t||'');try{tagCv=tagCv||document.createElement('canvas').getContext('2d');tagCv.font=(bold?'700 ':'400 ')+"10px 'Courier Prime','Courier New',monospace";return tagCv.measureText(t).width;}catch(e){return t.length*6.1;}};
   return 17+Math.round(Math.max(TAG_SLIP_MIN,Math.min(TAG_SLIP_MAX,Math.ceil(Math.max(f(a,true),f(b,false)))+15)));}
 /* the slip's bold line is the document's short name: o.short if given, else the title, with "X with Y" read as "X, Y" and
-   words dropped from the end of Y until it fits the widest slip ("Route agreement with Haversine Airways" → "Route agreement, Haversine") */
+   words dropped from the end of Y until it fits the widest slip ("Route agreement with Air India" → "Route agreement, Air India") */
 function tagShort(t){t=String(t||'');const fits=x=>{tagWidth('','');try{return tagCv.measureText(x).width;}catch(e){return x.length*6.1;}},max=TAG_SLIP_MAX-17-15;
   try{tagCv.font="700 10px 'Courier Prime','Courier New',monospace";}catch(e){}
   if(fits(t)<=max)return t;let s=t.replace(/^(.+?) (?:with|for|from|to) (.+)$/,'$1, $2');
@@ -17648,7 +17648,7 @@ function sampleSig(seed,ink){return new Promise(r=>{const svg=scribble(seed,ink|
 function fileMock(kind){return Promise.all([sampleSig(53),sampleSig(71,'#14161a'),sampleSig(97)]).then(([s0,s1,s2])=>{
   const record=[{company:'Kestrel Airport Holdings',founder:'Vikram Shah',signature:s1,years:60,ended:'handback',returnPct:14.2,endedOn:'2086-10-18'},
     {company:'Sahyadri Gateway',founder:'Asha Rao',signature:s2,years:23,ended:'banks',returnPct:-3.4,endedOn:'2049-06-30'}];
-  const docs=[{id:'ca',title:'Concession Agreement',date:'2026-04-01',kind:'agreement',summary:'Signed by AAI, the State through MADC, L5 Capital and your company. Sixty years to build and run VSI, then hand it back.'},
+  const docs=[{id:'ca',title:'Concession Agreement',date:'2026-04-01',kind:'agreement',summary:'Signed by AAI, the State through MADC, NIIF and your company. Sixty years to build and run VSI, then hand it back.'},
     {id:'lic',title:'Aerodrome licence',date:'2030-11-01',stamp:'Licensed',summary:'DGCA licensed VSI on 1 November 2030. The airport opened the same morning.'},
     {id:'bm2041',title:'Board minutes, 2041',date:'2041-04-01',kind:'minutes',summary:'Approved: the departure planning system and the retail upgrade. Dividend: ₹900 cr.'}];
   const host=()=>{let h=document.getElementById('tConc');if(h)return h;h=document.getElementById('zcfHost');if(h)return h;
@@ -17669,32 +17669,32 @@ M._fileMock=fileMock;
 
 /* sample Chapter 5 data for ?moneymock=frontpage|decision|briefing|tags|pins|bill|card. The real figures come from VSIEra.ch5. */
 const CH5={
-  docs:[{id:'ca',title:'Concession Agreement',year:2026,kind:'agreement',summary:'Signed by AAI, the State through MADC, L5 Capital and your company. Sixty years to build and run VSI, then hand it back.'},
+  docs:[{id:'ca',title:'Concession Agreement',year:2026,kind:'agreement',summary:'Signed by AAI, the State through MADC, NIIF and your company. Sixty years to build and run VSI, then hand it back.'},
     {id:'p1',title:'Phase 1: the lean build',year:2027,kind:'choice',summary:'You built phase 1 for 45 million passengers a year: ₹60,000 cr. Piers A to D only. No widebody stands on the international side until phase 1B.'},
     {id:'cb2034',title:'Capital budget, 2034',year:2034,kind:'budget',summary:'Approved: the departure planning system and the retail upgrade. Not approved: the bird radar (₹180 cr). The lakes south of the field stay unwatched.'},
-    {id:'ra2040',title:'Route agreement with Haversine Airways',year:2040,kind:'route-agreement',summary:'Haversine Airways flies a daily evening bank from VSI to London, Singapore and Nairobi, fed by the domestic bank from Lucknow, Indore, Patna and Bhopal.'}],
+    {id:'ra2040',title:'Route agreement with Air India',year:2040,kind:'route-agreement',summary:'Air India flies a daily evening bank from VSI to London, Singapore and Nairobi, fed by the domestic bank from Lucknow, Indore, Patna and Bhopal.'}],
   front:{masthead:'The Zero Mile Times',dateLine:'Nagpur, Monday 15 October 2040',price:'₹12',edition:'Nagpur edition',
     lead:'DUBAI, DOHA OR NAGPUR? THE RACE FOR INDIA\'S TRAVELLERS',
     deck:'A long-haul airline wants to make VSI its Indian hub. The Gulf airports want India\'s travellers to keep changing planes with them.',
-    sub:{head:'Haversine Airways puts London, Singapore and Nairobi on the table',body:'Haversine\'s commercial chief flew in on Saturday to offer VSIAL a daily evening bank of long-haul flights. Each would be filled by the domestic flights that land at VSI in the hour before.\n\nThe airline wants stands, a quick transfer and a promise that the feeders will not run late. VSIAL\'s board meets this week.'},
+    sub:{head:'Air India puts London, Singapore and Nairobi on the table',body:'Air India\'s commercial chief flew in on Saturday to offer VSIAL a daily evening bank of long-haul flights. Each would be filled by the domestic flights that land at VSI in the hour before.\n\nThe airline wants stands, a quick transfer and a promise that the feeders will not run late. VSIAL\'s board meets this week.'},
     columns:[{head:'Feeders fill up',body:'Fourteen Indian cities now send a morning and an evening bank to VSI. Lucknow and Indore are full most days.'},
       {head:'AERA holds charges',body:'The regulator kept airline charges where they were for five more years. VSIAL said it would live with the order.'}],
     photo:{kind:'intl-pier',caption:'The international pier at VSI, where a London flight would board. Drawn by our staff artist.'}},
-  decision:{docType:'route-agreement',docId:'RA-2040-07',title:'Route agreement: Haversine Airways',
-    parties:{airport:'Vikram Sarabhai International Airport Limited',airline:'Haversine Airways',signatory:{name:'Daniel Okafor',title:'Chief Commercial Officer, Haversine Airways'}},
+  decision:{docType:'route-agreement',docId:'RA-2040-07',title:'Route agreement: Air India',
+    parties:{airport:'Vikram Sarabhai International Airport Limited',airline:'Air India',signatory:{name:'Daniel Okafor',title:'Network planning, Air India'}},
     body:['The Airline will base long-haul aircraft at the Airport and fly one bank of international departures each evening.','The Airport will give the Airline\'s flights stands on the international pier, and a transfer from the domestic bank in under an hour.','If a feeder lands late, the Airport may hold the departure. The slot it misses at the other end is the Airport\'s cost.'],
-    choices:[{id:'three',label:'London, Singapore and Nairobi, every evening',terms:'Three widebodies. Haversine Airways wants three stands on the international pier.',act:'Sign for three routes',slip:{big:'+2,400 connections a day',money:'₹1,850 cr a year',line:'If the feeder bank holds. Every missed connection books via Doha next time.'}},
-      {id:'london',label:'London only, every evening',terms:'One widebody, one stand. Haversine Airways may add routes later.',act:'Sign for London',slip:{big:'+900 connections a day',money:'₹690 cr a year',line:'Safer on stands. Singapore and Nairobi stay with Dubai and Doha.'}},
+    choices:[{id:'three',label:'London, Singapore and Nairobi, every evening',terms:'Three widebodies. Air India wants three stands on the international pier.',act:'Sign for three routes',slip:{big:'+2,400 connections a day',money:'₹1,850 cr a year',line:'If the feeder bank holds. Every missed connection books via Doha next time.'}},
+      {id:'london',label:'London only, every evening',terms:'One widebody, one stand. Air India may add routes later.',act:'Sign for London',slip:{big:'+900 connections a day',money:'₹690 cr a year',line:'Safer on stands. Singapore and Nairobi stay with Dubai and Doha.'}},
       {id:'decline',label:'Decline the agreement',terms:'No international bank this chapter.',slip:{big:'0 new connections',money:'₹0 a year',line:'Nothing can go wrong tonight. Doha keeps India\'s travellers.'}}],
     stamps:{three:'Signed',london:'Signed',decline:'Declined'}},
   brief:{title:'Duty manager’s handover',date:'15 Oct 2040, 13:40',
-    lines:[{text:'Haversine’s London bank departs 14:10 · 380 connecting',doc:'Route agreement with Haversine Airways'},{text:'Only two widebody stands on the international side',doc:'Phase 1: the lean build'},{text:'No bird radar: watch the lakes south of 28L',doc:'Capital budget, 2034'}],
+    lines:[{text:'Air India’s London bank departs 14:10 · 380 connecting',doc:'Route agreement with Air India'},{text:'Only two widebody stands on the international side',doc:'Phase 1: the lean build'},{text:'No bird radar: watch the lakes south of 28L',doc:'Capital budget, 2034'}],
     watch:'Lucknow’s feeder. If it’s late, London has to wait or go.',autoStartSec:6},
-  tags:[{id:'stands',doc:'Phase 1: the lean build',line:'No widebody stand free for Haversine 12.',docId:'p1'},{id:'birds',doc:'Capital budget, 2034',line:'You skipped the bird radar.',docId:'cb2034'}],
+  tags:[{id:'stands',doc:'Phase 1: the lean build',line:'No widebody stand free for Air India 12.',docId:'p1'},{id:'birds',doc:'Capital budget, 2034',line:'You skipped the bird radar.',docId:'cb2034'}],
   bill:{title:'The first year of the Gulf race',year:2040,page:7,period:'This page covers one year: 1 April 2040 to 31 March 2041.',
-    paragraph:'Haversine\'s evening bank to London, Singapore and Nairobi ran all year. Most feeders landed on time; when Lucknow ran late you held London. Two widebodies a night waited on taxiways for a stand.',
+    paragraph:'Air India\'s evening bank to London, Singapore and Nairobi ran all year. Most feeders landed on time; when Lucknow ran late you held London. Two widebodies a night waited on taxiways for a stand.',
     table:[{label:'Earned',cr:2140},{label:'Spent',cr:1610},{label:'Connections',made:612000,missed:41000}],
-    margin:'You held London twice. It cost ₹38 cr in slots and kept 760 passengers off Doha. Haversine Airways is adding a Frankfurt flight.',
+    margin:'You held London twice. It cost ₹38 cr in slots and kept 760 passengers off Doha. Air India is adding a Frankfurt flight.',
     cover:{ratio:1.18,words:'₹118 earned for every ₹100 due'},stake:{pct:64,valueCr:23600}},
   card:{title:'What really happened',text:'Emirates first flew on 25 October 1985, from Dubai to Karachi, with two leased aircraft and US$10 million from Dubai\'s government. In 2024 Dubai International handled a record 92.3 million passengers, and India was its biggest market.',
     sources:[{label:'Gulf News, “40 years of UAE: the launch of Emirates Airline”',url:'https://gulfnews.com/news/uae/government/40-years-of-uae-the-launch-of-emirates-airline-1.920215'},{label:'AP, “Dubai International Airport, busiest for world travel, sees record 92.3 million passengers in 2024”',url:'https://www.yahoo.com/news/dubai-international-airport-busiest-world-081648847.html'}]}};
@@ -17707,7 +17707,7 @@ function ch5Mock(kind){M.setPile(CH5.docs);const H5=window.HUB;
   if(kind==='card')return M.whatHappened(CH5.card);
   if(kind==='briefing'){live();return M.briefing(Object.assign({},CH5.brief,{autoStartSec:600}));}
   if(kind==='tags'||kind==='pins'){live();M.enable(true);M.setDay({total:142.6,ratePerHr:61});const cn={made:1840,missed:380};M.setConnections(cn);
-    const extra=kind==='pins'?[{doc:'Route agreement with Haversine Airways',line:'London waits for the Lucknow feeder.',docId:'ra2040'},{doc:'Concession Agreement',line:'Sixty years, then hand it back.',docId:'ca'}]:[];
+    const extra=kind==='pins'?[{doc:'Route agreement with Air India',line:'London waits for the Lucknow feeder.',docId:'ra2040'},{doc:'Concession Agreement',line:'Sixty years, then hand it back.',docId:'ca'}]:[];
     const hs=CH5.tags.concat(extra).map(t=>M.tag(0,0,t.doc,t.line,t.docId));
     // the live count, as hub.js sends it: every time a bank settles
     setInterval(()=>{cn.made+=Math.round(20+Math.random()*30);if(Math.random()<.3)cn.missed+=Math.round(3+Math.random()*9);M.setConnections(cn);},900);
@@ -18261,7 +18261,7 @@ M.minutes=function(o){mountS();o=o||{};return new Promise(res=>{
 
 /* ---------- the letter from the banks (Chapter 6) ----------
    ZMMoney.letter(o) → Promise<{choice, signedOn}>. One cold paragraph from the lenders' agent, the worst number circled in
-   pencil, and a reply slip below the cut with three replies (own money / L5 Capital / refuse). Signing brings down the reply's
+   pencil, and a reply slip below the cut with three replies (own money / NIIF / refuse). Signing brings down the reply's
    stamp (CURED / AGREED / REFUSED). Refusing then shows the notice that the banks take control (ZMMoney.stepIn(o.stepIn))
    before it resolves. o = {docId, date, from?:{name, address}, signatory?, subject, body (one paragraph), circle (the text in
    the body to circle, e.g. "₹96"), circleNote?, replies:[{id:'own'|'l5'|'refuse', label, terms, slip:{big, money, line}, act?}]
@@ -18290,7 +18290,7 @@ M.letter=function(o){mountS();o=o||{};return new Promise(res=>{
     <aside class="zdk-note arrive" id="zdkNote" aria-live="polite"></aside></main>`);
   wirePile(sh,pile);
   const doc=sh.querySelector('#zdkDoc'),note=sh.querySelector('#zdkNote'),go=sh.querySelector('#zsSign');moreCue(doc);
-  const actOfC=c=>c.act||({own:'Sign: we put the money in',l5:'Sign: ask L5 Capital',refuse:'Sign the refusal'}[c.id])||'Sign the reply';
+  const actOfC=c=>c.act||({own:'Sign: we put the money in',l5:'Sign: ask NIIF',refuse:'Sign the refusal'}[c.id])||'Sign the reply';
   const slip=()=>{const c=ch.find(x=>x.id===pick);
     note.innerHTML=`<h3>${esc(o.slipQuestion||'What each reply does')}</h3>${ch.map(x=>{const s=x.slip||{};return `<div class="z5-sl${x.id===pick?' on':''}"><b>${esc(x.label)}</b><span>${esc([s.big,s.money].filter(Boolean).join(' · '))}</span></div>`;}).join('')}${c&&c.slip&&c.slip.line?`<p>${esc(c.slip.line)}</p>`:''}`;};
   slip();
@@ -18413,49 +18413,49 @@ M.debrief=function(P,opt){mountS();P=P||{};opt=opt||{};return new Promise(res=>{
 
 /* ---------- sample data for ?moneymock=strip|flaps|cliff|tie|minutes|letter|stepin|debrief[1-4] (the real figures come from VSIEra) ---------- */
 const S0={
-  strip:{chapter:{n:5,id:'cruise',name:'Cruise',act:2},years:[14,18],doc:{title:'Route agreement, Haversine Airways',stamp:'Signed'},stakePct:64,
+  strip:{chapter:{n:5,id:'cruise',name:'Cruise',act:2},years:[14,18],doc:{title:'Route agreement, Air India',stamp:'Signed'},stakePct:64,
     past:[{chapter:{n:1,name:'Clearance'},years:[0,0],doc:{title:'Concession Agreement',stamp:'Executed'},stakePct:64},{chapter:{n:2,name:'Pushback'},years:[1,4],doc:{title:'Construction register',stamp:'Licensed'},stakePct:64},
-      {chapter:{n:3,name:'Takeoff'},years:[5,7],doc:{title:'Opening plan, Plateau Air',stamp:'Signed'},stakePct:64},{chapter:{n:4,name:'Climb'},years:[8,13],doc:{title:'Network agreement',stamp:'Signed'},stakePct:64}]},
-  bridge:{fromYear:2033,toYear:2039,lines:['SUTRADHAR AIR’S AFTERNOON BANK FILLS: 12 CITIES IN ONE HOUR','DUBAI CUTS ITS TRANSFER CHARGES AGAIN; VSI HOLDS ITS OWN','VSI PASSES 50 MILLION PASSENGERS IN A YEAR',
+      {chapter:{n:3,name:'Takeoff'},years:[5,7],doc:{title:'Opening plan, Akasa Air',stamp:'Signed'},stakePct:64},{chapter:{n:4,name:'Climb'},years:[8,13],doc:{title:'Network agreement',stamp:'Signed'},stakePct:64}]},
+  bridge:{fromYear:2033,toYear:2039,lines:['IFLY AIR’S AFTERNOON BANK FILLS: 12 CITIES IN ONE HOUR','DUBAI CUTS ITS TRANSFER CHARGES AGAIN; VSI HOLDS ITS OWN','VSI PASSES 50 MILLION PASSENGERS IN A YEAR',
     'LUCKNOW AND INDORE ASK FOR A SECOND DAILY BANK','AERA HOLDS AIRLINE CHARGES FOR FIVE MORE YEARS','A LONG-HAUL AIRLINE GOES LOOKING FOR AN INDIAN HUB']},
   cliff:{masthead:'The Zero Mile Times',dateLine:'Nagpur, Friday 22 November 2032',price:'₹10',date:'2032-11-22',
-    lead:'AIRLINES ASK: WILL VSI BECOME INDIA’S CONNECTING HUB?',deck:'Three years after opening day, the airport is full in the mornings and quiet after lunch. Sutradhar Air says it can fill the afternoon, if VSI will build around it.',
-    sub:{head:'Plateau Air stays, and wants more',body:'Plateau Air moved its Bengaluru connecting bank to VSI on opening day and kept it. Its chief told this paper the airport "opened like an airport that had been open for years".\n\nSutradhar Air, which flies to twelve smaller Indian cities, is talking to VSIAL about timing all twelve into one afternoon bank.'},
+    lead:'AIRLINES ASK: WILL VSI BECOME INDIA’S CONNECTING HUB?',deck:'Three years after opening day, the airport is full in the mornings and quiet after lunch. IndiGo says it can fill the afternoon, if VSI will build around it.',
+    sub:{head:'Akasa Air stays, and wants more',body:'Akasa Air moved its Bengaluru connecting bank to VSI on opening day and kept it. Its chief told this paper the airport "opened like an airport that had been open for years".\n\nIndiGo, which flies to twelve smaller Indian cities, is talking to VSIAL about timing all twelve into one afternoon bank.'},
     columns:[{head:'The banks',body:'VSIAL made its first loan repayment in October, on time. The airport earned ₹121 for every ₹100 it owed.'},{head:'The Gulf',body:'Dubai and Doha cut their transfer charges again this month. Most Indians who change planes still do it there.'}],
     photo:{kind:'transfer',caption:'The transfer hall at VSI, empty at three in the afternoon. Drawn by our staff artist.'}},
   minutes:{docId:'BM-2059-04',title:'Board minutes, 2059',date:'2059-04-01',year:34,founder:'Asha Rao',parent:'Meridian Infra',
     intro:'The chair put three resolutions to the board. A ticked resolution is adopted; one left blank is rejected.',
     resolutions:[{id:'district',title:'Build Zero Mile District: offices, hotels and shops on VSI land',text:'₹9,600 cr over three phases from 2060. AERA counts 30% of its income against airline charges.',slip:{yes:'₹1,450 cr a year by year 50',no:'Nothing from the land',line:'Land is the one income that keeps growing after the runways are full.'}},
-      {id:'phase2',title:'Commit to satellites G and H, opening in 2064, with the airlines’ letters signed now',text:'₹18,500 cr. Sutradhar Air, Plateau Air and Haversine Airways have signed for 41 new routes if the date is fixed today.',slip:{yes:'+41 routes the airlines can sell now',no:'Routes only once the satellites open',line:'A date the airlines can sell is worth more than a plan they can only hope for.'}},
-      {id:'l5',title:'Buy L5 Capital’s stake, taking Meridian Infra to 80%',text:'L5 Capital sells 16% at today’s value of the airport: ₹11,900 cr.',slip:{yes:'₹11,900 cr now; you would get 80% of the handover value instead of 64%',no:'You would get 64% of the handover value, not 80%',line:'You pay today’s price for a share of the next 26 years.'}}]},
+      {id:'phase2',title:'Commit to satellites G and H, opening in 2064, with the airlines’ letters signed now',text:'₹18,500 cr. IndiGo, Akasa Air and Air India have signed for 41 new routes if the date is fixed today.',slip:{yes:'+41 routes the airlines can sell now',no:'Routes only once the satellites open',line:'A date the airlines can sell is worth more than a plan they can only hope for.'}},
+      {id:'l5',title:'Buy NIIF’s stake, taking Meridian Infra to 80%',text:'NIIF sells 16% at today’s value of the airport: ₹11,900 cr.',slip:{yes:'₹11,900 cr now; you would get 80% of the handover value instead of 64%',no:'You would get 64% of the handover value, not 80%',line:'You pay today’s price for a share of the next 26 years.'}}]},
   letter:{docId:'LA/VSIAL/2046/09',title:'Letter from the banks, 2046',date:'2046-07-14',founder:'Asha Rao',parent:'Meridian Infra',
-    subject:'Sutradhar Air has stopped flying, and VSIAL cannot pay us in full.',
-    body:'Since Sutradhar Air stopped flying in May, VSIAL’s earnings have fallen by a third. In the year to 31 March 2047 it will earn about ₹96 for every ₹100 it owes us; our agreement asks for at least ₹110. Unless VSIAL’s owners put in ₹2,400 cr by 30 September 2046, the banks will take control of the airport.',
+    subject:'IndiGo has stopped flying, and VSIAL cannot pay us in full.',
+    body:'Since IndiGo stopped flying in May, VSIAL’s earnings have fallen by a third. In the year to 31 March 2047 it will earn about ₹96 for every ₹100 it owes us; our agreement asks for at least ₹110. Unless VSIAL’s owners put in ₹2,400 cr by 30 September 2046, the banks will take control of the airport.',
     circle:'₹96',circleNote:'the worst year since opening day',
     replies:[{id:'own',label:'Meridian Infra will put in ₹2,400 cr of its own money',terms:'Paid in by 30 September 2046.',slip:{big:'Your stake stays 64%',money:'your return falls from 14.6% to 13.5% a year',line:'You keep the airport. The money comes from Meridian Infra, not from the airport.'}},
-      {id:'l5',label:'VSIAL will ask L5 Capital to put the money in',terms:'L5 Capital pays ₹2,400 cr for new shares.',slip:{big:'Your stake falls to 52%',money:'L5 Capital rises to 28%',line:'You keep running the airport, with less of it.'}},
+      {id:'l5',label:'VSIAL will ask NIIF to put the money in',terms:'NIIF pays ₹2,400 cr for new shares.',slip:{big:'Your stake falls to 52%',money:'NIIF rises to 28%',line:'You keep running the airport, with less of it.'}},
       {id:'refuse',label:'VSIAL’s owners will not put in more money',terms:'The banks take control of the airport.',slip:{big:'The banks take control',money:'your concession ends',line:'The airport keeps flying. It is no longer yours.'}}],
     stepIn:{date:'2046-10-01',company:'Meridian Infra',founder:'Asha Rao',stakePct:64,docId:'N-2046-01'}},
   debrief:{p1:{returnPct:14.6,moneyInCr:13440,moneyOutCr:142800,valueCr:23600,ended:'handback',endedOn:'2086-03-31',
       benchmarks:[{label:'Bengaluru’s owners expect',pct:[12.2,17.5],source:'Fairfax India Holdings, annual report 2025: the discount rates in its valuation of Bangalore International Airport.'},
         {label:'AERA allows Delhi',pct:15.41,source:'AERA, consultation paper on Delhi airport’s fourth control period: the fair return on shareholders’ money.'},
         {label:'the banks charged',pct:10.15,source:'AERA, the same paper: the efficient cost of Delhi airport’s debt.'}]},
-    p2:{method:'leave-one-out',everythingElsePct:31,bars:[{decision:'ch5',label:'Haversine Airways, three routes',sharePct:41,sentence:'Signing Haversine Airways for three routes made 41% of your return.'},
-      {decision:'ch4',label:'Anchoring Sutradhar Air',sharePct:23,sentence:'Anchoring Sutradhar Air’s afternoon bank made 23%.'},{decision:'phase1',label:'Phase 1 built lean',sharePct:-9,sentence:'Building phase 1 lean cost you 9%.'},
+    p2:{method:'leave-one-out',everythingElsePct:31,bars:[{decision:'ch5',label:'Air India, three routes',sharePct:41,sentence:'Signing Air India for three routes made 41% of your return.'},
+      {decision:'ch4',label:'Anchoring IndiGo',sharePct:23,sentence:'Anchoring IndiGo’s afternoon bank made 23%.'},{decision:'phase1',label:'Phase 1 built lean',sharePct:-9,sentence:'Building phase 1 lean cost you 9%.'},
       {decision:'london',label:'Holding London for Lucknow',sharePct:7,sentence:'Holding London for Lucknow made 7%.'},{decision:'shifts',label:'Your shifts',sharePct:5,sentence:'Your shifts made 5% more than an expert’s would have.'},{decision:'radar',label:'The bird radar',sharePct:2}]},
     p3:{frontPages:[{year:2027,chapter:2,lead:'FOUR YEARS TO BUILD AN AIRPORT THE SIZE OF ISTANBUL’S',line:'Because you paid to keep the earthworks dry'},{year:2030,chapter:3,lead:'VSI OPENS: A CITY’S FLIGHTS MOVE IN OVERNIGHT',line:'Because you phased the opening',light:'relaxed'},
-      {year:2032,chapter:3,lead:'AIRLINES ASK: WILL VSI BECOME INDIA’S CONNECTING HUB?',line:'Because day one ran at 88% on time'},{year:2033,chapter:4,lead:'TWELVE CITIES, ONE AFTERNOON: VSI BIDS TO BE INDIA’S HUB',line:'Because you anchored Sutradhar Air',light:'relaxed'},
-      {year:2039,chapter:5,lead:'DUBAI, DOHA OR NAGPUR? THE RACE FOR INDIA’S TRAVELLERS',line:'Because the feeder bank held',light:'watching closely'},{year:2046,chapter:6,lead:'SUTRADHAR AIR GROUNDED: 30 JETS PARKED AT VSI',line:'Because one airline carried 74% of your connections',light:'warning you'},
+      {year:2032,chapter:3,lead:'AIRLINES ASK: WILL VSI BECOME INDIA’S CONNECTING HUB?',line:'Because day one ran at 88% on time'},{year:2033,chapter:4,lead:'TWELVE CITIES, ONE AFTERNOON: VSI BIDS TO BE INDIA’S HUB',line:'Because you anchored IndiGo',light:'relaxed'},
+      {year:2039,chapter:5,lead:'DUBAI, DOHA OR NAGPUR? THE RACE FOR INDIA’S TRAVELLERS',line:'Because the feeder bank held',light:'watching closely'},{year:2046,chapter:6,lead:'IFLY AIR GROUNDED: 30 JETS PARKED AT VSI',line:'Because one airline carried 74% of your connections',light:'warning you'},
       {year:2059,chapter:7,lead:'THIRTY YEARS ON: MERIDIAN INFRA RUNS INDIA’S CONNECTING HUB',line:'Because you put your own money in',light:'relaxed'}],once:'Opening day happened once. You ran it at 88% on time.'},
     p4:{lines:[{title:'feeders',line:'You signed the feeders before you set prices.',evidence:'12 cities × 3 destinations; 6.2 lakh connections a year by 2045.'},
       {title:'later',line:'You paid now for flights that would come later.',evidence:'Held London twice at ₹10 cr; kept 11,400 passengers a year off Doha.'},
       {title:'crisis',line:'You put money in when the banks asked.',evidence:'Put in ₹2,400 cr in 2046; the crisis shift ran 81% on time.'}]}}};
 M._s0Sample=S0;
 function s0Mock(kind){mountS();
-  const pileDocs=[{id:'ca',title:'Concession Agreement',date:'2026-04-01',kind:'agreement',summary:'Signed by AAI, the State through MADC, L5 Capital and your company.'},{id:'lic',title:'Aerodrome licence',date:'2030-11-01',stamp:'Licensed',summary:'DGCA licensed VSI on 1 November 2030.'},
-    {id:'na',title:'Network agreement',date:'2033-06-01',kind:'route-agreement',summary:'Sutradhar Air anchors the afternoon bank: 12 cities, 40-minute connections.'},{id:'ra',title:'Route agreement, Haversine Airways',date:'2039-10-15',kind:'route-agreement',summary:'London, Singapore and Nairobi every evening.'}];
+  const pileDocs=[{id:'ca',title:'Concession Agreement',date:'2026-04-01',kind:'agreement',summary:'Signed by AAI, the State through MADC, NIIF and your company.'},{id:'lic',title:'Aerodrome licence',date:'2030-11-01',stamp:'Licensed',summary:'DGCA licensed VSI on 1 November 2030.'},
+    {id:'na',title:'Network agreement',date:'2033-06-01',kind:'route-agreement',summary:'IndiGo anchors the afternoon bank: 12 cities, 40-minute connections.'},{id:'ra',title:'Route agreement, Air India',date:'2039-10-15',kind:'route-agreement',summary:'London, Singapore and Nairobi every evening.'}];
   M.setPile(pileDocs);
-  const at=(n,doc,ys)=>Object.assign({},S0.strip,{chapter:{n,name:M.CHAPTERS[n-1],act:actOf(n)},years:ys,doc,past:S0.strip.past.concat(n>5?[{chapter:{n:5,name:'Cruise'},years:[14,18],doc:{title:'Route agreement, Haversine Airways',stamp:'Signed'},stakePct:64}]:[],
+  const at=(n,doc,ys)=>Object.assign({},S0.strip,{chapter:{n,name:M.CHAPTERS[n-1],act:actOf(n)},years:ys,doc,past:S0.strip.past.concat(n>5?[{chapter:{n:5,name:'Cruise'},years:[14,18],doc:{title:'Route agreement, Air India',stamp:'Signed'},stakePct:64}]:[],
       n>6?[{chapter:{n:6,name:'Turbulence'},years:[19,33],doc:{title:'Letter from the banks',stamp:'Cured'},stakePct:64}]:[]).filter(p=>p.chapter.n<n)});
   const file={company:'Meridian Infra',founder:'Asha Rao',signedOn:'2026-04-01',year:7,act:1};
   return sampleSig(53).then(sig=>{file.signature=sig;
@@ -18464,8 +18464,8 @@ function s0Mock(kind){mountS();
       setTimeout(()=>{M.setStrip(S0.strip);const h=M.strip('#zfsNight','night');if(h){h.style.position='absolute';h.style.left='14px';h.style.top='12px';const e=h.querySelectorAll('.zfs-e')[1];if(e)e.classList.add('peek');}},300);
       return new Promise(()=>{});}
     if(kind==='flaps'){M.setStrip(at(4,{title:'Network agreement',stamp:'Signed'},[8,13]));const fp=Object.assign({},M._ch5Sample.front,{dateLine:'Nagpur, Monday 3 October 2039'});
-      return M.flaps(Object.assign({},S0.bridge,{frontPage:fp}),{strip:at(5,{title:'Route agreement, Haversine Airways',stamp:null},[14,18])});}
-    if(kind==='cliff'){M.setStrip(at(3,{title:'Opening plan, Plateau Air',stamp:'Signed'},[5,7]));return M.cliffhanger(S0.cliff,{act:2,file});}
+      return M.flaps(Object.assign({},S0.bridge,{frontPage:fp}),{strip:at(5,{title:'Route agreement, Air India',stamp:null},[14,18])});}
+    if(kind==='cliff'){M.setStrip(at(3,{title:'Opening plan, Akasa Air',stamp:'Signed'},[5,7]));return M.cliffhanger(S0.cliff,{act:2,file});}
     if(kind==='tie')return M.closeFile(file);
     if(kind==='minutes'){M.setStrip(at(7,{title:'Board minutes, 2059',stamp:null},[34,60]));return M.minutes(Object.assign({signature:sig},S0.minutes));}
     if(kind==='letter'){M.setStrip(at(6,{title:'Letter from the banks',stamp:null},[19,33]));return M.letter(Object.assign({signature:sig},S0.letter));}
@@ -18489,7 +18489,7 @@ function boot(){M.mount();if(!/[?&]moneymock\b/.test(location.search))return;
       phase1:{def:'lean',options:[{id:'lean',label:'45 million passengers a year',small:'build more when Mumbai’s widebodies and Delhi’s banks arrive',capexCr:60000},{id:'big',label:'70 million passengers a year',small:'build it all now: more of your money up front',capexCr:85000}]},
       lenders:{def:'banks',options:[{id:'banks',who:'Indian banks',label:'Indian banks, in rupees',small:'the usual way, repaid over 14 years'},{id:'dollar',who:'bondholders abroad',label:'dollar bonds sold abroad',small:'less interest, but if the rupee falls every repayment grows'},{id:'infra',who:'the infrastructure bank',label:'India\'s infrastructure bank',small:'lends for longer, so each year\'s repayment is smaller'}]},
       stateLoan:{pct:14.17,def:true,text:'interest-free, repaid from year 11'},
-      previewBid:b=>{const p=b.type==='share'?Math.min(98,Math.max(3,(b.value-18)*3.2)):Math.min(98,Math.max(3,(b.value-110)*0.35));return{winPct:p,note:p>66?'You probably win, but you pay this share of everything for 60 years.':p>33?'A coin toss against Kármán Line Ventures.':'Too low. A rival will outbid you.'};},
+      previewBid:b=>{const p=b.type==='share'?Math.min(98,Math.max(3,(b.value-18)*3.2)):Math.min(98,Math.max(3,(b.value-110)*0.35));return{winPct:p,note:p>66?'You probably win, but you pay this share of everything for 60 years.':p>33?'A coin toss against GMR Airports.':'Too low. A rival will outbid you.'};},
       previewClose:c=>{const cap=c.phase1==='big'?85000:60000,loan=c.stateLoan?cap*0.1417:0,ask=(cap-loan)*c.gearing/100,max=(cap-loan)*(c.phase1==='big'?0.62:0.72),debt=Math.min(ask,max),eq=cap-loan-debt;
         return{debtCr:debt,equityCr:eq,parentCr:eq*0.64,stateLoanCr:loan,minDscr:(c.repayment==='sculpted'?1.32:1.08)-(c.gearing-60)*0.012-(c.stateLoan?0:0.06)+(c.lender==='infra'?0.08:c.lender==='dollar'?0.04:0),note:c.repayment==='equal'?'Equal instalments are heavy in the first years. Expect a warning from the banks before Mumbai’s widebodies arrive.':'Repayments grow with the passengers. Money gets tight when Mumbai’s widebodies and Delhi’s banks arrive and you have to build more.'};},
       bidTypes:{share:{min:10,max:50,step:0.5,def:30,benchmarks:[{name:'Navi Mumbai',val:12.6},{name:'Mumbai',val:38.7},{name:'Delhi',val:45.99}]},ppf:{min:100,max:450,step:5,def:250,benchmarks:[{name:'lowest Adani bid',val:115},{name:'highest recent bid',val:401}]}}}),

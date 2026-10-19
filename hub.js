@@ -2742,8 +2742,8 @@ const CH5_LEVEL={base:3,ch5:true,name:'Take on the Gulf',sub:'The international 
 const CH5_TYPE=s=>{s=String(s||'');return /380/.test(s)?'A388':/777/.test(s)?'B77W':/787-8/.test(s)?'B788':/787/.test(s)?'B789':/330/.test(s)?'A333':/350/.test(s)?'A359':/321/.test(s)?'A21N':/320/.test(s)?'A20N':/737/.test(s)?'B38M':/ATR|72/.test(s)?'AT76':'B789';};
 const CH5_HM=(hm,clock)=>{const [h,m]=String(hm).split(':').map(Number);let t=(h*3600+m*60)-clock;if(t<-43200)t+=86400;return t;};   // 'HH:MM' → sim seconds from the shift's clock
 // fictional airlines only in a chapter (prompt-campaign.md §0.5): the partner, the feeder airline and the background carrier
-// (the partner's and the feeder's codes and radio callsigns come from era.js's plan: Haversine Airways HVA "HAVERSINE",
-// Sutradhar Air STD "SUTRADHAR")
+// (the partner's and the feeder's codes and radio callsigns come from era.js's plan: Air India HVA "AIR INDIA",
+// IndiGo STD "IFLY")
 function ch5Airline(name,radio,tail,code){for(const k in AL)if(AL[k].name===name)return k;const w=name.toUpperCase().replace(/[^A-Z ]/g,'').split(/\s+/).filter(Boolean);
   const pre=code||{'DECCAN BLUE':'DBL'}[w.join(' ')];const j=w.join('');
   let c=pre||(j[0]+j.slice(1).replace(/[AEIOU]/g,'')+j.slice(1)).slice(0,3);for(let i=2;AL[c];i++)c=c.slice(0,2)+i;AL[c]={name,radio:radio||w.join(' '),tail:tail||'#3d7a6a'};return c;}
@@ -2815,7 +2815,7 @@ function startChapter5(plan,hooks){
   const lv=Object.assign({},L3,CH5_LEVEL,{clock:`${String(Math.floor(clock/3600)).padStart(2,'0')}:${String(Math.floor(clock%3600/60)).padStart(2,'0')}`,len});
   CH5={plan,hooks,tags:{},made:0,missed:0,byDest:{},held:{},holdMin:0,dom:{made:0,missed:0},trail:{happened:false,minutesLost:0,id:plan.trail&&plan.trail.id},
     hubAsked:false,hubAnswer:null,result:null,tagFall:{}};
-  CH5.feederAl=ch5Airline(plan.feeder.airline||'Sutradhar Air',plan.feeder.radio||'SUTRADHAR','#2d6e5a',plan.feeder.code||'STD');CH5.skyAl=ch5Airline(plan.partner||'Haversine Airways',plan.partnerRadio||'HAVERSINE','#16557a',plan.partnerCode||'HVA');CH5.bgAl=ch5Airline(plan.background||'Deccan Blue','DECCAN BLUE','#3b5e9c');
+  CH5.feederAl=ch5Airline(plan.feeder.airline||'IndiGo',plan.feeder.radio||'IFLY','#2d6e5a',plan.feeder.code||'6E');CH5.skyAl=ch5Airline(plan.partner||'Air India',plan.partnerRadio||'AIR INDIA','#16557a',plan.partnerCode||'AI');CH5.bgAl=ch5Airline(plan.background||'Deccan Blue','DECCAN BLUE','#3b5e9c');
   for(const it of plan.intl||[])CH5.byDest[it.dest]={made:0,missed:0};
   const keep=CH5;startLevel(lv.n,{lv,build:ch5Build});CH5=keep;   // (startLevel's resetState doesn't know CH5; it is set again here)
   mnySet(true);$('#lvCode').textContent='CHAPTER 5 · TAKE ON THE GULF';$('#lvName').textContent=plan.intl&&plan.intl.length?`Feeder bank, then ${plan.intl.map(i=>i.dest).join(', ')}`:'Feeder bank, no international bank';
@@ -3041,7 +3041,7 @@ const CH5F={live:false,
   // the Concession tab's entry: below the concession itself, the same green buttons
   html(){if(!CH5F.C())return '';const o=(x=>x&&!x.test&&(!x.company||!CAMP.load()||x.company===CAMP.load().parent)?x:null)(CH5F.load()),at={front:'the newspaper',decision:'the route agreement',shift:'the shift',bill:'the year\'s results',card:'the last page'};
     const own=CAMP.load();if(!own)return '';   // a chapter is only ever played from the player's own concession
-    return `<h2>Chapter 5 · Cruise: take on the Gulf</h2><p>Played as <b>${own.parent||'your company'}</b>, from your own deal.</p><p>Year 14. Haversine Airways wants to base long-haul flights at VSI and race Dubai and Doha for India's travellers. Read the paper, sign (or don't), then run the afternoon when the connections have to work.</p>
+    return `<h2>Chapter 5 · Cruise: take on the Gulf</h2><p>Played as <b>${own.parent||'your company'}</b>, from your own deal.</p><p>Year 14. Air India wants to base long-haul flights at VSI and race Dubai and Doha for India's travellers. Read the paper, sign (or don't), then run the afternoon when the connections have to work.</p>
      ${o?`<p>Saved at ${at[o.step]||'the start'}.</p><button class="go" id="ch5Go">Continue Chapter 5</button> `:''}<button class="go${o?' ghost':''}" id="ch5New">${o?'Start Chapter 5 again':'Play Chapter 5'}</button>`;},
   wire(){const g=$('#ch5Go'),n=$('#ch5New');if(g)g.onclick=()=>CH5F.resume();if(n)n.onclick=()=>CH5F.start('lean','skipped');}
 };
@@ -3202,7 +3202,7 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
     if(n===4&&dflt==='two'&&(d.choices||[]).some(c=>c.id==='two'&&c.disabled))dflt='anchor';
     const r=await FL.show('decision',d,()=>ZMMoney.decision(FL.who(st,d)),dflt?{choice:dflt}:null);
     let c=r&&r.choice;const ch=(d.choices||[]).find(x=>x.id===c);
-    if(!ch||ch.disabled)c={3:'phased',5:'decline'}[n]||null;   // (a disabled line, e.g. "Plateau Air declined", signs as the engine's default)
+    if(!ch||ch.disabled)c={3:'phased',5:'decline'}[n]||null;   // (a disabled line, e.g. "Akasa Air declined", signs as the engine's default)
     return c;},
   // Chapter 6: the letter from the banks (three replies). Refusing shows the banks' notice before it resolves (ZMMoney.letter).
   async letter(st,d){const Z=window.ZMMoney,E=CAMP.E(),dflt=FL.bot?(FL.bot.ch6||FL_BOT[FL.bot.mode].pick[6]):null;

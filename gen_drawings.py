@@ -1,4 +1,4 @@
-"""Draws masterplan.svg and roof.svg for Zero Mile International from spec.json."""
+"""Draws masterplan.svg and roof.svg for Vikram Sarabhai International from spec.json."""
 import json, math, os, random
 D = os.path.dirname(os.path.abspath(__file__))
 S = json.load(open(os.path.join(D, 'spec.json')))
@@ -36,7 +36,7 @@ OC = S['roof']['oculus']
 VB = (-5000, -5750, 12600, 11550)
 PX = 4350                                         # right-hand panel
 o = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{VB[0]} {VB[1]} {VB[2]} {VB[3]}" role="img" '
-     f'aria-label="Master plan of Zero Mile International: six east-west runways in two triples, the seven-lobed Zero Mile Hall to the west with three gateway lobes pointing at Ahmedabad, Mumbai and Bengaluru, one continuous roof over the Hall, the Mall and twelve piers, remote stands, cargo and maintenance to the east, and phase 2 satellites shown dashed.">']
+     f'aria-label="Master plan of Vikram Sarabhai International: six east-west runways in two triples, the seven-lobed Zero Mile Hall to the west with three gateway lobes pointing at Ahmedabad, Mumbai and Bengaluru, one continuous roof over the Hall, the Mall and twelve piers, remote stands, cargo and maintenance to the east, and phase 2 satellites shown dashed.">']
 o.append('<defs>'
          '<linearGradient id="roofg" gradientUnits="userSpaceOnUse" x1="-2900" y1="-700" x2="300" y2="700"><stop offset="0" stop-color="#f6ecd5"/><stop offset=".45" stop-color="#eadbb8"/><stop offset="1" stop-color="#d6c49d"/></linearGradient>'
          '<marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="context-stroke" stroke-width="1.8"/></marker>'
@@ -271,7 +271,7 @@ o.append(txt(-4950, 390, 'Metro spur to the Orange Line', 56, '#c3cad1'))
 o.append(txt(-4950, -130, 'to Nagpur · Samruddhi Expressway', 56, INK3))
 # title block
 tx, ty = VB[0] + 150, VB[1] + 250
-o.append(txt(tx, ty, 'ZERO MILE INTERNATIONAL · ZMI', 230, INK, 700))
+o.append(txt(tx, ty, 'VIKRAM SARABHAI INTERNATIONAL · VSI', 230, INK, 700))
 o.append(txt(tx, ty + 150, f'Master plan · {len(S["runways"])} runways · {c_st + r_st} stands ({c_st} contact + {r_st} remote) · {c_m + r_m} MARS · '
          f'up to {c_pos + r_pos} aircraft parked · {n_bays} holding bays', 100, INK2))
 # right-hand panel: legend, the idea, north arrow, scale
@@ -418,6 +418,16 @@ top_y = Y(min(p[1] for c_ in R['centrelines'][:7] for p in c_)) - 70
 r.append(f'<path d="M{X(OC["x"]):.0f} {top_y+8:.0f} V{Y(-OC["r"]):.0f}" stroke="{INK}" stroke-width="1.2" opacity=".8"/>')
 r.append(txt(X(OC['x']), top_y - 18, 'OCULUS over the Zero Mile marker', 15, INK, 700, 'middle', fam=FB))
 r.append(txt(X(OC['x']), top_y, 'the three gateway axes meet here', 13, INK2, None, 'middle', fam=FB))
+# the bicycle-and-rocket installation, just east of the oculus on the walk into the Mall (tribute to Thumba, design.md section 7)
+BK = (OC['x'] + 130, 0); bx_, by_ = X(BK[0]), Y(BK[1])
+r.append(f'<g stroke="{SIGN}" stroke-width="1.6" fill="#0f1417"><circle cx="{bx_-6:.1f}" cy="{by_+3:.1f}" r="4.2"/><circle cx="{bx_+6:.1f}" cy="{by_+3:.1f}" r="4.2"/>'
+         f'<path d="M{bx_-6:.1f} {by_+3:.1f} L{bx_-1:.1f} {by_-4:.1f} L{bx_+6:.1f} {by_+3:.1f}" fill="none"/></g>'
+         f'<path d="M{bx_-9:.1f} {by_-6:.1f} H{bx_+5:.1f} l5 -2.5 l-5 -2.5 H{bx_-9:.1f} z" fill="{SIGN}"/>')
+BLX, BLY = X(OC['x']) + 310, 212                       # label in the clear sky between the Hall and pier A
+r.append(f'<path d="M{bx_+3:.0f} {by_-9:.0f} L{BLX-70:.0f} {BLY+26:.0f}" stroke="#0f1417" stroke-width="3.5" opacity=".6"/>'
+         f'<path d="M{bx_+3:.0f} {by_-9:.0f} L{BLX-70:.0f} {BLY+26:.0f}" stroke="{INK}" stroke-width="1.3"/>')
+r.append(txt(BLX, BLY, 'BICYCLE AND ROCKET', 15, INK, 700, 'end', fam=FB))
+r.append(txt(BLX, BLY + 17, 'after the Thumba photographs, 1960s', 13, INK2, None, 'end', fam=FB))
 # title
 r.append(txt(30, 52, 'THE ROOF · ONE SURFACE OVER THE HALL, THE MALL AND PIERS A AND B', 34, INK, 700))
 r.append(txt(30, 80, 'Roof plan. Structure from Mumbai, underside and gardens from Bengaluru, edges from Ahmedabad.', 17, INK2, fam=FB))

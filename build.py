@@ -1,7 +1,7 @@
 import json,re,html,os
 d=os.path.dirname(os.path.abspath(__file__))
 spec=json.load(open(os.path.join(d,'spec.json'),encoding='utf-8'))
-head=open(os.path.join(d,'hub-head.html'),encoding='utf-8').read().replace('<title>Zero Mile Hub</title>','<title>%s</title>'%html.escape(spec.get('short_title') or spec['name']))
+head=open(os.path.join(d,'hub-head.html'),encoding='utf-8').read().replace('<title>Vikram Sarabhai International</title>','<title>%s</title>'%html.escape(spec.get('short_title') or spec['name']))
 body=open(os.path.join(d,'hub-body.html'),encoding='utf-8').read()
 plan=open(os.path.join(d,'masterplan.svg'),encoding='utf-8').read()
 plan=re.sub(r'<\?xml[^>]*\?>','',plan)

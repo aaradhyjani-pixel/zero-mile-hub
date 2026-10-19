@@ -1081,7 +1081,7 @@ const WHO={protocol:{badge:'PROTOCOL · MINISTRY',svg:face('🙏','#3a2614')},ra
 // L1 · the ribbon: the first departure can't go until the Chief Minister cuts it, and he is always five minutes away.
 // A stage stands on the runway: officials, marigolds, a podium; when he arrives he gives a speech first (the joke is the
 // speech and the protocol, never the person).
-const SPEECH=['Brothers and sisters of Vidarbha, namaskar!','From the Zero Mile of India, we will fly to the whole world.','I will be brief.','Briefly, my second point.','In conclusion. And, secondly…','Jai Hind! Now, the ribbon.'];
+const SPEECH=['Brothers and sisters of Vidarbha, namaskar!','From Vikram Sarabhai International Airport, we will fly to the whole world.','I will be brief.','Briefly, my second point.','In conclusion. And, secondly…','Jai Hind! Now, the ribbon.'];
 function speech(c,t0,len){SPEECH.forEach((l,i)=>c.lines.push([t0-c.E+Math.round(i*len/SPEECH.length),'CM ON STAGE',l]));}
 STORY.ribbon={len:2000,start(c){const r=rwBy('dep')[0];if(!r)return false;c.r=r;
   c.blk={from:T,to:T+1e6,open:true,why:'Inauguration ribbon',desk:'Ribbon across it, until it is cut'};r.blocks.push(c.blk);r.blocks.sort((a,b)=>a.from-b.from);
@@ -1221,7 +1221,7 @@ STORY.dabba={len:1100,start(c){const ds=CONC.filter(o=>o.id[0]==='D');if(!ds.len
     else say('TWR','Lunch has arrived in the tower. Every dabba correct. Again.');}]);}};
 
 // L4 · Delhi moves in: five ops WhatsApp groups become one
-const WA=['Good afternoon to all 🌞🙏','Forwarded many times: NASA says Zero Mile is visible from space','R3 closed?? pls confirm urgent','Happy birthday to the Fire Chief\'s grandson 🎂🎂','Who has added me in this group','Pls do not send good morning msgs in official group',
+const WA=['Good afternoon to all 🌞🙏','Forwarded many times: NASA says Vikram Sarabhai International is visible from space','R3 closed?? pls confirm urgent','Happy birthday to the Fire Chief\'s grandson 🎂🎂','Who has added me in this group','Pls do not send good morning msgs in official group',
   'Good morning 🌞','Is canteen open','Sir my leave application pls see','Video: amazing A380 landing (not ours)','👍','👍👍','Sir which one is the Delhi bank? Pls share Excel','This message was deleted','Pls call','Ok'];
 STORY.whatsapp={len:720,start(c){
   guard(['Dear all, the five ops groups are now one group.','1,400 members. Official purposes only. 🙏'],WHO.admin);
@@ -1263,13 +1263,13 @@ STORY.surya={len:3000,start(c){const open=RW.filter(r=>!r.locked);if(!open.lengt
   opts.sort((a,b)=>a.s-b.s);
   const cx=RW.reduce((a,r)=>a+(r.x0+r.x1)/2,0)/RW.length,cy=RW.reduce((a,r)=>a+r.y,0)/RW.length;
   const pick=o=>{const t=o.s;takeRunways(open,t,240,0,'Surya Kiran display','Air display');FXV.push({kind:'flypast',id:'surya',t0:t,t1:t+240,cx,cy,r:4200});c.at=t;
-    c.lines.push([t-c.E,()=>{guard(['Zero Mile, Surya Kiran leader. Nine Hawks, running in.',"How's the josh? 🇮🇳"],WHO.surya);
-      cinema(null,['SURYA KIRAN · IAF AEROBATIC TEAM','Nine Hawks open Zero Mile',"How's the josh? High, sir! 🇮🇳",icos('✈️')+FLAG_IN+icos('✈️')],{view:{tx:cx-1500,ty:cy,dist:4200,pitch:0.3,yaw:0.5},at:[cx,cy],track:chaseFlypast(),speed:0.15,until:t+38});}]);
+    c.lines.push([t-c.E,()=>{guard(['Vikram Sarabhai International, Surya Kiran leader. Nine Hawks, running in.',"How's the josh? 🇮🇳"],WHO.surya);
+      cinema(null,['SURYA KIRAN · IAF AEROBATIC TEAM','Nine Hawks open Vikram Sarabhai International',"How's the josh? High, sir! 🇮🇳",icos('✈️')+FLAG_IN+icos('✈️')],{view:{tx:cx-1500,ty:cy,dist:4200,pitch:0.3,yaw:0.5},at:[cx,cy],track:chaseFlypast(),speed:0.15,until:t+38});}]);
     c.lines.push([t-c.E+240,'TWR','Surya Kiran, beautiful. All runways back to normal. The josh remains high.']);};
   guard(['Sir, the Surya Kiran team will open the airport.','Every runway stops for 4 minutes. You choose when. ✈️'],WHO.surya);
   const best=opts.reduce((a,b)=>b.n<a.n?b:a);
   const I=storyCard(c,{icon:{g:'✈️',c:'#ff9933'},x:cx,y:cy,title:'Surya Kiran flypast: pick the slot',
-    text:"The Air Force's aerobatic team opens Zero Mile with a 4-minute display, and every runway stops for it. You choose when. The count is how many flights are due to land or take off around that slot: find the quiet gap between waves on the bank chart and it costs almost nothing.",
+    text:"The Air Force's aerobatic team opens Vikram Sarabhai International with a 4-minute display, and every runway stops for it. You choose when. The count is how many flights are due to land or take off around that slot: find the quiet gap between waves on the bank chart and it costs almost nothing.",
     def:0,defText:`the Air Force takes the first slot, ${clk(opts[0].s)}.`,botPick:opts.indexOf(best),
     acts:opts.map(o=>({l:`${clk(o.s)} · ${o.n} due`,fn(){pick(o);resolve(I,true,`Surya Kiran display set for ${clk(o.s)}.`);}}))});
   c.opts=opts;},
@@ -1494,7 +1494,7 @@ const SBAN={REACH1:r=>['THE MOTORCADE ARRIVES FIRST',`US Air Force C-17s, carryi
   RU1:r=>['IS THE PRESIDENT ON THIS ONE…',`Russia · Ilyushin Il-96 · ${r[0].short}`,'Nobody will say 🎶',FLAG_RU],
   RU2:r=>['…OR ON THIS ONE?',`Russia Two · the identical Il-96 · ${r[1].short}`,'Two aircraft. One President. Zero answers 🎶',FLAG_RU],
   RU2B:r=>['…OR WAS IT THIS ONE?',`Russia Two · the identical Il-96 · ${r[0].short}`,'Two aircraft. One President. Zero answers 🎶',FLAG_RU],
-  AF1:r=>[`AIR FORCE ONE · BOEING 747 · ON FINAL FOR ${r[0].short}`,'The President of the United States','Welcome to Zero Mile! 🤝',FLAG_US],
+  AF1:r=>[`AIR FORCE ONE · BOEING 747 · ON FINAL FOR ${r[0].short}`,'The President of the United States','Welcome to Vikram Sarabhai International! 🤝',FLAG_US],
   SAM:r=>['THE SPARE AIR FORCE ONE',`An identical 747 · on final for ${r[0].short}`,'Spare aircraft, spare runway, nobody on board 🛬',FLAG_US],
   PK0:r=>[`PAKISTAN ONE · BOEING 737 · ON FINAL FOR ${r[0].short}`,'The Prime Minister of Pakistan','The guard of honour is in position 🎺',FLAG_PK],
   PK1:r=>['LANDING CLEARANCE WITHHELD',`Pakistan One · on final for ${r[0].short}, not cleared to land`,'Security advice, says the tower. Diplomatic clearance, says the captain 📻',FLAG_PK],
@@ -1686,7 +1686,7 @@ STORY.delhisummit={len:4000,start(c){const open=RW.filter(r=>!r.locked);if(open.
   for(const f of flights)if(f.kind==='dep'&&f.state==='at_gate'&&!f.charter&&!f.vip&&f.std<pl.p1){sumHold(f);nh++;}
   for(const f of flights)if(f.kind==='arr'&&f.landT==null&&!f.vip&&!f.deleg&&['sched','inbound','holding','goaround'].includes(f.state)&&f.origEta>E-1200&&f.origEta<pl.p1+1500){f.endurance+=25;f.notam=true;}
   c.nc=nc;
-  c.lines=[[0,'SPG',`The Delhi summit has moved to Zero Mile. 38 delegations, 50 aircraft, and Mexico. We have taken ${c.spg.map(r=>r.short).join(' and ')}. Thank you for your support.`],
+  c.lines=[[0,'SPG',`The Delhi summit has moved to Vikram Sarabhai International. 38 delegations, 50 aircraft, and Mexico. We have taken ${c.spg.map(r=>r.short).join(' and ')}. Thank you for your support.`],
     [15,'TWR','All airlines: summit protocol in force. Expect holding. Then expect more holding.'],
     [40,'AOCC',`Airlines have cancelled ${nc} arrivals for the summit. The rest carry extra fuel for the holding, and a plan to divert.`],
     [75,'SPG',`Departures stay at their gates until we hand your runways back. ${nh} so far. They will all want to go at once.`]];c.nh=nh;

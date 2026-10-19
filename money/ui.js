@@ -787,7 +787,7 @@ M.onboarding=function(opts){opts=opts||{};
   function execute(pad){
     st.sig=pad.png();pad.lock();actsEl.querySelectorAll('button').forEach(b=>b.disabled=true);
     const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    const result={lender:st.lender,phase1:st.phase1,stateLoan:st.stateLoan,parent:st.parent,founder:st.founder,bid:Object.assign({},st.bid),gearing:st.gearing,repayment:st.repayment,signature:st.sig,signedOn:iso(now),endsOn:iso(endDate)};if(st.quick)result.quick=true;
+    const result={privateLoan:st.privateLoan||null,lender:st.lender,phase1:st.phase1,stateLoan:st.stateLoan,parent:st.parent,founder:st.founder,bid:Object.assign({},st.bid),gearing:st.gearing,repayment:st.repayment,signature:st.sig,signedOn:iso(now),endsOn:iso(endDate)};if(st.quick)result.quick=true;
     sh.querySelector('#zdkSeal').classList.add('down');
     const sigs=sh.querySelector('.zdk-sigs');
     if(reduce){sigs.insertAdjacentHTML('beforeend',stampHtml('Executed','down big'));setTimeout(()=>done(result),1200);return;}
@@ -2711,49 +2711,97 @@ M.minutes=function(o){mountS();o=o||{};return new Promise(res=>{
    (or VSIEra.ch6.decision's choices), stamps?:{[id]:word}, founder, parent, signature?, pile?, stepIn?} */
 /* the bid opening table */
 (()=>{const c=document.createElement('style');c.textContent='.zbo tr.win td{font-weight:700;background:rgba(194,42,46,.06)} .zbo tr.win td:first-child{position:relative} .zbo .zdk-stamp{margin-left:10px;vertical-align:middle}';document.head.appendChild(c);})();
-/* PRIVATE CAPITAL on the loan page: five family networks; pitch one; watch the network move the money; take the terms. */
+/* PRIVATE CAPITAL on the loan page: four family lenders. Read the slip, pitch with one angle, watch the money move on a paper
+   sheet (about 24 s; Skip after 5 s; reduced motion shows the finished sheet), then the house's own answer and its stamp. */
 M.privateCapital=function(opts,st,done){
   const D=opts.privateHouses&&opts.privateHouses();if(!D||!opts.pitchPrivate){done(null);return;}
+  st.privateDeclined=st.privateDeclined||[];
+  const RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
   const ov=document.createElement('div');ov.className='zpc';ov.setAttribute('role','dialog');ov.setAttribute('aria-label','Private capital');
   ov.innerHTML=`<style>.zpc{position:fixed;inset:0;z-index:9000;background:rgba(20,24,28,.55);display:flex;align-items:center;justify-content:center}
-.zpc .pg{width:min(980px,94vw);max-height:90vh;overflow:auto;background:#fffaf0;color:#1d2024;box-shadow:0 30px 80px rgba(0,0,0,.5);padding:28px 36px;font-family:'Courier Prime','Courier New',monospace;font-size:14px;line-height:1.55}
+.zpc .pg{position:relative;width:min(1000px,94vw);max-height:92vh;overflow:auto;background:#fffaf0;color:#1d2024;box-shadow:0 30px 80px rgba(0,0,0,.5);padding:26px 36px;font-family:'Courier Prime','Courier New',monospace;font-size:14px;line-height:1.55}
 .zpc h2{font-family:'Libre Caslon Text',Georgia,serif;font-size:30px;margin:0 0 4px}.zpc h3{font-family:'Libre Caslon Text',Georgia,serif;font-size:21px;margin:0}
-.zpc .sub{color:#676c71;margin:0 0 18px}.zpc .h{display:grid;grid-template-columns:1fr auto;gap:6px 20px;border-top:1.5px solid #1d2024;padding:14px 0}
-.zpc .h small{color:#676c71}.zpc .h dl{grid-column:1/-1;display:grid;grid-template-columns:130px 1fr;gap:4px 12px;margin:6px 0 0}.zpc dt{color:#676c71}.zpc dd{margin:0}
+.zpc .sub{color:#676c71;margin:0 0 16px}.zpc .h{position:relative;display:grid;grid-template-columns:1fr auto;gap:6px 20px;border-top:1.5px solid #1d2024;padding:14px 0}
+.zpc .h.no{opacity:.45}.zpc .h small{color:#676c71}.zpc .h dl{grid-column:1/-1;display:grid;grid-template-columns:130px 1fr;gap:4px 12px;margin:6px 0 0}.zpc dt{color:#676c71}.zpc dd{margin:0}
+.zpc .op{grid-column:1/-1;margin:8px 0 2px;font-family:'Libre Caslon Text',Georgia,serif;font-size:15.5px;line-height:1.5}
+.zpc .rl{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:4px 26px;margin:2px 0 4px}.zpc .rl span{display:inline-flex;flex-direction:column}.zpc .rl i{font-family:'Libre Caslon Text',Georgia,serif;font-size:15px}
+.zpc .rl small{font-family:'Kalam',cursive;color:#8a8f94;font-size:13.5px;line-height:1.2}
 .zpc button{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;border:0;padding:10px 18px;background:#e8821e;color:#1d1208;box-shadow:inset 0 -3px 0 #a8480f;cursor:pointer;align-self:start}
+.zpc button[disabled]{background:#ddd5c6;box-shadow:none;color:#6b665c;cursor:default}
 .zpc button.q{background:none;box-shadow:none;text-decoration:underline;font-family:'Courier Prime',monospace;font-weight:400;font-size:13.5px}
-.zpc .net{position:relative;margin:18px 0;padding-left:26px}.zpc .net li{list-style:none;position:relative;margin:0 0 14px;opacity:0;transform:translateY(6px);transition:opacity .4s,transform .4s}
-.zpc .net li.on{opacity:1;transform:none}.zpc .net li::before{content:'';position:absolute;left:-22px;top:6px;width:10px;height:10px;border-radius:50%;background:#e8821e;box-shadow:0 0 0 4px rgba(232,130,30,.25)}
-.zpc .net li::after{content:'';position:absolute;left:-18px;top:18px;width:2px;height:22px;background:#e0c9a6}.zpc .net li:last-child::after{display:none}
-.zpc .stamp{display:inline-block;margin:6px 0 12px;padding:4px 12px;border:3px solid #c22a2e;color:#c22a2e;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:26px;letter-spacing:.08em;transform:rotate(-4deg)}
-.zpc .stamp.g{border-color:#1f6b3a;color:#1f6b3a}.zpc .ask{background:#fbe6c4;padding:12px 16px;margin:10px 0 14px;border-left:4px solid #e8821e}</style><div class="pg"></div>`;
+.zpc .stp{position:absolute;padding:3px 10px;border:3px solid #c22a2e;color:#c22a2e;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:.08em;transform:rotate(-5deg);background:rgba(255,250,240,.6)}
+.zpc .stp.g{border-color:#1f6b3a;color:#1f6b3a}.zpc .h .stp{right:120px;top:14px;font-size:18px}
+.zpc .sheet{position:relative;border:1px solid #d8cdb8;background:#fffdf7;margin:6px 0 10px}.zpc .sheet svg{display:block;width:100%;height:auto}
+.zpc .cap{min-height:24px;margin:8px 4px 0;font-family:'Kalam',cursive;font-size:17px;color:#2b2f33}.zpc .sheet .stp{right:22px;top:16px;font-size:30px;animation:zpcIn .45s cubic-bezier(.3,1.4,.5,1) both}
+@keyframes zpcIn{from{transform:rotate(-5deg) scale(2.2);opacity:0}to{transform:rotate(-5deg) scale(1);opacity:1}}
+.zpc .ln{fill:none;stroke:#1d2024;stroke-width:1.6;stroke-linecap:round;transition:stroke-dashoffset 1.2s ease}.zpc .ln.charge{stroke:#c22a2e;stroke-dasharray:6 5}.zpc .ln.docs{stroke:#676c71;stroke-dasharray:2 5}
+.zpc .nd circle{fill:#fffdf7;stroke:#1d2024;stroke-width:1.6}.zpc .nd text,.zpc .pl{font-family:'Kalam',cursive;font-size:13px;fill:#5c6166}.zpc .nd text,.zpc .pl{paint-order:stroke;stroke:#fffdf7;stroke-width:5px;stroke-linejoin:round}.zpc .nd .nm{fill:#1d2024;font-size:14.5px}
+.zpc .ask{background:#fbe6c4;padding:10px 14px;margin:8px 0 12px;border-left:4px solid #e8821e}.zpc .rep{font-family:'Libre Caslon Text',Georgia,serif;font-size:17px;margin:4px 0 8px}</style><div class="pg"></div>`;
   document.body.appendChild(ov);const pg=ov.querySelector('.pg'),sfx=n=>{try{M.sfx&&M.sfx(n);}catch(e){}};
-  const close=v=>{ov.remove();done(v);};
-  const pct=v=>(+v).toFixed(2).replace(/0$/,'')+'%';
-  function list(){pg.innerHTML=`<h2>Private capital</h2><p class="sub">Five family networks lend outside the banks. Each has its own way of saying yes. Choose one to pitch.</p>`+
-    D.houses.map(h=>`<div class="h"><div><h3>${esc(h.name)}</h3><small>${h.sub?esc(h.sub)+' · ':''}${esc(h.home)}</small></div><button data-h="${h.id}">Pitch them</button>
+  const close=v=>{ov.remove();done(v);};const pct=v=>(+v).toFixed(2).replace(/0$/,'').replace(/\.0$/,'')+'%';
+  const hash=t=>{let h=2166136261;for(const c of String(t)){h^=c.charCodeAt(0);h=Math.imul(h,16777619)>>>0;}return (h%2147483646)+1;};
+  const loanCr=(()=>{try{const q=opts.previewClose&&opts.previewClose({gearing:st.gearing,repayment:st.repayment,bid:st.bid,phase1:st.phase1,stateLoan:st.stateLoan,lender:'banks'});return q&&q.debtCr||30000;}catch(e){return 30000;}})();
+  const cr=v=>'₹'+Math.round(v).toLocaleString('en-IN')+' cr';
+  function list(){const left=D.houses.filter(h=>!st.privateDeclined.includes(h.id));
+    pg.innerHTML=`<h2>Private capital</h2><p class="sub">Four family lenders lend outside the banks. Each has its own way of saying yes. Choose one to pitch.</p>`+
+    (left.length?'':`<p class="rep">All four houses declined. The banks' standard loan stands.</p><p><button id="zpcX2">Back to the banks</button></p>`)+
+    D.houses.map(h=>{const no=st.privateDeclined.includes(h.id);return `<div class="h${no?' no':''}"><div><h3>${esc(h.name)}</h3><small>${h.sub?esc(h.sub)+' · ':''}${esc(h.home)}</small></div>
+      <button data-h="${h.id}"${no?' disabled':''}>${no?'Declined':'Pitch them'}</button>${no?'<span class="stp">DECLINED</span>':''}
       <p style="grid-column:1/-1;margin:6px 0 0">${esc(h.bio)}</p>
-      <dl><dt>How to pitch</dt><dd>${esc(h.pitch)}</dd><dt>They accept</dt><dd>${esc(h.accept)}</dd><dt>They refuse</dt><dd>${esc(h.refuse)}</dd><dt>They invest in</dt><dd>${esc(h.invest)}</dd></dl></div>`).join('')+
-    `<p><button class="q" id="zpcX">Not now: back to the banks</button></p>`;
-    pg.querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>{sfx('turn');angle(D.houses.find(h=>h.id===b.dataset.h));});pg.querySelector('#zpcX').onclick=()=>close(null);pg.scrollTop=0;}
-  function angle(h){pg.innerHTML=`<h2>${esc(h.name)}</h2><p class="sub">${esc(h.home)}. How will you pitch them?</p><p>${esc(h.pitch)}</p>`+
-    Object.entries(D.angles).map(([k,v])=>`<p><button data-a="${k}">${esc(v)}</button></p>`).join('')+`<p><button class="q" id="zpcB">Back to the five houses</button></p>`;
+      <p class="op">“${esc(h.opening)}”</p>
+      <div class="rl">${(h.lines||[]).map(l=>`<span><i>${esc(l.t)}</i><small>${esc(l.m)}</small></span>`).join('')}</div>
+      <dl><dt>How to pitch</dt><dd>${esc(h.pitch)}</dd><dt>They accept</dt><dd>${esc(h.accept)}</dd><dt>They refuse</dt><dd>${esc(h.refuse)}</dd><dt>They invest in</dt><dd>${esc(h.invest)}</dd></dl></div>`;}).join('')+
+    `<p><button class="q" id="zpcX">Not now: stay with the banks</button></p>`;
+    pg.querySelectorAll('[data-h]:not([disabled])').forEach(b=>b.onclick=()=>{sfx('turn');angle(D.houses.find(h=>h.id===b.dataset.h));});
+    pg.querySelector('#zpcX').onclick=()=>close(null);const x2=pg.querySelector('#zpcX2');if(x2)x2.onclick=()=>close(null);pg.scrollTop=0;}
+  function angle(h){pg.innerHTML=`<h2>${esc(h.name)}</h2><p class="sub">${esc(h.home)}. How will you pitch them?</p><p class="op">“${esc(h.opening)}”</p><p>${esc(h.pitch)}</p>`+
+    Object.entries(D.angles).map(([k,v])=>`<p><button data-a="${k}">${esc(v)}</button></p>`).join('')+`<p><button class="q" id="zpcB">Back to the four houses</button></p>`;
     pg.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{sfx('slide');run(h,b.dataset.a);});pg.querySelector('#zpcB').onclick=list;pg.scrollTop=0;}
-  function run(h,a){const R=opts.pitchPrivate(h.id,a,Math.floor(Math.random()*2147483646)+1);
-    pg.innerHTML=`<h2>${esc(h.name)}</h2><p class="sub">Your pitch: ${esc(D.angles[a])}. Behind the scenes, the network goes to work.</p><ul class="net">${R.network.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><div id="zpcR"></div>`;
-    const li=[...pg.querySelectorAll('.net li')],step=(document.documentElement.matches&&matchMedia('(prefers-reduced-motion: reduce)').matches)?60:1100;
-    li.forEach((x,i)=>setTimeout(()=>{x.classList.add('on');sfx('tick');},400+i*step));
-    setTimeout(()=>result(h,R),500+li.length*step);}
-  function result(h,R){const r=pg.querySelector('#zpcR'),T=R.better||R.negotiated||R.approved;
-    const word=R.outcome==='better'?'BETTER OFFER':R.outcome==='approved'?'APPROVED':'NEGOTIATED DOWN';sfx('thud');
-    r.innerHTML=`<span class="stamp${R.outcome==='negotiated'?'':' g'}">${word}</span><p><b>${esc(R.line)}</b></p>`+
-      (R.outcome==='better'?`<div class="ask"><b>Their condition:</b> ${esc(R.ask)}</div><p>Accept it and they lend at <b>${pct(R.better.rate)}</b> over <b>${R.better.years} years</b>. Decline and they lend on their usual terms: ${pct(R.approved.rate)} over ${R.approved.years} years.</p>
+  function run(h,a){const R=opts.pitchPrivate(h.id,a,hash([st.parent,st.founder,h.id,a].join('|')));
+    pg.innerHTML=`<h2>${esc(h.name)}</h2><p class="sub">Your pitch: ${esc(D.angles[a])}. While they decide, the money moves through their network.</p>
+      <div class="sheet"><svg viewBox="0 0 640 330" aria-label="How the money moves"></svg><div class="cap" aria-live="polite"></div></div><div id="zpcR"></div><p><button class="q" id="zpcS" hidden>Skip</button></p>`;
+    const sv=pg.querySelector('svg'),cap=pg.querySelector('.cap'),F=h.flow,[w,e,s,n]=F.bounds,NS='http://www.w3.org/2000/svg';
+    const P=k=>{const d=F.nodes[k];return d.x!=null?[d.x,d.y]:[40+(d.lon-w)/(e-w)*560,30+(n-d.lat)/(n-s)*250];};
+    const marks={},pairs={};const scale=R.outcome==='negotiated'?0.8:1;
+    const el=(t,a,p)=>{const x=document.createElementNS(NS,t);for(const k in a)x.setAttribute(k,a[k]);(p||sv).appendChild(x);return x;};
+    const shown=new Set(),timers=[];let finished=false;
+    const node=k=>{if(shown.has(k))return;shown.add(k);const [x,y]=P(k),g=el('g',{class:'nd'});el('circle',{cx:x,cy:y,r:6},g);
+      const right=x>480,t=el('text',{x:right?x-10:x+10,y:y-9,class:'nm','text-anchor':right?'end':'start'},g);t.textContent=F.nodes[k].label;};
+    const pathD=(a,b,bend)=>{const [x1,y1]=P(a),[x2,y2]=P(b),mx=(x1+x2)/2+(y2-y1)*bend,my=(y1+y2)/2-(x2-x1)*bend;return `M${x1} ${y1} Q${mx} ${my} ${x2} ${y2}`;};
+    const edge=(E,i,fast)=>{const pk=[E.from,E.to].sort().join('|'),nth=pairs[pk]=(pairs[pk]||0)+1,bend=(nth%2?1:-1)*(0.10+0.14*Math.floor((nth-1)/2))*(E.from<E.to?1:-1);
+      const d=pathD(E.from,E.to,bend),p=el('path',{d,class:'ln'+(E.kind==='charge'?' charge':E.kind==='docs'?' docs':'')});
+      const L=p.getTotalLength?p.getTotalLength():300;if(E.kind!=='charge'&&E.kind!=='docs'){p.style.strokeDasharray=L;p.style.strokeDashoffset=fast?0:L;if(!fast)requestAnimationFrame(()=>requestAnimationFrame(()=>{p.style.strokeDashoffset=0;}));}
+      const [x2,y2]=P(E.to),[x1,y1]=P(E.from);
+      const at=f=>{try{const q=p.getPointAtLength(L*f);return [q.x,q.y];}catch(_){return [(x1+x2)/2,(y1+y2)/2];}};
+      if(E.label){const [lx,ly]=at(E.kind==='docs'?0.22:0.42);const t=el('text',{x:lx+8,y:ly-7,class:'pl'});t.textContent=E.label;}
+      if(E.kind==='money'){const amt=E.share*loanCr*scale;const dot=el('circle',{r:5,fill:'#e8821e',stroke:'#a8480f','stroke-width':1});
+        if(fast){dot.setAttribute('cx',x2);dot.setAttribute('cy',y2);}else{const m=el('animateMotion',{dur:'2.2s',begin:'indefinite',fill:'freeze',path:d},dot);try{m.beginElement();}catch(_){dot.setAttribute('cx',x2);dot.setAttribute('cy',y2);}}
+        const [ax,ay]=at(0.45);const t=el('text',{x:ax+10,y:ay+17,class:'pl'});t.textContent=cr(amt);if(!fast){t.style.opacity=0;setTimeout(()=>{t.style.transition='opacity .4s';t.style.opacity=1;},2100);}sfx('tick');}};
+    const mark=(m,fast)=>{if(!m)return;const [x,y]=P(m.at),T={ledger:'the ledger, opened',sign:'signed, line by line',pool:'guarantees pooled',milestone:'milestone 1',table:'two people across a table',handshake:'a handshake',strip:'a test strip on the apron'}[m.kind]||m.kind;
+      if(marks[m.at])marks[m.at].remove();const right=x>480;const t=el('text',{x:right?x-4:x+4,y:y+24,class:'pl','text-anchor':right?'end':'start'});t.textContent='— '+T;marks[m.at]=t;};
+    const last=F.beats.length-1;
+    const beat=(b,i,fast)=>{const no=R.outcome==='rejected'&&i===last;(b.add||[]).forEach(node);(b.edges||[]).filter(E=>!(no&&(E.kind==='money'||E.kind==='docs'))).forEach((E,k)=>edge(E,k,fast));
+      if(no){const k0=Object.keys(F.nodes)[0],[x,y]=P(k0);if(marks[k0])marks[k0].remove();const t=el('text',{x:x+4,y:y+24,class:'pl'});t.textContent='— no money moves';marks[k0]=t;}else mark(b.mark,fast);
+      cap.textContent=(i+1)+'. '+(no?'The house looks again, and declines: no money moves.':b.caption);};
+    const finish=()=>{if(finished)return;finished=true;timers.forEach(clearTimeout);sv.innerHTML='';shown.clear();F.beats.forEach((b,i)=>beat(b,i,true));cap.textContent='';pg.querySelector('#zpcS').hidden=true;result(h,R);};
+    if(RM){F.beats.forEach((b,i)=>beat(b,i,true));cap.textContent=F.beats.map((b,i)=>(i+1)+'. '+(R.outcome==='rejected'&&i===last?'The house looks again, and declines: no money moves.':b.caption)).join('  ');timers.push(setTimeout(()=>{finished=true;result(h,R);},3000));return;}
+    F.beats.forEach((b,i)=>timers.push(setTimeout(()=>{if(!finished)beat(b,i,false);},300+i*6000)));
+    timers.push(setTimeout(()=>{const s=pg.querySelector('#zpcS');if(s&&!finished){s.hidden=false;s.onclick=finish;}},5000));
+    timers.push(setTimeout(()=>{if(!finished){finished=true;pg.querySelector('#zpcS').hidden=true;result(h,R);}},300+F.beats.length*6000));}
+  function result(h,R){const r=pg.querySelector('#zpcR'),sheet=pg.querySelector('.sheet');sfx('thud');
+    sheet.insertAdjacentHTML('beforeend',`<span class="stp${R.outcome==='negotiated'||R.outcome==='rejected'?'':' g'}">${esc(R.stamp)}</span>`);
+    const T=R.better||R.negotiated||R.approved,lbl={better:'Their condition',negotiated:'Held back',rejected:'Why'}[R.outcome];
+    r.innerHTML=`<p class="rep">“${esc(R.reply)}”</p>`+(lbl&&R.extra?`<div class="ask"><b>${lbl}:</b> ${esc(R.extra)}</div>`:'')+
+      (R.outcome==='better'?`<p>Accept it and they lend at <b>${pct(R.better.rate)}</b> over <b>${R.better.years} years</b>. Decline and they lend on their usual terms: ${pct(R.approved.rate)} over ${R.approved.years} years.</p>
         <p><button id="zpcY">Accept their condition</button> <button class="q" id="zpcN">Decline, take the usual terms</button></p>`
-      :`<p>They lend at <b>${pct(T.rate)}</b> over <b>${T.years} years</b>.</p><p><button id="zpcY">Take this loan</button> <button class="q" id="zpcB2">Pitch another house</button></p>`);
-    const pick=(t,ask)=>close({lender:t.lender,house:h.name,rate:t.rate,years:t.years,ask:ask||null});
-    const y=r.querySelector('#zpcY');if(y)y.onclick=()=>pick(T,R.outcome==='better'?R.ask:null);
-    const n=r.querySelector('#zpcN');if(n)n.onclick=()=>pick(R.approved,null);
-    const b2=r.querySelector('#zpcB2');if(b2)b2.onclick=list;r.scrollIntoView({block:'end',behavior:'smooth'});}
+      :R.outcome==='rejected'?`<p>No loan from ${esc(h.name)} this time.</p><p><button id="zpcO">Pitch another house</button> <button class="q" id="zpcK">Stay with the banks</button></p>`
+      :`<p>They lend at <b>${pct(T.rate)}</b> over <b>${T.years} years</b>.</p><p><button id="zpcY">Take this loan</button> <button class="q" id="zpcO">Pitch another house</button></p>`);
+    const pick=(t,ask)=>close({lender:t.lender,house:h.name,outcome:R.outcome,rate:t.rate,years:t.years,ask:ask||null});
+    const y=r.querySelector('#zpcY');if(y)y.onclick=()=>pick(T,R.outcome==='better'?R.extra:null);
+    const no=r.querySelector('#zpcN');if(no)no.onclick=()=>pick(R.approved,null);
+    if(R.outcome==='rejected'&&!st.privateDeclined.includes(h.id))st.privateDeclined.push(h.id);
+    const o=r.querySelector('#zpcO');if(o)o.onclick=list;const k=r.querySelector('#zpcK');if(k)k.onclick=()=>close(null);
+    r.scrollIntoView({block:'end',behavior:RM?'auto':'smooth'});}
   list();};
 /* names that may not be used on the deal desk (the company or the director), with look-alike spellings caught too */
 M.nameBlocked=function(raw){let t=String(raw||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase();

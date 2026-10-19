@@ -613,5 +613,30 @@ else {
 const s0hits = S0.texts.filter(t => BANNED.test(t));
 if (s0hits.length) fail('stage 0 jargon: ' + s0hits.slice(0, 3).map(t => (t.match(BANNED) || [])[0] + ' in ' + t.slice(Math.max(0, t.search(BANNED) - 60), t.search(BANNED) + 30)).join(' | '));
 console.log('- plain words: ' + S0.texts.length + ' Stage 0 payloads, ' + s0hits.length + ' with jargon; ' + (fails - S0.fails0) + ' Stage 0 failures');
+
+// ---- Private capital: four houses, the pitch's outcomes, and an all-declined deal ----
+{
+  const PH = E.privateHouses(), ban = /\b(DSCR|RAB|WACC|true-?up|EBITDA|IRR|SLA|UDF|covenant|step-?in|CFADS)\b/i;
+  if (PH.houses.length !== 4) fail('private capital: four houses, got ' + PH.houses.length);
+  let prefRejects = 0, worstRejects = 0, jar = 0, n = 0;
+  for (const h of PH.houses) {
+    for (let i = 1; i <= 300; i++) {
+      if (E.pitchPrivate(h.id, h.likes, i * 7919 + 1).outcome === 'rejected') prefRejects++;
+      if (E.pitchPrivate(h.id, h.worst, i * 7919 + 1).outcome === 'rejected') worstRejects++;
+    }
+    const same = JSON.stringify(E.pitchPrivate(h.id, 'numbers', 424242)) === JSON.stringify(E.pitchPrivate(h.id, 'numbers', 424242));
+    if (!same) fail('private capital: the same deal must give the same answer (' + h.id + ')');
+    const txt = JSON.stringify(h); n++; if (ban.test(txt)) jar++;
+  }
+  if (prefRejects) fail('private capital: the preferred angle must never reject (' + prefRejects + ' rejections)');
+  if (!worstRejects) fail('private capital: the worst angle should be able to reject');
+  if (jar) fail('private capital: jargon in ' + jar + ' houses');
+  const pick = { gearing: 70, repayment: 'sculpted', bid: { type: 'share', value: 17 } };
+  const bankLoan = E.previewClose(Object.assign({ lender: 'banks' }, pick)).debtCr, declinedAll = E.previewClose(Object.assign({}, pick)).debtCr;   // no lender chosen: the banks' standard loan
+  if (bankLoan !== declinedAll) fail('private capital: an all-declined deal must leave the bank loan unchanged');
+  const rej = E.pitchPrivate('chettiar', 'idea', 2); const anyRej = [1, 2, 3, 4, 5, 6, 7, 8].map(k => E.pitchPrivate('chettiar', 'idea', k)).find(r => r.rejected);
+  if (anyRej && (anyRej.approved || anyRej.better || anyRej.negotiated)) fail('private capital: a rejection must offer no loan');
+  console.log('- private capital: 4 houses; preferred angle rejected ' + prefRejects + ' of 1,200 pitches, worst angle ' + worstRejects + ' of 1,200; answers repeat for the same deal; all declined leaves the bank loan at ₹' + Math.round(bankLoan).toLocaleString('en-IN') + ' cr; ' + jar + ' houses with jargon');
+}
 console.log('\n' + (fails ? fails + ' FAILED' : 'ALL PASS'));
 process.exit(fails ? 1 : 0);

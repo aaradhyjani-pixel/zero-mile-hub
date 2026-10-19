@@ -876,7 +876,7 @@
       {id: 'banks', who: 'Indian banks', label: 'Indian banks, in rupees', small: r + '% interest, repaid over ' + a.years + ' years'},
       {id: 'dollar', who: 'bondholders abroad', label: 'dollar bonds sold abroad', small: (r + (d.rate_delta || 0)) + '% interest, but if the rupee falls, every repayment grows'},
       {id: 'infra', who: 'India\'s infrastructure bank', label: 'India\'s infrastructure bank', small: 'about ' + (r + (n.rate_delta || 0)) + '%, repaid over ' + (a.years + (n.years_add || 0)) + ' years, so each payment is smaller'},
-      {id: 'private', who: 'private capital', label: 'private capital, from a family network', small: 'five houses; pitch one, and the terms depend on the pitch'}]};
+      {id: 'private', who: 'private capital', label: 'private capital, from a family network', small: 'four family lenders; pitch one, and the terms depend on the pitch'}]};
   }
   // share-equivalent of a bid: the fee over base-case gross revenue (per-passenger bids converted at the base case)
   function shareEquiv(bid) {
@@ -948,55 +948,83 @@
       line: won ? 'Your offer is the highest. The Authority awards the concession to you.' :
         top.name + ' offered ' + best + '% of everything the airport earns, more than your ' + se + '%. The concession goes to them.'};
   }
-  // PRIVATE CAPITAL: five family networks that lend outside the banks (the user's call). Each is an affectionate, larger-than-life
-  // homage to a real trading tradition. Their terms move the loan's rate (percentage points) and tenor (years) like a lender.
-  // The pitch: three angles; each house prefers one. The result is approved, negotiated down, or a better deal with a crazy ask.
+  // PRIVATE CAPITAL: four family lenders outside the banks (the user's copy, 20 Oct 2026). Each is written as a business paper
+  // would describe a respected lender: about the deal only. Terms move the loan's rate (percentage points) and tenor (years).
+  // The pitch: three angles. Preferred angle: better offer or accept (never a rejection). Neutral: accept or harder terms.
+  // Worst: harder terms or a rejection. The roll is seeded from the deal (company, director, house, angle), so it never changes.
   var HOUSES = [
-    {id: 'chettiar', name: 'Devakottai Chettiar Capital Network', sub: 'the Nagarathar Ledger House', home: 'Devakottai, Tamil Nadu', rate: -0.25, years: 4, likes: 'long',
+    {id: 'chettiar', name: 'Devakottai Chettiar Capital Network', sub: 'the Nagarathar Ledger House', home: 'Devakottai, Tamil Nadu',
+      rate: -0.25, years: 4, better: {rate: -0.6, years: 11}, likes: 'long', worst: 'idea',
       bio: 'A network of family lenders from Devakottai with roots in the Nattukottai Chettiar banking houses that financed trade across Burma, Ceylon and Malaya in the early twentieth century. It lends for long periods against steady, predictable cash flows and keeps unusually detailed accounts of every loan it holds.',
+      opening: 'Show us the passenger-fee account. Not the forecast. The actual collection mechanism. Our grandfathers lent against teak that never left Rangoon. We still expect the money to arrive on the date written. If one instalment slips, the charge is enforced.',
+      lines: [{t: 'Adhu kanakku pramanam.', m: 'That is the rule of the ledger.'}, {t: 'Late aana, kaasu varadhu.', m: 'If it is late, the money does not come.'}],
       pitch: 'Bring audited accounts and a repayment schedule you can keep. Explain how the passenger fee is collected and when it arrives. Expect a question on every line.',
       accept: 'Long, steady repayment schedules; first claim on the passenger-fee account; conservative traffic forecasts.',
       refuse: 'Repayments that depend on raising more money later; large final payments; any late instalment.',
       invest: 'Infrastructure that earns a regulated or contracted fee: toll roads, ports, power lines and airports.',
-      ask: 'A 25-year loan in exchange for a first charge over the passenger-fee account and a seat on VSIAL\'s audit committee.',
-      better: {rate: -0.6, years: 11},   // 14 + 11 = the 25-year loan the condition offers
-      network: ['Devakottai: the partners review the accounts and the repayment schedule', 'Partner families in Chennai and Singapore commit their shares of the loan', 'The charge over the passenger-fee account is drafted and checked', 'The credit committee signs off, line by line']},
-    {id: 'sanchore', name: 'Sanchori Jain Samaj Capital', home: 'Sanchore, Rajasthan, with offices in Chennai and Mumbai', rate: 0.25, years: -2, likes: 'numbers',
+      out: {accept: {stamp: 'APPROVED', reply: 'The schedule holds and the collection account is real. We will expect the first instalment on the date written, not the day after.'},
+        better: {stamp: 'BETTER OFFER', reply: 'You came with a ledger, not a story. We will go longer than you asked.', extra: 'First claim on the passenger-fee account, and our partner sits on your audit committee for the life of the loan.'},
+        harder: {stamp: 'HARDER TERMS', reply: 'You brought us a forecast. We lend against collections. We will lend, but for less time and at a higher rate.', extra: 'A shorter term until the passenger-fee account shows two clean years of collections.'},
+        reject: {stamp: 'DECLINED', reply: 'A loan repaid by the next loan is not a loan we make. Come back when the schedule stands on its own.', extra: 'Repayment depends on money you have not raised yet.'}},
+      flow: {bounds: [70, 108, -2, 26], nodes: {dev: {label: 'Devakottai', x: 290, y: 245}, che: {label: 'Chennai', x: 430, y: 165}, sin: {label: 'Singapore', x: 560, y: 285}, vsi: {label: 'VSI, Nagpur', x: 290, y: 55}},
+        beats: [{caption: 'The Devakottai partners open the ledger: the accounts and the schedule.', add: ['dev'], edges: [], mark: {at: 'dev', kind: 'ledger'}},
+          {caption: 'Partner families in Chennai and Singapore each send their share to the pool.', add: ['che', 'sin'], edges: [{from: 'che', to: 'dev', share: 0.4, kind: 'money'}, {from: 'sin', to: 'dev', share: 0.25, kind: 'money'}]},
+          {caption: 'A charge over VSI\'s passenger-fee account is drawn as a line back to Devakottai.', add: ['vsi'], edges: [{from: 'vsi', to: 'dev', kind: 'charge', label: 'charge over the passenger-fee account'}]},
+          {caption: 'The credit committee signs line by line, and the loan moves to VSIAL\'s account.', add: [], edges: [{from: 'dev', to: 'vsi', share: 1, kind: 'money'}], mark: {at: 'dev', kind: 'sign'}}]}},
+    {id: 'sanchore', name: 'Sanchori Jain Samaj Capital', home: 'Sanchore, Rajasthan, with offices in Chennai and Mumbai',
+      rate: 0.25, years: -2, better: {rate: -0.5, years: 2}, likes: 'numbers', worst: 'long',
       bio: 'A capital pool of family businesses from Sanchore, many of them established names in India\'s steel and construction-materials trade. It lends quickly and prices for that speed, and it prefers projects whose construction it understands in detail.',
+      opening: 'Quantities. Suppliers. Drawdown dates. We did not build steel mills by waiting for committees. If the first milestone is clean, the money moves the same afternoon.',
+      lines: [{t: 'Scope badlyo to nayo saudo.', m: 'Change the scope and it becomes a new deal.'}, {t: 'Paisa ri keemat bhi badlasi.', m: 'The price of the money changes too.'}],
       pitch: 'Bring the construction programme: quantities, suppliers and dates. Show how the loan is drawn as the works progress. Be ready to decide in the meeting.',
       accept: 'Loans drawn against construction milestones; fast decisions; clear material and supplier plans.',
       refuse: 'Open-ended drawdowns; repeated changes of scope; long approval chains.',
       invest: 'Construction, logistics parks, warehousing and industrial infrastructure.',
-      ask: 'A cargo clause: the first right to lease VSI\'s cargo terminal for 15 years, and the right to supply phase-1 steel at an audited market price.',
-      better: {rate: -0.5, years: 2},
-      network: ['Sanchore and Chennai: member firms review the construction programme', 'The Mumbai offices confirm their commitments the same day', 'The members\' guarantees are pooled', 'Funds are released against the first construction milestone']},
-    {id: 'palanpuri', name: 'Palanpuri Jain Samaj Capital', home: 'Palanpur, Mumbai and Antwerp', rate: -0.5, years: 2, likes: 'long',
+      out: {accept: {stamp: 'APPROVED', reply: 'Quantities are clear and the suppliers are named. The first draw moves the afternoon the first milestone is signed.'},
+        better: {stamp: 'BETTER OFFER', reply: 'You decided in the room. We like that. We will lend for longer than you asked.', extra: 'First right to lease the cargo terminal for 15 years, and phase-1 steel supplied by our members at an audited market price.'},
+        harder: {stamp: 'HARDER TERMS', reply: 'Too much vision, not enough quantities. We will lend, but milestone by milestone, at a higher rate.', extra: 'Each draw waits for an engineer\'s certificate on the previous milestone.'},
+        reject: {stamp: 'DECLINED', reply: 'Thirty years is a long time to wait for an answer you could give us today. We do not lend into a committee.', extra: 'No dates, no milestones, and a decision that needs another meeting.'}},
+      flow: {bounds: [66, 86, 8, 30], nodes: {san: {label: 'Sanchore', x: 120, y: 70}, mum: {label: 'Mumbai', x: 150, y: 220}, che: {label: 'Chennai', x: 420, y: 285}, vsi: {label: 'VSI, Nagpur', x: 440, y: 120}},
+        beats: [{caption: 'Sanchore and Chennai member firms check the construction programme.', add: ['san', 'che'], edges: [{from: 'che', to: 'san', kind: 'ink', label: 'programme checked'}]},
+          {caption: 'The Mumbai offices commit the same day.', add: ['mum'], edges: [{from: 'mum', to: 'san', share: 0.45, kind: 'money'}]},
+          {caption: 'The members\' guarantees pool into one.', add: [], edges: [{from: 'che', to: 'san', share: 0.3, kind: 'money'}], mark: {at: 'san', kind: 'pool'}},
+          {caption: 'The money is released to the first construction milestone.', add: ['vsi'], edges: [{from: 'san', to: 'vsi', share: 1, kind: 'money'}], mark: {at: 'vsi', kind: 'milestone'}}]}},
+    {id: 'palanpuri', name: 'Palanpuri Jain Samaj Capital', home: 'Palanpur, Mumbai and Antwerp',
+      rate: -0.5, years: 2, better: {rate: -0.75, years: 3}, likes: 'long', worst: 'idea',
       bio: 'A capital pool of family firms from Palanpur, many of them long established in the diamond trade between Mumbai and Antwerp. It is known for lending on the strength of long relationships and for keeping commitments made in a single meeting.',
+      opening: 'We have already met the management team. The numbers are acceptable. What we need is the understanding that the people sitting across from us will still be the people running it in year seven.',
+      lines: [{t: 'Aa haath malavyo chhe, aanu mol raakhjo.', m: 'This is a handshake. Keep its value.'}, {t: 'Vishvas todsho to dhandho bandh.', m: 'Break the trust and the business ends.'}],
       pitch: 'Bring clean, conservative numbers and the people who will run the airport. They judge the management team as closely as the model; an overstated forecast ends the conversation.',
       accept: 'Conservative forecasts; experienced management; long relationships and repeat business.',
       refuse: 'Debt stacked on debt; aggressive forecasts; replacing the management team after the loan is made.',
       invest: 'Real estate, retail, logistics and long-term infrastructure.',
-      ask: 'Approval of the chief executive by the lending families for the first ten years, and a 15-year lease on the airside duty-free and luxury retail space at a fixed rent.',
-      better: {rate: -0.75, years: 3},
-      network: ['Mumbai: the partners meet the management team', 'Members in Antwerp and Surat commit their shares on a call', 'The Palanpur partners approve the family guarantee', 'The commitment is made in one meeting; the documents follow']},
-    {id: 'negev', name: 'Negev Runway Partners', home: 'Tel Aviv and Herzliya', rate: 0, years: 3, likes: 'idea',
+      out: {accept: {stamp: 'APPROVED', reply: 'The numbers are honest and the team will stay. The documents follow the handshake.'},
+        better: {stamp: 'BETTER OFFER', reply: 'You did not inflate a single number. That is rare. We will give you better than you asked.', extra: 'The families approve your chief executive for ten years, and the airside luxury retail is leased to us for 15 years at a fixed rent.'},
+        harder: {stamp: 'HARDER TERMS', reply: 'The forecast is louder than the people behind it. We will lend, but for a shorter term.', extra: 'A shorter term, and a review of the management team in year three.'},
+        reject: {stamp: 'DECLINED', reply: 'Ten times bigger is a promise, not a plan. We lend to people and their records, and today we have only the promise.', extra: 'An aggressive forecast with no track record behind it.'}},
+      flow: {bounds: [-2, 88, 10, 56], nodes: {ant: {label: 'Antwerp', x: 70, y: 55}, pal: {label: 'Palanpur', x: 300, y: 85}, sur: {label: 'Surat', x: 250, y: 180}, mum: {label: 'Mumbai', x: 300, y: 270}, vsi: {label: 'VSI, Nagpur', x: 520, y: 190}},
+        beats: [{caption: 'The Mumbai partners meet your management team.', add: ['mum', 'vsi'], edges: [{from: 'vsi', to: 'mum', kind: 'ink', label: 'the management team'}], mark: {at: 'mum', kind: 'table'}},
+          {caption: 'Members in Antwerp and Surat commit their shares on one call.', add: ['ant', 'sur'], edges: [{from: 'ant', to: 'mum', share: 0.35, kind: 'money'}, {from: 'sur', to: 'mum', share: 0.3, kind: 'money'}]},
+          {caption: 'The Palanpur partners approve the family guarantee.', add: ['pal'], edges: [{from: 'pal', to: 'mum', kind: 'ink', label: 'family guarantee'}]},
+          {caption: 'A handshake. The money moves to VSIAL, and the documents follow.', add: [], edges: [{from: 'mum', to: 'vsi', share: 1, kind: 'money'}, {from: 'mum', to: 'vsi', kind: 'docs', label: 'documents follow'}], mark: {at: 'mum', kind: 'handshake'}}]}},
+    {id: 'negev', name: 'Negev Runway Partners', home: 'Tel Aviv and Herzliya',
+      rate: 0, years: 3, better: {rate: -0.5, years: 4}, likes: 'idea', worst: 'long',
       bio: 'Former air-force engineers turned founders. They taught a desert to grow tomatoes and to recycle nine-tenths of its water, and they think your airport is a startup with a sixty-year runway. They will interrupt your pitch in the first minute, and that means they like you.',
+      opening: 'Why is the terminal only this size? We turned a desert into an export industry. You are building an airport with a sixty-year life. Give us a live test strip on the apron for the tugs and the drones.',
+      lines: [{t: 'Im zeh lo gadol, anachnu lo kan.', m: 'If it is not big, we are not here.'}, {t: 'Tachles: ten times, or nothing.', m: 'Bottom line: ten times, or nothing.'}],
       pitch: 'Be blunt. Bring a demo, not a deck. When they ask "yes, but why not ten times bigger?", have an answer.',
       accept: 'Bold technology, fast pilots, being told no and arguing back.',
       refuse: 'Hierarchy, slow committees, a plan that has never been tested.',
       invest: 'Water recycling, drones, cyber security, and airport technology they can sell to fifty other airports.',
-      ask: 'A live test zone on your apron for their driverless baggage tugs and drone runway inspections, and the right to sell what they learn to every airport on earth.',
-      better: {rate: -0.5, years: 4},
-      network: ['Herzliya: a WhatsApp group of former squadron mates lights up at 2 a.m.', 'A water-tech fund in Tel Aviv joins in eleven minutes', 'Two investors in New York say yes before reading the deck', 'The term sheet arrives with three typos and a very good rate']},
-    {id: 'bamboo', name: 'Kongsi Bamboo Capital', home: 'Singapore, Penang and Shantou', rate: -0.25, years: 5, likes: 'long',
-      bio: 'Family offices joined by clan halls from Singapore to Jakarta to Shantou: the Teochew and Fujianese "bamboo network". They never sign with strangers. You need an introduction from someone they already trust, and the money moves through cousins before it moves through banks.',
-      pitch: 'Get introduced. Eat together first. Talk about your father. Never bring a contract to the first dinner, and never mention the number four.',
-      accept: 'Trust built over dinners, patience, deals that work for three generations.',
-      refuse: 'Unlucky numbers. A rushed signing. Anyone who makes them lose face in public.',
-      invest: 'Ports, plantations, property, and anything with a good view of water and luck.',
-      ask: 'Gate 8 for their partner airlines, every flight number ending in 88, a feng shui master to re-align the main entrance, and a Teochew porridge stall that never closes.',
-      better: {rate: -1.0, years: 6},
-      network: ['Singapore: the clan hall\'s elders meet over tea', 'Penang and Jakarta cousins each take a share', 'Shantou\'s family office checks the date is auspicious', 'The money is pooled through the kongsi, quietly, by the eighth day']}];
+      out: {accept: {stamp: 'APPROVED', reply: 'Good. A real pilot and a real number. We want the first data from your apron within six months.'},
+        better: {stamp: 'BETTER OFFER', reply: 'Finally, someone who asked why not bigger before we did. We will beat your ask.', extra: 'A live test strip on your apron for our driverless tugs and drone inspections, and the right to sell what we learn to other airports.'},
+        harder: {stamp: 'HARDER TERMS', reply: 'Nice numbers. No pilot. We will lend, but shorter, until something on your apron proves it.', extra: 'The term is extended only after the first pilot has run live for a year.'},
+        reject: {stamp: 'DECLINED', reply: 'Sixty years of patience is not a pitch. Show us something running and call us again.', extra: 'No pilot, no test, and nothing we could sell to a second airport.'}},
+      flow: {bounds: [-80, 90, 8, 48], nodes: {ny: {label: 'New York', x: 60, y: 100}, her: {label: 'Herzliya', x: 300, y: 70}, tlv: {label: 'Tel Aviv', x: 290, y: 175}, vsi: {label: 'VSI, Nagpur', x: 540, y: 245}},
+        beats: [{caption: 'The Herzliya partners review the pilot plan.', add: ['her'], edges: [], mark: {at: 'her', kind: 'ledger'}},
+          {caption: 'A water-technology fund in Tel Aviv joins.', add: ['tlv'], edges: [{from: 'tlv', to: 'her', share: 0.35, kind: 'money'}]},
+          {caption: 'Two co-investors in New York commit.', add: ['ny'], edges: [{from: 'ny', to: 'her', share: 0.4, kind: 'money'}]},
+          {caption: 'The term sheet travels to Nagpur, with a test strip drawn on the apron.', add: ['vsi'], edges: [{from: 'her', to: 'vsi', share: 1, kind: 'money'}, {from: 'her', to: 'vsi', kind: 'docs', label: 'term sheet'}], mark: {at: 'vsi', kind: 'strip'}}]}}];
   var ANGLES = {long: 'The long view: trust, family and decades', numbers: 'The numbers: cash, tonnes and dates', idea: 'The big idea: technology, scale and ten times more'};
   function housesReady() {
     ensure();
@@ -1006,18 +1034,18 @@
       P.lenders[h.id + '-'] = {rate_delta: h.rate + 0.5, years_add: h.years - 3};
     });
   }
-  function privateHouses() { housesReady(); return {angles: ANGLES, houses: HOUSES.map(function (h) { return Object.assign({}, h); })}; }
+  function privateHouses() { housesReady(); return {angles: ANGLES, houses: HOUSES.map(function (h) { return JSON.parse(JSON.stringify(h)); })}; }
   function pitchPrivate(id, angle, seed) {
     housesReady();
     var h = HOUSES.filter(function (x) { return x.id === id; })[0]; if (!h) return null;
-    var r = rng(seed || 1)(), fit = angle === h.likes ? [0.5, 0.9] : (angle === 'numbers' && h.likes !== 'numbers') || (angle === 'idea' && h.likes === 'long') ? [0.05, 0.4] : [0.2, 0.7];
-    var outcome = r < fit[0] ? 'better' : r < fit[1] ? 'approved' : 'negotiated', base = P.rate;
-    var terms = function (k) { var l = P.lenders[k]; return {lender: k, rate: Math.round((base + l.rate_delta) * 100) / 100, years: (P.vsi_loan_terms['1A'].years || 14) + l.years_add}; };
-    return {house: h.name, outcome: outcome, network: h.network.slice(),
-      approved: terms(h.id), better: outcome === 'better' ? terms(h.id + '+') : null, negotiated: outcome === 'negotiated' ? terms(h.id + '-') : null,
-      ask: outcome === 'better' ? h.ask : null,
-      line: outcome === 'better' ? h.name + ' offers more than you asked for, on one condition.' :
-        outcome === 'approved' ? h.name + ' approves the loan on its usual terms.' : h.name + ' liked you, but not that pitch. They lend, at a harder rate and a shorter term.'};
+    var r = rng(seed || 1)(), kind = angle === h.likes ? 'preferred' : angle === h.worst ? 'worst' : 'neutral';
+    var outcome = kind === 'preferred' ? (r < 0.5 ? 'better' : 'approved') : kind === 'worst' ? (r < 0.5 ? 'negotiated' : 'rejected') : (r < 0.5 ? 'approved' : 'negotiated');
+    var base = P.rate, terms = function (k) { var l = P.lenders[k]; return {lender: k, rate: Math.round((base + l.rate_delta) * 100) / 100, years: (P.vsi_loan_terms['1A'].years || 14) + l.years_add}; };
+    var o = h.out[{better: 'better', approved: 'accept', negotiated: 'harder', rejected: 'reject'}[outcome]];
+    return {id: h.id, house: h.name, angle: angle, fit: kind, outcome: outcome, stamp: o.stamp, reply: o.reply, extra: o.extra || null,
+      approved: outcome === 'rejected' ? null : terms(h.id), better: outcome === 'better' ? terms(h.id + '+') : null,
+      negotiated: outcome === 'negotiated' ? terms(h.id + '-') : null, rejected: outcome === 'rejected',
+      ask: outcome === 'better' ? o.extra : null, line: o.reply};
   }
   var _closeCache = {};
   function closeFigures(s, sz) {   // phase 1's split, in today's money so it adds up to the price on the agreement
@@ -1054,6 +1082,11 @@
       signedOn: ob.signedOn || null, endsOn: ob.endsOn || null, quick: !!ob.quick, seed: seed == null ? 1 : seed,
       bid: s.bid, gearing: s.gearing, repayment: s.profile === 'equal' ? 'equal' : 'sculpted',
       era: 1, year: 5, cash: 0, debt: [], stake: 64, history: [], over: false, s: s};
+    if (ob.privateLoan && ob.privateLoan.house) {   // the private-capital pitch, logged (the finance group already credits the lender)
+      st.privateLoan = ob.privateLoan; s.privateLoan = {house: ob.privateLoan.house, outcome: ob.privateLoan.outcome, condition: ob.privateLoan.ask || null};
+      s.decisions = [{id: 'ch1-private', chapter: 1, group: 'finance', year: 0, chosen: ob.privateLoan.outcome, 'default': ob.privateLoan.outcome,
+        label: 'Private capital: ' + ob.privateLoan.house + ' (' + ob.privateLoan.outcome + ')'}];
+    }
     var eng = simulate(s, 4);
     st.debt = eng.c.tranches.map(function (tr) { return {name: tr.name, outCr: Math.round(tr.out)}; });
     st.cash = Math.round(eng.cash);
@@ -1482,15 +1515,18 @@
     return d.toISOString().slice(0, 10);
   }
   function monthName(iso) { var d = new Date(iso + 'T12:00:00Z'); return MONTHS[d.getUTCMonth()] + ' ' + d.getUTCFullYear(); }
-  function conFrom(ch) {
+  // the roof-steel crisis: with Sanchori Jain Samaj Capital as the lender, its members supply the Hall roof steel at the
+  // audited market price (its better-offer condition), so the steel overrun costs half
+  function roofSteelFactor(sc) { return sc && /^sanchore/.test(sc.lender || '') ? 0.5 : 1; }
+  function conFrom(ch, sc) {
     var C = P.con, con = {monsoon: ch.monsoon || null, overrun: ch.overrun || null, trials: ch.trials || null, slipMonths: 0, pay: []};
     if (con.monsoon === 'slip') con.slipMonths += C.monsoon.slip_months; else if (con.monsoon === 'pay') con.pay.push({year: C.monsoon.year, cr: C.monsoon.pay_cr});
-    if (con.overrun === 'slip') con.slipMonths += C.overrun.slip_months; else if (con.overrun === 'pay') con.pay.push({year: C.overrun.year, cr: C.overrun.pay_cr});
+    if (con.overrun === 'slip') con.slipMonths += C.overrun.slip_months; else if (con.overrun === 'pay') con.pay.push({year: C.overrun.year, cr: C.overrun.pay_cr * roofSteelFactor(sc)});
     if (con.trials === 'full') con.pay.push({year: C.trials.year, cr: C.trials.full_cr});
     return con;
   }
   function conRun(state, ch) {   // era 1 on the bank's forecast, with these construction choices
-    var s = clone(state.s); s.construction = ch ? conFrom(ch) : null;
+    var s = clone(state.s); s.construction = ch ? conFrom(ch, state.s) : null;
     var eng = simulate(s, 7), put = 0, earned = 0, first = null;
     for (var t = 0; t < 7; t++) put -= Math.min(0, eng.eq_flows[t] || 0);
     eng.rows.forEach(function (r) { if (r.year >= 5) { earned += r.ebitda; if (first == null && r.dscr != null) first = r; } });
@@ -1525,7 +1561,7 @@
       var f = conRun(state, ch).first;
       return f ? {light: lightOf(f.dscr), coverWords: coverWords(f.dscr) + ' in the first year open, in the banks\' forecast'} : undefined;
     }
-    var mp = C.monsoon.pay_cr * pr(C.monsoon.year - 1), op = C.overrun.pay_cr * pr(C.overrun.year - 1), tp = C.trials.full_cr * pr(C.trials.year - 1);
+    var mp = C.monsoon.pay_cr * pr(C.monsoon.year - 1), op = C.overrun.pay_cr * roofSteelFactor(state.s) * pr(C.overrun.year - 1), opFull = C.overrun.pay_cr * pr(C.overrun.year - 1), tp = C.trials.full_cr * pr(C.trials.year - 1);
     var sh = conRun(state, {trials: 'short'}), shortCost = sh.dis - base.dis;
     var events = [
       {id: 'monsoon', year: C.monsoon.year, title: 'The monsoon floods the runway site',
@@ -1533,7 +1569,8 @@
         options: [{id: 'pay', label: 'Pay for pumps and night shifts', effect: 'The shareholders put in ' + cr(mp) + ' now (your share ' + share(mp) + '), and the airport opens on time.'},
           {id: 'slip', label: 'Wait for the dry season', effect: slipEffect('monsoon', C.monsoon.slip_months), slipMonths: C.monsoon.slip_months, numbers: slipNumbers('monsoon')}]},
       {id: 'overrun', year: C.overrun.year, title: 'The Hall roof steel costs more than the contract',
-        text: 'Steel prices have risen and the roof contractor wants more money to keep its crews on site. If you also waited out the monsoon, the two delays add up to ' + (C.monsoon.slip_months + C.overrun.slip_months) + ' months.',
+        text: 'Steel prices have risen and the roof contractor wants more money to keep its crews on site. If you also waited out the monsoon, the two delays add up to ' + (C.monsoon.slip_months + C.overrun.slip_months) + ' months.' +
+          (roofSteelFactor(state.s) < 1 ? ' Your lenders, Sanchori Jain Samaj Capital, supply the roof steel through their members at the audited market price: the extra cost falls from ' + cr(opFull) + ' to ' + cr(op) + '.' : ''),
         options: [{id: 'pay', label: 'Pay the contractor now', effect: 'The shareholders put in ' + cr(op) + ' now (your share ' + share(op) + '); the airport opens on time and earns it back through its fees over the years.'},
           {id: 'slip', label: 'Renegotiate and slip', effect: slipEffect('overrun', C.overrun.slip_months), slipMonths: C.overrun.slip_months, numbers: slipNumbers('overrun')}]},
       {id: 'trials', year: C.trials.year, title: 'Trial operations before opening day',
@@ -1562,7 +1599,7 @@
   function applyConstruction(state, result) {
     ensure();
     state = clone(state);
-    var ch = (result && result.choices) || {}, con = conFrom(ch);
+    var ch = (result && result.choices) || {}, con = conFrom(ch, state.s);
     state.s.construction = con;
     state.construction = {overrun: con.overrun, monsoon: con.monsoon, trials: con.trials, slipMonths: con.slipMonths, finishedOn: (result && result.finishedOn) || null};
     state.building = false;
@@ -2931,9 +2968,9 @@
     var s = state.s, g = {};
     if (s.gearing !== 0.7 || s.lender !== 'banks' || s.profile !== 'sculpt' || s.state_loan !== true || s.defer_state_loan !== true || s.phase1 !== 'lean')
       g.finance = {patch: {gearing: 0.7, lender: 'banks', profile: 'sculpt', state_loan: true, defer_state_loan: true, phase1: 'lean'}, sizing: true,
-        chosen: (s.lender === 'dollar' ? 'dollar bonds' : s.lender === 'infra' ? 'the infrastructure bank' : 'Indian banks') + ', ' + Math.round(s.gearing * 100) + '% borrowed, phase 1 ' + s.phase1};
+        chosen: (s.lender === 'dollar' ? 'dollar bonds' : s.lender === 'infra' ? 'the infrastructure bank' : s.privateLoan ? s.privateLoan.house : 'Indian banks') + ', ' + Math.round(s.gearing * 100) + '% borrowed, phase 1 ' + s.phase1};
     if (!(s.bid.type === 'share' && Math.abs(s.bid.value - MEDIAN_BID) < 1e-9)) g.bid = {patch: {bid: {type: 'share', value: MEDIAN_BID}}, sizing: true, chosen: s.bid.type === 'share' ? 'a bid of ' + s.bid.value + '%' : 'a bid of ₹' + s.bid.value + ' a passenger'};
-    var payAll = conFrom({monsoon: 'pay', overrun: 'pay', trials: 'full'}), cn = s.construction;
+    var payAll = conFrom({monsoon: 'pay', overrun: 'pay', trials: 'full'}, s), cn = s.construction;
     if (cn && (cn.monsoon !== 'pay' || cn.overrun !== 'pay' || cn.trials !== 'full')) g.build = {patch: {construction: Object.assign({}, cn, payAll)}, chosen: [cn.monsoon === 'slip' ? 'waited out the monsoon' : '', cn.overrun === 'slip' ? 'slipped the roof' : '', cn.trials === 'short' ? 'short trials' : ''].filter(Boolean).join(', ') || 'paid to open on time'};
     (s.decisions || []).forEach(function (d) {
       if (d.chosen === d['default']) return;

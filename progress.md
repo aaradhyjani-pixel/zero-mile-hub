@@ -441,6 +441,21 @@ Please rename these, or add the screen's names alongside your own:
     - `p3` has `{frontPages[].year, once}`;
     - `p4` has `{lines[{title, line, evidence}], thiel}`.
 
+### 3. Still open after the Stage 0 integration (logged 19 October 2026, after merging s0-engine cf2a954, s0b-ui and s0-flow)
+hub.js now reads the engine's final names with no adapters: `bridge(st, n)` `{fromYear, toYear, lines}` (one headline a year,
+oldest first), `VSIEra.cliffhanger(st, act)`, and `VSIEra.debrief.pages(st)` → `{p1, p2, p3, p4}` straight into `ZMMoney.debrief`.
+Still open (hub.js keeps a small stand-in for each until they land):
+1. **The cliffhanger dates run backwards into the split-flap.** Act I's front page is dated 1 April 2032 (`SHIFT_YEAR[3] + 2`),
+   then `bridge(st, 4)` flips from 2030; Act II's is dated 1 April 2043 (`SHIFT_YEAR[5] + 3`), then `bridge(st, 6)` flips from
+   2040. Either date the cliffhanger in the year its act ends, or start the next bridge at the cliffhanger's year.
+2. **`bridge(st, 6).toYear` is 2044, but Chapter 6's front page is dated 1 April 2046** (the other bridges land on their front
+   page's year: 2033, 2039, 2059). hub.js lands the flaps on the front page's year, read from its `dateLine`.
+3. Lane H's request 4 (below): `fileCard(state).docs` (`campaignDocs`) rebuilds the pile from the era history and drops the
+   chapter papers (opening plan, network agreement, partner agreement, the banks' letter, minutes). hub.js keeps `st.docs`.
+4. Lane H's request 5 (below): the 2034 budget tick (`ch4.applyBudget`) still runs after the Climb shift's 2033–35 report.
+5. Lane H's request 6 (below): `fileCard(state).chapter` reads the era, so between chapters it shows the chapter just flown.
+   hub.js overrides it from `st.flight.n`.
+
 ## 2026-10-19 — Stage 0, lane H: the flight (branch s0-flow)
 The Concession tab now runs the whole flight on the player's own save (hub.js `FL`): Clearance (deal desk) → Pushback
 (construction register) → Takeoff → Climb (with the 2034 budget tick on its bill) → Cruise (the real hub shift) → Turbulence

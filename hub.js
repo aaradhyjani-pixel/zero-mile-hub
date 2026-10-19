@@ -2539,10 +2539,10 @@ const CAMP={active:false,st:null,
     let d=null;try{d=await ZMMoney.boardMeeting(bo);}catch(e){console.warn('board',e);}
     CAMP.st=E.applyBoard(CAMP.st,d||{});CAMP.save();CAMP.play();},
   // a new concession: with a save, ask once on paper (ZMMoney.confirmTear) and put the torn-up one in the record
-  async fresh(o){const st=CAMP.load();
+  async fresh(o){const st=CAMP.cur();   // (a flight that ended with pages unread counts: it goes in the record as it ended)
     if(st){let ok=!!(o&&o.confirmed);if(!ok)try{ok=window.ZMMoney&&ZMMoney.confirmTear?await ZMMoney.confirmTear(st.parent||'Your company'):confirm(`This tears up ${st.parent||'Your company'}'s concession. Start again?`);}catch(e){console.warn('confirmTear',e);}
       if(!ok){menu('concession');return;}
-      CAMP.record(st,'torn');try{localStorage.removeItem('zm_campaign');}catch(e){}CAMP.st=null;}
+      CAMP.record(st,st.over?(st.over.reason==='banks'?'banks':'handback'):'torn');try{localStorage.removeItem('zm_campaign');}catch(e){}CAMP.st=null;}
     CAMP.newGame();},
   // the Concession tab in the menu: the file card (ZMMoney.concessionFile, the Paperwork look) when this build has it
   html(){const st=CAMP.cur(),z=window.ZMMoney&&ZMMoney.cfg||{};

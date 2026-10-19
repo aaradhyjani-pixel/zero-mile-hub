@@ -333,6 +333,15 @@ The Concession tab now runs the whole flight on the player's own save (hub.js `F
 (the banks' letter; refusing ends it) → Landing (board minutes, then the handover certificate) → the Black Box. The old
 12-era loop and the Chapter 5 playtest entry are kept for `?legacy=1` only. Stub shifts (3, 4, 6, 7) are `plan.auto`, and the
 bill says "This shift was flown by your duty team." Bots: `HUB.flight.auto('smart'|'blind', {screens, dwell, ch6})`.
+- Saves: `st.flight = {n, step, ...}` is written after every step (front, decision, shift, bill, card, cliff, flaps, notice,
+  ended, handback, box), so a reload resumes at the same step; a Cruise shift restarts from its briefing. Closing at an act
+  break (or leaving through the menu) sets `left`, and the Concession tab's file card ("Continue as ...") resumes it.
+- Act breaks: after Takeoff (Act I) and after Cruise (Act II), the Late City front page offers "Turn the page" or "Close the
+  file for tonight"; never forced. `ZMMoney.cliffhanger` when present, else a front page and a two-button paper.
+- lane U's screens are feature-checked (setStrip/strip, flaps, cliffhanger, letter + stepIn, minutes, debrief); every one falls
+  back to frontPage / decision / bill. Checked in WebKit both against this branch's ui.js and against origin/s0b-ui's ui.js.
+- Starting a new concession over a flight that ended with pages unread files it in the record as it ended (banks / handback),
+  not as torn up.
 
 ## Engine requests
 (from lane H; the Mac does not edit money/era.js, money.json or tools/era_test.js)

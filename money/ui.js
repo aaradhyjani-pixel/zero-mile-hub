@@ -2007,7 +2007,7 @@ const CSSS=`
 .zfs .dc .st{flex:none;padding:1px 4px 0;border:1.5px solid #c22a2e;color:#c22a2e;font-family:var(--f-sign,'Barlow Condensed'),sans-serif;font-weight:700;font-size:10.5px;line-height:1.1;letter-spacing:.08em;text-transform:uppercase;transform:rotate(-6deg);mix-blend-mode:multiply;filter:url(#zdkInk)}
 .zfs .dc .op{flex:none;font-family:'Kalam',cursive;font-size:12px;color:#676c71}
 .zfs .sk b{font-family:'Kalam',cursive;font-weight:700;font-size:19px;letter-spacing:0;color:#1f3a8a}
-.zfs.in{animation:zfsIn .5s cubic-bezier(.2,.7,.2,1) both}
+.zfs.slide{animation:zfsIn .5s cubic-bezier(.2,.7,.2,1) both}
 @keyframes zfsIn{from{opacity:0;transform:translateX(80px)}}
 .zfs-bay{position:relative}
 .zfs-e{position:relative;height:6px;margin-top:4px;background:var(--strip);border-left:7px solid var(--edge);box-shadow:0 1px 2px rgba(30,40,50,.25);outline:none;cursor:default}
@@ -2020,7 +2020,7 @@ const CSSS=`
 .zfs-h.night .zfs-e>em{right:auto;left:calc(100% + 10px);color:#c9cfd3}
 #app>.zfs-h.night{position:absolute;left:12px;top:8px;z-index:7}
 @media (max-width:1280px){.zfs{grid-template-columns:78px 120px 96px minmax(150px,186px) 56px}.zdk>.zfs-h{right:20px}}
-@media (prefers-reduced-motion:reduce){.zfs.in,.zfs-e.dropin{animation:none}}
+@media (prefers-reduced-motion:reduce){.zfs.slide,.zfs-e.dropin{animation:none}}
 
 /* ---- the split-flap years (§14.2) ---- */
 .zfl-stage{cursor:pointer;user-select:none}
@@ -2084,7 +2084,7 @@ const CSSS=`
 .zcf-row .dir span:last-child{font-family:var(--ft);font-size:13px;color:#3b2d17;padding-bottom:4px;white-space:nowrap}
 .zcf-slip{position:relative;width:66%;box-sizing:border-box;margin-top:16px;padding:0 14px;background:#fcfcf9;transform:rotate(.5deg);box-shadow:0 1px 2px rgba(60,40,10,.3),0 0 0 1px rgba(60,40,10,.06)}
 .zcf-slip::before{content:'';position:absolute;inset:-3px -3px auto -3px;height:7px;background:rgba(240,228,190,.6)}
-.zcf-slip .zcf-n3{border:0}
+.zcf-slip .zcf-n3{border:0}.zcf-slip .zcf-n3 b{font-size:26px}.zcf-slip .zcf-n3 .cv b{font-size:19px}
 .zcf-tape{position:absolute;top:-7px;bottom:-7px;left:73%;width:15px;z-index:2;background:var(--tape);background-image:repeating-linear-gradient(0deg,rgba(0,0,0,.08) 0 1px,transparent 1px 3px);box-shadow:1px 0 2px rgba(0,0,0,.3),-1px 0 1px rgba(0,0,0,.15);transition:transform .4s cubic-bezier(.5,0,.7,.4),opacity .4s;transform-origin:50% 0}
 .zcf-tape svg{position:absolute;left:-23px;top:40%;width:62px;height:58px;overflow:visible;filter:drop-shadow(0 2px 2px rgba(0,0,0,.3))}
 .zcf-side{position:absolute;left:calc(73% + 34px);right:20px;top:70px;font-family:var(--ft);font-size:11.5px;line-height:1.5;color:#5a4626}
@@ -2103,7 +2103,7 @@ const CSSS=`
 .zcf-tie .zcf-hold{position:relative;width:700px;margin-top:70px}
 .zcf-tie .zcf-pp{position:absolute;left:6%;right:10%;top:-64px;height:200px;background:#fcfcf9;box-shadow:0 6px 14px rgba(30,40,50,.18);transform:rotate(var(--r));transition:transform .55s cubic-bezier(.4,0,.6,1)}
 .zcf-tie .zcf-pp i{display:block;height:2px;margin:14px 30px 0;background:#dfe0db}.zcf-tie .zcf-pp i:first-child{margin-top:22px;width:40%;height:4px;background:#c9cac4}
-.zcf-tie.in .zcf-pp{transform:translateY(78px) rotate(var(--r))}
+.zcf-tie.filing .zcf-pp{transform:translateY(78px) rotate(var(--r))}
 .zcf-tie .zcf-cover{z-index:1}
 .zcf-tie .zcf-tape{transform:scaleY(0);transition:transform .6s cubic-bezier(.3,.6,.3,1)}
 .zcf-tie .zcf-tape svg{opacity:0;transition:opacity .25s .45s}
@@ -2263,7 +2263,7 @@ function stripOne(o,cls){o=o||{};const c=o.chapter||o,n=+c.n||0,name=String(c.na
 function stripHolder(mode){const o=STRIP;if(!o)return '';const n=+((o.chapter||{}).n)||0;
   const past=(o.past||[]).filter(p=>(+((p.chapter||p).n)||0)<n).sort((a,b)=>(+((b.chapter||b).n))-(+((a.chapter||a).n)));   // newest first; never a later phase
   const moved=STRIP_ANIM&&!reduced();STRIP_ANIM=false;   // the first holder drawn after a chapter change slides the new strip in
-  return `<div class="zfs-h z5v ${mode||'day'}" aria-label="${esc(M.chapterName(n)||'')}">${stripOne(o,moved?'cur in':'cur')}<div class="zfs-bay">${past.map((p,k)=>{const c=p.chapter||p;
+  return `<div class="zfs-h z5v ${mode||'day'}" aria-label="${esc(M.chapterName(n)||'')}">${stripOne(o,moved?'cur slide':'cur')}<div class="zfs-bay">${past.map((p,k)=>{const c=p.chapter||p;
     return `<div class="zfs-e${moved&&k===0?' dropin':''}" tabindex="0" aria-label="${esc(M.chapterName(+c.n))}"><em>${esc(String(c.name||M.CHAPTERS[c.n-1]||'').toUpperCase())}</em>${stripOne(p,'pk')}</div>`;}).join('')}</div></div>`;}
 function stripDesk(){return STRIP?stripHolder('day'):'';}
 M.setStrip=function(o){mountS();const was=STRIP&&STRIP.chapter?+STRIP.chapter.n:null;STRIP=o||null;const now=STRIP&&STRIP.chapter?+STRIP.chapter.n:null;if(was!=null&&now!=null&&was!==now)STRIP_ANIM=true;
@@ -2357,8 +2357,8 @@ M.closeFile=function(o){mountS();o=o||{};return new Promise(res=>{
     <div class="zdk-acts"><button class="zdk-go" id="zcfBack">${esc(o.cta||'Back to the menu')}</button></div></div>`);
   const tie=sh.querySelector('#zcfTie'),desk=sh.querySelector('.zdk');
   sh.querySelector('#zcfBack').onclick=()=>{close();res();};
-  if(reduced()){tie.classList.add('in','tied');desk.classList.add('dim');return;}
-  quiet();requestAnimationFrame(()=>requestAnimationFrame(()=>tie.classList.add('in')));
+  if(reduced()){tie.classList.add('filing','tied');desk.classList.add('dim');return;}
+  quiet();requestAnimationFrame(()=>requestAnimationFrame(()=>tie.classList.add('filing')));
   setTimeout(()=>{tie.classList.add('tied');noise(.3,700,.1,0,1.5);},620);setTimeout(()=>desk.classList.add('dim'),1150);
 });};
 
@@ -2519,7 +2519,7 @@ function bxPage(n,P,o){const yrs=M.cfg.years,co=o.company||'your company';
       ${closing?`<p class="zbx-pl">${esc(closing)}</p>`:''}`;}
   if(n===3){const p=P.p3||{},fp=(p.frontPages||[]).slice(0,8),k=Math.max(1,fp.length);
     const step=`calc((100% - 190px) / ${Math.max(1,k-1)})`;
-    return head+`<div class="zbx-papers" style="--step:${step}">${fp.map((f,i)=>`<button class="zbx-pp" style="--i:${i};--r:${[-3,2,-1.5,3,-2.5,1.5,-1,2.5][i%8]}deg;--y:${[10,26,4,20,12,30,6,18][i%8]};--z:${i+1}" aria-label="${esc(f.year)}: ${esc(f.lead)}"><span class="ms">The Zero Mile Times</span><span class="dy"><span>Nagpur, ${esc(f.year)}</span><span>${esc(f.chapter?M.chapterName(f.chapter):'')}</span></span><b>${esc(f.lead)}</b><span class="rl"></span></button>`).join('')}</div>
+    return head+`<div class="zbx-papers" style="--step:${step}">${fp.map((f,i)=>`<button class="zbx-pp" style="--i:${i};--r:${[-3,2,-1.5,3,-2.5,1.5,-1,2.5][i%8]}deg;--y:${[10,26,4,20,12,30,6,18][i%8]};--z:${i+1}" aria-label="${esc(f.year)}: ${esc(f.lead)}"><span class="ms">The Zero Mile Times</span><span class="dy"><span>Nagpur, ${esc(f.year)}</span><span>${f.chapter?'Chapter '+esc(f.chapter):''}</span></span><b>${esc(f.lead)}</b><span class="rl"></span></button>`).join('')}</div>
       <div class="zbx-cls" style="--step:${step}">${fp.map((f,i)=>`<p class="zbx-cl" style="--i:${i}">${esc(f.line||'')}<small>${esc(f.year)}${f.light?' · the banks '+esc(f.light):''}</small></p>`).join('')}</div>
       ${p.once?`<p class="zbx-once">${esc(p.once)}</p>`:''}`;}
   const p=P.p4||{},ls=(p.lines||[]).slice(0,7);

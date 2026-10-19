@@ -2313,7 +2313,7 @@ function startLevel(n){
   // which runways and concourses open
   RW.forEach(r=>{r.locked=true;r.mode='OFF';if(LV.rwOpen[r.id]){r.locked=false;r.mode=LV.rwOpen[r.id];}});
   const openC=new Set(CONC.filter(c=>LV.concs.includes(c.id[0])).map(c=>c.id));CONC.forEach(c=>c.open=openC.has(c.id));GATES.forEach(g=>{g.open=g.remote||openC.has(g.conc);g.zone=g.zone0||(g.zone0=g.zone);});
-  LEN=LV.len||5400;T=-30;buildLevel(LV);mnySet(MONEY_ON);MNY&&MNY.begin(LV);
+  LEN=LV.len||5400;T=-30;buildLevel(LV);mnySet(MONEY_ON||CAMP.active);MNY&&MNY.begin(LV);
   // warm start: put the first inbound arrivals in the air
   $('#lvCode').textContent=`LEVEL ${LV.n} · ${LV.from}`;$('#lvName').textContent=LV.name;
   renderRw();renderInc();$('#coachList').innerHTML='';coachItems.length=0;seen.clear();comboPop();RATE.v=0;
@@ -2348,15 +2348,17 @@ function finish(){
    <button class="go" id="again">Replay level ${LV.n}</button> ${next?`<button class="go" id="nextL">Level ${next.n}: ${next.name}</button>`:''} <button class="go ghost" id="toMenu">All levels</button></div>`;
   $('#overlay').hidden=false;$('#again').onclick=()=>startLevel(LV.n);if(next)$('#nextL').onclick=()=>startLevel(next.n);$('#toMenu').onclick=()=>menu('levels');
   window.__hubResult={level:LV.n,stars:st,moves:S.moves,target:LV.target,otp,otpA,otpD,cx,safety:S.safety,incOk:S.incOk,incFail:S.incDef,incTypes:S.incTypes,hits:S.hits.map(h=>h.msg),flips:S.flips,div:S.div,goArounds:S.goArounds};
+  if(MNY&&MNY.on){window.__hubResult.money=MNY.close();window.__hubResult.sched=MNY.sched;}
+  if(CAMP.active)CAMP.finished(window.__hubResult);
 }
 function menu(tab){
-  running=false;const best=store.get('zm_stars')||{};
+  running=false;CAMP.active=false;const best=store.get('zm_stars')||{};
   const planSvg=document.getElementById('planTpl').innerHTML;
   const D=window.__DESIGN||{};
   const lv=LEVELS.map(L=>`<button class="lc" data-n="${L.n}"><span class="n">LEVEL ${L.n} · ${L.from}</span><h3>${L.name}</h3><p>${L.blurb}</p><span class="meta">${L.clock} · ${L.rw} runways · ~${L.arr+L.dep} movements an hour</span><span class="stars">${starStr(best[L.n]||0)}</span></button>`).join('');
   $('#sheet').innerHTML=`<div class="band"><span>${SPEC.name} · ${SPEC.code}</span><span>Nagpur · six runways</span></div><div class="in">
-   <div class="tabs2" role="tablist"><button data-t="levels" class="${tab!=='plan'?'on':''}">Play</button><button data-t="plan" class="${tab==='plan'?'on':''}">The airport</button></div>
-   <div id="tLevels" ${tab==='plan'?'hidden':''}>
+   <div class="tabs2" role="tablist"><button data-t="levels" class="${tab!=='plan'&&tab!=='concession'?'on':''}">Play</button>${MNY?`<button data-t="concession" class="${tab==='concession'?'on':''}">Concession</button>`:''}<button data-t="plan" class="${tab==='plan'?'on':''}">The airport</button></div>
+   <div id="tLevels" ${tab==='plan'||tab==='concession'?'hidden':''}>
     <div class="levels">${lv}</div>
     <div class="cfgrow"><b>Incidents</b><div class="seg2" role="group" aria-label="Incidents"><button data-inc="std" class="${CFG.inc!=='off'?'on':''}">Standard</button><button data-inc="off" class="${CFG.inc==='off'?'on':''}">Off: runways only</button></div><small>${CFG.inc==='off'?'Just you, the bank chart and the runways. Fuel emergencies still happen if the stack grows.':'A few real calls per level. The ops teams handle the routine.'}</small></div>
     <div class="cfgrow"><b>Performance meter</b><div class="seg2" role="group" aria-label="Performance meter"><button data-perf="0" class="${PERFM.on?'':'on'}">Off</button><button data-perf="1" class="${PERFM.on?'on':''}">On</button></div><small>Frame rate and the slowest moments, with a report you can copy and send us. <span class="kbd">Shift</span> <span class="kbd">P</span> in game.</small></div>
@@ -2368,6 +2370,7 @@ function menu(tab){
      <li>Click any aircraft to see where it is going, prioritise it or hold it at the gate. <span class="kbd">Space</span> pauses, <span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span> change speed. Wheel or pinch to zoom.</li>
     </ul>
    </div>
+   ${tab==='concession'?`<div id="tConc">${CAMP.html()}</div>`:''}
    <div id="tPlan" ${tab==='plan'?'':'hidden'}>
     <h1>${SPEC.name}</h1><p>${SPEC.tagline||''}</p>
     <div class="plan">${planSvg}</div>
@@ -2375,7 +2378,7 @@ function menu(tab){
    </div>
   </div>`;
   $('#overlay').hidden=false;
-  $('#sheet').querySelectorAll('.tabs2 button').forEach(b=>b.onclick=()=>menu(b.dataset.t));
+  $('#sheet').querySelectorAll('.tabs2 button').forEach(b=>b.onclick=()=>menu(b.dataset.t));if(tab==='concession')CAMP.wire();
   $('#sheet').querySelectorAll('.lc').forEach(b=>b.onclick=()=>startLevel(+b.dataset.n));
   $('#sheet').querySelectorAll('[data-inc]').forEach(b=>b.onclick=()=>{CFG.inc=b.dataset.inc;store.set('zm_cfg',CFG);menu('levels');});
   $('#sheet').querySelectorAll('[data-perf]').forEach(b=>b.onclick=()=>{perfSet(b.dataset.perf==='1');menu('levels');});
@@ -2412,7 +2415,7 @@ MNY=(()=>{
   const isSafe=f=>!!(f&&(f.mayday||f.minFuel||f.medSince!=null||M.safe.has(f.id)));
   const isFM=()=>!!(SUM||dustNow||fogF>0.3||(HOLDDEP&&T<HOLDDEP.until)||STO.some(o=>o.k==='delhisummit'));
   const add=(k,amt,f,label)=>{if(!amt)return;M.lines[k]=(M.lines[k]||0)+amt;
-    if(f&&!isSafe(f)&&f.sx!=null&&window.ZMMoney&&ZMMoney.float)try{ZMMoney.float(f.sx,f.sy,(REV.includes(k)?1:-1)*cr(amt),{label});}catch(e){}};
+    if(f&&amt>=5000&&!isSafe(f)&&f.sx!=null&&window.ZMMoney&&ZMMoney.float)try{const rv=REV.includes(k);ZMMoney.float(f.sx,f.sy+(rv?0:22),(rv?1:-1)*cr(amt),{label});}catch(e){}};   // costs sit just below the earnings; nothing under ₹5,000 floats
   const g=fn=>function(){if(!M.on)return;try{return fn.apply(null,arguments);}catch(e){if(!M.err){M.err=String(e);console.warn('money ledger',e);}}};
   const totals=()=>{let r=0,c=0;for(const k of REV)r+=M.lines[k]||0;for(const k of COST)c+=M.lines[k]||0;return {rev:r,cost:c,net:r-c};};
   const plLines=()=>REV.map(k=>({key:k,label:LBL[k],kind:'rev',amount:cr(M.lines[k]||0),why:WHY[k]})).concat(COST.map(k=>({key:k,label:LBL[k],kind:'cost',amount:cr(M.lines[k]||0),why:WHY[k]})));
@@ -2455,9 +2458,75 @@ function mnyTerms(){try{if(window.ZMMoney&&ZMMoney.terms)for(const k in ZMMoney.
 window.addEventListener('load',mnyTerms);
 // money on/off: off by default in quick play; ?money in the URL (or HUB.moneyOn(true)) turns the ledger and the chip on
 MONEY_ON=/[?&]money(=1|&|$)/.test(location.search);
-function mnySet(on){MONEY_ON=!!on;if(MNY)MNY.on=MONEY_ON;try{if(window.ZMMoney&&!/moneymock/.test(location.search))ZMMoney.enable(MONEY_ON&&!!MNY);}catch(e){}}
+function mnySet(on){on=!!on&&!!MNY;if(MNY)MNY.on=on;try{if(window.ZMMoney&&!/moneymock/.test(location.search))ZMMoney.enable(on);}catch(e){}}
+/* ============ money: the Concession mode (60 years, era by era) ============
+   A separate entry in the menu: quick play never comes here. The maths is money/era.js (window.VSIEra); the screens are
+   money/ui.js (window.ZMMoney). The campaign is saved in localStorage zm_campaign after every step. */
+// TODO(era.js): a tiny local stand-in with the agreed VSIEra API, used only until money/era.js lands. Rough numbers only.
+const ERA_STUB={stub:true,
+  data(){},
+  capexCr(){const c=window.MONEY_DATA&&MONEY_DATA.capex&&MONEY_DATA.capex.stages;return c&&c['1A_lean']&&c['1A_lean'].cost||36000;},
+  partners(){const z=window.ZMMoney&&ZMMoney.cfg||{};return [{name:'Your company',pct:64,color:'#e8b04a',role:'Lead promoter'},{name:(z.coinvestor&&z.coinvestor.name)||'L5 Capital: Lagrange Point Infrastructure Fund',pct:16,color:'#7fb4ff',role:'Co-investor'},{name:'Airports Authority of India',pct:10,color:'#9aa3ad',role:'The Authority'},{name:'State of Maharashtra, through MADC',pct:10,color:'#6fcf97',role:'The State'}];},
+  bidTypes(){return {share:{min:10,max:50,step:0.5,def:20,benchmarks:[{name:'Navi Mumbai',val:12.6},{name:'Mumbai',val:38.7},{name:'Delhi',val:45.99}]},ppf:{min:100,max:450,step:5,def:200,benchmarks:[{name:'lowest recent bid',val:115},{name:'highest recent bid',val:401}]}};},
+  previewBid(b){const p=b.type==='share'?Math.min(98,Math.max(3,(b.value-10)*3.2)):Math.min(98,Math.max(3,(b.value-110)*0.35));return {winPct:p,note:p>66?'You probably win, but you pay this share of every rupee for 60 years.':p>33?'A coin toss against the rival bidders.':'Too low. A rival will outbid you.'};},
+  previewClose(c){const cap=ERA_STUB.capexCr(),g=c.gearing/100;return {debtCr:cap*g,equityCr:cap*(1-g),parentCr:cap*(1-g)*0.64,minDscr:(c.repayment==='sculpted'?1.32:1.08)-(c.gearing-60)*0.012,note:c.repayment==='equal'?'Equal instalments are heavy in the first years. Expect the banks to warn you early.':'Repayments grow with the passengers. Money gets tight when you have to build more.'};},
+  newCampaign(r,seed){const cap=ERA_STUB.capexCr(),g=(r.gearing||70)/100;return {version:1,stub:true,parent:r.parent,founder:r.founder,signature:r.signature,signedOn:r.signedOn,endsOn:r.endsOn,quick:!!r.quick,bid:r.bid,gearing:r.gearing,repayment:r.repayment,
+    era:0,year:1,cashCr:300,debt:[{name:'Phase 1 loan',cr:cap*g}],stake:64,seed:seed||1,history:[]};},
+  levelFor(st){return Math.min(4,1+st.era);},   // Ship B: eras 5-12 play Level 5
+  applyShift(st,sh){st=JSON.parse(JSON.stringify(st));const y0=st.year,yrs=5,net=(sh.money.revenueCr-sh.money.costCr)*365*40,debt=st.debt.reduce((s,d)=>s+d.cr,0),due=debt/15;
+    const cover=Math.max(0.5,Math.min(2.5,(net*0.6)/yrs/Math.max(1,due))),light=cover>=1.2?'green':cover>=1.1?'amber':'red';
+    st.cashCr+=Math.max(0,net*0.6-due*yrs)*0.2;st.debt.forEach(d=>d.cr=Math.max(0,d.cr-due*yrs*d.cr/Math.max(1,debt)));st.era++;st.year+=yrs;
+    const words=`₹${Math.round(cover*100)} earned for every ₹100 due`;const value=Math.max(0,net*4-debt)*st.stake/100;
+    st.history.push({era:st.era,years:[y0,st.year-1],light,cover,cashCr:st.cashCr});const took=cover<1&&st.history.filter(h=>h.light==='red').length>=2;
+    const sentences=[light==='red'?'The banks warn you: in your worst year the airport did not earn enough to pay them.':light==='amber'?'The banks warn you: one more tight year and they will start asking questions.':'The banks are happy: every year paid its loans with room to spare.'];
+    if(took)sentences.push('The banks take control: two hard periods in a row.');
+    return {state:st,report:{eraLabel:`Years ${y0}–${st.year-1}`,years:[y0,st.year-1],light,coverWorst:cover,coverWords:words,todayCr:sh.money.revenueCr-sh.money.costCr,stakePct:st.stake,stakeValueCr:value,cashCr:st.cashCr,sentences,banksTookControl:took,
+      incomeStatement:{band:`Years ${y0}–${st.year-1} · ${st.parent||'Your company'}`,title:'The books for this period',hero:`In its worst year: <em>${words}</em>.`,
+        sections:[{title:'Your shift',rows:sh.money.lines.map(l=>({label:l.label,amount:l.amount,kind:l.kind})).concat([{label:'Today',amount:sh.money.revenueCr-sh.money.costCr,kind:'total'}])},
+          {title:'Your company',rows:[{label:'Your stake',amount:st.stake+'%',kind:'total'},{label:'What your stake is worth',amount:value,kind:value>0?'good':'bad'},{label:'Cash in the bank',amount:st.cashCr,kind:'total'}]}],
+        moments:sentences,cta:took?'See how it ended':'To the board meeting'}}};},
+  boardOptions(st){const debt=st.debt.reduce((s,d)=>s+d.cr,0),h=st.history[st.history.length-1]||{cover:1.3};return {era:st.era,years:h.years?`Years ${h.years[0]}–${h.years[1]}`:'',parent:st.parent,parentPct:st.stake,cashCr:st.cashCr,debtCr:debt,dscr:{value:h.cover,warn:1.2,covenant:1.1},
+    aera:{title:'The regulator\'s decision',text:'AERA sets what you may charge for the next five years.',canAppeal:st.era>=2,appealText:'Win and your charges rise. Lose and the airlines stay angry with you for the whole period.'},
+    investments:[],dividend:{maxCr:Math.max(0,st.cashCr*0.5)},prepay:{maxCr:Math.max(0,Math.min(st.cashCr,debt))}};},
+  applyBoard(st,d){st=JSON.parse(JSON.stringify(st));d=d||{};st.cashCr-=(d.dividendCr||0)+(d.prepayCr||0);if(d.prepayCr&&st.debt[0])st.debt[0].cr=Math.max(0,st.debt[0].cr-d.prepayCr);st.appeal=!!d.appeal;return st;},
+  isOver(st){const h=st.history[st.history.length-1];if(h&&h.cover<1&&st.history.filter(x=>x.light==='red').length>=2)return {reason:'banks'};return st.year>60?{reason:'handback'}:false;},
+  handbackOpts(st){const o=ERA_STUB.isOver(st)||{};return {band:`${st.parent||'Your company'} · year ${Math.min(60,st.year-1)}`,title:o.reason==='banks'?'The banks take control':'Handback',hero:o.reason==='banks'?'The airport could not pay its loans, and the banks took control of the company.':'The concession is over. The airport goes back to the State.',sections:[],moments:[],cta:'Back to the menu'};}
+};
+const CAMP={active:false,st:null,
+  E(){const E=window.VSIEra||ERA_STUB;if(!CAMP._d&&E.data&&window.MONEY_DATA){try{E.data(window.MONEY_DATA);}catch(e){}CAMP._d=true;}return E;},
+  ready(){return !!(MNY&&window.ZMMoney&&ZMMoney.onboarding);},
+  load(){const o=store.get('zm_campaign');return o&&o.version?o:null;},
+  save(){if(CAMP.st)store.set('zm_campaign',CAMP.st);},
+  async newGame(){const E=CAMP.E();$('#overlay').hidden=true;let r=null;
+    try{r=await ZMMoney.onboarding({capexCr:E.capexCr(),partners:E.partners(),bidTypes:E.bidTypes(),gearing:{min:60,max:80,def:70},previewBid:b=>E.previewBid(b),previewClose:c=>E.previewClose(c)});}catch(e){console.warn('onboarding',e);}
+    if(!r){menu('concession');return;}
+    CAMP.st=E.newCampaign(r,(Date.now()%100000)+1);CAMP.save();CAMP.play();},
+  resume(){const st=CAMP.load();if(!st){menu('concession');return;}CAMP.st=st;CAMP.play();},
+  play(){const E=CAMP.E();CAMP.active=true;startLevel(E.levelFor(CAMP.st));},
+  // called at the end of finish(): the score sheet stays, but the way on is through the books, not "next level"
+  finished(res){const E=CAMP.E(),h=CAMP.st.history||[];const a=$('#again'),n=$('#nextL');if(a)a.remove();if(n)n.remove();
+    const b=document.createElement('button');b.className='go';b.id='books';b.textContent='Close the books for this period ›';const m=$('#toMenu');m.parentNode.insertBefore(b,m);m.textContent='Save and leave';
+    m.onclick=()=>{CAMP.active=false;menu('concession');};b.onclick=()=>CAMP.afterShift(res);},
+  async afterShift(res){const E=CAMP.E();$('#overlay').hidden=true;
+    const shift={level:res.level,stars:res.stars,otp:res.otp,cx:res.cx,safety:res.safety,moves:res.moves,sched:res.sched,pax:res.money?res.money.pax:0,money:res.money||{revenueCr:0,costCr:0,lines:[]}};
+    const out=E.applyShift(CAMP.st,shift);CAMP.st=out.state;CAMP.save();
+    try{await ZMMoney.incomeStatement(out.report.incomeStatement);}catch(e){}
+    if(out.report.banksTookControl||E.isOver(CAMP.st)){try{await ZMMoney.incomeStatement(E.handbackOpts(CAMP.st));}catch(e){}CAMP.active=false;store.set('zm_campaign_last',CAMP.st);try{localStorage.removeItem('zm_campaign');}catch(e){}menu('concession');return;}
+    let d=null;try{d=await ZMMoney.boardMeeting(E.boardOptions(CAMP.st));}catch(e){}
+    CAMP.st=E.applyBoard(CAMP.st,d||{});CAMP.save();CAMP.play();},
+  // the Concession tab in the menu
+  html(){const st=CAMP.load(),z=window.ZMMoney&&ZMMoney.cfg||{};
+    if(!CAMP.ready())return '<p>The concession is not available in this build.</p>';
+    return `<h1>Run the airport for ${z.years||60} years</h1><p>Win the concession, raise the money, sign, and then run ${z.airportName||SPEC.name} shift by shift. Every few years you see the books and meet your board. Good operations are good money.</p>
+     ${st?`<p><b>${st.parent||'Your company'}</b>: years ${st.year||1} onwards${st.signedOn?`, signed on ${st.signedOn}`:''}.</p><button class="go" id="campGo">Continue the concession</button> `:''}
+     <button class="go${st?' ghost':''}" id="campNew">${st?'Start a new concession':'Start the concession'}</button>
+     ${st?'<p class="src" id="campWarn" hidden>Starting again replaces the saved concession. Press again to confirm.</p>':''}`;},
+  wire(){const g=$('#campGo'),n=$('#campNew');if(g)g.onclick=()=>CAMP.resume();
+    if(n)n.onclick=()=>{const w=$('#campWarn');if(w&&w.hidden){w.hidden=false;return;}CAMP.newGame();};}
+};
 
-window.HUB={money:()=>MNY&&MNY.snapshot(),moneyOn:on=>mnySet(on),moneyOff:()=>mnySet(false),get T(){return T;},get S(){return S;},get LV(){return LV;},flights:()=>flights,RW,incidents:()=>incidents,setMode:(id,m)=>{const r=RW.find(x=>x.id===id||x.short===id);if(r)setMode(r,m);},startLevel,capNow,forceIncursion:()=>{const c=STO.find(o=>o.k==='fog');if(c&&c.sc)c.sc.go=true;},resolveAll:()=>{for(const I of incidents.slice()){const a=I.botPick!=null?I.acts[I.botPick]:I.acts.find(a=>!(a.dis&&a.dis()));if(a)a.fn();}},speed:s=>setSpeed(s),ops:()=>ops,cfg:CFG,
+
+window.HUB={money:()=>MNY&&MNY.snapshot(),moneyOn:on=>{MONEY_ON=!!on;mnySet(on);},moneyOff:()=>{MONEY_ON=false;mnySet(false);},campaign:()=>CAMP.st,era:()=>CAMP.E(),camp:CAMP,get T(){return T;},get S(){return S;},get LV(){return LV;},flights:()=>flights,RW,incidents:()=>incidents,setMode:(id,m)=>{const r=RW.find(x=>x.id===id||x.short===id);if(r)setMode(r,m);},startLevel,capNow,forceIncursion:()=>{const c=STO.find(o=>o.k==='fog');if(c&&c.sc)c.sc.go=true;},resolveAll:()=>{for(const I of incidents.slice()){const a=I.botPick!=null?I.acts[I.botPick]:I.acts.find(a=>!(a.dis&&a.dis()));if(a)a.fn();}},speed:s=>setSpeed(s),ops:()=>ops,cfg:CFG,
   // test hooks: run the sim forward synchronously, and point the camera
   ff:secs=>{VQ.length=0;FFING=true;try{for(let i=0;i<secs&&!ended;i++){tick(1);if(CINE&&CINE.o.until==null){const ms=1000/BASE/Math.max(0.25,speed);CINE.t0-=ms;if(CINE.landAt)CINE.landAt-=ms;}}}finally{FFING=false;}puffs.length=0;hud();drawWave();},look:(x,y,z)=>{camT.s=cam.fit*z;camT.anchor=null;camT.x=x-((cam.region.L+cam.region.R)/2)/camT.s;camT.y=y-((cam.region.Tp+cam.region.B)/2)/camT.s;clampCam(camT);Object.assign(cam,{x:camT.x,y:camT.y,s:camT.s});},spawn:(t,x)=>spawnInc(t,x),opsSpawn:(k,x)=>opsSpawn(k,x),pause:()=>{paused=true;},
   view:v=>setView(v),ready3d:()=>new Promise(r=>{if(V3.ready||V3.failed)r(V3.ready);else{V3.waiters.push(r);init3D();}}),

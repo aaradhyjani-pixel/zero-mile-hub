@@ -406,7 +406,7 @@ phase2 = {
 
 spec = {
     'name': 'Vikram Sarabhai International Airport', 'short_title': 'Vikram Sarabhai International', 'code': 'VSI',
-    'tagline': "Ahmedabad, Mumbai and Bengaluru, merged under one roof near Nagpur's Zero Mile. Six runways, one continuous roof, and a Hall whose three gateway lobes each point home.",
+    'tagline': "Six runways and one continuous roof at Nagpur's Zero Mile, sized for the traffic of Delhi, Mumbai, Bengaluru and Hyderabad.",
     'extent': {'x0': -4300, 'x1': 3300, 'y0': -OUTER - 500, 'y1': OUTER + 500},
     'runways': runways, 'taxiways': taxiways, 'concourses': concourses, 'remote': remote, 'bays': bays,
     'buildings': buildings, 'apm': apm, 'landside': landside, 'aprons': aprons, 'stacks': [],

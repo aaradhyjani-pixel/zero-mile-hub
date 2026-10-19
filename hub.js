@@ -2349,11 +2349,9 @@ function menu(tab){
   const planSvg=document.getElementById('planTpl').innerHTML;
   const D=window.__DESIGN||{};
   const lv=LEVELS.map(L=>`<button class="lc" data-n="${L.n}"><span class="n">LEVEL ${L.n} · ${L.from}</span><h3>${L.name}</h3><p>${L.blurb}</p><span class="meta">${L.clock} · ${L.rw} runways · ~${L.arr+L.dep} movements an hour</span><span class="stars">${starStr(best[L.n]||0)}</span></button>`).join('');
-  $('#sheet').innerHTML=`<div class="band"><span>${SPEC.name} · ${SPEC.code}</span><span>AMD + BOM + BLR → VSI · Nagpur</span></div><div class="in">
+  $('#sheet').innerHTML=`<div class="band"><span>${SPEC.name} · ${SPEC.code}</span><span>Nagpur · six runways</span></div><div class="in">
    <div class="tabs2" role="tablist"><button data-t="levels" class="${tab!=='plan'?'on':''}">Play</button><button data-t="plan" class="${tab==='plan'?'on':''}">The airport</button></div>
    <div id="tLevels" ${tab==='plan'?'hidden':''}>
-    <h1>Three airports. One roof.</h1>
-    <p>Ahmedabad (SVPIA), Mumbai (CSMIA) and Bengaluru (KIA) close and merge into one airport near Nagpur's Zero Mile, long held to mark the centre of India. You run it. It is sized for the combined traffic of Delhi, Mumbai, Bengaluru and Hyderabad: about 3,630 movements and 209 million passengers a year, 1.7 times Atlanta. The airlines move in one city at a time, and the waves get taller.</p>
     <div class="levels">${lv}</div>
     <div class="cfgrow"><b>Incidents</b><div class="seg2" role="group" aria-label="Incidents"><button data-inc="std" class="${CFG.inc!=='off'?'on':''}">Standard</button><button data-inc="off" class="${CFG.inc==='off'?'on':''}">Off: runways only</button></div><small>${CFG.inc==='off'?'Just you, the bank chart and the runways. Fuel emergencies still happen if the stack grows.':'A few real calls per level. The ops teams handle the routine.'}</small></div>
     <div class="cfgrow"><b>Performance meter</b><div class="seg2" role="group" aria-label="Performance meter"><button data-perf="0" class="${PERFM.on?'':'on'}">Off</button><button data-perf="1" class="${PERFM.on?'on':''}">On</button></div><small>Frame rate and the slowest moments, with a report you can copy and send us. <span class="kbd">Shift</span> <span class="kbd">P</span> in game.</small></div>

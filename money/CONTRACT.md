@@ -24,14 +24,26 @@ The defaults are:
 | `ZMMoney.setPL(lines, {title, note})` | Fills the P&L tab. `lines = [{label, kind:'rev'|'cost', amount, sub?, why?, term?}]`. Costs are positive numbers and display as negative. `term` links to a glossary key. |
 
 ## Dialogs (each returns a Promise)
-- **`ZMMoney.onboarding(opts)`** runs four steps: company name → SPV ownership bar → bid → financial close. It resolves `{parent, bid:{type:'share'|'ppf', value}, gearing, repayment:'sculpted'|'equal'}`, or `null` if the player chooses "Not now". `opts` takes:
+- **`ZMMoney.onboarding(opts)`** is the deal desk: a full-screen takeover for laptops. Four documents cross an engineering drawing of VSI, one at a time, and the next one appears only when the current one is done:
+  1. Incorporation: the company name and the player's own name, as the director who signs.
+  2. The financial bid.
+  3. The banks' loan offer.
+  4. The Concession Agreement on duty paper, where all five parties are named. AAI, the State (MADC) and L5 Capital have already signed; the player signs last with the trackpad.
+
+  Each completed document is stamped in red and joins the stack on the left. It resolves `{parent, founder, bid:{type:'share'|'ppf', value}, gearing, repayment:'sculpted'|'equal', signature, signedOn, endsOn, quick?}`, or `null` for "Not now":
+  - `signature` is a PNG data URL. Show it again at the handback.
+  - `signedOn` and `endsOn` are YYYY-MM-DD. The agreement is dated the day the player signs, and the concession ends the day before its 60th anniversary.
+  - `quick` is true when the player took "Skip to signing, on standard terms". They still sign.
+
+  `opts` takes:
+  - `defaultName` and `founderName`
   - `capexCr`
-  - `partners:[{name, pct, color, role}]`
+  - `partners:[{name, pct, role}]`. `partners[0]` is the player's company, and its `pct` drives every "you own" line.
   - `rivals`
   - `bidTypes:{share|ppf:{min, max, step, def, benchmarks:[{name, val}]}}`
   - `gearing:{min, max, def}`
   - `previewBid(bid) → {winPct, note}`
-  - `previewClose({gearing, repayment, bid}) → {equityCr, debtCr, parentCr, minDscr, note}`. This is where money/era.js plugs in.
+  - `previewClose({gearing, repayment, bid}) → {equityCr, debtCr, parentCr, minDscr, note}`. `minDscr` is shown in rupees: "₹120 for every ₹100 due". Write the `note` in plain words, never in ratios.
 - **`ZMMoney.boardMeeting(opts)`** resolves `{bought:[ids], appeal, dividendCr, prepayCr}`. `opts` takes:
   - `{era, years, parent, cashCr, debtCr}`
   - `dscr:{value, warn, covenant}`
@@ -51,6 +63,9 @@ The defaults are:
 ## Glossary
 `ZMMoney.terms` holds new glossary entries in hub.js's `GL` format. Merge them into `GL` so `.term[data-k]` links work:
 - aero, nonaero, mtow, udf, aera, rab, till, trueup, dscr, stepin, sla, ebitda, irr, spv, concession
+
+## Plain words (the user's rule)
+Players never see finance jargon. Loan cover is shown in rupees ("₹116 earned for every ₹100 due"), not as a DSCR ratio. True-ups, the RAB, WACC and sculpting appear only as a consequence, in one sentence. Any `text`, `note` or `why` you pass in must follow this too. The mock data in `ui.js` shows the tone.
 
 ## Rules it follows (from prompt-money.md)
 - **Safety calls never show a price.** The wiring must not call `float` for medical, fuel or MAYDAY events.

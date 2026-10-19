@@ -1717,7 +1717,7 @@ M.bill=function(o){o=o||{};return new Promise(res=>{
     <main class="zdk-main"><div class="zdk-col"><article class="zdk-doc arrive" id="zdkDoc">
       <div class="zdk-dh">${vsiLogo(22)}<span>${o.head?esc(o.head):esc(M.cfg.spvShort)+' · Annual report'+(yr?' '+esc(yr):'')}</span><span class="dt">page ${esc(o.page||7)}</span></div>
       <h2>${esc(o.title||'The year in one page')}</h2>
-      ${o.period?`<p class="z5-pd">${esc(hd(o.period))}</p>`:''}
+      ${o.period||o.per?`<p class="z5-pd">${esc(hd(o.period||('Every figure: '+o.per)))}</p>`:''}
       ${o.lead?`<p class="t z5-ld">${esc(hd(o.lead))}</p>`:''}
       ${paras(o.paragraph).map(p=>`<p class="t">${esc(p)}</p>`).join('')}
       <table class="zdk-tab">${(o.table||[]).map(row).join('')}</table>

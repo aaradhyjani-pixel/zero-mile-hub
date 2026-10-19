@@ -2765,25 +2765,46 @@ M.privateCapital=function(opts,st,done){
     const marks={},pairs={};const scale=R.outcome==='negotiated'?0.8:1;
     const el=(t,a,p)=>{const x=document.createElementNS(NS,t);for(const k in a)x.setAttribute(k,a[k]);(p||sv).appendChild(x);return x;};
     const shown=new Set(),timers=[];let finished=false;
+    // LABEL PLACER: every label tries positions around its point (or along its line) and takes the one that touches no other
+    // label, no place circle or money dot, no inked line, and stays on the sheet. Places first, then marks, line labels, amounts.
+    const LABELS=[];
+    const lab=(o,parent)=>{const t=el('text',{class:o.cls||'pl'},parent);t.textContent=o.text;LABELS.push(Object.assign({t},o));return t;};
+    const place=()=>{const S=[];sv.querySelectorAll('path').forEach(p=>{const L=p.getTotalLength();for(let d=0;d<=L;d+=4){const q=p.getPointAtLength(d);S.push([q.x,q.y]);}});
+      const C=[...sv.querySelectorAll('circle')].map(c=>{let x=+c.getAttribute('cx'),y=+c.getAttribute('cy');if(!c.hasAttribute('cx')){const b=c.getBBox();x=b.x+b.width/2;y=b.y+b.height/2;}return [x,y,(+c.getAttribute('r')||5)+3];});
+      const order={nm:0,mark:1,edge:2,amt:3},placed=[];
+      LABELS.filter(l=>l.t.isConnected).sort((a,b)=>order[a.kind]-order[b.kind]).forEach(l=>{
+        const anchors=l.path?[0.5,0.38,0.62,0.28,0.72,0.2,0.8,0.12,0.88].map(f=>{const q=l.path.getPointAtLength(l.path.getTotalLength()*f);return [q.x,q.y];}):[l.at];
+        const offs=l.path?[[8,-8,'start'],[-8,-8,'end'],[8,17,'start'],[-8,17,'end'],[0,-12,'middle'],[0,22,'middle'],[14,-20,'start'],[-14,-20,'end'],[14,30,'start'],[-14,30,'end'],[0,-26,'middle'],[0,36,'middle'],[20,-34,'start'],[-20,-34,'end'],[20,44,'start'],[-20,44,'end']]
+          :[[10,-9,'start'],[-10,-9,'end'],[10,19,'start'],[-10,19,'end'],[13,5,'start'],[-13,5,'end'],[0,-16,'middle'],[0,29,'middle'],[18,-24,'start'],[-18,-24,'end'],[18,36,'start'],[-18,36,'end'],[28,6,'start'],[-28,6,'end'],[26,-38,'start'],[-26,-38,'end'],[26,50,'start'],[-26,50,'end']];
+        let best=null,idx=0;
+        search: for(const [ax,ay] of anchors)for(const [dx,dy,an] of offs){l.t.setAttribute('x',ax+dx);l.t.setAttribute('y',ay+dy);l.t.setAttribute('text-anchor',an);
+          const b=l.t.getBBox();let sc=(idx++)*0.2;
+          if(b.x<2||b.y<2||b.x+b.width>638||b.y+b.height>328)sc+=5000;
+          for(const q of placed){const ix=Math.min(b.x+b.width,q.x+q.width)-Math.max(b.x,q.x),iy=Math.min(b.y+b.height,q.y+q.height)-Math.max(b.y,q.y);if(ix>-2&&iy>-2)sc+=1000+Math.max(0,ix)*Math.max(0,iy);}
+          for(const [cx,cy,r] of C){const nx=Math.max(b.x,Math.min(cx,b.x+b.width)),ny=Math.max(b.y,Math.min(cy,b.y+b.height));if(Math.hypot(nx-cx,ny-cy)<r)sc+=300;}
+          for(const [sx,sy] of S)if(sx>b.x-1.5&&sx<b.x+b.width+1.5&&sy>b.y-1.5&&sy<b.y+b.height+1.5)sc+=25;
+          if(!best||sc<best.sc)best={sc,x:ax+dx,y:ay+dy,an,b:{x:b.x,y:b.y,width:b.width,height:b.height}};
+          if(sc<2)break search;}
+        l.t.setAttribute('x',best.x);l.t.setAttribute('y',best.y);l.t.setAttribute('text-anchor',best.an);placed.push(best.b);});};
     const node=k=>{if(shown.has(k))return;shown.add(k);const [x,y]=P(k),g=el('g',{class:'nd'});el('circle',{cx:x,cy:y,r:6},g);
-      const right=x>480,t=el('text',{x:right?x-10:x+10,y:y-9,class:'nm','text-anchor':right?'end':'start'},g);t.textContent=F.nodes[k].label;};
+      lab({kind:'nm',cls:'nm',at:[x,y],text:F.nodes[k].label},g);};
     const pathD=(a,b,bend)=>{const [x1,y1]=P(a),[x2,y2]=P(b),mx=(x1+x2)/2+(y2-y1)*bend,my=(y1+y2)/2-(x2-x1)*bend;return `M${x1} ${y1} Q${mx} ${my} ${x2} ${y2}`;};
     const edge=(E,i,fast)=>{const pk=[E.from,E.to].sort().join('|'),nth=pairs[pk]=(pairs[pk]||0)+1,bend=(nth%2?1:-1)*(0.10+0.14*Math.floor((nth-1)/2))*(E.from<E.to?1:-1);
       const d=pathD(E.from,E.to,bend),p=el('path',{d,class:'ln'+(E.kind==='charge'?' charge':E.kind==='docs'?' docs':'')});
       const L=p.getTotalLength?p.getTotalLength():300;if(E.kind!=='charge'&&E.kind!=='docs'){p.style.strokeDasharray=L;p.style.strokeDashoffset=fast?0:L;if(!fast)requestAnimationFrame(()=>requestAnimationFrame(()=>{p.style.strokeDashoffset=0;}));}
       const [x2,y2]=P(E.to),[x1,y1]=P(E.from);
       const at=f=>{try{const q=p.getPointAtLength(L*f);return [q.x,q.y];}catch(_){return [(x1+x2)/2,(y1+y2)/2];}};
-      if(E.label){const [lx,ly]=at(E.kind==='docs'?0.22:0.42);const t=el('text',{x:lx+8,y:ly-7,class:'pl'});t.textContent=E.label;}
+      if(E.label)lab({kind:'edge',path:p,text:E.label});
       if(E.kind==='money'){const amt=E.share*loanCr*scale;const dot=el('circle',{r:5,fill:'#e8821e',stroke:'#a8480f','stroke-width':1});
         if(fast){dot.setAttribute('cx',x2);dot.setAttribute('cy',y2);}else{const m=el('animateMotion',{dur:'2.2s',begin:'indefinite',fill:'freeze',path:d},dot);try{m.beginElement();}catch(_){dot.setAttribute('cx',x2);dot.setAttribute('cy',y2);}}
-        const [ax,ay]=at(0.45);const t=el('text',{x:ax+10,y:ay+17,class:'pl'});t.textContent=cr(amt);if(!fast){t.style.opacity=0;setTimeout(()=>{t.style.transition='opacity .4s';t.style.opacity=1;},2100);}sfx('tick');}};
+        const t=lab({kind:'amt',path:p,text:cr(amt)});if(!fast){t.style.opacity=0;setTimeout(()=>{t.style.transition='opacity .4s';t.style.opacity=1;},2100);}sfx('tick');}};
     const mark=(m,fast)=>{if(!m)return;const [x,y]=P(m.at),T={ledger:'the ledger, opened',sign:'signed, line by line',pool:'guarantees pooled',milestone:'milestone 1',table:'two people across a table',handshake:'a handshake',strip:'a test strip on the apron'}[m.kind]||m.kind;
-      if(marks[m.at])marks[m.at].remove();const right=x>480;const t=el('text',{x:right?x-4:x+4,y:y+24,class:'pl','text-anchor':right?'end':'start'});t.textContent='— '+T;marks[m.at]=t;};
+      if(marks[m.at])marks[m.at].remove();marks[m.at]=lab({kind:'mark',at:[x,y],text:'— '+T});};
     const last=F.beats.length-1;
     const beat=(b,i,fast)=>{const no=R.outcome==='rejected'&&i===last;(b.add||[]).forEach(node);(b.edges||[]).filter(E=>!(no&&(E.kind==='money'||E.kind==='docs'))).forEach((E,k)=>edge(E,k,fast));
-      if(no){const k0=Object.keys(F.nodes)[0],[x,y]=P(k0);if(marks[k0])marks[k0].remove();const t=el('text',{x:x+4,y:y+24,class:'pl'});t.textContent='— no money moves';marks[k0]=t;}else mark(b.mark,fast);
-      cap.textContent=(i+1)+'. '+(no?'The house looks again, and declines: no money moves.':b.caption);};
-    const finish=()=>{if(finished)return;finished=true;timers.forEach(clearTimeout);sv.innerHTML='';shown.clear();F.beats.forEach((b,i)=>beat(b,i,true));cap.textContent='';pg.querySelector('#zpcS').hidden=true;result(h,R);};
+      if(no){const me=(b.edges||[]).find(E=>E.kind==='money'),k0=me?me.from:Object.keys(F.nodes)[0],[x,y]=P(k0);if(marks[k0])marks[k0].remove();marks[k0]=lab({kind:'mark',at:[x,y],text:'— no money moves'});}else mark(b.mark,fast);
+      cap.textContent=(i+1)+'. '+(no?'The house looks again, and declines: no money moves.':b.caption);place();};
+    const finish=()=>{if(finished)return;finished=true;timers.forEach(clearTimeout);sv.innerHTML='';shown.clear();LABELS.length=0;Object.keys(marks).forEach(k=>delete marks[k]);Object.keys(pairs).forEach(k=>delete pairs[k]);F.beats.forEach((b,i)=>beat(b,i,true));cap.textContent='';pg.querySelector('#zpcS').hidden=true;result(h,R);};
     if(RM){F.beats.forEach((b,i)=>beat(b,i,true));cap.textContent=F.beats.map((b,i)=>(i+1)+'. '+(R.outcome==='rejected'&&i===last?'The house looks again, and declines: no money moves.':b.caption)).join('  ');timers.push(setTimeout(()=>{finished=true;result(h,R);},3000));return;}
     F.beats.forEach((b,i)=>timers.push(setTimeout(()=>{if(!finished)beat(b,i,false);},300+i*6000)));
     timers.push(setTimeout(()=>{const s=pg.querySelector('#zpcS');if(s&&!finished){s.hidden=false;s.onclick=finish;}},5000));

@@ -1,0 +1,12 @@
+1   expert   *     122/110   79   93   100   4     5    {"st_ribbon": 1, "medical": 1, "st_surya": 1, "st_tiger": 1, "fuel": 1} 
+1   handler  *     112/110   69   81   100   0     6    {"st_ribbon": 1, "medical": 1, "st_surya": 1, "st_tiger": 1, "fuel": 2} 
+1   lazy     *     119/110   74   96   100   0     4    {"st_ribbon": 1, "medical": 1, "st_surya": 1, "st_tiger": 1} 
+2   expert   ***   235/205   93   99   100   12    4    {"st_kites": 1, "strike": 1, "medical": 1, "st_lastball": 1} 
+2   handler  *     221/205   84   86   100   0     8    {"st_kites": 1, "strike": 1, "fuel": 4, "medical": 1, "st_lastball": 1} 
+2   lazy     *     222/205   84   93   100   0     5    {"st_kites": 1, "strike": 1, "fuel": 1, "medical": 1, "st_lastball": 1} 
+3   expert   ***   480/450   74   96   100   17    6    {"st_dabba": 1, "st_gps": 1, "medical": 1, "st_wedding": 1, "fuel": 1, "st_fog": 1}
+3   handler  *     480/450   52   91   100   0     25   {"st_dabba": 1, "st_gps": 1, "fuel": 20, "medical": 1, "st_wedding": 1, "st_fog": 1}
+3   lazy     *     479/450   61   91   100   0     14   {"st_dabba": 1, "st_gps": 1, "medical": 1, "st_wedding": 1, "fuel": 9, "st_fog": 1}
+4   expert   **    744/720   74   93   100   14    8    {"lights": 1, "st_monkeys": 1, "shear": 1, "medical": 1, "st_trophy": 1, "st_delhisummit": 1, "connex": 2}
+4   handler  *     686/720   54   66   100   0     20   {"lights": 1, "st_monkeys": 1, "shear": 1, "fuel": 11, "medical": 1, "st_trophy": 1, "st_delhisummit": 1, "connex": 3}
+4   lazy     *     689/720   58   67   100   0     17   {"lights": 1, "st_monkeys": 1, "shear": 1, "fuel": 9, "medical": 1, "st_trophy": 1, "st_delhisummit": 1, "connex": 2}

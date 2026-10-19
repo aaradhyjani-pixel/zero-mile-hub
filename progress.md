@@ -109,7 +109,7 @@ Shipped in this pass:
 ### Money: design decisions (2026-10-19)
 - Design written: `money-design.md` (one page), `design/onboarding.md` (screens), `design/eras.md` (era maths, `zm_campaign` v1, Level 5, Ship B systems from `research/money-world.md` §9), `design/hooks.md` (every hub.js / hub3d.js / build.py touch point, in wiring order W1–W5).
 - Base: the "simple" draft (passive per-shift ledger, pure `money/era.js`), with the regulator, fun and eras grafts from the judge memo.
-- SPV 64/16/10/10: the parent, Tamarind Long-Horizon Infrastructure Fund (nominee Meera Kesar), AAI, MADC. The climb to 80% is 4% per era from the year-14 board (Ship B).
+- SPV 64/16/10/10: the parent, L5 Capital: Lagrange Point Infrastructure Fund (nominee Meera Kesar), AAI, MADC. The climb to 80% is 4% per era from the year-14 board (Ship B).
 - Capex in stages: 1A ₹36,000 cr / 45 MPPA at close; 1B ₹20,000 cr (yr 7), 1C ₹24,000 cr (yr 10), 1D ₹24,000 cr (yr 13); phase 2 G/H ₹14,025 cr (option, from the yr-14 board). The bank sizes debt at min(gearing × cost, PV(base-case CFADS ÷ 1.30)).
 - Eras: E0 construction; E1–E4 on L1–L4 (Delhi stays at yr 14); E5–E12 on the new concession-only Level 5. Quick concession: 6 eras. Levels 1–4 are not edited.
 - AERA runs silently in Ship A: hybrid till 0.30, WACC 12.89%, glide cap ₹900/850/800 per pax (the one labelled game assumption), shortfall to a receivable at WACC, volume true-up, O&M ratchet, service-quality rebate (4 airside groups + safety). Shift aero is display only (tariffK).

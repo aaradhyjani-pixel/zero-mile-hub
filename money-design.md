@@ -4,9 +4,9 @@
 
 ## Frame
 - **You are the parent company.** You form ZMIAL (Zero Mile International Airport Limited), which holds a 60-year concession.
-  - At financial close you hold 64%. **Tamarind Long-Horizon Infrastructure Fund** holds 16%, AAI 10%, and MADC ("the State of Maharashtra's airport and MIHAN developer", `ppp.madc_role`) 10%.
+  - At financial close you hold 64%. **L5 Capital: Lagrange Point Infrastructure Fund** holds 16%, AAI 10%, and MADC ("the State of Maharashtra's airport and MIHAN developer", `ppp.madc_role`) 10%.
   - The state leases the land at a nominal rent. AAI and MADC pay cash for their 10% each.
-  - From the year-14 board you may buy Tamarind's stake, 4% per era, up to 80%. Dividends follow the stake.
+  - From the year-14 board you may buy L5 Capital's stake, 4% per era, up to 80%. Dividends follow the stake.
 - **The bid** is a revenue share (10–50%) or a per-passenger fee (₹100–450), placed against three fictional consortia. The highest bid wins. The fee is not a pass-through, so a high bid thins margins for 60 years.
 - **Capex in stages** (`capex.stages`, est.). Each stage is financed at the gearing chosen at close (60–80%), at 9.5% over 20 years after a 1-year moratorium. Repayment is sculpted (the default) or in equal instalments.
 
@@ -77,7 +77,7 @@ CFADS  = EBITDA − tax 25.17% − renewals;  DSCR = CFADS ÷ debt service
 - **Ship A:** results; the mandatory stage; a dividend / prepay / retain slider; the Mall upgrade (₹1,500 cr, ×1.15); runway rehab (₹106.84 cr per runway); phase 2 (from year 14); a cure.
 - **Ship B adds:**
   - the AERA order card (accept, or appeal: 20% chance to win, closing 25% of the gap, decided next era);
-  - Tamarind's 4% blocks, or selling down to 51%;
+  - L5 Capital's 4% blocks, or selling down to 51%;
   - sim upgrades;
   - the draw for shocks, market cycle and mid-level incidents (L5 and L6 only).
 

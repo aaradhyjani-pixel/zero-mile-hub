@@ -1,3 +1,5 @@
+> **UI calls:** every money display goes through `window.ZMMoney` (`money/ui.js`, see `money/CONTRACT.md`): `enable`, `setDay`, `float` (never for medical/fuel/MAYDAY), `setPL`, `onboarding` (wire `previewBid`/`previewClose` to `money/era.js`), `boardMeeting`, `incomeStatement`, `config`. Merge `ZMMoney.terms` into `GL`.
+
 # Hooks: every code touch point for the money wiring
 
 This file is for **one** wiring agent working on `hub.js`, `hub3d.js`, `build.py`, `hub-body.html` and `hub-head.html`. Do the steps in order, run the gate check after each step, and make a small commit after each step.

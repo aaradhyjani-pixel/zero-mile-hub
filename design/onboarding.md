@@ -1,3 +1,5 @@
+> **Built already:** the onboarding, chip, floaters, P&L tab, board meeting, income statement and handback screens are implemented by the review session in `money/ui.js` (contract: `money/CONTRACT.md`, driven through `window.ZMMoney`). This file is the design reference; the wiring calls `ZMMoney.*` and does not build a second UI. Names come from `ZMMoney.config`; never hard-code "Zero Mile" in new code (the airport will be renamed in one sweep).
+
 # Onboarding and money UI: the screen-by-screen spec
 
 This spec is the onboarding draft, reconciled with the judge memo. Its numbers come from `money.json`, with keys cited as `section.key`. Era maths are in `design/eras.md`; code hooks are in `design/hooks.md`.
@@ -37,7 +39,7 @@ Add these to `hub-head.html` `:root`. The change is additive.
 | `--brass` | #c9a227 | seals, the 80% re-stamp |
 | `--kraft` | #c8a46a | bid envelopes |
 | `--wax` | #b3261e | wax seals, the COD stamp |
-| `--fund` | #6aa3ff | Tamarind (same as `--cool`) |
+| `--fund` | #6aa3ff | L5 Capital (same as `--cool`) |
 | `--aai` | var(--dep) | AAI |
 | `--madc` | #ff8a2b | MADC (Nagpur orange) |
 
@@ -78,7 +80,7 @@ Progress pips run along the top: Company · Partners · Bid · Close · Build ·
 
 **Left side**
 - **Input:** a big field, 54px `--f-sign`, with the caret in `--sign`.
-  - At most 32 characters; the placeholder is "Jani Infra".
+  - At most 32 characters; the placeholder is "Meridian Infra".
   - The text is trimmed and collapsed. Empty → the button is disabled.
 - **Font tiles:** 8 tiles under the input. Each tile shows the typed name in its font, plus a one-word personality.
 
@@ -123,7 +125,7 @@ Progress pips run along the top: Company · Partners · Bid · Close · Build ·
 
 **Ring.** A centred SVG donut, r=120 with stroke 30, drawn segment by segment with `stroke-dashoffset`:
 1. **{NAME}**, 64% (`--sign`, or the brand colour). It draws over 900 ms.
-2. **Tamarind Long-Horizon Infrastructure Fund**, 16% (`--fund`), 400 ms.
+2. **L5 Capital: Lagrange Point Infrastructure Fund**, 16% (`--fund`), 400 ms.
 3. **AAI**, 10% (`--aai`), 300 ms.
 4. **MADC**, 10% (`--madc`), 300 ms. Its label reads "MADC, the State of Maharashtra's airport and MIHAN developer" (`ppp.madc_role`, verified).
 
@@ -133,12 +135,12 @@ Progress pips run along the top: Company · Partners · Bid · Close · Build ·
 
 **Path to 80%:**
 - After 600 ms, a dashed `--sign` ghost arc creeps over the fund's segment from 64 to 80.
-- The label reads: "Grow to 80%: buy Tamarind out, 4% an era, at a price set by the airport's value and your track record."
+- The label reads: "Grow to 80%: buy L5 Capital out, 4% an era, at a price set by the airport's value and your track record."
 - A small line reads: "Stake purchases open at the year-14 board." The lock-in ends at opening + 7 years (`finance.equity_lockin.years_after_cod`), which is year 12; the first board after that is in year 14. This is labelled a game rule, because the real lock-in binds the lead seller.
 
 **Partner cards.** Four small cards sit under the ring:
 - you, the chair;
-- Tamarind: board nominee **Meera Kesar**, "patient money, wants steady dividends";
+- L5 Capital: board nominee **Meera Kesar**, "patient money, wants steady dividends";
 - the AAI nominee;
 - the MADC nominee.
 
@@ -164,13 +166,13 @@ Progress pips run along the top: Company · Partners · Bid · Close · Build ·
 
 | Consortium | Personality | Band (memo, rebanded) |
 |---|---|---|
-| Vajra Aeroports | aggressive, "win everything" | 16–21% share |
-| Narmada–Rhine Airports | Indo-European operator JV | 12–16% share |
-| Saptarishi Infra Partners | patient pension money | ₹140–190 per passenger |
+| Kármán Line Ventures | aggressive, "win everything" | 16–21% share |
+| QNH Infragenesis | Indo-European operator JV | 12–16% share |
+| Thakral–Wainganga Airports | patient pension money | ₹140–190 per passenger |
 
 - **Comparing bids.** A per-passenger bid is converted to a share equivalent: the PV of its fee divided by the PV of base-case gross revenue over 60 years. The highest equivalent wins, and a tie goes to the player.
 - **Final bands** are set in Step 5 balance so that a win needs about 14–18%, which keeps the expert's IRR inside 12.4–17.3%.
-- **Clash check before shipping.** Search each fictional name (Tamarind Long-Horizon Infrastructure Fund, Meera Kesar, Vajra Aeroports, Narmada–Rhine Airports, Saptarishi Infra Partners) for real companies or people in infrastructure and aviation. Rename on any close hit and log the result in `progress.md`.
+- **Clash check before shipping.** Search each fictional name (L5 Capital: Lagrange Point Infrastructure Fund, Meera Kesar, Kármán Line Ventures, QNH Infragenesis, Thakral–Wainganga Airports) for real companies or people in infrastructure and aviation. Rename on any close hit and log the result in `progress.md`.
 
 **Reveal.**
 - Four `--kraft` envelopes with `--wax` seals sit on a dark panel, one of them yours, and open in ascending order:
@@ -180,7 +182,7 @@ Progress pips run along the top: Company · Partners · Bid · Close · Build ·
   - there is a 900 ms gap before the next envelope.
 - The highest bid gets a red "H1" stamp.
 - **Win:** a `--go` flash and "ZMIAL is the concessionaire".
-- **Loss:** the winning rival's crest, then the explainer, for example: "Vajra pays AAI 19.4% of every rupee for 60 years. You bid 15.2%. Bid closer, or accept a thinner company." Then "Re-tender ›", which re-seeds the rivals and keeps the player's name. Re-tendering is unlimited.
+- **Loss:** the winning rival's crest, then the explainer, for example: "Kármán Line pays AAI 19.4% of every rupee for 60 years. You bid 15.2%. Bid closer, or accept a thinner company." Then "Re-tender ›", which re-seeds the rivals and keeps the player's name. Re-tendering is unlimited.
 - **Either way:** two lines of "What this means". DIAL pays 45.99% on an old, cheap asset base; Navi Mumbai pays 12.6% on a greenfield (`ppp.rev_share_*`). "Greenfields win at 12–18% because the asset base is new and expensive."
 
 **Ship B addition.** A small toggle, "ROFR within 150 km: +1 pp on your bid (est.)", from `world.mial_rofr_2019` and `world.rofr_radius_dial`. It decides who owns the rival airport if the new-rival shock fires.
@@ -200,7 +202,7 @@ Readouts for Phase 1A, ₹36,000 cr:
 | Debt | ₹21,600 cr | ₹25,200 cr | ₹28,800 cr |
 | Equity (100%) | ₹14,400 cr | ₹10,800 cr | ₹7,200 cr |
 | Your equity (64%) | ₹9,216 cr | ₹6,912 cr | ₹4,608 cr |
-| Tamarind (16%) | ₹2,304 cr | ₹1,728 cr | ₹1,152 cr |
+| L5 Capital (16%) | ₹2,304 cr | ₹1,728 cr | ₹1,152 cr |
 | AAI / MADC (10% each) | ₹1,440 cr | ₹1,080 cr | ₹720 cr |
 | Equal instalment (9.5%, 20 years) | ₹2,451 cr/yr | ₹2,860 cr/yr | ₹3,268 cr/yr |
 
@@ -329,7 +331,7 @@ All three choices are saved in `zm_campaign.construction`.
 - **Left side: a 5-step agenda.**
   1. **Results.** A recap and the nominees' one-line reactions:
      - Chair (you).
-     - Meera Kesar (Tamarind) cares about dividends.
+     - Meera Kesar (L5 Capital) cares about dividends.
      - The AAI nominee cares about the fee and service quality.
      - The MADC nominee cares about jobs and phase 2.
      - The lenders' agent observes and does not vote.

@@ -260,7 +260,7 @@ Each group is worth 1% of ARR. The rebate is capped at 5% (`till.sq_rebate_max_o
   - The bank caps an equal-profile loan at about 53% gearing. Sculpted is about 1.30 by construction.
 
 ### Equity
-- **At close:** 1A equity at 70% is ₹10,800 cr: parent ₹6,912 cr, Tamarind ₹1,728 cr, AAI ₹1,080 cr, MADC ₹1,080 cr. It is called evenly over years 1–4.
+- **At close:** 1A equity at 70% is ₹10,800 cr: parent ₹6,912 cr, L5 Capital ₹1,728 cr, AAI ₹1,080 cr, MADC ₹1,080 cr. It is called evenly over years 1–4.
 - **Later stages, upgrades and overruns:** paid first from `fin.cash`, with the rest called pro rata by stake.
 - The parent's IRR flow records −stake × (the call not covered by cash).
 
@@ -311,7 +311,7 @@ One localStorage key, written through `store.set` (try/catch), under 100 KB.
 ```
 {v:1, id, created, updated, mode:'full'|'quick', eraMap:[{e,y0,y1,L}], seed,
  parent:{name,font,color},
- spv:{name:'ZMIAL', fund:'Tamarind Long-Horizon Infrastructure Fund', nominee:'Meera Kesar',
+ spv:{name:'ZMIAL', fund:'L5 Capital: Lagrange Point Infrastructure Fund', nominee:'Meera Kesar',
       own:{parent:.64,fund:.16,AAI:.10,MADC:.10}, lockinEndYr:12, buyOpensYr:14},
  bid:{type:'share'|'ppf', v, rivals:[{name,type,v,eq}], won:true, rofr:false},
  close:{gearing, gEff, profile:'sculpted'|'equal', rate:9.5, tenor:20, moratorium:1, bankCapPct},
@@ -424,7 +424,7 @@ Appended after Level 4. Levels 1–4 are not edited.
 
 ### 11.2 Stake: the 64 → 80% climb, and selling down
 - **Opens** at the first board after year 12, which is year 14 (memo, binding; labelled a game rule).
-- **One 4% block per era** at most (memo). Tamarind can offer blocks of 2–10% to outsiders when it is stressed. When it does, the player has a ROFR match window. If the player declines, the outsider takes a board seat and vetoes payouts above 60% (`world.game_stake_pricing`).
+- **One 4% block per era** at most (memo). L5 Capital can offer blocks of 2–10% to outsiders when it is stressed. When it does, the player has a ROFR match window. If the player declines, the outsider takes a board seat and vetoes payouts above 60% (`world.game_stake_pricing`).
 - **Price:**
 
 ```
@@ -433,8 +433,8 @@ multiple  = clamp(12 + growthPrem + dscr/safety penalties + regPrem + marketAdj,
             (the star part of trackPrem is left out: stars enter through the memo's factor)
 Equity    = EV − net debt
 Block     = 4% × Equity × (0.9 + 0.2 × avgStars/3) × adj
-adj       = ×1.35 for the block that crosses 75% (special-resolution control: Tamarind's vote is no longer
-            needed for phase 2 or refinancing); ×0.90 if Tamarind is impatient (two eras with no dividend);
+adj       = ×1.35 for the block that crosses 75% (special-resolution control: L5 Capital's vote is no longer
+            needed for phase 2 or refinancing); ×0.90 if L5 Capital is impatient (two eras with no dividend);
             ×0.85 if it is distressed
 ```
 

@@ -248,7 +248,7 @@ body.v3 #toast{right:auto;left:max(14px,env(safe-area-inset-left,0px));width:var
 }
 @media (prefers-reduced-motion:reduce){.inc,#toast.flash{animation:none}}
 </style>
-<script>(function(){var B='c30184c81f19',K=['zm_campaign','zm_ch5'];window.__BUILD=B;function cancel(){try{K.forEach(function(x){localStorage.removeItem(x);});sessionStorage.setItem('zm_updated','1');}catch(e){}}try{var o=localStorage.getItem('zm_build');if(o&&o!==B)cancel();localStorage.setItem('zm_build',B);}catch(e){}if(location.protocol.indexOf('http')===0)setInterval(function(){fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(v){if(v&&v.build&&v.build!==B){cancel();try{localStorage.setItem('zm_build',v.build);}catch(e){}location.reload();}}).catch(function(){});},30000);document.addEventListener('DOMContentLoaded',function(){try{if(sessionStorage.getItem('zm_updated')){sessionStorage.removeItem('zm_updated');var n=document.createElement('div');n.textContent='A new version of VSI is live. Games in progress were closed; start again from the menu.';n.style.cssText='position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:99999;background:#1d2024;color:#fff7ea;padding:10px 16px;font:14px Barlow Condensed,sans-serif;letter-spacing:.02em;border-radius:3px;box-shadow:0 6px 18px rgba(0,0,0,.4)';document.body.appendChild(n);setTimeout(function(){n.remove();},7000);}}catch(e){}});})();</script>
+<script>(function(){var B='b3b7844dc1c3',K=['zm_campaign','zm_ch5'];window.__BUILD=B;function cancel(){try{K.forEach(function(x){localStorage.removeItem(x);});sessionStorage.setItem('zm_updated','1');}catch(e){}}try{var o=localStorage.getItem('zm_build');if(o&&o!==B)cancel();localStorage.setItem('zm_build',B);}catch(e){}if(location.protocol.indexOf('http')===0)setInterval(function(){fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(v){if(v&&v.build&&v.build!==B){cancel();try{localStorage.setItem('zm_build',v.build);}catch(e){}location.reload();}}).catch(function(){});},30000);document.addEventListener('DOMContentLoaded',function(){try{if(sessionStorage.getItem('zm_updated')){sessionStorage.removeItem('zm_updated');var n=document.createElement('div');n.textContent='A new version of VSI is live. Games in progress were closed; start again from the menu.';n.style.cssText='position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:99999;background:#1d2024;color:#fff7ea;padding:10px 16px;font:14px Barlow Condensed,sans-serif;letter-spacing:.02em;border-radius:3px;box-shadow:0 6px 18px rgba(0,0,0,.4)';document.body.appendChild(n);setTimeout(function(){n.remove();},7000);}}catch(e){}});})();</script>
 <div id="app">
   <div id="zoomBox" class="hud panel" role="group" aria-label="Map zoom"><button id="zIn" title="Zoom in (+)">+</button><button id="zOut" title="Zoom out (−)">−</button><button id="zFit" title="Show the whole airport (F)">Fit</button></div>
   <canvas id="map" aria-label="Live map of the hub: six parallel runways, the terminal and concourses, and every aircraft"></canvas>
@@ -18207,10 +18207,11 @@ const CSSS=`
 .zbx-rd .nums span{position:absolute;top:18px;transform:translateX(-50%);font-family:var(--ft);font-size:10.5px;color:#3d4247}
 .zbx-rd .band{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(45deg,rgba(80,84,90,.32) 0 1.5px,transparent 1.5px 5px)}
 .zbx-rd .mk{position:absolute;bottom:calc(100% + 4px);transform:translateX(-50%);font-family:var(--fh);font-size:14.5px;line-height:1.05;color:#4a4e53;white-space:nowrap;text-align:center}
-.zbx-rd .mk::after{content:'';position:absolute;left:50%;top:100%;width:1px;height:8px;background:#676c71}
+.zbx-rd .mk::after{content:'';position:absolute;left:50%;top:100%;width:1px;height:var(--lead,8px);background:#676c71}
 .zbx-rd .mk.lo{bottom:calc(100% + 26px)}.zbx-rd .mk.lo::after{height:30px}
 .zbx-rd .mk.r{transform:translateX(calc(-100% + 10px))}.zbx-rd .mk.r::after{left:auto;right:10px}
 .zbx-rd .mk.l{transform:translateX(-10px)}.zbx-rd .mk.l::after{left:10px}
+.zbx-rd .mk.dn::after{top:auto;bottom:100%}
 .zbx-rd .mk sup{font-family:var(--ft);font-size:9.5px;color:var(--trace)}
 .zbx-rd .cur{position:absolute;top:-8px;bottom:-8px;width:3px;margin-left:-1.5px;background:var(--trace)}
 .zbx-rd .cur b{position:absolute;top:calc(100% + 2px);left:50%;transform:translateX(-50%);font-family:var(--fh);font-weight:700;font-size:16px;color:var(--trace);white-space:nowrap}
@@ -18692,18 +18693,28 @@ function bxRuler(p){const bs=(p.benchmarks||[]).map(b=>({label:b.label,source:b.
     return `<span class="mk${lane?' lo':''}${c>78?' r':c<12?' l':''}" style="left:${c}%">${esc(b.label)}, ${b.lo===b.hi?f(b.lo):f(b.lo)+'–'+f(b.hi)}<sup>${i+1}</sup></span>`;}).join('');
   const bands=bs.filter(b=>b.hi>b.lo).map(b=>`<i class="band" style="left:${X(b.lo)}%;width:${X(b.hi)-X(b.lo)}%"></i>`).join('');
   return {bs,html:`<div class="zbx-rd"><div class="strip"><div class="in">${bands}<svg class="g" aria-hidden="true">${ticks.join('')}</svg><div class="nums">${nums.join('')}</div>${mk}${isFinite(r)&&!p.lost?`<i class="cur" style="left:${X(r)}%"><b>you, ${f(r)}</b></i>`:''}</div></div></div>`};}
-/* after layout: a benchmark label that the red cursor runs through is hung from the other side of its tick */
-function bxClear(pg){const cur=pg.querySelector('.zbx-rd .cur');const run=()=>{if(cur){const c=cur.getBoundingClientRect();
-  pg.querySelectorAll('.zbx-rd .mk').forEach(m=>{const r=m.getBoundingClientRect();if(r.bottom<c.top||r.left>c.right+6||r.right<c.left-6)return;
-    const tick=m.classList.contains('r')?r.right-10:m.classList.contains('l')?r.left+10:(r.left+r.right)/2;m.classList.remove('l','r');m.classList.add(c.left<tick?'l':'r');});}
-  const rd=pg.querySelector('.zbx-rd');if(rd){const bx=rd.getBoundingClientRect();   // a label that runs off the ruler hangs back from its tick
-    pg.querySelectorAll('.zbx-rd .mk').forEach(m=>{const r=m.getBoundingClientRect();if(r.right>bx.right){m.classList.remove('l');m.classList.add('r');}else if(r.left<bx.left){m.classList.remove('r');m.classList.add('l');}});}
-  const mk=[...pg.querySelectorAll('.zbx-rd .mk')],hit=(a,b)=>{const p=a.getBoundingClientRect(),q=b.getBoundingClientRect();return p.left<q.right+8&&q.left<p.right+8&&p.top<q.bottom&&q.top<p.bottom;};
-  for(let i=0;i<mk.length;i++)for(let j=0;j<mk.length;j++){if(i===j)continue;const a=mk[i],b=mk[j];if(!hit(a,b))continue;
-    const [L,R]=a.getBoundingClientRect().left<=b.getBoundingClientRect().left?[a,b]:[b,a];L.classList.remove('l');L.classList.add('r');if(!hit(L,R))continue;
-    // the right-hand label hangs to the right of its tick only if it stays on the ruler; else it drops a lane
-    const box=pg.querySelector('.zbx-rd').getBoundingClientRect(),was=R.className;R.classList.remove('r');R.classList.add('l');
-    if(R.getBoundingClientRect().right>box.right||hit(L,R)){R.className=was;R.classList.toggle('lo');}}};
+/* after layout: lay the benchmark labels out in rows, measured, so none overlaps another, the red cursor or the ruler's
+   edge. Each label tries centred, hung right or hung left of its tick, in the lowest row where it fits; its pencil leader
+   drops to its tick. The space above the ruler grows with the rows used. */
+function bxClear(pg){const run=()=>{const rd=pg.querySelector('.zbx-rd');if(!rd)return;const mk=[...rd.querySelectorAll('.mk')];if(!mk.length)return;
+  const box=rd.getBoundingClientRect(),ROW=24,placed=[],avoid=[...rd.querySelectorAll('.cur,.cur b')].map(e=>e.getBoundingClientRect());
+  const order=mk.map(m=>{m.classList.remove('l','r','lo','dn');m.style.bottom='';m.style.top='';const r=m.getBoundingClientRect();return {m,x:(r.left+r.right)/2};}).sort((a,b)=>a.x-b.x);
+  const slots=[];for(let k=0;k<4;k++){slots.push({up:true,k});slots.push({up:false,k});}
+  let up=0,dn=0;
+  for(const {m} of order){let done=false;
+    for(const sl of slots){if(done)break;
+      m.classList.toggle('dn',!sl.up);if(sl.up){m.style.top='';m.style.bottom=`calc(100% + ${4+sl.k*ROW}px)`;}else{m.style.bottom='auto';m.style.top=`${62+sl.k*ROW}px`;}
+      m.style.setProperty('--lead',(sl.up?8+sl.k*ROW:22+sl.k*ROW)+'px');
+      for(const side of ['','r','l']){m.classList.remove('l','r');if(side)m.classList.add(side);const r=m.getBoundingClientRect();
+        if(r.left<box.left-2||r.right>box.right+2)continue;
+        if(avoid.some(q=>r.left<q.right+8&&q.left<r.right+8&&r.top<q.bottom+4&&q.top<r.bottom+4))continue;
+        if(placed.some(q=>r.left<q.right+10&&q.left<r.right+10&&r.top<q.bottom+2&&q.top<r.bottom+2))continue;
+        const lx=side==='r'?r.right-10:side==='l'?r.left+10:(r.left+r.right)/2,l0=sl.up?r.bottom:r.top-(22+sl.k*ROW),l1=sl.up?r.bottom+8+sl.k*ROW:r.top;
+        if(placed.some(q=>lx>q.left-3&&lx<q.right+3&&q.top<l1&&q.bottom>l0))continue;   // its leader crosses no other label
+        if(placed.some(q=>q.lx>r.left-3&&q.lx<r.right+3&&q.l0<r.bottom&&q.l1>r.top))continue;   // and no other leader crosses it
+        placed.push({left:r.left,right:r.right,top:r.top,bottom:r.bottom,lx,l0,l1});if(sl.up)up=Math.max(up,sl.k+1);else dn=Math.max(dn,sl.k+1);done=true;break;}}
+    if(!done){m.classList.remove('l','r','dn');m.style.top='';m.style.bottom='';}}
+  rd.style.marginTop=(20+up*ROW)+'px';rd.style.marginBottom=(12+dn*ROW+(dn?24:0))+'px';};
   run();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(run);}
 // a benchmark's footnote: the source's site as a link, then any paragraph reference after the URL
 function bxSrc(b){const m=/^(https?:\/\/\S+)\s*(.*)$/.exec(String(b.source||''));if(!m)return esc(b.source||b.label||'');

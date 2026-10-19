@@ -38,7 +38,7 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 /* ---------- number formatting: crore above ₹1 cr, lakh below ---------- */
-function fmt(v,opt){opt=opt||{};if(v==null||isNaN(v))return '—';const s=v<0?'−':opt.sign&&v>0?'+':'';const a=Math.abs(v);
+function fmt(v,opt){opt=opt||{};if(v==null||isNaN(v))return '—';if(Math.abs(v)<0.0005)return '₹0';const s=v<0?'−':opt.sign&&v>0?'+':'';const a=Math.abs(v);
   if(a>=1000)return s+'₹'+Math.round(a).toLocaleString('en-IN')+' cr';
   if(a>=1)return s+'₹'+(a>=10?Math.round(a):a.toFixed(1))+' cr';
   const l=a*100;return s+'₹'+(l>=10?Math.round(l):l.toFixed(1))+' L';}
@@ -858,7 +858,7 @@ function sigPad(cv,onChange){
           dividend:{maxCr, lastCr?, blocked?, reason?}, prepay:{maxCr, savesPct?}, pile?:[{title, stamp}]}
    resolves {bought:[ids], appeal:bool, dividendCr, prepayCr, approvedOn:'YYYY-MM-DD'} */
 M.boardMeeting=function(o){o=o||{};loadDeskFonts();return new Promise(res=>{
-  const inv=o.investments||[],now=new Date(),era=o.era!=null?o.era:1;
+  const inv=o.investments||[],now=dayOf(o.date)||new Date(),era=o.era!=null?o.era:1;   // the meeting's day in the game (era.js), not today
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   const coName=M.cfg.coinvestor.name.split(':')[0];
   const P=(o.partners||[{name:o.parent||'Your company',pct:o.parentPct!=null?o.parentPct:64},{name:coName,pct:16},
@@ -907,7 +907,7 @@ M.boardMeeting=function(o){o=o||{};loadDeskFonts();return new Promise(res=>{
     <div class="zdk-sheet" aria-hidden="true"><div class="zdk-plan" id="zdkPlan" style="--ink:4">${plan?plan.innerHTML:''}</div>
       <table class="zdk-tb"><tr><td colspan="2">${esc(M.cfg.airportName)}, Nagpur</td></tr><tr><td>Minutes book</td><td>Era ${esc(era)}</td></tr><tr><td>${esc(o.years||'')}</td><td>${esc(M.cfg.spvShort)}</td></tr></table></div>
     <header class="zdk-top"><div class="zdk-mark">${vsiLogo(30)}<span>${esc(M.cfg.airportName)}</span></div></header>
-    <div class="zdk-pile" id="zdkPile" aria-label="Documents on file">${pile.slice(-4).map((p,n)=>`<div class="zdk-card" style="--r:${[-4,3,-2,5][n%4]}deg;--i:${n};animation:none"><span>${esc(p.title)}</span><i></i><i></i><i class="s"></i>${p.stamp?stampHtml(p.stamp,'mini'):''}</div>`).join('')}</div>
+    <div class="zdk-pile" id="zdkPile" aria-label="Documents on file">${pile.slice(-4).map((p,n)=>`<div class="zdk-card" style="--r:${[-4,3,-2,5][n%4]}deg;--i:${n};animation:none"><span>${esc(p.title)}</span><i></i><i></i><i class="s"></i>${p.stamp?stampHtml(p.stamp,'mini',dayOf(p.date)||now):''}</div>`).join('')}</div>
     <main class="zdk-main"><div class="zdk-col"><article class="zdk-doc" id="zdkDoc" tabindex="-1" autofocus aria-label="Minutes of the board meeting">
       <header class="zdk-dh">${vsiLogo(26)}<span>Minutes book · ${esc(M.cfg.spvShort)}</span><span class="dt">${today}</span></header>
       <h2>Minutes of the board meeting</h2>
@@ -947,12 +947,12 @@ M.boardMeeting=function(o){o=o||{};loadDeskFonts();return new Promise(res=>{
     boxes.forEach((b,k)=>setTimeout(()=>{b.innerHTML=H(ini);},k*step));
     setTimeout(()=>{$s('#zbmChair').textContent=ini;const res$=$s('#zbmRes');
       docEl.scrollTo({top:docEl.scrollHeight,behavior:reduce?'auto':'smooth'});
-      res$.insertAdjacentHTML('beforeend',stampHtml('Approved','down zbm-st'));if(!reduce)setTimeout(()=>docEl.classList.add('thud'),40);},boxes.length*step+120);
+      res$.insertAdjacentHTML('beforeend',stampHtml('Approved','down zbm-st',now));if(!reduce)setTimeout(()=>docEl.classList.add('thud'),40);},boxes.length*step+120);
     const t0=boxes.length*step+120;
     if(reduce){setTimeout(()=>{close();res(result);},t0+900);return;}
     setTimeout(()=>docEl.classList.add('leave'),t0+1500);
     setTimeout(()=>{const pl=$s('#zdkPile'),n=pl.children.length;const c=document.createElement('div');c.className='zdk-card';c.style.setProperty('--r',[-4,3,-2,5][n%4]+'deg');c.style.setProperty('--i',Math.min(n,4));
-      c.innerHTML=`<span>Board minutes, era ${esc(era)}</span><i></i><i></i><i class="s"></i>${stampHtml('Approved','mini')}`;pl.appendChild(c);},t0+1900);
+      c.innerHTML=`<span>Board minutes, era ${esc(era)}</span><i></i><i></i><i class="s"></i>${stampHtml('Approved','mini',now)}`;pl.appendChild(c);},t0+1900);
     setTimeout(()=>{close();res(result);},t0+2700);};
   });};
 
@@ -1800,6 +1800,7 @@ const CSSF=`
 `;
 let cssF=false;
 function mountF(){mount5();if(cssF)return;cssF=true;const st=document.createElement('style');st.id='zmmCssF';st.textContent=CSSF;document.head.appendChild(st);}
+const possN=n=>/s$/i.test(n)?n+'’':n+'’s';   // Kestrel Airports’ (not Airports’s)
 const ENDED={handback:'handed back',banks:'the banks took control',torn:'torn up'};
 const sigOf=(img,name,cls)=>img?`<img src="${esc(img)}" alt="${esc(name?'Signature of '+name:'Signature')}"${cls?` class="${cls}"`:''}>`:H(name||'');
 const pctTxt=v=>v==null||!isFinite(v)?'':(v<0?'−':'')+Math.abs(+v).toFixed(1).replace(/\.0$/,'')+'%';
@@ -1818,7 +1819,7 @@ M.fileResumable=o=>!!(o&&o.company&&o.founder&&o.signature&&o.signedOn&&o.resuma
 M.concessionFile=function(el,o){mountF();if(typeof el==='string')el=document.querySelector(el);if(!el)return null;
   const has=M.fileResumable(o);
   if(!has){const rec=o&&o.record;
-    el.innerHTML=`<div class="zdk z5v zcf zcf0">${INK_DEFS}<div class="zcf-nil"><button class="zdk-go" id="zcfStart">Start the concession</button>${o&&o.company?`<span>${esc(o.company)}’s file is from an older version of the game and can’t be continued.</span>`:rec&&rec.length?'<span>No concession on file now.</span>':''}</div>${recordHtml(rec)}</div>`;
+    el.innerHTML=`<div class="zdk z5v zcf zcf0">${INK_DEFS}<div class="zcf-nil"><button class="zdk-go" id="zcfStart">Start the concession</button>${o&&o.company?`<span>${esc(possN(o.company))} file ${o.why&&o.why!=='old'?'was never fully signed':'is from an older version of the game'} and can’t be continued.</span>`:rec&&rec.length?'<span>No concession on file now.</span>':''}</div>${recordHtml(rec)}</div>`;
     el.querySelector('#zcfStart').onclick=()=>{if(o&&o.onNew)o.onNew({confirmed:false});};return el.firstElementChild;}
   const yrs=M.cfg.years,st=o.stake||{},cv=o.cover||{},lt=cv.light||'';
   const mood={green:'The banks are relaxed',amber:'The banks are watching closely',red:'The banks are warning you'}[lt]||'';
@@ -1829,7 +1830,7 @@ M.concessionFile=function(el,o){mountF();if(typeof el==='string')el=document.que
       <div class="zcf-sig">${sigOf(o.signature,o.founder)}<small>Signed for ${esc(o.company)}</small></div></div>
     <p class="zcf-ln">${[o.signedOn?'Signed '+esc(M.fmtDate(o.signedOn)):'',o.year!=null?`now year ${esc(o.year)} of ${yrs}`:'',o.chapter!=null?esc(M.chapterName(o.chapter)):o.era!=null?`era ${esc(o.era)}`:''].filter(Boolean).join(' · ')}</p>
     <div class="zcf-n3">
-      <div><small>Your stake</small><b>${st.pct!=null?esc(pctTxt(st.pct)):'—'}</b><span>${st.valueCr!=null?'worth about '+fmt(+st.valueCr):''}</span></div>
+      <div><small>Your stake</small><b>${st.pct!=null?esc(pctTxt(st.pct)):'—'}</b><span>${st.valueCr!=null?'worth about '+fmt(+st.valueCr):st.inCr!=null?fmt(+st.inCr)+' put in':''}</span></div>
       <div class="cv ${esc(lt)}"><small>The banks</small><b>${esc(cv.words||'—')}</b><span>${esc(mood)}</span></div>
       <div><small>Cash in hand</small><b>${o.cashCr!=null?fmt(+o.cashCr):'—'}</b><span></span></div></div>
     ${o.signedOn?stampHtml('Executed','zcf-st',dayOf(o.signedOn)):''}
@@ -1850,7 +1851,7 @@ M.confirmTear=function(company){mountF();company=company||'Your company';
   if(tearP)return tearP;
   tearP=new Promise(res=>{const host=$('#app')||document.body;let v=$('#zcfTear');if(!v){v=document.createElement('div');v.id='zcfTear';v.className='z5v';host.appendChild(v);}
     v.innerHTML=`<article class="zcf-memo" role="alertdialog" aria-modal="true" aria-labelledby="zcfTq"><div class="zdk-dh">${vsiLogo(20)}<span>${esc(M.cfg.spvShort)} · Concession file</span><span class="dt">${esc(M.fmtDate(new Date()))}</span></div>
-      <h2 id="zcfTq">This tears up ${esc(company)}’s concession. Start again?</h2>
+      <h2 id="zcfTq">This tears up ${esc(possN(company))} concession. Start again?</h2>
       <p>The file goes to the record of earlier concessions. The deal desk opens with a blank incorporation form.</p>
       <div class="zdk-acts"><button class="zdk-go" id="zcfTy">Tear it up and start again</button><button class="zdk-q" id="zcfTn">Keep it</button></div></article>`;
     v.hidden=false;const memo=v.querySelector('.zcf-memo');

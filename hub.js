@@ -2509,7 +2509,15 @@ const CAMP={active:false,st:null,
   resume(){const st=CAMP.load();if(!st||!st.s){menu('concession');return;}CAMP.st=st;CAMP.play();},   // (no .s: a save from the stand-in era module, which cannot be resumed)
   // before every shift: a concession that has ended (banks, or year 60) goes to its last page, never to another shift;
   // one still being built goes back to the construction years
-  play(){const E=CAMP.E();if(E.isOver(CAMP.st)){CAMP.end();return;}if(E.needsConstruction&&E.needsConstruction(CAMP.st)){CAMP.build();return;}CAMP.active=true;startLevel(E.levelFor(CAMP.st));},
+  // an era whose books were closed but whose board never met (a reload or "Save and leave" on the bill or the minutes):
+  // the board meets now, so the era is never played twice
+  boardDue(st){const h=(st&&st.history)||[],l=h[h.length-1];return !!(l&&!l.board&&!l.construction&&l.era===st.era&&l.cashCr!=null);},
+  play(){const E=CAMP.E();if(E.isOver(CAMP.st)){CAMP.end();return;}if(E.needsConstruction&&E.needsConstruction(CAMP.st)){CAMP.build();return;}
+    if(CAMP.boardDue(CAMP.st)){CAMP.board();return;}CAMP.active=true;startLevel(E.levelFor(CAMP.st));},
+  async board(){const E=CAMP.E();$('#overlay').hidden=true;CAMP.active=false;
+    const bo=E.boardOptions(CAMP.st);   // founder, partners, year, stake value, Zero Mile District (airport_city), the pile: all from era.js
+    let d=null;try{d=await ZMMoney.boardMeeting(bo);}catch(e){console.warn('board',e);}
+    CAMP.st=E.applyBoard(CAMP.st,d||{});CAMP.save();CAMP.play();},
   async end(){const E=CAMP.E(),st=CAMP.st;$('#overlay').hidden=true;CAMP.active=false;await CAMP.page(E.endBill(st));
     // year 60: the handback certificate, signed beside the day-one signature
     if(st.over&&st.over.reason==='handback'&&window.ZMMoney&&ZMMoney.handback){try{const h=await ZMMoney.handback(E.handbackOpts(st));if(h)st.handback=h;}catch(e){console.warn('handback',e);}}
@@ -2531,12 +2539,10 @@ const CAMP={active:false,st:null,
       if(b.stake&&b.stake.returnPct!=null&&b.stake.returnPct<0)b.stake=Object.assign({},b.stake,{returnPct:null});   // the paragraph words a stake still under the money put in
       await CAMP.page(b);}
     if(!out.report||E.isOver(CAMP.st)){await CAMP.end();return;}
-    const bo=E.boardOptions(CAMP.st);   // founder, partners, year, stake value, Zero Mile District (airport_city), the pile: all from era.js
-    let d=null;try{d=await ZMMoney.boardMeeting(bo);}catch(e){console.warn('board',e);}
-    CAMP.st=E.applyBoard(CAMP.st,d||{});CAMP.save();CAMP.play();},
+    CAMP.board();},
   // a new concession: with a save, ask once on paper (ZMMoney.confirmTear) and put the torn-up one in the record
   async fresh(o){const st=CAMP.load();
-    if(st){let ok=!!(o&&o.confirmed);if(!ok)try{ok=window.ZMMoney&&ZMMoney.confirmTear?await ZMMoney.confirmTear(st.parent||'Your company'):confirm(`This tears up ${st.parent||'Your company'}'s concession. Start again?`);}catch(e){console.warn('confirmTear',e);}
+    if(st){let ok=!!(o&&o.confirmed);if(!ok)try{ok=window.ZMMoney&&ZMMoney.confirmTear?await ZMMoney.confirmTear(st.parent||'Your company'):confirm(`This tears up ${(n=>/s$/i.test(n)?n+'’':n+'’s')(st.parent||'Your company')} concession. Start again?`);}catch(e){console.warn('confirmTear',e);}
       if(!ok){menu('concession');return;}
       CAMP.record(st,'torn');try{localStorage.removeItem('zm_campaign');}catch(e){}CAMP.st=null;}
     CAMP.newGame();},
@@ -2553,7 +2559,7 @@ const CAMP={active:false,st:null,
   wire(){const box=$('#campFile');
     if(box&&window.ZMMoney&&ZMMoney.concessionFile){const st=CAMP.load();
       const old=st?null:CAMP.stale();
-      try{ZMMoney.concessionFile(box,st?CAMP.fileOpts(st):old?{company:old.parent||'Your company',resumable:false,record:CAMP.rec(),onNew:()=>CAMP.fresh({confirmed:true})}:{record:CAMP.rec(),onNew:()=>CAMP.fresh()});}catch(e){console.warn('concessionFile',e);}
+      try{ZMMoney.concessionFile(box,st?CAMP.fileOpts(st):old?{company:old.parent||'Your company',resumable:false,why:(()=>{try{return CAMP.E().resumable(old).why;}catch(e){return 'old';}})(),record:CAMP.rec(),onNew:()=>CAMP.fresh({confirmed:true})}:{record:CAMP.rec(),onNew:()=>CAMP.fresh()});}catch(e){console.warn('concessionFile',e);}
       // with no save the card shows only "Start the concession" (onNew); the contract's null form has no handler, so hand it one
       if(!st){const b=box.querySelector('button');if(b&&!b.onclick)b.onclick=()=>CAMP.fresh();}
       return;}

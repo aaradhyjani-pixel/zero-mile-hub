@@ -1,6 +1,8 @@
-# The 60-year debrief (design/debrief.md)
+# The Black Box: the 60-year debrief (design/debrief.md)
 
-After the handover certificate, or after the step-in notice if the banks took control, the player reads **four pages on the desk** in the Paperwork look. It takes about 8 minutes. The debrief answers the user's own brief: what happened, what made the return, what the player is like at this kind of work, and how a hard-nosed investor would judge the business they built.
+After the handover certificate, or after the step-in notice if the banks took control, the player opens **the Black Box**: four pages on the desk in the Paperwork look. It takes about 10 minutes.
+
+The flight recorder is the right metaphor. After the flight, it tells you what really happened and why, without blame. The debrief answers the user's own brief: what happened, what made the return, what the player is like at this kind of work, and how a hard-nosed investor would judge the business they built.
 
 Rules:
 - Plain words only.
@@ -38,7 +40,7 @@ If the banks took control, page 1 says so first, in red stamp ink, and the retur
 
 **The bold moment:** an ink bar chart, drawn like a ledger in Courier with hatched bars. One or two bars are long and the rest are short. Its plain sentences come straight from the numbers, for example:
 
-> *"Signing Skyward for three routes made 41% of your return."*
+> *"Signing Haversine Airways for three routes made 41% of your return."*
 > *"Building phase 1 lean cost you 9%."*
 > *"Holding London for Lucknow made 7%."*
 
@@ -57,12 +59,12 @@ The page ends with one line in the adviser's hand: *"Two decisions made most of 
 | Ch1 share borrowed | 70% |
 | Ch2 the three construction calls | "pay" for each (the on-time path) |
 | Ch3 opening plan | phased |
-| Ch4 network | two feeders (or anchor, if Kaveri declined) |
+| Ch4 network | two feeders (or anchor, if Plateau Air declined) |
 | Ch4 bird radar | bought |
-| Ch5 Skyward | decline |
+| Ch5 Haversine Airways | decline |
 | Ch5 hold London (in-shift) | let go |
 | Ch6 cure | ask L5 (if the player refused, the counterfactual is to put the money in) |
-| Ch7 Airport City / phase 2 / L5 buyout | reject / wait / don't buy |
+| Ch7 Zero Mile District / phase 2 / L5 buyout | reject / wait / don't buy |
 
 Shift performance (stars, on-time, connections) is one more "decision" with the counterfactual of a **3★ expert shift** (`ops_profiles.expert`). The page can then say *"Your operations cost you 3% against an expert's"*, or *"made 2% more than an expert's"*.
 
@@ -79,7 +81,7 @@ Shift performance (stars, on-time, connections) is one more "decision" with the 
    4. the opening plan
    5. the network
    6. the bird radar
-   7. Skyward
+   7. Haversine Airways
    8. holding London
    9. the crisis cure
    10. the thirty-year plan (the three Ch7 resolutions)
@@ -106,7 +108,7 @@ Shift results enter `simulate()` the way they do now: through `eraOps` (the shif
 ## Page 3 · What happened (your front pages)
 
 **The bold moment:** the player's own seven front pages, laid as a strip of overlapping newspapers across the desk, each at its lead headline. Under each sits one line in the adviser's hand:
-- linking it to the decision that caused it, for example *"Because you anchored Narmada Air"*;
+- linking it to the decision that caused it, for example *"Because you anchored Sutradhar Air"*;
 - the year, and the banks' light at that moment.
 
 Clicking a paper opens it full size; clicking a document in the pile opens that document.
@@ -125,12 +127,12 @@ Seven lines at most. Each is one sentence plus its **evidence in small type**. A
 
 | Line (shown when) | Evidence rule (from `s.decisions[]` and the shift results) | Evidence shown, for example |
 |---|---|---|
-| **A capital allocator.** You put money where it compounded. | Ch7 Airport City or phase 2 has a positive Shapley share, AND dividends were taken only after year 20 | "Built Airport City in 2059 (+6%); took no dividends before 2045." |
+| **A capital allocator.** You put money where it compounded. | Ch7 Zero Mile District or phase 2 has a positive Shapley share, AND dividends were taken only after year 20 | "Built Zero Mile District in 2059 (+6%); took no dividends before 2045." |
 | **An operator.** Your shifts made money. | The shift group's Shapley share is ≥ 0 (at or above the expert) and on-time averaged ≥ 85% | "3★ in 4 of 5 shifts; 91% connections made." |
 | **A risk-taker, and right about it.** | Bid above the median, or borrowed ≥ 72%, or dollar bonds, AND that group's share > 0 | "Bid 34% when 30% would have won; it still made 4%." |
 | **A risk-taker, and it cost you.** | The same choices with a share < 0 | "Dollar bonds: the rupee fell in 2046 and cost 7%." |
 | **Patient.** You paid now for later. | Held London (a cost today), OR committed phase 2 early, AND that share > 0 | "Held London twice at ₹10 cr; kept 11,400 passengers a year off Doha." |
-| **A negotiator.** | Won the bid within 2 points of the median and kept Kaveri's trust ≥ 0.7, OR the AERA appeal won | "Won the concession at 31%, 1 point above the median." |
+| **A negotiator.** | Won the bid within 2 points of the median and kept Plateau Air's trust ≥ 0.7, OR the AERA appeal won | "Won the concession at 31%, 1 point above the median." |
 | **A network builder.** | Ch4 anchor or two feeders, AND the Ch5 three routes, AND connections ≥ 88% | "12 cities × 3 destinations; 6.2 lakh connections a year." |
 | **A crisis leader.** | Ch6 cure chosen (own money or L5), AND the crisis shift ≥ 2★ | "Put in ₹2,400 cr in 2046 and ran the crisis shift at 2★." |
 
@@ -145,9 +147,9 @@ These are from *Zero to One*, chapter 13, "Seeing Green". Each answer is one lin
 | **Engineering:** is your hub 10× better than the alternative? | Your connection time (40 min) against Doha's (60), and the one-stop routes you opened (cities × destinations) |
 | **Timing:** did you build when the traffic came? | Construction slips, widebody stand shortages in Ch5, and the phase 2 timing against demand |
 | **Monopoly:** do you own a big share of a small market first? | Your share of India's connecting passengers in the game's hub market by year 30 (connections ÷ the game's total India–world transfer pool) |
-| **People:** did your partners stay? | Skyward, Narmada and Kaveri still flying at year 60; L5's stake path |
+| **People:** did your partners stay? | Haversine Airways, Sutradhar and Plateau Air still flying at year 60; L5's stake path |
 | **Distribution:** how many cities feed you? | The feeder cities signed (Ch4) and those still feeding at year 60 |
-| **Durability:** will this still be your market in year 60? | Whether the Ch7 Hyderabad rival hub failed to take your banks (the last-mover test) |
+| **Durability:** will this still be your market in year 60? | Whether Kármán Line Ventures' Hyderabad hub failed to take your banks (the last-mover test) |
 | **Secret:** did you act on something few believed? | Whether you built banks and held connections when cutting charges was the obvious move (Ch4, Ch5) |
 
 ---
@@ -160,8 +162,8 @@ Each idea is felt in play first and named only in the debrief. The citations are
 |---|---|---|---|---|
 | **The secret: the network is the moat** (*Zero to One*, ch. 8 "Secrets") | 4–5 | Connections earn money and missed ones go to Doha; routes grow with the connection rate (`growth` in `ch5.applyShift`) | The connection stream: passengers walking to London, or drifting off to "DOHA" | Thiel Q7 (Secret); the Ch5 Shapley bar |
 | **Competition is for losers** (ch. 3–4) | 4 | "Cut charges 30%" brings flights that don't connect, and Dubai matches the cut on the next front page | Traffic goes up while the bill's connections line barely moves; the margin note says so | Page 2's bar for "cut charges" (usually negative); a line on page 4 |
-| **Monopoly characteristics**: network effects, economies of scale, brand (ch. 5) | 4, 5, 7 | Network: more feeders → more routes → more feeders. Scale: phase 2 lowers cost per passenger. Brand: your connection rate is quoted on the front pages and in Skyward's terms | Each front page quotes your record; better records get better route offers | Thiel Q3 (Monopoly) |
-| **Last-mover advantage** (ch. 5) | 7 | Hyderabad opens a rival hub; it takes banks from you only if your network score at year 30 is below a threshold | The Ch7 front page: "Hyderabad's hub struggles to fill its banks", or "takes Narmada's evening bank" | Thiel Q6 (Durability) |
+| **Monopoly characteristics**: network effects, economies of scale, brand (ch. 5) | 4, 5, 7 | Network: more feeders → more routes → more feeders. Scale: phase 2 lowers cost per passenger. Brand: your connection rate is quoted on the front pages and in Haversine's terms | Each front page quotes your record; better records get better route offers | Thiel Q3 (Monopoly) |
+| **Last-mover advantage** (ch. 5) | 7 | Kármán Line Ventures opens a rival hub at Hyderabad; it takes banks from you only if your network score at year 30 is below a threshold | The Ch7 front page: "Kármán Line's Hyderabad hub struggles to fill its banks", or "takes Sutradhar's evening bank" | Thiel Q6 (Durability) |
 | **Definite vs indefinite optimism** (ch. 6) | 7 | Phase 2: commit to a date now, with airlines' letters signed (definite), or wait and see (indefinite). Committing adds routes, because airlines can sell a dated plan | The slip's route count; the handover's route total | A page 4 line ("Patient"); page 2's phase 2 bar |
 | **The power law** (ch. 7) | debrief | Shapley attribution over the decisions | One or two long bars; most short | Page 2's closing line |
 | **"Every moment in business happens only once"** (ch. 1) | 3 | Opening day plays once per concession, with no in-concession replay | Opening day's stars are permanent on every later front page | Page 3's last line |

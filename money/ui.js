@@ -509,6 +509,11 @@ const stepper=(names,i)=>`<div class="steps">${names.map((n,k)=>`<span class="${
 /* ---------- shared paper helpers: the deal desk, the board meeting and later paper screens use these ---------- */
 const H=s=>`<span class="h">${esc(s)}</span>`;               // a handwritten fill-in
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+/* ZMMoney.fmtDate('2039-04-01') → "1 April 2039": dates as people write them (stamps keep "01 APR 2039"). Anything else passes through. */
+M.fmtDate=function(v){if(v==null||v==='')return '';if(v instanceof Date)return isFinite(v)?`${v.getDate()} ${MONTHS[v.getMonth()]} ${v.getFullYear()}`:'';
+  const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(v));return m?`${+m[3]} ${MONTHS[+m[2]-1]} ${m[1]}`:String(v);};
+// any ISO day inside a sentence, rewritten the same way
+const hd=v=>typeof v==='string'?v.replace(/\b(\d{4})-(\d{2})-(\d{2})\b/g,(_,y,mo,d)=>`${+d} ${MONTHS[+mo-1]} ${y}`):v;
 const stampDate=d=>{d=d||new Date();return `${String(d.getDate()).padStart(2,'0')} ${MONTHS[d.getMonth()].slice(0,3).toUpperCase()} ${d.getFullYear()}`;};
 /* a red rubber stamp, dated (today unless a date is passed), with the SPV's short name */
 function stampHtml(word,cls,d){return `<div class="zdk-stamp ${cls||''}" aria-label="Stamped: ${esc(word)}"><b>${esc(word)}</b><small>${stampDate(d)} · ${esc(M.cfg.spvShort)}</small></div>`;}
@@ -952,19 +957,17 @@ M.boardMeeting=function(o){o=o||{};loadDeskFonts();return new Promise(res=>{
   });};
 
 /* ---------- income statement (end of a shift, an era, or the concession) ---------- */
-/* opts: {band, title, sections:[{title, rows:[{label, amount, kind:'rev'|'cost'|'total'|'good'|'bad'}]}],
-          hero, compare:[{name, value, me}], compareLabel, moments:[text], cta, cta2}
-   resolves 'cta' or 'cta2' */
-M.incomeStatement=function(o){o=o||{};return new Promise(res=>{
-  const secs=(o.sections||[]).map(s=>`<tr class="h"><td colspan="2">${esc(s.title)}</td></tr>`+s.rows.map(r=>`<tr class="${r.kind==='total'?'t':r.kind==='good'?'g t':r.kind==='bad'?'b t':''}"><td>${esc(r.label)}</td><td class="a">${typeof r.amount==='string'?esc(r.amount):fmt(r.kind==='cost'?-Math.abs(r.amount):r.amount)}</td></tr>`).join('')).join('');
-  const mx=Math.max(1,...(o.compare||[]).map(c=>c.value));
-  const sh=open(`<div class="band"><span>${esc(o.band||'Income statement')}</span><span>${esc(M.cfg.spvShort)}</span></div><div class="in"><h1>${esc(o.title||'The numbers')}</h1>
-   ${o.hero?`<div class="zmm-hero">${o.hero}</div>`:''}
-   <table class="zmm-is">${secs}</table>
-   ${o.compare&&o.compare.length?`<h2>${esc(o.compareLabel||'How much of each rupee each airport keeps')}</h2>${o.compare.map(c=>`<div class="zmm-cmp ${c.me?'me':''}"><span>${esc(c.name)}</span><div class="bar"><i style="width:${c.value/mx*100}%"></i></div><span class="mono">${c.value}%</span></div>`).join('')}`:''}
-   ${o.moments&&o.moments.length?`<h2>The most expensive moments</h2><ul style="color:var(--ink-2);padding-left:18px">${o.moments.map(m=>`<li>${esc(m)}</li>`).join('')}</ul>`:''}
-   <div class="zmm-row"><button class="zmm-go" id="zmmI1">${esc(o.cta||'Continue')}</button>${o.cta2?`<button class="zmm-ghost" id="zmmI2">${esc(o.cta2)}</button>`:''}</div></div>`);
-  sh.querySelector('#zmmI1').onclick=()=>{close();res('cta');};const b2=sh.querySelector('#zmmI2');if(b2)b2.onclick=()=>{close();res('cta2');};});};
+/* ZMMoney.incomeStatement(opts) → Promise<'cta'|'cta2'>: kept for old callers. It is a wrapper around ZMMoney.bill, so the
+   old dark yellow-banded sheet can never appear again. opts: {band, title, hero (HTML; its text becomes the lead),
+   sections:[{title, rows:[{label, amount (number or string), kind:'rev'|'cost'|'total'|'good'|'bad', period?}]}],
+   compare:[{name, value, me}], compareLabel, moments:[text], cta, cta2}, plus any bill() field (paragraph, cover, stake, margin, year). */
+M.incomeStatement=function(o){o=o||{};const txt=h=>{const d=document.createElement('div');d.innerHTML=String(h||'');return d.textContent.replace(/\s+/g,' ').trim();};
+  const table=[];for(const sc of o.sections||[]){if(sc.title)table.push({head:sc.title});
+    for(const r of sc.rows||[])table.push(typeof r.amount==='string'?{label:r.label,text:r.amount,kind:r.kind,period:r.period}:{label:r.label,cr:+r.amount,kind:r.kind,period:r.period});}
+  if(o.compare&&o.compare.length){table.push({head:o.compareLabel||'How much of each rupee each airport keeps'});for(const c of o.compare)table.push({label:c.name,text:c.value+'%',me:c.me});}
+  const B={head:o.band,title:o.title,lead:o.hero?txt(o.hero):undefined,table,list:o.moments&&o.moments.length?{title:'The most expensive moments',items:o.moments}:null,cta:o.cta||'Continue',cta2:o.cta2};
+  for(const k of ['paragraph','cover','stake','margin','adviser','year','page','pile'])if(o[k]!=null)B[k]=o[k];
+  return M.bill(Object.assign(B,o.bill||{})).then(r=>r||'cta');};
 
 /* ---------- handback (year 60): the handover certificate, on duty paper ----------
    The concession ends. VSIAL hands the airport back to AAI and the State. The certificate records sixty years in plain
@@ -1353,23 +1356,26 @@ const CSS5=`
 .z5-tag{position:absolute;left:0;top:0;width:0;height:0;will-change:transform;--cx:14px;--cy:-74px}
 .z5-tag[hidden]{display:none}
 .z5-tag .an{position:absolute;left:-6px;top:-6px;width:12px;height:12px;border-radius:50%;background:#c22a2e;box-shadow:0 0 0 2px #fcfcf9,0 1px 4px rgba(0,0,0,.6);pointer-events:auto;cursor:pointer}
-.z5-tag .th{position:absolute;left:0;top:0;width:var(--tl,0);height:1.5px;margin-top:-.75px;background:rgba(252,252,249,.85);transform:rotate(var(--ta,0rad));transform-origin:0 50%;transition:opacity .25s}
-.z5-tag button{position:absolute;left:0;top:0;width:120px;box-sizing:border-box;padding:8px 9px 7px 10px;text-align:left;background:#fcfcf9;color:#1d2024;pointer-events:auto;cursor:pointer;transform:translate(var(--cx),var(--cy)) rotate(-1.5deg);box-shadow:0 6px 12px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.4);transition:opacity .25s}
-.z5-tag:not(.open) button,.z5-tag:not(.open) .th{opacity:0;pointer-events:none}
+.z5-tag .th{position:absolute;left:0;top:0;width:var(--tl,0);height:1.5px;margin-top:-.75px;background:rgba(252,252,249,.8);transform:rotate(var(--ta,0rad));transform-origin:0 50%}
+/* folded: the card shrinks to its first line, off the airfield, joined to the pin by the thread; open: the whole card, in the same place */
+.z5-tag button{position:absolute;left:0;top:0;width:150px;box-sizing:border-box;padding:5px 8px 4px 9px;text-align:left;background:#fcfcf9;color:#1d2024;pointer-events:auto;cursor:pointer;transform:translate(var(--cx),var(--cy)) rotate(-1deg);box-shadow:0 4px 10px rgba(0,0,0,.4),0 1px 2px rgba(0,0,0,.4)}
+.z5-tag b{display:block;font-family:var(--ft);font-weight:700;font-size:10.5px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.z5-tag span{display:none;font-family:var(--fh);font-size:13px;line-height:1.18;color:#2a2d31;margin-top:3px}
+.z5-tag.open button{padding:8px 9px 7px 10px;box-shadow:0 6px 12px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.4)}
+.z5-tag.open b{white-space:normal}.z5-tag.open span{display:block}
+.z5-tag.nobox button,.z5-tag.nobox .th{display:none}
 .z5-tag button:hover b{color:var(--zr)}
-.z5-tag b{display:block;font-family:var(--ft);font-weight:700;font-size:10.5px;line-height:1.2;margin-bottom:2px}
-.z5-tag span{display:block;font-family:var(--fh);font-size:13px;line-height:1.18;color:#2a2d31}
 .z5-tag.flash .an{animation:z5Flash .5s ease-in-out 3}
 @keyframes z5Flash{50%{transform:scale(1.9);box-shadow:0 0 0 3px #fcfcf9,0 0 10px 4px rgba(194,42,46,.8)}}
 .z5-tag.pin button{animation:z5Pin .32s cubic-bezier(.3,1.5,.5,1) both}
-@keyframes z5Pin{from{opacity:0;transform:translate(var(--cx),var(--cy)) rotate(-1.5deg) translateY(-14px) scale(1.25)}to{opacity:1;transform:translate(var(--cx),var(--cy)) rotate(-1.5deg)}}
+@keyframes z5Pin{from{opacity:0;transform:translate(var(--cx),var(--cy)) rotate(-1deg) translateY(-10px) scale(1.15)}to{opacity:1;transform:translate(var(--cx),var(--cy)) rotate(-1deg)}}
 /* a document from the pile, read-only */
 #z5Doc{position:absolute;inset:0;z-index:34;display:flex;align-items:center;justify-content:center;background:rgba(6,9,11,.5)}
 #z5Doc[hidden]{display:none}
 .z5-rd{position:relative;width:min(500px,calc(100% - 48px));box-sizing:border-box;padding:28px 34px 22px;background:var(--zp);transform:rotate(.6deg);box-shadow:0 22px 48px rgba(0,0,0,.4),0 2px 6px rgba(0,0,0,.2);overflow:hidden}
-.z5-rd h2{font-family:var(--fd);font-weight:700;font-size:26px;line-height:1.12;margin:0 0 10px;padding-right:120px}
+.z5-rd h2{font-family:var(--fd);font-weight:700;font-size:26px;line-height:1.12;margin:0 0 10px}
 .z5-rd p{font-family:var(--ft);font-size:14px;line-height:1.6;margin:0 0 12px}
-.z5-rd .zdk-stamp{top:58px;right:24px;--tf:rotate(-9deg) scale(.7);transform-origin:right top}
+.z5-rd .zdk-stamp{top:auto;bottom:16px;right:24px;--tf:rotate(-9deg) scale(.62);transform-origin:right bottom}
 .z5-rd .zdk-q{padding-left:0}
 /* connection floaters and the connections line under the money chip (the game's night look) */
 .zmm-f.cx{color:#7dffb4;background:rgba(10,40,24,.78);border:1px solid rgba(58,208,127,.5);font-size:12.5px}
@@ -1388,6 +1394,11 @@ const CSS5=`
 .z5-hl b{display:block;font-family:var(--ft);font-weight:700;font-size:19px;margin:2px 0 10px}
 .z5-hl .zdk-dscr{margin:0 0 4px;max-width:420px}
 .z5-hl .zdk-dscr .lb{font-family:var(--fh);color:#3b3f44}
+.z5-bill .zdk-tab tr.z5-th td{padding:16px 0 4px;border-top:0;font-family:var(--fd);font-weight:700;font-size:15px}
+.z5-bill .zdk-tab small.z5-per{display:inline;font-size:11.5px;color:var(--zpe)}
+.z5-bill .zdk-tab tr.z5-kcost .n{color:#5a2b2b}.z5-bill .zdk-tab tr.z5-ktotal td{font-weight:700}.z5-bill .zdk-tab tr.z5-kgood .n{color:var(--zg)}.z5-bill .zdk-tab tr.z5-kbad .n{color:var(--zr)}
+.z5-bill .zdk-tab tr.z5-me td{font-weight:700;color:var(--zi)}
+.z5 .z5-lh{font-family:var(--fd);font-weight:700;font-size:15px;margin:18px 0 4px}.z5 .z5-ul{margin:0;padding-left:18px;font-family:var(--ft);font-size:13.5px;line-height:1.55}
 .z5 .z5-stake{font-family:var(--ft);font-size:14px;line-height:1.55;margin:16px 0 0;color:#1d2024}
 .z5 .z5-ld{font-weight:700;font-size:15.5px;color:#1d2024}
 .z5-sgn{margin:14px 0 0;display:flex;align-items:flex-end;gap:14px;font-family:var(--ft);font-size:12.5px;color:#3b3f44}.z5-sgn .ink .h{font-size:26px;color:#1d3a8a}
@@ -1413,7 +1424,7 @@ const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
 const dayOf=v=>{if(!v)return undefined;const d=new Date(/^\d{4}-\d{2}-\d{2}$/.test(v)?v+'T12:00:00':v);return isFinite(d)?d:undefined;};
 const isoDay=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const longDay=d=>`${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
-const paras=t=>(Array.isArray(t)?t:String(t||'').split(/\n\n+/)).filter(Boolean);
+const paras=t=>(Array.isArray(t)?t:String(t||'').split(/\n\n+/)).filter(Boolean).map(hd);
 
 /* the pile: documents the player has already signed, so tags and briefing lines can open them.
    ZMMoney.setPile(state.docs) once per chapter; each doc {id, title, year, kind, summary, stamp?} */
@@ -1452,7 +1463,7 @@ M.frontPage=function(o){o=o||{};return new Promise(res=>{
   const cols=(o.columns||[]).slice(0,2),ph=o.photo||{};
   const sh=desk5('z5-fp',`<div class="z5-stage"><article class="z5-np" id="z5Np" aria-label="${esc(o.masthead||'The Zero Mile Times')}">
     <header class="z5-mast"><div class="z5-ear">${esc(o.edition||'Nagpur edition')}<br>Late city</div><h1>${esc(o.masthead||'The Zero Mile Times')}</h1><div class="z5-ear r">${esc(o.price||'')}<br>Weather: clear</div></header>
-    <div class="z5-dl"><span>${esc(o.dateLine||'')}</span><span>${esc(M.cfg.airportName)} and the world</span></div>
+    <div class="z5-dl"><span>${esc(hd(o.dateLine||''))}</span><span>${esc(M.cfg.airportName)} and the world</span></div>
     <h2 class="z5-lead">${esc(o.lead||'')}</h2>${o.deck?`<p class="z5-deck">${esc(o.deck)}</p>`:''}
     <div class="z5-body"><figure class="z5-photo"><div class="ph">${photoSvg(ph.kind)}</div>${ph.caption?`<figcaption>${esc(ph.caption)}</figcaption>`:''}</figure>
       ${o.sub?`<section class="z5-sub"><h3>${esc(o.sub.head)}</h3><div class="z5-cc">${paras(o.sub.body).map(p=>`<p class="z5-txt">${esc(p)}</p>`).join('')}</div></section>`:''}
@@ -1474,7 +1485,7 @@ M.frontPage=function(o){o=o||{};return new Promise(res=>{
    One document; the adviser's slip shows the ticked choice's one big number; signing brings down the red stamp. */
 M.decision=function(o){o=o||{};return new Promise(res=>{
   const ch=o.choices||[],pa=o.parties||{},sg=Object.assign({hand:{font:'La Belle Aurore',size:30,adv:.46,slant:2,rot:-4,ink:'#14161a',weight:.2,flourish:'under'}},pa.signatory||{});
-  const pile=o.pile||PILE,now=new Date(),sd=dayOf(o.date),dateTxt=sd?longDay(sd):(o.date||longDay(now));
+  const pile=o.pile||PILE,now=new Date(),sd=dayOf(o.date),dateTxt=sd?longDay(sd):(hd(o.date)||longDay(now));
   const docName={'route-agreement':'Route agreement','capital-budget':'Capital budget','order':'Regulator\'s order','letter':'Letter'}[o.docType]||'Agreement';
   let pick=null,done=false;
   const sh=desk5('z5-dec',`<header class="zdk-top"><div class="zdk-mark">${vsiLogo(30)}<span>${esc(M.cfg.airportName)}</span></div></header>
@@ -1523,7 +1534,7 @@ M.briefing=function(o){o=o||{};mount5();return new Promise(res=>{
   const el=document.createElement('aside');el.className='z5v z5-brief';el.id='z5Brief';el.setAttribute('role','note');el.setAttribute('aria-label',o.title||'Handover');
   const sec=Math.max(0,+(o.autoStartSec==null?6:o.autoStartSec));
   el.innerHTML=`<i class="z5-pin" aria-hidden="true"></i><div class="z5-pad" style="clip-path:polygon(${pts.join(',')})">
-    <header><b>${esc(o.title||'Duty manager’s handover')}</b><span>${esc(o.date||'')}</span></header>
+    <header><b>${esc(o.title||'Duty manager’s handover')}</b><span>${esc(hd(o.date||''))}</span></header>
     <ol>${(o.lines||[]).slice(0,3).map(l=>`<li><span class="h">${esc(l.text)}</span>${ref(l.docId!=null?l.docId:l.doc,l.ref)}</li>`).join('')}</ol>
     ${o.watch?`<div class="z5-watch"><small>The one thing to watch</small><span>${esc(o.watch)}</span></div>`:''}
     <footer><button id="z5Go">Start the shift</button><span id="z5Cd"></span></footer></div>`;
@@ -1554,35 +1565,76 @@ M.openDoc=function(doc){mount5();if(typeof doc==='string')doc=findDoc(doc)||{tit
 });};
 
 /* paper tags on the map: ZMMoney.tag(id, {doc, line, docId}) creates one; ZMMoney.tagAt(id, sx, sy) puts its pin on a
-   screen point relative to #app (call every frame); ZMMoney.tagRemove(id). Clicking a tag opens its document. */
+   screen point relative to #app (call every frame); ZMMoney.tagRemove(id). Clicking a tag opens its document.
+   A tag starts folded: the pin on the aircraft, a thread, and the card's first line. Hovering or clicking opens the whole card.
+   Folded or open, the card sits outside every rectangle from ZMMoney.tagAvoid(rects) (the runways and the terminal), outside
+   the HUD panels and outside the other tags; if no such place exists, only the pin shows (and a click opens the document). */
 const TAGS=new Map();
 function tagLayer(){mount5();let l=$('#z5Tags');if(!l){const app=$('#app');if(!app)return null;l=document.createElement('div');l.id='z5Tags';l.className='z5v';
   const fl=$('#zmmFloat');if(fl)app.insertBefore(l,fl);else app.appendChild(l);}return l;}   // under the floaters
-/* a tag is open (card showing) for 8 s after it is pinned or flashed, then it folds to its pin; hovering or clicking the
-   pin opens it again. ZMMoney.tagAt(id, sx, sy, cx?, cy?): cx, cy put the card's top-left relative to the pin (the game
-   picks a side away from the action and clear of its panels); without them the card sits up and to the right. */
-const TAG_OPEN_MS=8000;
-function tagOpen(t,ms){t.classList.add('open');clearTimeout(t._fold);if(ms!==0)t._fold=setTimeout(()=>{if(!t.matches(':hover'))t.classList.remove('open');},ms||TAG_OPEN_MS);}
+function tagOpen(t,ms){t.classList.add('open');clearTimeout(t._fold);if(ms!==0&&ms!=null)t._fold=setTimeout(()=>{if(!t.matches(':hover'))t.classList.remove('open');},ms);}
+function tagFold(t){clearTimeout(t._fold);t.classList.remove('open');}
+/* the rectangles to keep clear, relative to #app. Any of {l,t,r,b} | {left,top,right,bottom} | {x,y,w,h} | {x0,y0,x1,y1} | [x,y,w,h];
+   kind:'region' (or opt.region) is the free map area the cards must stay inside. */
+const nrect=q=>{if(!q)return null;if(Array.isArray(q))q={x:q[0],y:q[1],w:q[2],h:q[3]};
+  const l=q.l??q.left??q.x0??q.x,t=q.t??q.top??q.y0??q.y,r=q.r??q.right??q.x1??(q.w!=null&&l!=null?l+q.w:q.width!=null?l+q.width:null),b=q.b??q.bottom??q.y1??(q.h!=null&&t!=null?t+q.h:q.height!=null?t+q.height:null);
+  return [l,t,r,b].every(v=>isFinite(v))?{l:Math.min(l,r),t:Math.min(t,b),r:Math.max(l,r),b:Math.max(t,b),kind:q.kind}:null;};
+let AVOID=[],FREE=null,HUDC={at:-1e9,rs:[],W:0,H:0};
+M.tagAvoid=function(rects,opt){const rs=(rects||[]).map(nrect).filter(Boolean);FREE=nrect(opt&&opt.region)||(rs.find(r=>r.kind==='region')||null);const n=AVOID.length;AVOID=rs.filter(r=>r.kind!=='region');if(n!==AVOID.length)for(const [,t] of TAGS)t._box=null;return AVOID.length;};   // new shapes (a view change): place every card again
+// the HUD's own panels, read from the page (at most every 200 ms)
+const HUD_SEL=['#top','#rail','#wave','#zoomBox','#toast','#vipBanner.on','#guard.on','#fogTag','#stopBtn','#kiteChip','#wedChip','#delegChip','#delegLT.on','#camLbl','#pop','#z5Brief','#zmmChip'];
+function hudRects(){const now=performance.now();if(now-HUDC.at<200)return HUDC;const app=$('#app');if(!app)return HUDC;const a=app.getBoundingClientRect(),rs=[];
+  for(const s of HUD_SEL){const e=document.querySelector(s);if(!e||e.hidden)continue;const r=e.getBoundingClientRect();if(r.width<2||r.height<2)continue;const cs=getComputedStyle(e);if(cs.display==='none'||cs.visibility==='hidden'||+cs.opacity<0.05)continue;
+    rs.push({l:r.left-a.left,t:r.top-a.top,r:r.right-a.left,b:r.bottom-a.top});}
+  HUDC={at:now,rs,W:a.width,H:a.height};return HUDC;}
+const hitR=(a,b,p)=>a.l<b.r+p&&a.r>b.l-p&&a.t<b.b+p&&a.b>b.t-p;
+function tagSize(t){const b=t.querySelector('button');if(!b)return{w:150,h:60,hf:22};
+  if(!t._sz||!t._sz.h){const was=t.classList.contains('open');t.classList.add('open');const h=b.offsetHeight;if(!was)t.classList.remove('open');const hf=was?0:b.offsetHeight;
+    if(h)t._sz={w:b.offsetWidth||150,h,hf:hf||22};else return{w:150,h:60,hf:22};}
+  return t._sz;}
+function tagPlace(t,sx,sy,cx,cy){const hc=hudRects(),{w,h}=tagSize(t),M4=4;
+  const R=FREE||{l:0,t:0,r:hc.W,b:hc.H};
+  const others=[];for(const [,o] of TAGS){if(o===t||o.hidden)continue;if(o._box)others.push(o._box);if(o._pin)others.push({l:o._pin.x-9,t:o._pin.y-9,r:o._pin.x+9,b:o._pin.y+9});}
+  const ok=bx=>bx.l>=R.l+M4&&bx.r<=R.r-M4&&bx.t>=R.t+M4&&bx.b<=R.b-M4&&!AVOID.some(q=>hitR(bx,q,8))&&!hc.rs.some(q=>hitR(bx,q,6))&&!others.some(q=>hitR(bx,q,6))&&!(sx>bx.l-9&&sx<bx.r+9&&sy>bx.t-9&&sy<bx.b+9);
+  const box=(l,tp)=>({l,t:tp,r:l+w,b:tp+h});
+  // keep the card where it is while that place is still clear and the pin is not far off: a card that jumps is unreadable
+  const pv=t._box&&box(t._box.l,t._box.t);if(pv&&ok(pv)&&Math.hypot((pv.l+pv.r)/2-sx,(pv.t+pv.b)/2-sy)<520)return pv;
+  const cands=[];if(isFinite(cx)&&isFinite(cy))cands.push(box(sx+cx,sy+cy));
+  const G=16,cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+  if(AVOID.length){const F={l:Math.min(...AVOID.map(q=>q.l)),t:Math.min(...AVOID.map(q=>q.t)),r:Math.max(...AVOID.map(q=>q.r)),b:Math.max(...AVOID.map(q=>q.b))};
+    const yc=cl(sy-h/2,R.t+M4,R.b-h-M4),xc=cl(sx-w/2,R.l+M4,R.r-w-M4),side=[box(F.r+G,yc),box(F.l-G-w,yc),box(xc,F.t-G-h),box(xc,F.b+G)];
+    side.sort((u,v)=>Math.hypot((u.l+u.r)/2-sx,(u.t+u.b)/2-sy)-Math.hypot((v.l+v.r)/2-sx,(v.t+v.b)/2-sy));
+    for(const c of side){cands.push(c);for(let k=1;k<6;k++){cands.push(box(c.l,c.t+k*(h+8)));cands.push(box(c.l,c.t-k*(h+8)));}}}
+  for(let rad=36;rad<=760;rad+=36)for(let k=0;k<16;k++){const an=k/16*Math.PI*2-Math.PI/4,x=sx+Math.cos(an)*rad,y=sy+Math.sin(an)*rad;cands.push(box(x-(Math.cos(an)<0?w:0),y-(Math.sin(an)<0?h:0)));}
+  for(const c of cands)if(ok(c))return c;
+  return null;}
 let tagN=0;
 M.tag=function(id,o){
   if(typeof id==='number'){const x=id,y=o,title=arguments[2],line=arguments[3],docId=arguments[4],k='t'+(++tagN);
     const el=M.tag(k,{doc:title,line,docId:docId||title});M.tagAt(k,x,y);
     return {el,move:(sx,sy,cx,cy)=>M.tagAt(k,sx,sy,cx,cy),remove:()=>M.tagRemove(k),flash:()=>M.tagFlash(k),
-      size:()=>{const b=el&&el.querySelector('button');return b?{w:b.offsetWidth||120,h:b.offsetHeight||60}:{w:120,h:60};}};}
+      size:()=>{const s=el?tagSize(el):{w:150,h:60};return{w:s.w,h:s.h};}};}
   o=o||{};const l=tagLayer();if(!l)return null;let t=TAGS.get(id);
   if(!t){t=document.createElement('div');t.className='z5-tag'+(reduced()?'':' pin');t.hidden=true;l.appendChild(t);TAGS.set(id,t);
-    t.addEventListener('mouseenter',()=>tagOpen(t,0));t.addEventListener('mouseleave',()=>tagOpen(t,2500));}
-  t.dataset.id=id;t.innerHTML=`<i class="th" aria-hidden="true"></i><button title="Open: ${esc(o.doc||'')}"><b>${esc(o.doc||'')}</b><span>${esc(o.line||'')}</span></button><i class="an" title="${esc(o.doc||'')}"></i>`;
-  t.querySelector('button').onclick=()=>{const d=(o.docId&&findDoc(o.docId))||{title:o.doc,summary:o.line};M.openDoc(d);};
-  t.querySelector('.an').onclick=()=>{if(t.classList.contains('open')){clearTimeout(t._fold);t.classList.remove('open');}else tagOpen(t);};
-  tagOpen(t);
+    t.addEventListener('mouseenter',()=>tagOpen(t,0));t.addEventListener('mouseleave',()=>tagOpen(t,1200));}
+  t.dataset.id=id;t._sz=null;t.innerHTML=`<i class="th" aria-hidden="true"></i><button title="${esc(o.doc||'')}: ${esc(o.line||'')}"><b>${esc(o.doc||'')}</b><span>${esc(hd(o.line||''))}</span></button><i class="an" title="${esc(o.doc||'')}"></i>`;
+  const openDoc=()=>{const d=(o.docId&&findDoc(o.docId))||findDoc(o.doc)||{title:o.doc,summary:o.line};M.openDoc(d);};
+  // folded: a click opens the card; open: a click opens the document
+  t.querySelector('button').onclick=()=>{if(!t.classList.contains('open')){tagOpen(t,6000);return;}openDoc();};
+  t.querySelector('.an').onclick=()=>{if(t.classList.contains('nobox')){openDoc();return;}if(t.classList.contains('open'))tagFold(t);else tagOpen(t,6000);};
+  tagFold(t);
   return t;};
-M.tagAt=function(id,sx,sy,cx,cy){const t=TAGS.get(id);if(!t)return;if(!isFinite(sx)||!isFinite(sy)){t.hidden=true;return;}t.hidden=false;t.style.transform=`translate(${Math.round(sx)}px,${Math.round(sy)}px)`;
-  if(isFinite(cx)&&isFinite(cy)&&(t._cx!==Math.round(cx)||t._cy!==Math.round(cy))){t._cx=Math.round(cx);t._cy=Math.round(cy);const b=t.querySelector('button'),w=b?b.offsetWidth:120,h=b?b.offsetHeight:60;
-    t.style.setProperty('--cx',t._cx+'px');t.style.setProperty('--cy',t._cy+'px');
-    const ex=t._cx+w/2,ey=t._cy+h/2;t.style.setProperty('--tl',Math.hypot(ex,ey).toFixed(1)+'px');t.style.setProperty('--ta',Math.atan2(ey,ex).toFixed(3)+'rad');}};
-M.tagFlash=function(id){const t=TAGS.get(id);if(!t)return;tagOpen(t);t.classList.remove('flash');void t.offsetWidth;t.classList.add('flash');};
+M.tagAt=function(id,sx,sy,cx,cy){const t=TAGS.get(id);if(!t)return;if(!isFinite(sx)||!isFinite(sy)){t.hidden=true;t._pin=null;return;}t.hidden=false;
+  t.style.transform=`translate(${Math.round(sx)}px,${Math.round(sy)}px)`;t._pin={x:sx,y:sy};
+  const bx=tagPlace(t,sx,sy,cx,cy);t._box=bx;t.classList.toggle('nobox',!bx);if(!bx)return;
+  const rx=Math.round(bx.l-sx),ry=Math.round(bx.t-sy);
+  if(t._cx!==rx||t._cy!==ry){t._cx=rx;t._cy=ry;t.style.setProperty('--cx',rx+'px');t.style.setProperty('--cy',ry+'px');}
+  // the thread runs from the pin to the nearest point of the card's first line
+  const sz=tagSize(t),ex=Math.max(rx,Math.min(rx+sz.w,0)),ey=Math.max(ry,Math.min(ry+sz.hf,0));
+  t.style.setProperty('--tl',Math.hypot(ex,ey).toFixed(1)+'px');t.style.setProperty('--ta',Math.atan2(ey,ex).toFixed(3)+'rad');};
+M.tagFlash=function(id){const t=TAGS.get(id);if(!t)return;t.classList.remove('flash');void t.offsetWidth;t.classList.add('flash');};
 M.tagOpen=function(id){const t=TAGS.get(id);return !!(t&&t.classList.contains('open'));};
+M.tagBox=function(id){const t=TAGS.get(id);return t&&!t.hidden&&t._box?Object.assign({},t._box):null;};
 M.tagRemove=function(id){const t=TAGS.get(id);if(t){clearTimeout(t._fold);t.remove();TAGS.delete(id);}};
 M.tagClear=function(){for(const id of [...TAGS.keys()])M.tagRemove(id);};
 
@@ -1598,7 +1650,9 @@ M.connFloat=function(sx,sy,d){M.mount();d=d||{};const fl=$('#zmmFloat');if(!fl||
   const o={x:sx,y:sy,t:now,miss,n:miss?+d.missed||0:+d.made||0,cr:d.cr!=null?+d.cr:null,rival:d.rival};
   const e=document.createElement('div');e.className='zmm-f '+(miss?'mx':'cx');e.style.left=sx+'px';e.style.top=sy+'px';e.textContent=txt(o);fl.appendChild(e);o.el=e;clive.push(o);setTimeout(()=>e.remove(),1850);};
 /* ZMMoney.setConnections({made, missed}): the one line under the money chip. From then on it replaces the rate line. */
-M.setConnections=function(o){o=o||{};M.mount();let c=$('#zmmChip');if(!c){buildChip();c=$('#zmmChip');if(!c)return;}
+M.setConnections=function(o){M.mount();let c=$('#zmmChip');
+  if(o==null){if(c&&c.classList.contains('cx')){c.classList.remove('cx');c.querySelector('.r').textContent='';c.title='';}return;}   // the shift is over: the rate line comes back on the next setDay
+  if(!c){buildChip();c=$('#zmmChip');if(!c)return;}
   c.classList.add('cx');c.querySelector('.r').innerHTML=`<b>${nIN(+o.made||0)}</b> connections · <i>${nIN(+o.missed||0)}</i> missed`;
   c.title='Money made so far this shift. Under it: passengers who made their onward flight, and those who missed it.';};
 
@@ -1609,25 +1663,29 @@ M.setConnections=function(o){o=o||{};M.mount();let c=$('#zmmChip');if(!c){buildC
 M.bill=function(o){o=o||{};return new Promise(res=>{
   const cv=o.cover||{},r=+cv.ratio,stk=o.stake||{},pile=o.pile||PILE;
   const yr=o.year!=null?String(o.year):'';
-  const row=t=>t.made!=null||t.missed!=null?`<tr><td>${esc(t.label)}</td><td class="n">${nIN(+t.made||0)} made · <i>${nIN(+t.missed||0)} missed</i></td></tr>`:`<tr><td>${esc(t.label)}</td><td class="n">${fmt(+t.cr)}</td></tr>`;
+  // rows: {label, cr, kind?:'cost'|'total'|'good'|'bad', period?} | {label, made, missed, period?} | {label, text} | {head}. period: "this afternoon", "a year", "2040–43"
+  const lab=t=>`<td>${esc(t.label)}${t.period?` <small class="z5-per">${esc(hd(t.period))}</small>`:''}</td>`;
+  const row=t=>t.head!=null?`<tr class="z5-th"><td colspan="2">${esc(t.head)}</td></tr>`:t.made!=null||t.missed!=null?`<tr>${lab(t)}<td class="n">${nIN(+t.made||0)} made · <i>${nIN(+t.missed||0)} missed</i></td></tr>`
+    :`<tr class="${t.kind?'z5-k'+esc(t.kind):''}${t.me?' z5-me':''}">${lab(t)}<td class="n">${t.text!=null?esc(hd(t.text)):fmt(t.kind==='cost'?-Math.abs(+t.cr):+t.cr)}</td></tr>`;
   // the banks' scale: ₹90 to ₹190 earned per ₹100 due; the banks take control under ₹110 and warn under ₹130 (pencil hatching)
   const pos=isFinite(r)?Math.max(1,Math.min(99,(r-0.9)/1.0*100)):null;
   const lt=cv.light||(isFinite(r)?(r<1.1?'red':r<1.3?'amber':'green'):'');const mood={green:'The banks are relaxed',amber:'The banks are watching closely',red:'The banks are warning you'}[lt]||'';
   const sh=desk5('z5-bill',`<header class="zdk-top"><div class="zdk-mark">${vsiLogo(30)}<span>${esc(M.cfg.airportName)}</span></div></header>
     <div class="zdk-pile" id="zdkPile" aria-label="Documents on file">${pileCards(pile)}</div>
     <main class="zdk-main"><div class="zdk-col"><article class="zdk-doc arrive" id="zdkDoc">
-      <div class="zdk-dh">${vsiLogo(22)}<span>${esc(M.cfg.spvShort)} · Annual report${yr?' '+esc(yr):''}</span><span class="dt">page ${esc(o.page||7)}</span></div>
+      <div class="zdk-dh">${vsiLogo(22)}<span>${o.head?esc(o.head):esc(M.cfg.spvShort)+' · Annual report'+(yr?' '+esc(yr):'')}</span><span class="dt">page ${esc(o.page||7)}</span></div>
       <h2>${esc(o.title||'The year in one page')}</h2>
-      ${o.lead?`<p class="t z5-ld">${esc(o.lead)}</p>`:''}
+      ${o.lead?`<p class="t z5-ld">${esc(hd(o.lead))}</p>`:''}
       ${paras(o.paragraph).map(p=>`<p class="t">${esc(p)}</p>`).join('')}
       <table class="zdk-tab">${(o.table||[]).map(row).join('')}</table>
+      ${o.list&&o.list.items&&o.list.items.length?`<h3 class="z5-lh">${esc(o.list.title||'')}</h3><ul class="z5-ul">${o.list.items.map(x=>`<li>${esc(hd(x))}</li>`).join('')}</ul>`:''}
       ${cv.words?`<div class="z5-hl"><small>Can the airport pay the banks?${cv.years?` Hardest year, ${esc(cv.years)}`:''}</small><b>${esc(cv.words)}</b>${pos!=null?`<div class="zdk-dscr"><div class="sc"><i class="a"></i><i class="b"></i><i class="c"></i><span style="left:${pos}%"></span></div><div class="lb"><span style="left:0">the banks take control</span><span style="right:0">${esc(mood)}</span></div></div>`:''}</div>`:''}
       ${stk.words?`<p class="z5-stake">${esc(stk.words)}</p>`:stk.pct!=null?`<p class="z5-stake">Your company owns ${esc(stk.pct)}% of ${esc(M.cfg.spvShort)}${stk.valueCr!=null?`, worth about ${fmt(+stk.valueCr)}`:''}.</p>`:''}
       ${o.signed?`<div class="z5-sgn"><div class="ink">${H(o.signed.name)}</div><span><b>${esc(o.signed.name)}</b>, ${esc(o.signed.title||'')}</span></div>`:''}
-      ${o.margin?`<aside class="z5-mn"><svg viewBox="0 0 20 100" preserveAspectRatio="none" aria-hidden="true"><path d="M14 2 C4 4 10 40 2 50 C10 60 4 96 14 98" fill="none" stroke="#3b3f44" stroke-width="1.6" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>${esc(o.margin)}<small>${esc(o.adviser||'your adviser')}</small></aside>`:''}
-    </article><div class="zdk-acts"><button class="zdk-go" id="z5Close">${esc(o.cta||'Close the books')}</button></div></div></main>`);
+      ${o.margin?`<aside class="z5-mn"><svg viewBox="0 0 20 100" preserveAspectRatio="none" aria-hidden="true"><path d="M14 2 C4 4 10 40 2 50 C10 60 4 96 14 98" fill="none" stroke="#3b3f44" stroke-width="1.6" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>${esc(hd(o.margin))}<small>${esc(o.adviser||'your adviser')}</small></aside>`:''}
+    </article><div class="zdk-acts"><button class="zdk-go" id="z5Close">${esc(o.cta||'Close the books')}</button>${o.cta2?`<button class="zdk-q" id="z5Close2">${esc(o.cta2)}</button>`:''}</div></div></main>`);
   wirePile(sh,pile);
-  sh.querySelector('#z5Close').onclick=()=>{close();res();};
+  sh.querySelector('#z5Close').onclick=()=>{close();res('cta');};const c2=sh.querySelector('#z5Close2');if(c2)c2.onclick=()=>{close();res('cta2');};
 });};
 
 /* ZMMoney.whatHappened(opts) → Promise<void>. opts = the card from VSIEra.ch5.applyShift:
@@ -1641,6 +1699,152 @@ M.whatHappened=function(o){o=o||{};return new Promise(res=>{
   </article><div class="z5-acts"><button class="zdk-go" id="z5Back">${esc(o.cta||'Back to the airport')}</button></div></div>`);
   sh.querySelector('#z5Back').onclick=()=>{close();res();};
 });};
+
+/* ============ the concession file: the Concession tab's saved game, tearing it up, and the record of earlier concessions ============
+   ZMMoney.concessionFile(container, opts) renders into the tab (no modal). opts = {company, founder, signature (PNG data URL),
+   signedOn ('YYYY-MM-DD'), year, era, stake:{pct, valueCr}, cover:{words, light}, cashCr, docs:[{id, title, date, stamp, summary}],
+   record:[{company, founder, signature, years, ended:'handback'|'banks'|'torn', returnPct, endedOn}], onContinue(), onNew(), onOpenDoc(doc)}.
+   opts null (or without company): only "Start the concession", which calls opts.onNew({confirmed:false}); pass {onNew, record}
+   to also list the earlier concessions under it. "Start a new concession" asks once (ZMMoney.confirmTear) and calls
+   onNew({confirmed:true}) only after "Tear it up and start again". Returns the root element. */
+const CSSF=`
+.zdk.zcf{height:auto;overflow:visible;margin:8px 0 6px;padding:24px 26px 22px;display:grid;grid-template-columns:minmax(0,1fr) 236px;gap:22px 30px;align-items:start;font-size:14px;line-height:1.45}
+.zcf .zcf-doc{position:relative;background:var(--zp);padding:20px 30px 18px;box-shadow:0 14px 30px rgba(30,40,50,.2),0 1px 3px rgba(30,40,50,.12);transform:rotate(-.25deg)}
+.zcf .zdk-dh{margin-bottom:14px}
+.zcf-who{display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:18px;align-items:end}
+.zcf h2{font-family:var(--fd);font-weight:700;font-size:30px;line-height:1.08;margin:0 0 4px;color:var(--zt)}
+.zcf .zcf-dir{margin:0;font-family:var(--ft);font-size:14px;color:var(--zt);max-width:none}
+.zcf-sig{height:70px;border-bottom:1px solid var(--zt);display:flex;align-items:flex-end;justify-content:center;position:relative}
+.zcf-sig img{max-width:100%;max-height:78px;margin-bottom:-6px}
+.zcf-sig .h{font-size:28px}
+.zcf-sig small{position:absolute;left:0;right:0;top:100%;padding-top:3px;font-family:var(--ft);font-size:11px;color:var(--zpe);text-align:center}
+.zcf .zcf-ln{margin:26px 0 14px;font-family:var(--ft);font-size:13.5px;color:var(--zt);max-width:none}
+.zcf-n3{display:grid;grid-template-columns:1fr 1.35fr 1fr;border-top:1px solid #d9dad5;border-bottom:1px solid #d9dad5}
+.zcf-n3>div{padding:10px 14px 11px 0}.zcf-n3>div+div{padding-left:14px;border-left:1px solid #e3e4df}
+.zcf-n3 small{display:block;font-family:var(--ft);font-size:11.5px;color:var(--zpe)}
+.zcf-n3 b{display:block;font-family:var(--fh);font-weight:700;font-size:30px;line-height:1.15;color:var(--zi)}
+.zcf-n3 .cv b{font-size:21px;line-height:1.25;padding-top:4px}
+.zcf-n3 span{display:block;font-family:var(--ft);font-size:12.5px;color:var(--zt)}
+.zcf-n3 .cv.amber span{color:var(--zw)}.zcf-n3 .cv.red span{color:var(--zr)}.zcf-n3 .cv.green span{color:var(--zg)}
+.zcf .zdk-acts{padding-top:16px}
+.zcf .zcf-st{position:absolute;right:18px;top:64px;--tf:rotate(-8deg) scale(.5);transform-origin:right top;filter:url(#zdkInk)}
+.zcf-pile h3,.zcf-rec h3{margin:2px 0 10px;font-family:var(--fd);font-weight:700;font-size:16px;color:var(--zt)}
+.zcf-pile p{margin:0;font-family:var(--ft);font-size:12px;color:var(--zpe);max-width:none}
+.zcf-cards{position:relative}
+.zcf-cards button{position:relative;display:block;width:100%;height:58px;margin:0 0 6px;padding:8px 12px 0;text-align:left;background:var(--zp);color:var(--zt);box-shadow:0 6px 14px rgba(30,40,50,.16),0 1px 2px rgba(30,40,50,.12);transform:rotate(var(--r));transition:transform .15s}
+.zcf-cards button:hover{transform:rotate(0) translateX(-6px);z-index:2}
+.zcf-cards button small{padding-right:70px}.zcf-cards button b{display:block;font-family:var(--fd);font-weight:700;font-size:13px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.zcf-cards button small{display:block;font-family:var(--ft);font-size:11px;color:var(--zpe)}
+.zcf-cards .zdk-stamp.mini{--tf:rotate(-7deg) scale(.32);right:8px;bottom:5px;top:auto;transform-origin:right bottom}
+.zcf-more{margin-top:16px!important}
+.zcf-rec{grid-column:1/-1;border-top:1px solid #b9bfbb;padding-top:12px}
+.zcf-rec ol{list-style:none;margin:0;padding:0}
+.zcf-rec li{display:grid;grid-template-columns:110px minmax(0,1fr);gap:14px;align-items:center;padding:5px 0;border-bottom:1px dashed #c6cbc7;font-family:var(--ft);font-size:13px;color:var(--zt)}
+.zcf-rec li .sg{height:34px;display:flex;align-items:center}.zcf-rec li .sg img{max-height:36px;max-width:110px}.zcf-rec li .sg .h{font-size:18px}
+.zcf-rec li b{font-family:var(--fd);font-size:14px}.zcf-rec li .end-banks,.zcf-rec li .end-torn{color:var(--zr)}
+.zdk.zcf0{grid-template-columns:1fr}
+.zcf0 .zcf-nil{display:flex;align-items:center;gap:18px}.zcf0 .zcf-nil .zdk-go{margin:0}
+.zcf0 .zcf-nil span{font-family:var(--ft);font-size:13px;color:var(--zpe)}
+/* tearing it up: a memo on the desk, over the menu */
+#zcfTear{position:absolute;inset:0;z-index:36;display:flex;align-items:center;justify-content:center;background:rgba(6,9,11,.62)}
+#zcfTear[hidden]{display:none}
+.zcf-memo{position:relative;width:520px;box-sizing:border-box;padding:24px 36px 22px;background:#fcfcf9;color:#1d2024;box-shadow:0 22px 48px rgba(0,0,0,.45),0 2px 6px rgba(0,0,0,.3);transform:rotate(-.6deg)}
+.zcf-memo h2{font-family:var(--fd);font-weight:700;font-size:25px;line-height:1.2;margin:0 0 12px}
+.zcf-memo p{font-family:var(--ft);font-size:13.5px;line-height:1.6;margin:0 0 6px;color:#1d2024}
+.zcf-memo .zdk-acts{padding-top:16px}
+.zcf-memo.half{position:absolute;left:50%;top:50%;margin:0;pointer-events:none;transition:transform .55s cubic-bezier(.4,0,.6,1),opacity .55s}
+@media (prefers-reduced-motion:reduce){.zcf-cards button,.zcf-memo.half{transition:none}}
+`;
+let cssF=false;
+function mountF(){mount5();if(cssF)return;cssF=true;const st=document.createElement('style');st.id='zmmCssF';st.textContent=CSSF;document.head.appendChild(st);}
+const ENDED={handback:'handed back',banks:'the banks took control',torn:'torn up'};
+const sigOf=(img,name,cls)=>img?`<img src="${esc(img)}" alt="${esc(name?'Signature of '+name:'Signature')}"${cls?` class="${cls}"`:''}>`:H(name||'');
+const pctTxt=v=>v==null||!isFinite(v)?'':(v<0?'−':'')+Math.abs(+v).toFixed(1).replace(/\.0$/,'')+'%';
+function recordHtml(rec){rec=(rec||[]).filter(r=>r&&r.company).slice(-4).reverse();if(!rec.length)return '';
+  return `<section class="zcf-rec" aria-label="Earlier concessions"><h3>Earlier concessions</h3><ol>${rec.map(r=>{const yrs=+r.years;
+    const bits=[`<b>${esc(r.company)}</b>`,esc(r.founder||''),isFinite(yrs)&&yrs>0?`${Math.round(yrs)} year${Math.round(yrs)===1?'':'s'}`:'',`<span class="end-${esc(r.ended||'')}" title="${esc(r.endedOn?M.fmtDate(r.endedOn):'')}">${esc(ENDED[r.ended]||r.ended||'')}${r.endedOn&&/^\d{4}/.test(r.endedOn)?' in '+esc(String(r.endedOn).slice(0,4)):''}</span>`,
+      r.returnPct!=null&&isFinite(r.returnPct)?`returned ${pctTxt(r.returnPct)} a year`:''].filter(Boolean);
+    return `<li><span class="sg">${sigOf(r.signature,r.founder)}</span><span>${bits.join(' · ')}</span></li>`;}).join('')}</ol></section>`;}
+M.concessionFile=function(el,o){mountF();if(typeof el==='string')el=document.querySelector(el);if(!el)return null;
+  const has=o&&o.company;
+  if(!has){const rec=o&&o.record;
+    el.innerHTML=`<div class="zdk z5v zcf zcf0">${INK_DEFS}<div class="zcf-nil"><button class="zdk-go" id="zcfStart">Start the concession</button>${rec&&rec.length?'<span>No concession on file now.</span>':''}</div>${recordHtml(rec)}</div>`;
+    el.querySelector('#zcfStart').onclick=()=>{if(o&&o.onNew)o.onNew({confirmed:false});};return el.firstElementChild;}
+  const yrs=M.cfg.years,st=o.stake||{},cv=o.cover||{},lt=cv.light||'';
+  const mood={green:'The banks are relaxed',amber:'The banks are watching closely',red:'The banks are warning you'}[lt]||'';
+  const docs=(o.docs||[]).filter(Boolean),show=docs.slice(-6),more=docs.length-show.length;
+  el.innerHTML=`<div class="zdk z5v zcf">${INK_DEFS}<article class="zcf-doc" aria-label="Concession file: ${esc(o.company)}">
+    <div class="zdk-dh">${vsiLogo(20)}<span>Concession file · ${esc(M.cfg.spvShort)}</span><span class="dt">${esc(M.cfg.airportName)}</span></div>
+    <div class="zcf-who"><div><h2>${esc(o.company)}</h2><p class="zcf-dir">${esc(o.founder||'')}, director</p></div>
+      <div class="zcf-sig">${sigOf(o.signature,o.founder)}<small>Signed for ${esc(o.company)}</small></div></div>
+    <p class="zcf-ln">${[o.signedOn?'Signed '+esc(M.fmtDate(o.signedOn)):'',o.year!=null?`now year ${esc(o.year)} of ${yrs}`:'',o.era!=null?`era ${esc(o.era)}`:''].filter(Boolean).join(' · ')}</p>
+    <div class="zcf-n3">
+      <div><small>Your stake</small><b>${st.pct!=null?esc(pctTxt(st.pct)):'—'}</b><span>${st.valueCr!=null?'worth about '+fmt(+st.valueCr):''}</span></div>
+      <div class="cv ${esc(lt)}"><small>The banks</small><b>${esc(cv.words||'—')}</b><span>${esc(mood)}</span></div>
+      <div><small>Cash in hand</small><b>${o.cashCr!=null?fmt(+o.cashCr):'—'}</b><span></span></div></div>
+    ${o.signedOn?stampHtml('Executed','zcf-st',dayOf(o.signedOn)):''}
+    <div class="zdk-acts"><button class="zdk-go" id="zcfGo">Continue as ${esc(o.company)}</button><button class="zdk-q" id="zcfNew">Start a new concession</button></div>
+  </article>
+  <aside class="zcf-pile" aria-label="Documents signed so far"><h3>Signed so far</h3>${show.length?`<div class="zcf-cards">${show.map((d,n)=>`<button data-i="${n}" style="--r:${[-1.6,1.2,-.8,1.8,-1.2,.9][n%6]}deg" title="Open: ${esc(d.title||'')}"><b>${esc(d.title||'')}</b><small>${esc(d.date?M.fmtDate(d.date):d.year!=null?String(d.year):'')}</small>${stampHtml(stampFor(d),'mini',dayOf(d.date))}</button>`).join('')}</div>${more>0?`<p class="zcf-more">and ${more} earlier document${more===1?'':'s'}</p>`:''}`:'<p>Nothing signed yet.</p>'}</aside>
+  ${recordHtml(o.record)}</div>`;
+  const root=el.firstElementChild;
+  root.querySelectorAll('.zcf-cards button').forEach(b=>b.onclick=()=>{const d=show[+b.dataset.i];if(o.onOpenDoc)o.onOpenDoc(d);else M.openDoc(d);});
+  root.querySelector('#zcfGo').onclick=()=>{if(o.onContinue)o.onContinue();};
+  root.querySelector('#zcfNew').onclick=()=>{M.confirmTear(o.company).then(ok=>{if(ok&&o.onNew)o.onNew({confirmed:true});});};
+  return root;};
+/* ZMMoney.confirmTear(company) → Promise<boolean>. Asks once, on paper. A second call for the same company within 4 s of a
+   "Tear it up" resolves true without asking again (so a caller that confirms again in onNew never shows it twice). */
+let tearP=null,torn=null;
+M.confirmTear=function(company){mountF();company=company||'Your company';
+  if(torn&&torn.company===company&&performance.now()-torn.at<4000)return Promise.resolve(true);
+  if(tearP)return tearP;
+  tearP=new Promise(res=>{const host=$('#app')||document.body;let v=$('#zcfTear');if(!v){v=document.createElement('div');v.id='zcfTear';v.className='z5v';host.appendChild(v);}
+    v.innerHTML=`<article class="zcf-memo" role="alertdialog" aria-modal="true" aria-labelledby="zcfTq"><div class="zdk-dh">${vsiLogo(20)}<span>${esc(M.cfg.spvShort)} · Concession file</span><span class="dt">${esc(M.fmtDate(new Date()))}</span></div>
+      <h2 id="zcfTq">This tears up ${esc(company)}’s concession. Start again?</h2>
+      <p>The file goes to the record of earlier concessions. The deal desk opens with a blank incorporation form.</p>
+      <div class="zdk-acts"><button class="zdk-go" id="zcfTy">Tear it up and start again</button><button class="zdk-q" id="zcfTn">Keep it</button></div></article>`;
+    v.hidden=false;const memo=v.querySelector('.zcf-memo');
+    const fin=ok=>{document.removeEventListener('keydown',key,true);tearP=null;if(ok)torn={company,at:performance.now()};res(ok);};
+    const keep=()=>{v.hidden=true;v.innerHTML='';fin(false);};
+    const key=e=>{if(e.key==='Escape'){e.stopPropagation();e.preventDefault();keep();}};document.addEventListener('keydown',key,true);
+    v.querySelector('#zcfTn').onclick=keep;v.onclick=e=>{if(e.target===v)keep();};
+    v.querySelector('#zcfTy').onclick=()=>{
+      if(reduced()){v.hidden=true;v.innerHTML='';fin(true);return;}
+      // the memo tears in two along a ragged line, and the halves fall apart
+      const r=memo.getBoundingClientRect();let q=29;const rnd=()=>((q=(q*9301+49297)%233280)/233280);const pts=[];for(let y=0;y<=100;y+=5)pts.push([46+rnd()*8,y]);
+      const L=`polygon(0 0,${pts.map(p=>p[0]+'% '+p[1]+'%').join(',')},0 100%)`,R=`polygon(100% 0,${pts.map(p=>p[0]+'% '+p[1]+'%').join(',')},100% 100%)`;
+      const halves=[L,R].map((cp,i)=>{const h=memo.cloneNode(true);h.classList.add('half');h.removeAttribute('role');h.style.width=r.width+'px';h.style.clipPath=cp;h.style.transform='translate(-50%,-50%) rotate(-.6deg)';v.appendChild(h);return h;});
+      memo.style.visibility='hidden';thud();
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{halves[0].style.transform='translate(calc(-50% - 70px),calc(-50% + 40px)) rotate(-9deg)';halves[1].style.transform='translate(calc(-50% + 70px),calc(-50% + 60px)) rotate(8deg)';halves.forEach(h=>h.style.opacity='0');}));
+      setTimeout(()=>{v.hidden=true;v.innerHTML='';fin(true);},620);};
+    setTimeout(()=>{const k=v.querySelector('#zcfTn');k&&k.focus({preventScroll:true});},30);});
+  return tearP;};
+
+/* sample saved concessions for ?moneymock=file|file0|tear (a sample company: the real file comes from zm_campaign via hub.js) */
+function sampleSig(seed,ink){return new Promise(r=>{const svg=scribble(seed,ink||'#1f3a8a').replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" width="300" height="80" ');
+  const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=600;c.height=160;const g=c.getContext('2d');g.drawImage(im,0,0,600,160);r(c.toDataURL('image/png'));};im.onerror=()=>r('');
+  im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);});}
+function fileMock(kind){return Promise.all([sampleSig(53),sampleSig(71,'#14161a'),sampleSig(97)]).then(([s0,s1,s2])=>{
+  const record=[{company:'Kestrel Airport Holdings',founder:'Vikram Shah',signature:s1,years:60,ended:'handback',returnPct:14.2,endedOn:'2086-10-18'},
+    {company:'Sahyadri Gateway',founder:'Asha Rao',signature:s2,years:23,ended:'banks',returnPct:-3.4,endedOn:'2049-06-30'}];
+  const docs=[{id:'ca',title:'Concession Agreement',date:'2026-10-19',kind:'agreement',summary:'Signed by AAI, the State through MADC, L5 Capital and your company. Sixty years to build and run VSI, then hand it back.'},
+    {id:'lic',title:'Aerodrome licence',date:'2030-11-01',stamp:'Licensed',summary:'DGCA licensed VSI on 1 November 2030. The airport opened the same morning.'},
+    {id:'bm2041',title:'Board minutes, 2041',date:'2041-04-01',kind:'minutes',summary:'Approved: the departure planning system and the retail upgrade. Dividend: ₹900 cr.'}];
+  const host=()=>{let h=document.getElementById('tConc');if(h)return h;h=document.getElementById('zcfHost');if(h)return h;
+    h=document.createElement('div');h.id='zcfHost';(document.getElementById('zcfMount')||document.body).appendChild(h);return h;};
+  M.setPile(docs);
+  const draw=k=>{const h=host();
+    if(k==='file0')return M.concessionFile(h,null);
+    return M.concessionFile(h,{company:'Meridian Infra',founder:'Asha Rao',signature:s0,signedOn:'2026-10-19',year:17,era:3,stake:{pct:64,valueCr:23600},
+      cover:{words:'₹118 earned for every ₹100 due',light:'green'},cashCr:14800,docs,record:kind==='file'||k==='file'?record:record.slice(0,1),
+      onContinue:()=>{window.__zmmResult='continue';},onNew:a=>{window.__zmmResult={onNew:a};
+        // as hub.js does: the torn concession joins the record, then the deal desk opens
+        if(a&&a.confirmed){record.push({company:'Meridian Infra',founder:'Asha Rao',signature:s0,years:17,ended:'torn',returnPct:9.6,endedOn:isoDay(new Date())});
+          M.concessionFile(h,{record,onNew:()=>{}});if(window.__zmmDemo&&window.__zmmDemo.onboarding)window.__zmmDemo.onboarding();}}});};
+  const root=draw(kind);
+  if(kind==='tear')setTimeout(()=>{const b=document.getElementById('zcfNew');if(b)b.click();},300);
+  return root;});}
+M._fileMock=fileMock;
 
 /* sample Chapter 5 data for ?moneymock=frontpage|decision|briefing|tags|bill|card. The real figures come from VSIEra.ch5. */
 const CH5={
@@ -1685,8 +1889,18 @@ function ch5Mock(kind){M.setPile(CH5.docs);const H5=window.HUB;
     const hs=CH5.tags.map(t=>M.tag(0,0,t.doc,t.line));
     // pin each tag to a real aircraft on the map: a widebody at a stand, and one on final approach
     const pickF=(want)=>{const fs=H5&&H5.flights?H5.flights():[];return fs.find(f=>f.sx!=null&&want(f));};
+    // what hub.js does every frame: ZMMoney.tagAvoid(the screen rectangles of every runway and the terminal). Here the 2D map's
+    // scale and offset are read back from two aircraft (world x, y and screen sx, sy), and the shapes come from the page's spec.
+    let spec={};try{spec=JSON.parse(document.getElementById('specData').textContent);}catch(e){}
+    const nums=o=>(String(o||'').match(/-?\d+(\.\d+)?/g)||[]).map(Number);
+    const term=(()=>{let l=1e9,t=1e9,r=-1e9,b=-1e9;for(const c of spec.concourses||[]){const n=nums(c.outline);for(let i=0;i+1<n.length;i+=2){l=Math.min(l,n[i]);r=Math.max(r,n[i]);t=Math.min(t,n[i+1]);b=Math.max(b,n[i+1]);}}return r>l?{l,t,r,b}:null;})();
+    const avoid=()=>{const fs=(H5&&H5.flights?H5.flights():[]).filter(f=>f.sx!=null&&isFinite(f.x));let a=null,bb=null,dx=0;
+      for(const f of fs)for(const g of fs){const d=Math.abs(f.x-g.x);if(d>dx){dx=d;a=f;bb=g;}}if(!a||dx<500)return;
+      const k=(a.sx-bb.sx)/(a.x-bb.x),ox=a.sx-a.x*k,oy=a.sy-a.y*k,R=(x0,y0,x1,y1)=>({l:ox+x0*k,t:oy+y0*k,r:ox+x1*k,b:oy+y1*k});
+      const rs=(H5.RW||[]).map(r=>{const q=R(r.x0,r.y-(r.width||60)/2,r.x1,r.y+(r.width||60)/2);const m=Math.max(0,5-(q.b-q.t)/2);q.t-=m;q.b+=m;q.kind='runway';return q;});
+      if(term){const q=R(term.l,term.t,term.r,term.b);q.kind='terminal';rs.push(q);}window.__zmmAvoid=rs;M.tagAvoid(rs);};
     let fA=null,fB=null;const step=()=>{if(!fA||fA.sx==null)fA=pickF(f=>f.state==='at_gate');if(!fB||fB.sx==null)fB=pickF(f=>f.state==='approach'||f.state==='holding');
-      const app=$('#app').getBoundingClientRect();
+      avoid();const app=$('#app').getBoundingClientRect();
       hs[0].move(fA?fA.sx:app.width*.42,fA?fA.sy:app.height*.5);hs[1].move(fB?fB.sx:app.width*.3,fB?fB.sy:app.height*.25);requestAnimationFrame(step);};
     step();
     const fire=()=>{const r=$('#app').getBoundingClientRect();M.connFloat(r.width*.44,r.height*.56,{made:46,cr:0.4});M.connFloat(r.width*.56,r.height*.36,{missed:18,rival:'Doha'});};
@@ -1697,6 +1911,7 @@ M._ch5Mock=ch5Mock;
 /* ---------- auto-mount, and a mock driver for screenshots: ?moneymock ---------- */
 function boot(){M.mount();if(!/[?&]moneymock\b/.test(location.search))return;
   {const k=(location.search.match(/[?&]moneymock=(frontpage|decision|briefing|tags|bill|card)\b/)||[])[1];if(k){ch5Mock(k).then(r=>{window.__zmmResult=r;});return;}}
+  {const k=(location.search.match(/[?&]moneymock=(file0|file|tear)\b/)||[])[1];if(k){fileMock(k);}}
   M.enable(true);let total=0;const hs=[];
   setInterval(()=>{const d=(Math.random()-0.28)*0.9;total+=d;hs.push(total);M.setDay({total,ratePerHr:total/Math.max(1,hs.length)*60,history:hs});
     const map=$('#map');if(map){const r=map.getBoundingClientRect();M.float(r.width*(0.3+Math.random()*0.4),r.height*(0.3+Math.random()*0.4),d,{label:d>=0?'Landing':'Penalty'});}},700);

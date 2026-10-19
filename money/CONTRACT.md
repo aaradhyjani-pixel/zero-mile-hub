@@ -79,6 +79,24 @@ The defaults are:
   - `moments:[text]`
   - `cta`, `cta2`
 
+- **`ZMMoney.handback(opts)`** is the year-60 handover certificate on duty paper (DESIGN.md §10). The player's day-one signature sits beside an empty pad, and they sign again. A "60 years" stamp and the VSIAL seal come down. Try it with `?moneymock=handback`, or open `money/test_handback.html` (a standalone harness, served from the repo root).
+
+  | opts field | Meaning |
+  |---|---|
+  | `founder`, `parent` | The director's name and their company, as in onboarding. |
+  | `signature` | The PNG data URL from onboarding. It is trimmed to its ink and shown as "Day one". |
+  | `signedOn`, `endsOn` | YYYY-MM-DD from onboarding. The certificate is dated `endsOn`. |
+  | `stakePct`, `stakeValueCr` | The player's stake at handback and what it is worth (₹ cr). The slip shows it only if `stakeValueCr` is set. |
+  | `returnPct` | Your return per year, in %. |
+  | `paxTotalM` | Passengers served over 60 years, in millions. 1,000 or more prints as billions. |
+  | `paidToStateCr` | Total paid to the State and AAI (₹ cr). |
+  | `condition` | `'excellent'`, `'good'` or `'poor'`. AAI's inspector ticks it, in black ink. |
+  | `assets` | Short plain phrases ("four runways", "Zero Mile Tower"), joined into one sentence. |
+  | `owners` | `[{name, pct}]` at handback, with the player's company first. |
+  | `lines` | Plain sentences listed under "The record also shows that". |
+
+  All fields are optional. It resolves `{signature (PNG data URL), signedOn (the real day the player signed, YYYY-MM-DD), handedBackOn (= endsOn)}`, or `null` from "Close".
+
 ## Glossary
 `ZMMoney.terms` holds new glossary entries in hub.js's `GL` format. Merge them into `GL` so `.term[data-k]` links work:
 - aero, nonaero, mtow, udf, aera, rab, till, trueup, dscr, stepin, sla, ebitda, irr, spv, concession

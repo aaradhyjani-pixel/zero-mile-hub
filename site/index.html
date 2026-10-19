@@ -16223,6 +16223,8 @@ M.onboarding=function(opts){opts=opts||{};
     const ok=()=>{const a=co.value.trim(),b=me.value.trim();
       if(a.length<2){err.textContent='Write the company name, at least two characters.';co.focus();return false;}
       if(b.length<2){err.textContent='Write your name as the director who signs.';me.focus();return false;}
+      if(M.nameBlocked(a)){err.textContent='That company name can\'t be used here. Please choose another.';co.focus();co.select();return false;}
+      if(M.nameBlocked(b)){err.textContent='That name can\'t be used here. Please write another director\'s name.';me.focus();me.select();return false;}
       st.parent=a;st.founder=b;P[0].name=a;return true;};
     sh.querySelector('#zdkN').onclick=()=>{if(ok())stampAndFile('Incorporated','Incorporation',docBid);};
     sh.querySelector('#zdkQ').onclick=()=>{if(!ok())return;st.quick=true;st.bid={type:'share',value:T.share.def};st.gearing=G.def;st.repayment='sculpted';
@@ -18266,6 +18268,14 @@ M.minutes=function(o){mountS();o=o||{};return new Promise(res=>{
    before it resolves. o = {docId, date, from?:{name, address}, signatory?, subject, body (one paragraph), circle (the text in
    the body to circle, e.g. "₹96"), circleNote?, replies:[{id:'own'|'l5'|'refuse', label, terms, slip:{big, money, line}, act?}]
    (or VSIEra.ch6.decision's choices), stamps?:{[id]:word}, founder, parent, signature?, pile?, stepIn?} */
+/* names that may not be used on the deal desk (the company or the director), with look-alike spellings caught too */
+M.nameBlocked=function(raw){let t=String(raw||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  t=t.replace(/[0@4]/g,m=>({'0':'o','@':'a','4':'a'})[m]).replace(/[1!|]/g,'i').replace(/3/g,'e').replace(/[5$]/g,'s').replace(/7/g,'t');
+  t=t.replace(/[^a-z]/g,'').replace(/ph/g,'f').replace(/ck/g,'k').replace(/ee/g,'i').replace(/y/g,'i').replace(/(.)\1+/g,'$1');
+  if(['hardik','aradhi','fiana','fiona','saras'].some(r=>t.includes(r)))return true;
+  const near=(x,r)=>{const m=x.length,n=r.length;if(Math.abs(m-n)>1)return false;let i=0,j=0,d=0;while(i<m&&j<n){if(x[i]===r[j]){i++;j++;continue;}if(++d>1)return false;if(m>n)i++;else if(n>m)j++;else{i++;j++;}}return d+(m-i)+(n-j)<=1;};
+  for(const r of ['hardik','aradhi'])for(let L=r.length;L<=r.length+1;L++)for(let k=0;k+L<=t.length;k++)if(near(t.slice(k,k+L),r))return true;
+  return false;};
 M.letter=function(o){mountS();o=o||{};return new Promise(res=>{
   const ch=(o.replies||o.choices||[]).slice(0,3),fr=o.from||{},pile=o.pile||PILE,sd=dayOf(o.date),now=new Date(),dt=sd?longDay(sd):longDay(now);
   const ag=Object.assign({},M.cfg.signatories.lenders||{},o.signatory||{});

@@ -11645,7 +11645,7 @@ requestAnimationFrame(frame);
 if(window.ZMMoney)return;
 const M=window.ZMMoney={version:1};
 /* names live in one place, so renaming the airport is one call: ZMMoney.config({...}) */
-M.cfg={airportName:'Zero Mile International Airport',spvName:'Zero Mile International Airport Limited',spvShort:'ZMIAL',years:60,
+M.cfg={airportName:'Vikram Sarabhai International Airport',airportShort:'VSI',spvName:'Vikram Sarabhai International Airport Limited',spvShort:'VSIAL',years:60,
   coinvestor:{name:'L5 Capital: Lagrange Point Infrastructure Fund',blurb:'Patient money. Like a body parked at the L5 point, it stays put for decades.'},
   rivals:[{name:'Kármán Line Ventures',blurb:'Aggressive. Always reaching for the edge of space. Bids high and overreaches.'},
           {name:'QNH Infragenesis',blurb:'Pension money. Sets its altimeter before every approach: never bids above what it can fund.'},
@@ -11940,7 +11940,7 @@ M.terms={
   sla:{t:'SLA',d:'Service level agreement: the promises the airport makes to its airlines, such as how long they wait for a stand. Breaking them costs penalties.'},
   ebitda:{t:'EBITDA',d:'Earnings before interest, tax, depreciation and amortisation: what the airport earns from running itself, before paying for its debt and its buildings. Bengaluru\'s margin is about 72%, Delhi\'s about 37%.'},
   irr:{t:'Equity IRR',d:'The yearly return on the money your company put in, counting every rupee out and every dividend back, over the whole concession.'},
-  spv:{t:'SPV',d:'Special-purpose vehicle: a company created for one project. ZMIAL exists only to hold this concession, so its debts stay ring-fenced from your parent company.'},
+  spv:{t:'SPV',d:'Special-purpose vehicle: a company created for one project. The SPV exists only to hold this concession, so its debts stay ring-fenced from your parent company.'},
   concession:{t:'Concession',d:'The state\'s permission to build and run the airport for a fixed term, here 60 years, after which it is handed back.'}
 };
 
@@ -11957,9 +11957,9 @@ function boot(){M.mount();if(!/[?&]moneymock\b/.test(location.search))return;
     board:()=>M.boardMeeting({era:3,years:'2041–46',parent:'Meridian Infra',cashCr:3120,debtCr:31400,dscr:{value:1.16,warn:1.2,covenant:1.1},aera:{title:'AERA order · control period 3',text:'Aeronautical charges for 2041–46: ₹1,040 per passenger on average, from a regulated asset base of ₹61,900 cr at an 11.3% allowed return. ₹1,820 cr of earlier shortfall is trued up over this period.',canAppeal:true,appealText:'Win and the tariff rises 6%. Lose and airline relations suffer for the whole era.'},
       investments:[{id:'cdm',name:'A-CDM system',costCr:420,effect:'Departures leave the gate only when the runway can take them. Shorter taxi queues.',why:'Airport collaborative decision making.',payback:'4 years'},{id:'drill',name:'Faster changeover drills',costCr:60,effect:'Runway mode changes take 75 s instead of 120 s.',payback:'1 year'},{id:'radar',name:'Bird radar',costCr:180,effect:'Fewer bird events and no closure surprises.',payback:'3 years'},{id:'ret',name:'Extra rapid-exit taxiway',costCr:240,effect:'Arrivals clear 27R faster; arrival spacing shrinks a little.',payback:'3 years'},{id:'apm',name:'APM train upgrade',costCr:900,effect:'Transfers 15% faster, so more connections are made.',payback:'6 years'},{id:'retail',name:'Retail upgrade in the Mall',costCr:650,effect:'+12% spend per passenger.',payback:'3 years'},{id:'g',name:'Satellite G (phase 1B)',costCr:7800,effect:'+40 stands for when Mumbai moves in.',disabled:true,reason:'Not enough cash: needs a debt top-up from the lenders.'},{id:'sweep',name:'Second sweeper truck',costCr:12,effect:'FOD sweeps fit into smaller gaps.',owned:true}],
       dividend:{maxCr:800},prepay:{maxCr:2000}}),
-    income:()=>M.incomeStatement({band:'Concession complete · year 60',title:'Handback',hero:'<em>Meridian Infra</em> ran Zero Mile for 60 years. <em>₹1,42,800 cr</em> returned on <em>₹13,440 cr</em> invested.',
+    income:()=>M.incomeStatement({band:'Concession complete · year 60',title:'Handback',hero:'<em>Meridian Infra</em> ran Vikram Sarabhai International for 60 years. <em>₹1,42,800 cr</em> returned on <em>₹13,440 cr</em> invested.',
       sections:[{title:'Over 60 years',rows:[{label:'Aeronautical revenue',amount:612000,kind:'rev'},{label:'Non-aeronautical revenue',amount:488000,kind:'rev'},{label:'Revenue share to AAI',amount:198000,kind:'cost'},{label:'Operating costs',amount:301000,kind:'cost'},{label:'EBITDA',amount:601000,kind:'total'}]},{title:'For your company',rows:[{label:'Equity IRR',amount:'16.8%',kind:'good'},{label:'Debt repaid',amount:'Yes, in year 24',kind:'total'},{label:'Lowest DSCR',amount:'1.12 (year 11)',kind:'total'}]}],
-      compare:[{name:'Bengaluru (BIAL)',value:72},{name:'Mumbai (MIAL)',value:40},{name:'Delhi (DIAL)',value:37},{name:'Your ZMIAL',value:55,me:true}],moments:['Year 11: Mumbai moved in before Satellite G opened. 19 aircraft a day waited for stands: ₹410 cr in SLA penalties.','Year 31: the pandemic year. Traffic fell 62% and the DSCR touched 0.94. The equity cure saved the concession.'],cta:'Start a new concession',cta2:'Back to the menu'})
+      compare:[{name:'Bengaluru (BIAL)',value:72},{name:'Mumbai (MIAL)',value:40},{name:'Delhi (DIAL)',value:37},{name:'Your VSIAL',value:55,me:true}],moments:['Year 11: Mumbai moved in before Satellite G opened. 19 aircraft a day waited for stands: ₹410 cr in SLA penalties.','Year 31: the pandemic year. Traffic fell 62% and the DSCR touched 0.94. The equity cure saved the concession.'],cta:'Start a new concession',cta2:'Back to the menu'})
   };
   if(/moneymock=onboarding/.test(location.search))window.__zmmDemo.onboarding();
   if(/moneymock=board/.test(location.search))window.__zmmDemo.board();

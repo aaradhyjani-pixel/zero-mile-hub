@@ -11,7 +11,7 @@ This is a self-contained UI module for the money layer. It is built separately s
 `ZMMoney.config({airportName, spvName, spvShort, years, coinvestor:{name,blurb}, rivals:[{name,blurb}x3]})`
 
 The defaults are:
-- Zero Mile International Airport Limited (ZMIAL), with a 60-year concession.
+- Vikram Sarabhai International Airport (code VSI). SPV: Vikram Sarabhai International Airport Limited (VSIAL), with a 60-year concession.
 - Co-investor: L5 Capital: Lagrange Point Infrastructure Fund.
 - Rivals: Kármán Line Ventures, QNH Infragenesis and Thakral–Wainganga Airports.
 

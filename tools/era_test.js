@@ -237,7 +237,7 @@ for (const [name, choice, held, slack, what] of PLAYERS) {
   plan.tags.forEach(t => { if (!(st.docs || []).some(d => d.id === t.docId)) fail('ch5 tag without a doc: ' + t.docId); });
   const r = C5.applyShift(st, c5shift(plan, held, slack));
   rt(r.state);
-  const b = r.bill, row = l => b.table.find(t => t.label === l) || {cr: 0, made: 0, missed: 0}, tb = [row('Earned'), row('Spent'), row('Connections to Skyward')];
+  const b = r.bill, row = l => b.table.find(t => t.label.indexOf(l) === 0) || {cr: 0, made: 0, missed: 0}, tb = [row('Earned'), row('Spent'), row('Connections to Skyward')];
   c5[name] = b;
   c5texts.push(JSON.stringify(br), JSON.stringify(plan), JSON.stringify(b), JSON.stringify(r.card));
   console.log('| ' + name + ' | ' + what + ' | ' + tb[0].cr + ' | ' + tb[1].cr + ' | ' + tb[2].made.toLocaleString('en-IN') + ' / ' + tb[2].missed.toLocaleString('en-IN') + ' | ' +
@@ -252,7 +252,7 @@ if (!(c5['hub-smart'].stake.valueCr > c5['hub-blind'].stake.valueCr && net('hub-
 if (!/held London/.test(c5['hub-smart'].margin)) fail('ch5: the margin note does not read the London call');
 if (!(c5['hub-smart'].stake.valueCr - c5['hub-letgo'].stake.valueCr > 1000)) fail('ch5: holding London is not clearly worth more than letting it go');
 if (/Frankfurt/.test(c5['hub-letgo'].margin)) fail('ch5: the let-go margin still promises a new flight');
-if (!c5['hub-blind'].table.some(t => t.label === 'Domestic connections' && t.made > 0)) fail('ch5: the decline bill does not report the domestic connections');
+if (!c5['hub-blind'].table.some(t => /^Domestic connections/.test(t.label) && t.made > 0)) fail('ch5: the decline bill does not report the domestic connections');
 const nDep = ['three', 'london', 'decline'].map(id => C5.shiftPlan(C5.applyDecision(fx, id)).intl.length).join();
 if (nDep !== '3,1,0') fail('ch5: the three options should give 3, 1 and 0 departures, got ' + nDep);
 if ([1, 2, 3, 4, 5, 6, 7].some(n => { const c = C5.card(n); return !c || !c.text || !c.sources.length || !c.sources.every(x => x.url); })) fail('ch5: a chapter card without text or a source');
@@ -265,6 +265,34 @@ console.log('- paper trail: lean → ' + C5.shiftPlan(C5.applyDecision(fx, 'thre
 const c5hits = c5texts.filter(t => BANNED.test(t));
 if (c5hits.length) fail('ch5 jargon: ' + c5hits.map(t => (t.match(BANNED) || [])[0]).join(', '));
 if (JSON.stringify(C5.fixture()) !== JSON.stringify(fx)) fail('ch5 fixture is not deterministic');
+// ---- the saved concession (zm_campaign v2) and F5: the stake and the return per year tell one story ----
+if (E.fmtDate('2039-04-01') !== '1 April 2039') fail('fmtDate: ' + E.fmtDate('2039-04-01'));
+const own = E.newCampaign({parent: 'Kestrel Airports', founder: 'Ravi Menon', signature: 'data:image/png;base64,AAAA', phase1: 'big', bid: {type: 'share', value: 12}, gearing: 65, repayment: 'equal', lender: 'banks', stateLoan: true, signedOn: '2026-07-15', endsOn: '2086-07-14'}, 7);
+const fxOwn = C5.fixture({from: own});
+if (fxOwn.parent !== 'Kestrel Airports' || fxOwn.founder !== 'Ravi Menon' || fxOwn.signature !== own.signature || fxOwn.phase1 !== 'big' || fxOwn.sample) fail('ch5 fixture does not start from the player\'s own onboarding');
+if (!C5.fixture().sample) fail('ch5 fixture without a save is not marked as the sample company');
+if (C5.frontPage(fxOwn).signature !== own.signature) fail('ch5 front page does not carry the player\'s signature');
+const fc = E.fileCard(fx);
+if (!fc || fc.company !== fx.parent || fc.stake.pct !== fx.stake || !fc.cover.words || fc.docs[0].id !== 'concession' || !fc.docs.some(d => /^board-/.test(d.id))) fail('fileCard: ' + JSON.stringify(fc && {company: fc.company, docs: fc.docs.map(d => d.id)}));
+if (fc.docs.some(d => !/^\d{4}-\d{2}-\d{2}$/.test(d.date))) fail('fileCard docs without an ISO date');
+console.log('\n### F5: the stake against the return per year (Meridian Infra, sample company, three banks, London held)\n');
+console.log('| Year | Money in (your share) | Stake shown | Return per year so far | Implied: the 2038 stake grown at its return per year |\n|---|---|---|---|---|');
+{
+  const st3 = C5.applyDecision(fx, 'three');
+  const out = C5.applyShift(st3, {made: 1000, missed: 50, byDest: {London: {made: 420, missed: 10}, Singapore: {made: 300, missed: 0}, Nairobi: {made: 220, missed: 0}}, held: {London: true}, domestic: {made: 200, missed: 20}, trail: {happened: false}, stars: 3, otp: 0.9});
+  const rows = [];
+  for (const [y, s, val] of [[13, fx.s, fx.lastReport.stakeValueCr], [18, out.state.s, out.bill.stake.valueCr]]) {
+    const eng = I.simulate(s, y), fl = []; for (let t = 0; t < y; t++) fl.push((eng.eq_flows[t] || 0) * fx.stake / 100);
+    const inv = -fl.filter(x => x < 0).reduce((a, b) => a + b, 0), f2 = fl.slice(); f2[f2.length - 1] += val; const r = I.irr(f2);
+    const fv = rows.length ? rows[0].val * Math.pow(1 + rows[0].r, y - rows[0].y) : val;
+    rows.push({y, r, val});
+    console.log('| ' + (2025 + y) + ' | ₹' + Math.round(inv).toLocaleString('en-IN') + ' cr | ₹' + val.toLocaleString('en-IN') + ' cr | ' + (r * 100).toFixed(1) + '% | ₹' + Math.round(fv).toLocaleString('en-IN') + ' cr |');
+  }
+  if (Math.abs(rows[0].r - rows[1].r) > 0.03) fail('F5: the return per year moves ' + ((rows[1].r - rows[0].r) * 100).toFixed(1) + ' points between ' + (2025 + rows[0].y) + ' and ' + (2025 + rows[1].y));
+  if (rows[1].val / rows[0].val > 2.5) fail('F5: the stake grows ' + (rows[1].val / rows[0].val).toFixed(1) + '× in five years');
+  if (!/a year/.test(out.bill.stake.words) || !/2038/.test(out.bill.stake.words)) fail('F4/F5: the stake line does not label its years: ' + out.bill.stake.words);
+}
+
 console.log('- plain words: ' + c5texts.length + ' Chapter 5 payloads, ' + c5hits.length + ' with jargon; fixture deterministic');
 console.log('\n' + (fails ? fails + ' FAILED' : 'ALL PASS'));
 process.exit(fails ? 1 : 0);

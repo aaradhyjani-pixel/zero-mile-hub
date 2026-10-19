@@ -101,7 +101,7 @@ The fonts load once through `loadDeskFonts()` (a Google Fonts link added beside 
 | Adviser's slip | `.zdk-note` | h3 question, a big Kalam number, an optional pencil scale (`.zdk-dscr`), and one or two short paragraphs. |
 | Rubber stamp | `stampHtml(word, cls)` | `down` animates, `big` is for the finale, `mini` is used on the pile card. Always dated, with "· VSIAL". |
 | Company seal | `sealSvg()` | Round, red, with the logo in the centre and the SPV name on the arc. |
-| Countersignatures | `scribble(seed, ink)` | Seeded and different per party. Never imitate a real person's signature. |
+| Countersignatures | `signSvg(M.cfg.signatories[key])` | Each fictional official signs their own name in their own script face, slant, ink and flourish (aai, state, coinvestor, dgca, aai60, state60). Never imitate a real person's signature. |
 | Signature pad | `sigPad(canvas, onChange)` | Pointer events with blue ballpoint ink that thins with speed. `png()` returns the image for later screens. |
 | Pile card | `.zdk-card` | Title, fake text lines and a mini stamp. It flies in from the document. |
 | VSI logo | `vsiLogo(size)` | A ring, an orbit and a satellite around a V, for Vikram Sarabhai. |

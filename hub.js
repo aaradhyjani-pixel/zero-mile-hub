@@ -450,7 +450,7 @@ function breakOff(f,r){
   alts.sort((a,b)=>Math.abs(a.y-f.y)-Math.abs(b.y-f.y));const o=alts[0],td=Math.max(T+D_APP*0.85,o.lastSchedTd+arrSep(o));
   f.startAlt=f.alt;beginApproach(f,o,td);radio('APP',`${cs(f)}, break off, sidestep to runway ${o.short}.`);
 }
-function goAround(f,why){const r=f.rwy;r.tdList=r.tdList.filter(t=>t!==f.td);f.state='goaround';f.td=null;const st=stackOf(f);setPath(f,[{x:f.x,y:f.y},{x:r.x0-1500,y:r.y},{x:r.x0-3000,y:r.y+(r.y<0?-3000:3000)},{x:st.x,y:st.y}],1400);S.goArounds++;radio('TWR',`${cs(f)}, go around, ${why}.`);MNY&&MNY.ga(f);}
+function goAround(f,why,free){const r=f.rwy;r.tdList=r.tdList.filter(t=>t!==f.td);f.state='goaround';f.td=null;const st=stackOf(f);setPath(f,[{x:f.x,y:f.y},{x:r.x0-1500,y:r.y},{x:r.x0-3000,y:r.y+(r.y<0?-3000:3000)},{x:st.x,y:st.y}],1400);S.goArounds++;radio('TWR',`${cs(f)}, go around, ${why}.`);if(!free)MNY&&MNY.ga(f);}   // safety and weather go-arounds are never charged
 function touchdown(f){
   MNY&&MNY.land(f);
   const r=f.rwy;f.state='rollout';f.alt=0;f.v=68;
@@ -489,10 +489,10 @@ function updateFlight(f,dt){
   case 'holding':{f.hu+=72*dt;const st=f.stack;const mates=flights.filter(o=>o.state==='holding'&&o.stack===st);f.level=Math.max(0,mates.sort((a,b)=>rk(a)-rk(b)).indexOf(f));const p=stackPos(st,f.hu,f.level);f.x=p.x;f.y=p.y;f.heading+=angDiff(f.heading,p.a)*Math.min(1,dt*2);f.alt=2100+f.level*300;f.endurance-=dt/60;S.holdMin+=dt/60;MNY&&MNY.hold(f,dt);fuelCheck(f);break;}
   case 'approach':{const fr=clamp((T-f.apT0)/(f.td-f.apT0),0,1);f.pd=fr*f.plen;const p=pointAt(f.path,f.pd);f.x=p.x;f.y=p.y;f.heading+=angDiff(f.heading,p.a)*Math.min(1,dt*1.5);
     if(f.pd>=f.finalStart){const k=(f.pd-f.finalStart)/f.finalLen;f.alt=Math.max(0,700*(1-k/0.96));}else f.alt=lerp(f.startAlt,700,clamp(f.pd/Math.max(1,f.finalStart),0,1));
-    if(dustNow&&f.td-T<20&&f.td-T>10&&f.gaRoll<(f.rwy.shear?0.3:0.07)&&!f.gaDone){f.gaDone=true;goAround(f,'windshear in the dust');break;}
-    if(f.birdHit&&f.td-T<20&&!f.gaDone){f.gaDone=true;goAround(f,'bird strike on short final');break;}
+    if(dustNow&&f.td-T<20&&f.td-T>10&&f.gaRoll<(f.rwy.shear?0.3:0.07)&&!f.gaDone){f.gaDone=true;goAround(f,'windshear in the dust',1);break;}
+    if(f.birdHit&&f.td-T<20&&!f.gaDone){f.gaDone=true;goAround(f,'bird strike on short final',1);break;}
     if(f.rwy.kiteUntil>T&&T>=f.rwy.kiteFrom&&f.td-T<20&&f.td-T>10&&f.gaRoll<(f.rwy.kiteP||0.25)&&!f.gaDone&&!f.vip){f.gaDone=true;goAround(f,'kite on short final. Yes, a kite');const kc=STO.find(o=>o.k==='kites');if(kc&&kc.hit)kc.hit(f);break;}
-    if(f.rwy.gpsUntil>T&&f.td-T<25&&f.td-T>12&&f.gaRoll<0.3&&!f.gaDone&&!f.vip){f.gaDone=true;floater(f.x,f.y,f.alt,'PULL UP','#ff4d3f');goAround(f,'false TERRAIN PULL UP alarm, GPS spoofing');break;}
+    if(f.rwy.gpsUntil>T&&f.td-T<25&&f.td-T>12&&f.gaRoll<0.3&&!f.gaDone&&!f.vip){f.gaDone=true;floater(f.x,f.y,f.alt,'PULL UP','#ff4d3f');goAround(f,'false TERRAIN PULL UP alarm, GPS spoofing',1);break;}
     if(T>=f.td)touchdown(f);break;}
   case 'rollout':{f.v=Math.max(f.slowRoll?9:14,f.v-(f.slowRoll?2.6:1.15)*dt);const done=advance(f,dt,f.v);if(f.rwy.occ===f&&f.pd>=f.exitAt){f.rwy.occ=null;f.rwy.arrExit=T;floater(f.x,f.y,0,'+1','#a99cff');}if(done){if(f.rwy.occ===f){f.rwy.occ=null;f.rwy.arrExit=T;}startTaxiIn(f);}break;}
   case 'nogate':{MNY&&MNY.nogate(f,dt);if(!f.res){const g=freeGate(f);if(g){g.res=f;f.res=g;}}if(f.res){const p=route(f.exitNode,f.res.lane);if(p){setPath(f,[{x:f.x,y:f.y}].concat(p),TAXI_R);f.state='taxi_in';closeIncFor(f,true);}}break;}
@@ -582,7 +582,7 @@ function estWait(f){const cap=Math.max(1,capNow('arr'));const ahead=flights.filt
 function priorityLand(f){
   const rs=RW.filter(r=>canArr(r)&&!r.blocks.some(b=>T+D_APP>=b.from-30&&T+D_APP<b.to));if(!rs.length){f.prio=true;return '';}
   rs.sort((a,b)=>Math.abs(a.y-f.y)-Math.abs(b.y-f.y));const r=rs[0],td=T+D_APP,sep=arrSep(r),prev=r.lastSchedTd;let bumped=[];
-  for(const o of flights)if(o.state==='approach'&&o.rwy===r&&Math.abs(o.td-td)<sep&&o.td-T>25){goAround(o,'priority traffic');bumped.push(fl(o));}
+  for(const o of flights)if(o.state==='approach'&&o.rwy===r&&Math.abs(o.td-td)<sep&&o.td-T>25){goAround(o,'priority traffic',1);bumped.push(fl(o));}
   if(!f.res&&!f.gate){const g=freeGate(f);if(g){g.res=f;f.res=g;}}
   beginApproach(f,r,td);r.lastSchedTd=Math.max(prev,td);f.prio=true;
   return bumped.length?`${bumped.join(' and ')} went around to make room.`:'No one had to go around.';
@@ -624,7 +624,7 @@ function spawnInc(type,target,extra){
     Object.assign(I,{c,x:c.lx,y:c.ly,title:`Dead tug blocks ${c.name}`,text:`A pushback tug broke down in the apron lane of ${c.name}, with ${n} departures due there soon. Clear it now and nothing moves on that pier for 4 minutes. Or work around it: crews push by hand from the lane edge, adding 3 minutes to every pushback there for 15 minutes.`,def:1,defText:'crews work around it: +3 min on every pushback from that pier for 15 min.',
       acts:[{l:'Clear it now (4 min)',pri:1,fn(){c.laneShut=T+240;resolve(I,true,`Dead tug cleared from ${c.name}.`);}},{l:'Work around it',fn(){c.slowUntil=T+900;resolve(I,true,`Pushbacks at ${c.name} slowed around a dead tug.`);}}]});break;}
   case 'shear':{if(!dustNow){ok=false;break;}const r=target||RW.filter(r=>canArr(r)).sort((a,b)=>b.tdList.length-a.tdList.length)[0];if(!r){ok=false;break;}let n=0;
-    for(const o of flights.filter(o=>o.state==='approach'&&o.rwy===r&&o.td-T>25).sort((a,b)=>a.td-b.td)){if(n>=2)break;goAround(o,'windshear on short final');n++;}
+    for(const o of flights.filter(o=>o.state==='approach'&&o.rwy===r&&o.td-T>25).sort((a,b)=>a.td-b.td)){if(n>=2)break;goAround(o,'windshear on short final',1);n++;}
     Object.assign(I,{r,x:r.x1-400,y:r.y,title:`Windshear on ${r.short}${n?`: ${n} go-around${n>1?'s':''}`:''}`,text:`The dust storm's gust front is sitting on the approach to ${r.short}. Stop landing there for the storm (set it to DEP and the other runways take its arrivals), or keep landing and expect more go-arounds.`,def:0,defText:`${r.short} keeps landing and go-arounds there get much more likely.`,
       acts:[{l:'Keep landing',pri:1,fn(){r.shear=true;resolve(I,true,`${r.short} kept landing through windshear.`);}},{l:`${r.short} to DEP`,fn(){setMode(r,'DEP');resolve(I,true,`${r.short} switched to departures for the storm.`);}}]});explain('shear');break;}
   }
@@ -1081,7 +1081,7 @@ const WHO={protocol:{badge:'PROTOCOL · MINISTRY',svg:face('🙏','#3a2614')},ra
 // L1 · the ribbon: the first departure can't go until the Chief Minister cuts it, and he is always five minutes away.
 // A stage stands on the runway: officials, marigolds, a podium; when he arrives he gives a speech first (the joke is the
 // speech and the protocol, never the person).
-const SPEECH=['Brothers and sisters of Vidarbha, namaskar!','From the Zero Mile of India, we will fly to the whole world.','I will be brief.','Briefly, my second point.','In conclusion. And, secondly…','Jai Hind! Now, the ribbon.'];
+const SPEECH=['Brothers and sisters of Vidarbha, namaskar!','From Vikram Sarabhai International Airport, we will fly to the whole world.','I will be brief.','Briefly, my second point.','In conclusion. And, secondly…','Jai Hind! Now, the ribbon.'];
 function speech(c,t0,len){SPEECH.forEach((l,i)=>c.lines.push([t0-c.E+Math.round(i*len/SPEECH.length),'CM ON STAGE',l]));}
 STORY.ribbon={len:2000,start(c){const r=rwBy('dep')[0];if(!r)return false;c.r=r;
   c.blk={from:T,to:T+1e6,open:true,why:'Inauguration ribbon',desk:'Ribbon across it, until it is cut'};r.blocks.push(c.blk);r.blocks.sort((a,b)=>a.from-b.from);
@@ -1221,7 +1221,7 @@ STORY.dabba={len:1100,start(c){const ds=CONC.filter(o=>o.id[0]==='D');if(!ds.len
     else say('TWR','Lunch has arrived in the tower. Every dabba correct. Again.');}]);}};
 
 // L4 · Delhi moves in: five ops WhatsApp groups become one
-const WA=['Good afternoon to all 🌞🙏','Forwarded many times: NASA says Zero Mile is visible from space','R3 closed?? pls confirm urgent','Happy birthday to the Fire Chief\'s grandson 🎂🎂','Who has added me in this group','Pls do not send good morning msgs in official group',
+const WA=['Good afternoon to all 🌞🙏','Forwarded many times: NASA says Vikram Sarabhai International is visible from space','R3 closed?? pls confirm urgent','Happy birthday to the Fire Chief\'s grandson 🎂🎂','Who has added me in this group','Pls do not send good morning msgs in official group',
   'Good morning 🌞','Is canteen open','Sir my leave application pls see','Video: amazing A380 landing (not ours)','👍','👍👍','Sir which one is the Delhi bank? Pls share Excel','This message was deleted','Pls call','Ok'];
 STORY.whatsapp={len:720,start(c){
   guard(['Dear all, the five ops groups are now one group.','1,400 members. Official purposes only. 🙏'],WHO.admin);
@@ -1263,13 +1263,13 @@ STORY.surya={len:3000,start(c){const open=RW.filter(r=>!r.locked);if(!open.lengt
   opts.sort((a,b)=>a.s-b.s);
   const cx=RW.reduce((a,r)=>a+(r.x0+r.x1)/2,0)/RW.length,cy=RW.reduce((a,r)=>a+r.y,0)/RW.length;
   const pick=o=>{const t=o.s;takeRunways(open,t,240,0,'Surya Kiran display','Air display');FXV.push({kind:'flypast',id:'surya',t0:t,t1:t+240,cx,cy,r:4200});c.at=t;
-    c.lines.push([t-c.E,()=>{guard(['Zero Mile, Surya Kiran leader. Nine Hawks, running in.',"How's the josh? 🇮🇳"],WHO.surya);
-      cinema(null,['SURYA KIRAN · IAF AEROBATIC TEAM','Nine Hawks open Zero Mile',"How's the josh? High, sir! 🇮🇳",icos('✈️')+FLAG_IN+icos('✈️')],{view:{tx:cx-1500,ty:cy,dist:4200,pitch:0.3,yaw:0.5},at:[cx,cy],track:chaseFlypast(),speed:0.15,until:t+38});}]);
+    c.lines.push([t-c.E,()=>{guard(['Vikram Sarabhai International, Surya Kiran leader. Nine Hawks, running in.',"How's the josh? 🇮🇳"],WHO.surya);
+      cinema(null,['SURYA KIRAN · IAF AEROBATIC TEAM','Nine Hawks open Vikram Sarabhai International',"How's the josh? High, sir! 🇮🇳",icos('✈️')+FLAG_IN+icos('✈️')],{view:{tx:cx-1500,ty:cy,dist:4200,pitch:0.3,yaw:0.5},at:[cx,cy],track:chaseFlypast(),speed:0.15,until:t+38});}]);
     c.lines.push([t-c.E+240,'TWR','Surya Kiran, beautiful. All runways back to normal. The josh remains high.']);};
   guard(['Sir, the Surya Kiran team will open the airport.','Every runway stops for 4 minutes. You choose when. ✈️'],WHO.surya);
   const best=opts.reduce((a,b)=>b.n<a.n?b:a);
   const I=storyCard(c,{icon:{g:'✈️',c:'#ff9933'},x:cx,y:cy,title:'Surya Kiran flypast: pick the slot',
-    text:"The Air Force's aerobatic team opens Zero Mile with a 4-minute display, and every runway stops for it. You choose when. The count is how many flights are due to land or take off around that slot: find the quiet gap between waves on the bank chart and it costs almost nothing.",
+    text:"The Air Force's aerobatic team opens Vikram Sarabhai International with a 4-minute display, and every runway stops for it. You choose when. The count is how many flights are due to land or take off around that slot: find the quiet gap between waves on the bank chart and it costs almost nothing.",
     def:0,defText:`the Air Force takes the first slot, ${clk(opts[0].s)}.`,botPick:opts.indexOf(best),
     acts:opts.map(o=>({l:`${clk(o.s)} · ${o.n} due`,fn(){pick(o);resolve(I,true,`Surya Kiran display set for ${clk(o.s)}.`);}}))});
   c.opts=opts;},
@@ -1494,7 +1494,7 @@ const SBAN={REACH1:r=>['THE MOTORCADE ARRIVES FIRST',`US Air Force C-17s, carryi
   RU1:r=>['IS THE PRESIDENT ON THIS ONE…',`Russia · Ilyushin Il-96 · ${r[0].short}`,'Nobody will say 🎶',FLAG_RU],
   RU2:r=>['…OR ON THIS ONE?',`Russia Two · the identical Il-96 · ${r[1].short}`,'Two aircraft. One President. Zero answers 🎶',FLAG_RU],
   RU2B:r=>['…OR WAS IT THIS ONE?',`Russia Two · the identical Il-96 · ${r[0].short}`,'Two aircraft. One President. Zero answers 🎶',FLAG_RU],
-  AF1:r=>[`AIR FORCE ONE · BOEING 747 · ON FINAL FOR ${r[0].short}`,'The President of the United States','Welcome to Zero Mile! 🤝',FLAG_US],
+  AF1:r=>[`AIR FORCE ONE · BOEING 747 · ON FINAL FOR ${r[0].short}`,'The President of the United States','Welcome to Vikram Sarabhai International! 🤝',FLAG_US],
   SAM:r=>['THE SPARE AIR FORCE ONE',`An identical 747 · on final for ${r[0].short}`,'Spare aircraft, spare runway, nobody on board 🛬',FLAG_US],
   PK0:r=>[`PAKISTAN ONE · BOEING 737 · ON FINAL FOR ${r[0].short}`,'The Prime Minister of Pakistan','The guard of honour is in position 🎺',FLAG_PK],
   PK1:r=>['LANDING CLEARANCE WITHHELD',`Pakistan One · on final for ${r[0].short}, not cleared to land`,'Security advice, says the tower. Diplomatic clearance, says the captain 📻',FLAG_PK],
@@ -1686,7 +1686,7 @@ STORY.delhisummit={len:4000,start(c){const open=RW.filter(r=>!r.locked);if(open.
   for(const f of flights)if(f.kind==='dep'&&f.state==='at_gate'&&!f.charter&&!f.vip&&f.std<pl.p1){sumHold(f);nh++;}
   for(const f of flights)if(f.kind==='arr'&&f.landT==null&&!f.vip&&!f.deleg&&['sched','inbound','holding','goaround'].includes(f.state)&&f.origEta>E-1200&&f.origEta<pl.p1+1500){f.endurance+=25;f.notam=true;}
   c.nc=nc;
-  c.lines=[[0,'SPG',`The Delhi summit has moved to Zero Mile. 38 delegations, 50 aircraft, and Mexico. We have taken ${c.spg.map(r=>r.short).join(' and ')}. Thank you for your support.`],
+  c.lines=[[0,'SPG',`The Delhi summit has moved to Vikram Sarabhai International. 38 delegations, 50 aircraft, and Mexico. We have taken ${c.spg.map(r=>r.short).join(' and ')}. Thank you for your support.`],
     [15,'TWR','All airlines: summit protocol in force. Expect holding. Then expect more holding.'],
     [40,'AOCC',`Airlines have cancelled ${nc} arrivals for the summit. The rest carry extra fuel for the holding, and a plan to divert.`],
     [75,'SPG',`Departures stay at their gates until we hand your runways back. ${nh} so far. They will all want to go at once.`]];c.nh=nh;
@@ -1831,7 +1831,7 @@ end(c,how){const s=c.sc,{A,B}=s,r=c.r;stopUI(c,false);c.out=how;
     hitSafety(100,`Runway collision on ${r.short} in fog: Orange City 1801 took off without a clearance into Satpura 77, which was backtracking on the runway.`);
     FXV.push({kind:'crash',id:'crash',x:(A.x+B.x)/2,y:(A.y+B.y)/2,t0:T,t1:T+1e6,a:A.heading,b:B.heading});MARKS.push({x:(A.x+B.x)/2,y:r.y,e:'🔥',until:T+1e6,px:34,k:'crash'});
     const others=RW.filter(o=>!o.locked&&o!==r);takeRunways(others,T,600,0,'Accident: all runways closed','Accident: all runways closed');
-    for(const f of flights)if(f.state==='approach'&&f.rwy===r)goAround(f,'runway accident');
+    for(const f of flights)if(f.state==='approach'&&f.rwy===r)goAround(f,'runway accident',1);
     vipBanner(true,'RUNWAY COLLISION · '+r.short,'Two aircraft have collided in fog','Emergency services are responding. All runways closed.','');setTimeout(()=>{if(!CINE)vipBanner(false);},9000);
     const allst=`ALL STATIONS, ALL STATIONS: aircraft accident on runway ${r.short}. All runways closed. Fire services responding.`;radio('ATC',allst);setTimeout(()=>{if(STO.includes(c))say('ATC',allst,{pri:3});},4200);
     c.lines.push([T-c.E+40,()=>{radio('FIRE',`Crash tenders on scene on ${r.short}. Foam going on now.`);voiced(['Crash tenders on scene. Foam going on now.','Both crews are out. The medics have them.'],WHO.arff);}]);
@@ -2330,7 +2330,7 @@ function finish(){
   voiceReset();CINE=null;if(cinema.q)cinema.q.length=0;if(SUM){SUM.cine=null;SUM.ann=null;}PACE=null;vipBanner(false);{const sb=$('#stopBtn');if(sb)sb.hidden=true;}
   const left=flights.filter(f=>f.kind==='dep'&&['at_gate','taxi_out','hp','push','start','stuck'].includes(f.state)&&T>f.std+1500).length;
   for(const f of flights)if(f.links&&f.kind==='dep'&&f.state==='at_gate'&&T>f.std){for(const l of f.links){if(l.arr.inBlock!=null&&l.arr.inBlock+l.x<=T){S.cnxMade+=l.n;MNY&&MNY.cnx(l,true,f);}else{S.cnxMiss+=l.n;MNY&&MNY.cnx(l,false,f);}}}
-  const st=stars(LV,S);const best=store.get('zm_stars')||{};if((best[LV.n]||0)<st){best[LV.n]=st;store.set('zm_stars',best);}
+  const st=stars(LV,S);const best=store.get('zm_stars')||{};if(!CAMP.active&&(best[LV.n]||0)<st){best[LV.n]=st;store.set('zm_stars',best);}   // concession shifts don't touch quick-play stars
   const otp=S.dep+S.arr?Math.round((S.depOnTime+S.arrOnTime)/(S.dep+S.arr)*100):0,otpA=S.arr?Math.round(S.arrOnTime/S.arr*100):0,otpD=S.dep?Math.round(S.depOnTime/S.dep*100):0,ct=S.cnxMade+S.cnxMiss,cx=ct?Math.round(S.cnxMade/ct*100):100;
   const verdict=st===3?'Flawless. The hub never noticed it was under pressure.':st===2?'Good shift. The waves came through and the hub kept its promises.':st===1?'The hub survived, but passengers will remember this one.':'Safety fell below 70. A real hub would stop operations and investigate.';
   const why=[];if(S.moves<LV.target)why.push(`Movements ${S.moves} of ${LV.target}: runways sat idle or were set for the wrong wave.`);if(otp<85)why.push(`On time ${otp}% (arrivals ${otpA}%, departures ${otpD}%): ${otpA<otpD?'arrivals sat in the stack. Give arrivals more runways before the purple wave peaks, not during it.':'departures queued at the holding points. Hand runways to departures before the teal wave peaks.'}`);if(cx<90)why.push(`Connections ${cx}%: arrivals that hold in the stack miss their onward flights. Give arrivals runways before the arrival wave, not during it.`);if(S.safety<90&&S.hits.length)why.push(`Safety ${Math.round(S.safety)}: ${S.hits.slice(0,3).map(h=>h.msg).join(' ')}${S.hits.length>3?` And ${S.hits.length-3} more.`:''}`);
@@ -2436,7 +2436,7 @@ MNY=(()=>{
       if(late>15&&!isFM()){add('penalty',(late-15)*(wide(f)?R.burn.w:R.burn.n),f,'late');if(late>=120)add('care',pax*R.meal,null);}}),
     hold:g((f,dt)=>{if(isFM()||isSafe(f))return;const hs=M.lastHold.get(f.id);if(hs==null){M.lastHold.set(f.id,T);return;}if(T-hs<300)return;
       const k=f.T.wake==='J'?'A380':f.T.wake==='H'?'B777_300ER':'A320neo';add('fuel',(HC[k]||4125)*dt/60,null);}),
-    ga:g(f=>{if(isFM())return;const k=f.T.wake==='J'?'A380':f.T.wake==='H'?'B777_300ER':'A320neo';add('fuel',5*(HC[k]||4125),isSafe(f)?null:f,'go-around');}),
+    ga:g(f=>{if(isFM()||isSafe(f))return;const k=f.T.wake==='J'?'A380':f.T.wake==='H'?'B777_300ER':'A320neo';add('fuel',5*(HC[k]||4125),isSafe(f)?null:f,'go-around');}),
     divert:g(f=>{if(!pays(f))return;add('care',f.pax*R.meal,null);}),
     nogate:g((f,dt)=>{if(f.nogateSince==null||T-f.nogateSince<300||isFM())return;add('penalty',(wide(f)?R.burn.w:R.burn.n)*dt/60,null);}),
     tick:g(dt=>{let n=0;for(const r of RW)if(!r.locked&&r.mode!=='OFF')n++;if(n)add('runway',n*R.rwy*dt/3600,null);
@@ -2460,65 +2460,54 @@ window.addEventListener('load',mnyTerms);
 MONEY_ON=/[?&]money(=1|&|$)/.test(location.search);
 function mnySet(on){on=!!on&&!!MNY;if(MNY)MNY.on=on;try{if(window.ZMMoney&&!/moneymock/.test(location.search))ZMMoney.enable(on);}catch(e){}}
 /* ============ money: the Concession mode (60 years, era by era) ============
-   A separate entry in the menu: quick play never comes here. The maths is money/era.js (window.VSIEra); the screens are
-   money/ui.js (window.ZMMoney). The campaign is saved in localStorage zm_campaign after every step. */
-// TODO(era.js): a tiny local stand-in with the agreed VSIEra API, used only until money/era.js lands. Rough numbers only.
-const ERA_STUB={stub:true,
-  data(){},
-  capexCr(){const c=window.MONEY_DATA&&MONEY_DATA.capex&&MONEY_DATA.capex.stages;return c&&c['1A_lean']&&c['1A_lean'].cost||36000;},
-  partners(){const z=window.ZMMoney&&ZMMoney.cfg||{};return [{name:'Your company',pct:64,color:'#e8b04a',role:'Lead promoter'},{name:(z.coinvestor&&z.coinvestor.name)||'L5 Capital: Lagrange Point Infrastructure Fund',pct:16,color:'#7fb4ff',role:'Co-investor'},{name:'Airports Authority of India',pct:10,color:'#9aa3ad',role:'The Authority'},{name:'State of Maharashtra, through MADC',pct:10,color:'#6fcf97',role:'The State'}];},
-  bidTypes(){return {share:{min:10,max:50,step:0.5,def:20,benchmarks:[{name:'Navi Mumbai',val:12.6},{name:'Mumbai',val:38.7},{name:'Delhi',val:45.99}]},ppf:{min:100,max:450,step:5,def:200,benchmarks:[{name:'lowest recent bid',val:115},{name:'highest recent bid',val:401}]}};},
-  previewBid(b){const p=b.type==='share'?Math.min(98,Math.max(3,(b.value-10)*3.2)):Math.min(98,Math.max(3,(b.value-110)*0.35));return {winPct:p,note:p>66?'You probably win, but you pay this share of every rupee for 60 years.':p>33?'A coin toss against the rival bidders.':'Too low. A rival will outbid you.'};},
-  previewClose(c){const cap=ERA_STUB.capexCr(),g=c.gearing/100;return {debtCr:cap*g,equityCr:cap*(1-g),parentCr:cap*(1-g)*0.64,minDscr:(c.repayment==='sculpted'?1.32:1.08)-(c.gearing-60)*0.012,note:c.repayment==='equal'?'Equal instalments are heavy in the first years. Expect the banks to warn you early.':'Repayments grow with the passengers. Money gets tight when you have to build more.'};},
-  newCampaign(r,seed){const cap=ERA_STUB.capexCr(),g=(r.gearing||70)/100;return {version:1,stub:true,parent:r.parent,founder:r.founder,signature:r.signature,signedOn:r.signedOn,endsOn:r.endsOn,quick:!!r.quick,bid:r.bid,gearing:r.gearing,repayment:r.repayment,
-    era:0,year:1,cashCr:300,debt:[{name:'Phase 1 loan',cr:cap*g}],stake:64,seed:seed||1,history:[]};},
-  levelFor(st){return Math.min(4,1+st.era);},   // Ship B: eras 5-12 play Level 5
-  applyShift(st,sh){st=JSON.parse(JSON.stringify(st));const y0=st.year,yrs=5,net=(sh.money.revenueCr-sh.money.costCr)*365*40,debt=st.debt.reduce((s,d)=>s+d.cr,0),due=debt/15;
-    const cover=Math.max(0.5,Math.min(2.5,(net*0.6)/yrs/Math.max(1,due))),light=cover>=1.2?'green':cover>=1.1?'amber':'red';
-    st.cashCr+=Math.max(0,net*0.6-due*yrs)*0.2;st.debt.forEach(d=>d.cr=Math.max(0,d.cr-due*yrs*d.cr/Math.max(1,debt)));st.era++;st.year+=yrs;
-    const words=`₹${Math.round(cover*100)} earned for every ₹100 due`;const value=Math.max(0,net*4-debt)*st.stake/100;
-    st.history.push({era:st.era,years:[y0,st.year-1],light,cover,cashCr:st.cashCr});const took=cover<1&&st.history.filter(h=>h.light==='red').length>=2;
-    const sentences=[light==='red'?'The banks warn you: in your worst year the airport did not earn enough to pay them.':light==='amber'?'The banks warn you: one more tight year and they will start asking questions.':'The banks are happy: every year paid its loans with room to spare.'];
-    if(took)sentences.push('The banks take control: two hard periods in a row.');
-    return {state:st,report:{eraLabel:`Years ${y0}–${st.year-1}`,years:[y0,st.year-1],light,coverWorst:cover,coverWords:words,todayCr:sh.money.revenueCr-sh.money.costCr,stakePct:st.stake,stakeValueCr:value,cashCr:st.cashCr,sentences,banksTookControl:took,
-      incomeStatement:{band:`Years ${y0}–${st.year-1} · ${st.parent||'Your company'}`,title:'The books for this period',hero:`In its worst year: <em>${words}</em>.`,
-        sections:[{title:'Your shift',rows:sh.money.lines.map(l=>({label:l.label,amount:l.amount,kind:l.kind})).concat([{label:'Today',amount:sh.money.revenueCr-sh.money.costCr,kind:'total'}])},
-          {title:'Your company',rows:[{label:'Your stake',amount:st.stake+'%',kind:'total'},{label:'What your stake is worth',amount:value,kind:value>0?'good':'bad'},{label:'Cash in the bank',amount:st.cashCr,kind:'total'}]}],
-        moments:sentences,cta:took?'See how it ended':'To the board meeting'}}};},
-  boardOptions(st){const debt=st.debt.reduce((s,d)=>s+d.cr,0),h=st.history[st.history.length-1]||{cover:1.3};return {era:st.era,years:h.years?`Years ${h.years[0]}–${h.years[1]}`:'',parent:st.parent,parentPct:st.stake,founder:st.founder,year:st.year,cashCr:st.cashCr,debtCr:debt,dscr:{value:h.cover,warn:1.2,covenant:1.1},
-    aera:{title:'The regulator\'s decision',text:'AERA sets what you may charge for the next five years.',canAppeal:st.era>=2,appealText:'Win and your charges rise. Lose and the airlines stay angry with you for the whole period.'},
-    investments:[],dividend:{maxCr:Math.max(0,st.cashCr*0.5)},prepay:{maxCr:Math.max(0,Math.min(st.cashCr,debt))}};},
-  applyBoard(st,d){st=JSON.parse(JSON.stringify(st));d=d||{};st.cashCr-=(d.dividendCr||0)+(d.prepayCr||0);if(d.prepayCr&&st.debt[0])st.debt[0].cr=Math.max(0,st.debt[0].cr-d.prepayCr);st.appeal=!!d.appeal;return st;},
-  isOver(st){const h=st.history[st.history.length-1];if(h&&h.cover<1&&st.history.filter(x=>x.light==='red').length>=2)return {reason:'banks'};return st.year>60?{reason:'handback'}:false;},
-  handbackOpts(st){const o=ERA_STUB.isOver(st)||{};return {band:`${st.parent||'Your company'} · year ${Math.min(60,st.year-1)}`,title:o.reason==='banks'?'The banks take control':'Handback',hero:o.reason==='banks'?'The airport could not pay its loans, and the banks took control of the company.':'The concession is over. The airport goes back to the State.',sections:[],moments:[],cta:'Back to the menu'};}
-};
+   A separate entry in the menu: quick play never comes here. The maths is money/era.js (window.VSIEra, fed window.MONEY_DATA);
+   the screens are money/ui.js (window.ZMMoney). The campaign is saved in localStorage zm_campaign after every step. */
 const CAMP={active:false,st:null,
-  E(){const E=window.VSIEra||ERA_STUB;if(!CAMP._d&&E.data&&window.MONEY_DATA){try{E.data(window.MONEY_DATA);}catch(e){}CAMP._d=true;}return E;},
-  ready(){return !!(MNY&&window.ZMMoney&&ZMMoney.onboarding);},
-  load(){const o=store.get('zm_campaign');return o&&o.version?o:null;},
+  E(){const E=window.VSIEra;if(E&&!CAMP._d&&E.data&&window.MONEY_DATA){try{E.data(window.MONEY_DATA);}catch(e){console.warn('era data',e);}CAMP._d=true;}return E;},
+  ready(){return !!(MNY&&window.ZMMoney&&ZMMoney.onboarding&&window.VSIEra&&window.MONEY_DATA);},
+  load(){const o=store.get('zm_campaign');return o&&o.version&&o.s?o:null;},   // (no .s: an old save from the stand-in era module)
   save(){if(CAMP.st)store.set('zm_campaign',CAMP.st);},
   async newGame(){const E=CAMP.E();$('#overlay').hidden=true;let r=null;
-    try{r=await ZMMoney.onboarding({capexCr:E.capexCr(),partners:E.partners(),bidTypes:E.bidTypes(),gearing:{min:60,max:80,def:70},previewBid:b=>E.previewBid(b),previewClose:c=>E.previewClose(c)});}catch(e){console.warn('onboarding',e);}
+    // every figure on the desk comes from era.js: phase 1's size and cost, the State's loan, who lends, and the bank-sized split
+    try{r=await ZMMoney.onboarding({capexCr:E.capexCr(),phase1:E.phase1Options(),stateLoan:E.stateLoanOpt(),lenders:E.lenders(),partners:E.partners(),bidTypes:E.bidTypes(),gearing:{min:60,max:80,def:70},previewBid:b=>E.previewBid(b),previewClose:c=>E.previewClose(c)});}catch(e){console.warn('onboarding',e);}
     if(!r){menu('concession');return;}
-    CAMP.st=E.newCampaign(r,(Date.now()%100000)+1);CAMP.save();CAMP.play();},
-  resume(){const st=CAMP.load();if(!st){menu('concession');return;}CAMP.st=st;CAMP.play();},
-  play(){const E=CAMP.E();CAMP.active=true;startLevel(E.levelFor(CAMP.st));},
+    CAMP.st=E.newCampaign(r,(Date.now()%100000)+1);CAMP.save();CAMP.build();},
+  // the construction years (years 1-4) between signing and opening day; "Not now" (null) saves and returns to the menu.
+  // Without the construction screen in this build, the airport is built as planned and era 1 starts.
+  async build(){const E=CAMP.E();$('#overlay').hidden=true;
+    if(window.ZMMoney&&ZMMoney.construction){let r=null;try{r=await ZMMoney.construction(E.constructionOpts(CAMP.st));}catch(e){console.warn('construction',e);}
+      if(!r){CAMP.save();menu('concession');return;}
+      CAMP.st=E.applyConstruction(CAMP.st,r);}
+    else CAMP.st=E.applyConstruction(CAMP.st,null);
+    CAMP.save();CAMP.play();},
+  resume(){const st=CAMP.load();if(!st||!st.s){menu('concession');return;}CAMP.st=st;CAMP.play();},   // (no .s: a save from the stand-in era module, which cannot be resumed)
+  // before every shift: a concession that has ended (banks, or year 60) goes to its last page, never to another shift;
+  // one still being built goes back to the construction years
+  play(){const E=CAMP.E();if(E.isOver(CAMP.st)){CAMP.end();return;}if(E.needsConstruction&&E.needsConstruction(CAMP.st)){CAMP.build();return;}CAMP.active=true;startLevel(E.levelFor(CAMP.st));},
+  async end(){const E=CAMP.E(),st=CAMP.st;$('#overlay').hidden=true;CAMP.active=false;try{await ZMMoney.incomeStatement(E.endOpts(st));}catch(e){}
+    // year 60: the handback certificate, signed beside the day-one signature
+    if(st.over&&st.over.reason==='handback'&&window.ZMMoney&&ZMMoney.handback){try{const h=await ZMMoney.handback(E.handbackOpts(st));if(h)st.handback=h;}catch(e){console.warn('handback',e);}}
+    store.set('zm_campaign_last',st);try{localStorage.removeItem('zm_campaign');}catch(e){}CAMP.st=null;menu('concession');},
   // called at the end of finish(): the score sheet stays, but the way on is through the books, not "next level"
   finished(res){const E=CAMP.E(),h=CAMP.st.history||[];const a=$('#again'),n=$('#nextL');if(a)a.remove();if(n)n.remove();
     const b=document.createElement('button');b.className='go';b.id='books';b.textContent='Close the books for this period ›';const m=$('#toMenu');m.parentNode.insertBefore(b,m);m.textContent='Save and leave';
     m.onclick=()=>{CAMP.active=false;menu('concession');};b.onclick=()=>CAMP.afterShift(res);},
   async afterShift(res){const E=CAMP.E();$('#overlay').hidden=true;
     const shift={level:res.level,stars:res.stars,otp:res.otp,cx:res.cx,safety:res.safety,moves:res.moves,sched:res.sched,pax:res.money?res.money.pax:0,money:res.money||{revenueCr:0,costCr:0,lines:[]}};
-    const out=E.applyShift(CAMP.st,shift);CAMP.st=out.state;CAMP.save();
-    try{await ZMMoney.incomeStatement(out.report.incomeStatement);}catch(e){}
-    if(out.report.banksTookControl||E.isOver(CAMP.st)){try{await ZMMoney.incomeStatement(E.handbackOpts(CAMP.st));}catch(e){}CAMP.active=false;store.set('zm_campaign_last',CAMP.st);try{localStorage.removeItem('zm_campaign');}catch(e){}menu('concession');return;}
-    let d=null;try{d=await ZMMoney.boardMeeting(E.boardOptions(CAMP.st));}catch(e){}
+    const out=E.applyShift(CAMP.st,shift);CAMP.st=out.state;CAMP.save();CAMP.last=out.report;
+    if(out.report){const is=Object.assign({},out.report.incomeStatement),m=shift.money;
+      // the shift the player just ran, first: good operations are good money
+      is.sections=[{title:'Your shift today',rows:[{label:'Earned',amount:m.revenueCr||0,kind:'rev'},{label:'Spent',amount:m.costCr||0,kind:'cost'},{label:'Today\'s money',amount:(m.revenueCr||0)-(m.costCr||0),kind:'total'}]}].concat(is.sections||[]);
+      try{await ZMMoney.incomeStatement(is);}catch(e){console.warn('income',e);}}
+    if(!out.report||E.isOver(CAMP.st)){await CAMP.end();return;}
+    const bo=E.boardOptions(CAMP.st);   // founder, partners, year, stake value, Airport City, the pile: all from era.js
+    let d=null;try{d=await ZMMoney.boardMeeting(bo);}catch(e){console.warn('board',e);}
     CAMP.st=E.applyBoard(CAMP.st,d||{});CAMP.save();CAMP.play();},
   // the Concession tab in the menu
   html(){const st=CAMP.load(),z=window.ZMMoney&&ZMMoney.cfg||{};
     if(!CAMP.ready())return '<p>The concession is not available in this build.</p>';
     return `<h1>Run the airport for ${z.years||60} years</h1><p>Win the concession, raise the money, sign, and then run ${z.airportName||SPEC.name} shift by shift. Every few years you see the books and meet your board. Good operations are good money.</p>
-     ${st?`<p><b>${st.parent||'Your company'}</b>: years ${st.year||1} onwards${st.signedOn?`, signed on ${st.signedOn}`:''}.</p><button class="go" id="campGo">Continue the concession</button> `:''}
+     ${st?`<p><b>${st.parent||'Your company'}</b>: ${st.building?'the airport is being built':`years ${st.year||1} onwards`}${st.signedOn?`, signed on ${st.signedOn}`:''}.</p><button class="go" id="campGo">Continue the concession</button> `:''}
      <button class="go${st?' ghost':''}" id="campNew">${st?'Start a new concession':'Start the concession'}</button>
      ${st?'<p class="src" id="campWarn" hidden>Starting again replaces the saved concession. Press again to confirm.</p>':''}`;},
   wire(){const g=$('#campGo'),n=$('#campNew');if(g)g.onclick=()=>CAMP.resume();

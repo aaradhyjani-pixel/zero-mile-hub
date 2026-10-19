@@ -1,1 +1,2 @@
-{ "buildCommand": "", "outputDirectory": "site", "framework": null, "cleanUrls": true }
+{ "buildCommand": "", "outputDirectory": "site", "framework": null, "cleanUrls": true,
+  "git": { "deploymentEnabled": { "**": false, "main": true, "money": true } } }

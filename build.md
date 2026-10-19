@@ -144,3 +144,40 @@ The lazy runs fail mostly because incidents time out. A player who handles incid
 - **Claude artifact:** publish `hub.html` with the Artifact tool. Republishing the same file path keeps the URL.
 - **GitHub Pages:** the repo serves `site/index.html` (a copy of `hub.html`) through the Pages workflow / branch config described in the README.
 - **Vercel:** import the GitHub repo on vercel.com. `vercel.json` serves `site/` as a static output directory, so no build step runs on Vercel. The file is self-contained except for Google Fonts.
+
+## 9. Money
+
+Money is added on top of the game; nothing is removed. Quick play from the menu is money-off (no chip, no ledger effect; `?money` in the URL or `HUB.moneyOn(true)` turns the small chip and ledger on). The economy and the 60-year concession live in the **Concession** tab of the menu.
+
+**Files.**
+| File | What it is | Owner |
+|---|---|---|
+| `money.json` | Every number, with its source (`value`, `estimate`, `src`, `note`). `build.py` embeds the values only, minified, as `window.MONEY_DATA`. | money lane |
+| `hub.js`, the `MNY` block | The shift ledger: records rupees from game events, never writes sim state, never calls `SIMR`/`Math.random`. Every hook is a guarded `MNY&&MNY.x(...)`. | wiring |
+| `hub.js`, the `CAMP` block | The concession loop (below). Saved in `localStorage.zm_campaign` after every step. | wiring |
+| `money/era.js` | The era engine, `window.VSIEra` (and `module.exports` for node). Pure, deterministic, no DOM: a JS port of `tools/concession_model.py`. | era |
+| `money/ui.js` | The screens (`window.ZMMoney`): chip, floaters, P&L tab, deal desk, income statement, board minutes, handback. Contract in `money/CONTRACT.md`. Do not edit from the game side. | review session |
+| `tools/concession_model.py` | The BIAL-calibrated Python model (the reference). `python3 tools/concession_model.py vsi` prints every table. | money lane |
+| `tools/era_test.js` | `node tools/era_test.js`: era.js against the Python model, era by era, plus a plain-words scan. Must say ALL PASS. | era |
+
+**Shift ledger formulas** (`R` in the `MNY` block, from `money.json`; ₹, converted to crore with `/1e7`):
+- Landing: `max(min, rate[dom|intl][narrow|wide] × MTOW t)` on touchdown (`aero.landing_*`).
+- Parking: `(minutes at stand − free 150) × rate[contact|remote] × MTOW t / 60` at pushback.
+- Passenger fee: `pax × (dom_dep | intl_dep)` at lift-off; shops and food: `pax × nonaero.zmi_per_pax_start × calm factor` (transfer passengers × `transfer_vs_od_spend`).
+- Costs: runway open `costs.runway_open_per_hour` per open runway per hour; ops jobs (tug/birds/fod); penalty to airlines for late departures and for flights left without a gate over 5 min (`burn` per minute, narrow/wide); passenger care (`rights.meal_cost_inr`, denied boarding); holding-fuel claims after 5 min in the stack (`fuel.hold_cost_per_min`).
+- Waived during the summit, dust, fog and the Delhi summit. Medical, fuel and MAYDAY flights never show a price or a floater; amounts under ₹5,000 do not float.
+
+**The concession loop** (`CAMP` in hub.js):
+1. Concession tab → `ZMMoney.onboarding(...)` fed by `VSIEra.capexCr/partners/bidTypes/previewBid/previewClose` (64/16/10/10) → `VSIEra.newCampaign(result, seed)`.
+2. `CAMP.play()`: if `VSIEra.isOver(state)` → the end page; else `startLevel(VSIEra.levelFor(state))` with money on (eras 1–4 → levels 1–4; eras 5–12 → level 4 until Level 5 ships).
+3. `finish()` → "Close the books for this period" → `VSIEra.applyShift(state, shift)` where `shift` carries stars, on-time, connections, safety and the ledger's `close()` → `ZMMoney.incomeStatement(report.incomeStatement)`, with "Your shift today" added on top.
+4. If over (banks, or year 60) → `ZMMoney.incomeStatement(VSIEra.handbackOpts(state))`, the save moves to `zm_campaign_last`. Else `ZMMoney.boardMeeting(VSIEra.boardOptions(state))` → `VSIEra.applyBoard(state, decision)` → back to 2.
+
+**How era.js works.** The save holds only the player's inputs (bid, gearing, repayment) and decisions (each era's ops summary, each board's dividend/prepay/appeal/purchases). Every call re-runs the years from financial close, so history never changes when later decisions are made. The banks size the loans on their own base case (each stage sculpted to `lbc_dscr_target` 1.30, never below `lbc_moratorium_cover` 1.20 in an interest-only year). The light is the **worst single year** of the era: green at ₹120 or more for every ₹100 due, amber below that, red below ₹100 (`game.dscr_thresholds`); the banks take control after two eras in the red. The player sees three numbers (today's money, the light in rupee words, stake and its value) and two or three board decisions; AERA's holds and recoveries surface only as one plain sentence.
+
+**How to tune.**
+- Change a number in `money.json` (keep its `src`/`note`), then `python3 build.py`, then `node tools/era_test.js` (ALL PASS) and `python3 tools/concession_model.py vsi` for the tables.
+- Shift money per event: the `R` table in the `MNY` block (each has a `money.json` key first).
+- How a shift maps to an era: `shiftOps` in `money/era.js` (stars, on-time, connections, safety and the ledger's penalty/care/fuel lines → Mall spend kept, disruption ₹/pax, service rebate, growth bonus, cost factor). The test's Part B shows the mapping for expert-like and bad-like shifts.
+- If the Python model changes, port the change into `money/era.js` and re-run the test (checkpoint 3 ported `Tranche.ds_at`, the 1e-3 sizing margin and money.json's phase-2 plan).
+- The money-off gate: `LVL=n nice -n 10 .venv/bin/python tools/fastbot.py hub.html expert` for n = 1..4, two at a time; results must match the baseline in progress.md.

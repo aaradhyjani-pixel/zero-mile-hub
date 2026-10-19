@@ -102,7 +102,7 @@ ppm(L) = 153 × (1 − wide) + 280 × wide (`game.pax_per_movement`), with **wid
 | 14 | 233 | 230 | 1% |
 | 18 (no phase 2) | 288 | 230 | 20% |
 
-From year 14, phase 2 is the pressing decision. After about year 20, ZMI is capacity-bound and value comes from yield (the Mall maturing, service quality, efficiency), not volume. `money-world.md` §9.7 calls this the real late-game shape.
+From year 14, phase 2 is the pressing decision. After about year 20, VSI is capacity-bound and value comes from yield (the Mall maturing, service quality, efficiency), not volume. `money-world.md` §9.7 calls this the real late-game shape.
 
 ---
 
@@ -311,7 +311,7 @@ One localStorage key, written through `store.set` (try/catch), under 100 KB.
 ```
 {v:1, id, created, updated, mode:'full'|'quick', eraMap:[{e,y0,y1,L}], seed,
  parent:{name,font,color},
- spv:{name:'ZMIAL', fund:'L5 Capital: Lagrange Point Infrastructure Fund', nominee:'Meera Kesar',
+ spv:{name:'VSIAL', fund:'L5 Capital: Lagrange Point Infrastructure Fund', nominee:'Meera Kesar',
       own:{parent:.64,fund:.16,AAI:.10,MADC:.10}, lockinEndYr:12, buyOpensYr:14},
  bid:{type:'share'|'ppf', v, rivals:[{name,type,v,eq}], won:true, rofr:false},
  close:{gearing, gEff, profile:'sculpted'|'equal', rate:9.5, tenor:20, moratorium:1, bankCapPct},
@@ -345,7 +345,7 @@ One localStorage key, written through `store.set` (try/catch), under 100 KB.
 Appended after Level 4. Levels 1–4 are not edited.
 
 ```
-{n:5, name:'Zero Mile, grown', sub:'The hub at full stretch', from:'ZMI · YEAR 19+', concessionOnly:true,
+{n:5, name:'Zero Mile, grown', sub:'The hub at full stretch', from:'VSI · YEAR 19+', concessionOnly:true,
  clock:'16:00', len:9000, windDown:true, arr:118, dep:118, amp:0.7, rw:6,
  rwOpen:{R1:'ARR',R2:'ARR',R3:'DEP',R4:'DEP',R5:'DEP',R6:'MIX'}, concs:'ABCDEF', phase2:false,
  intl:0.27, wide:0.22, a380:8, target:TBD, starsAt:TBD, light:'day', seed:55,
@@ -409,7 +409,7 @@ Appended after Level 4. Levels 1–4 are not edited.
 | Slow death | — | Shown in the newsfeed during the era before a collapse: that carrier's share halves | Cut exposure early |
 | Fuel spike | 0.35 | ATF ×1.5–1.75, extreme ×2.15 (`fuel.atf_shock_multiplier`); applied to fuel claims and SLA rates in shift patches; capacity −6 to −14% for 6–18 months | Fuel-farm storage (Ship B card) |
 | Rate spike / fall | 0.30 / 0.30 | ±(100–250) bps on all tranches for 2–3 years. Rupee term debt is MCLR-linked, so all of it floats. | Refinance at 9.0% (`finance.refi_rate_after_stability`) after two eras at 1.40 or above, or in a rate-fall window |
-| Regional closure | 0.25 | ZMI **gains** diversions for one shift (11.4) | Accept them, or not |
+| Regional closure | 0.25 | VSI **gains** diversions for one shift (11.4) | Accept them, or not |
 | Overflight ban | 0.12 | Widebody international −10%; westbound fuel +29%, for 1–2 eras | — |
 | Rival airport | 0.25, from E3 | Announced in era N, opens in N+1 (30%: N+2). Takes 5–10% of O&D LCC traffic, ramping 50/80/100%. Grows faster with spill. | The S3 ROFR clause: own the rival instead |
 | Regulatory regime | 0.12, from E3 | One of: till 0.30 → 1.0 for one recompute; tariff reset −20%; WACC ±100–150 bps | Appeal (11.3) |

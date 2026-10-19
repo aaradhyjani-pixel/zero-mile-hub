@@ -1,9 +1,9 @@
-# ZMI money design (one page)
+# VSI money design (one page)
 
 2026-10-19. Base: the "simple" draft, plus grafts from the regulator, fun and eras drafts (judge memo). Ship B systems come from `research/money-world.md` §9. Detail lives in `design/onboarding.md` (screens), `design/eras.md` (era maths, save, Level 5, Ship B systems) and `design/hooks.md` (every code hook). Every number below is a `money.json` key; (est.) means the key's `estimate` flag is true.
 
 ## Frame
-- **You are the parent company.** You form ZMIAL (Zero Mile International Airport Limited), which holds a 60-year concession.
+- **You are the parent company.** You form VSIAL (Vikram Sarabhai International Airport Limited), which holds a 60-year concession.
   - At financial close you hold 64%. **L5 Capital: Lagrange Point Infrastructure Fund** holds 16%, AAI 10%, and MADC ("the State of Maharashtra's airport and MIHAN developer", `ppp.madc_role`) 10%.
   - The state leases the land at a nominal rent. AAI and MADC pay cash for their 10% each.
   - From the year-14 board you may buy L5 Capital's stake, 4% per era, up to 80%. Dividends follow the stake.

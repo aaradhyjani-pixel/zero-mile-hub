@@ -107,15 +107,15 @@ Progress pips run along the top: Company · Partners · Bid · Close · Build ·
 **Right side: live preview.** A carousel of 3 previews advances every 3.5 s; clicking a dot pins it.
 1. **Terminal sign.**
    - A `--sign` slab, 560×120. The name is in the chosen font, uppercase, in `--sign-ink`.
-   - A Barlow line underneath reads "ZERO MILE INTERNATIONAL · A {NAME} COMPANY".
+   - A Barlow line underneath reads "VIKRAM SARABHAI INTERNATIONAL · A {NAME} COMPANY".
    - A light sweep (a gradient mask) crosses it every 2.4 s.
 2. **Boarding pass.**
-   - A white stub with a perforation, "ZMI → BLR", seat 1A.
+   - A white stub with a perforation, "VSI → BLR", seat 1A.
    - It reads "OPERATED AT ZERO MILE BY {NAME}" in the chosen font.
    - The barcode is SVG bars generated from a hash of the name.
 3. **Share certificate.**
    - `--paper` background, with a guilloche border (an SVG of 12 rotated ellipses at 4% opacity) and a `--brass` seal.
-   - It reads "This certifies that {NAME} holds 64% of the equity of Zero Mile International Airport Limited". The certificate number is the campaign seed.
+   - It reads "This certifies that {NAME} holds 64% of the equity of Vikram Sarabhai International Airport Limited". The certificate number is the campaign seed.
 
 **Button:** "Form the company ›".
 
@@ -130,7 +130,7 @@ Progress pips run along the top: Company · Partners · Bid · Close · Build ·
 4. **MADC**, 10% (`--madc`), 300 ms. Its label reads "MADC, the State of Maharashtra's airport and MIHAN developer" (`ppp.madc_role`, verified).
 
 **Centre text:**
-- "ZMIAL", in the player's font;
+- "VSIAL", in the player's font;
 - "Phase 1A · ₹36,000 cr · 45 MPPA" (`capex.stages[0]`).
 
 **Path to 80%:**
@@ -181,7 +181,7 @@ Progress pips run along the top: Company · Partners · Bid · Close · Build ·
   - the number counts up over 600 ms;
   - there is a 900 ms gap before the next envelope.
 - The highest bid gets a red "H1" stamp.
-- **Win:** a `--go` flash and "ZMIAL is the concessionaire".
+- **Win:** a `--go` flash and "VSIAL is the concessionaire".
 - **Loss:** the winning rival's crest, then the explainer, for example: "Kármán Line pays AAI 19.4% of every rupee for 60 years. You bid 15.2%. Bid closer, or accept a thinner company." Then "Re-tender ›", which re-seeds the rivals and keeps the player's name. Re-tendering is unlimited.
 - **Either way:** two lines of "What this means". DIAL pays 45.99% on an old, cheap asset base; Navi Mumbai pays 12.6% on a greenfield (`ppp.rev_share_*`). "Greenfields win at 12–18% because the asset base is new and expensive."
 
@@ -259,7 +259,7 @@ All three choices are saved in `zm_campaign.construction`.
 ### Top-strip chip (quick play and Concession)
 - A new `.kpi#kCash` is appended to `#kpis` in `hub-body.html`, with the same markup as the existing KPIs.
 - **Value:** "Today ₹1.42 cr", in `--f-mono` at 17px.
-  - In Concession the label reads "ZMIAL", and hovering shows "at this pace: ₹2,610 cr/yr". The pace is (M(y)/S.sched) × 311.
+  - In Concession the label reads "VSIAL", and hovering shows "at this pace: ₹2,610 cr/yr". The pace is (M(y)/S.sched) × 311.
 - **Sparkline:** a 64×18 canvas showing the last 30 sim-minutes, sampled every 60 sim-seconds. The line is `--go`, or `--stop` while the last 10 minutes are net negative.
 - **Second line:** "+₹38 L/h" at 11px.
 - **Quick play shows only this chip** (no tab, no floaters, no prices on calls). Its tooltip says: "Full books in Concession mode." Quick play uses the card tariff (k = 1).
@@ -318,7 +318,7 @@ All three choices are saved in `zm_campaign.construction`.
 ## 3. Era screens (`money/board.js`, rendered into `#sheet`)
 
 ### Era results (after each shift)
-- **Band:** "ZMIAL · YEARS 8–10 · RESULTS".
+- **Band:** "VSIAL · YEARS 8–10 · RESULTS".
 - **Content:**
   - A 3-to-7-year mini P&L table with revenue, EBITDA, CFADS, debt service and DSCR per year.
   - A sparkline of DSCR against the 1.0 / 1.1 / 1.2 / 1.3 marks.
@@ -327,7 +327,7 @@ All three choices are saved in `zm_campaign.construction`.
 - **Button:** "To the board ›".
 
 ### Board meeting
-- **Band:** "ZMIAL BOARD · ERA 3 · YEARS 11–13".
+- **Band:** "VSIAL BOARD · ERA 3 · YEARS 11–13".
 - **Left side: a 5-step agenda.**
   1. **Results.** A recap and the nominees' one-line reactions:
      - Chair (you).

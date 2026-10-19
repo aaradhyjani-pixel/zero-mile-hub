@@ -1,4 +1,4 @@
-# Money research, part 2: the world around Zero Mile International
+# Money research, part 2: the world around Vikram Sarabhai International
 
 This file covers what happens to a 60-year airport concession beyond tariffs and costs (those are in `research/money.md`): shocks, stake sales and valuation, handback, termination, incident costs, long-run traffic growth, and how other regulators set prices. All numbers are in `money.json` under `world` (same entry format). The last section, "How the game uses this", turns them into game parameters.
 

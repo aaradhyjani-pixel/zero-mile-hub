@@ -1,4 +1,4 @@
-# BIAL: the reference airport for the ZMI money model
+# BIAL: the reference airport for the VSI money model
 
 2026-10-19. Bengaluru International Airport Ltd (BIAL, Kempegowda International, BLR) is the closest real analog to ZMI:
 - a greenfield PPP, with a private majority plus AAI and the state at 13% each;
@@ -127,7 +127,7 @@ Notes on conflicts:
 - **TDSAT interim UDF collections.** AERA says about ₹101.91 cr; ICRA says about ₹75 cr held in escrow.
 - **CP1 opening RAB.** 1,359.39 is the 40% SRT figure. The single-till RAB was 1,538.09.
 
-### 2.2 What the control periods teach (the mechanisms ZMI copies)
+### 2.2 What the control periods teach (the mechanisms VSI copies)
 
 1. **The building block is the tariff.** CP4 baseline, ₹ cr over 5 years:
 
@@ -244,7 +244,7 @@ Only FY2021 was below 1.0, and it came with liquidity cover and a rating withdra
 
 ---
 
-## 4. T2: the template for ZMI's phase 1B
+## 4. T2: the template for VSI's phase 1B
 
 | Item | Value | Source |
 |---|---|---|
@@ -332,7 +332,7 @@ Sources:
 
 ---
 
-## 6. BIAL, scaled: the factor for ZMI (est.)
+## 6. BIAL, scaled: the factor for VSI (est.)
 
 | Measure | BIAL | ZMI (design) | Factor |
 |---|---|---|---|
@@ -369,7 +369,7 @@ No hidden multiplier is needed; this is a design choice for `tools/concession_mo
 
 ---
 
-## 7. What goes into the ZMI model (mechanisms only; the numbers are keys under `bial`)
+## 7. What goes into the VSI model (mechanisms only; the numbers are keys under `bial`)
 
 | Mechanism | BIAL fact | Key(s) |
 |---|---|---|

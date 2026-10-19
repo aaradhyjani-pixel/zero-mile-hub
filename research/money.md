@@ -1,4 +1,4 @@
-# Money research: Indian airport economics for Zero Mile International
+# Money research: Indian airport economics for Vikram Sarabhai International
 
 Compiled 19 Oct 2026. Step 1 of `prompt-money.md`: 9 topic researchers, each checked by a skeptic, then merged here. The merge uses only figures the skeptic **confirmed** or **corrected** (with the corrections applied). Refuted or unverifiable figures were either re-sourced or are marked **(est.)** with the reasoning given. A few benchmark, PPP-bid and MADC figures were added by the merger, from the primary sources cited next to them. Every number the game uses is in `money.json` (value, unit, source, period, `estimate` flag).
 

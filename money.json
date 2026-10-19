@@ -3282,5 +3282,1905 @@
    "estimate": true,
    "note": "grid buy cost is a game estimate; routine incidents automated per ZMI feedback."
   }
+ },
+ "bial": {
+  "_note": {
+   "value": "BIAL (Bengaluru, Kempegowda): the calibration airport for ZMI's money model",
+   "unit": "-",
+   "source": "research/bial.md",
+   "period": "compiled 2026-10-19",
+   "estimate": false,
+   "note": "Nominal INR crore of the year shown unless stated. FY2009 = Apr 2008-Mar 2009. Skeptic corrections applied. Delhi/Navi Mumbai are comparison rows only (research/bial.md section 8). Supersedes world.bial_ladder rows marked unverified (2018 now confirmed; 2023 is a single 10% block)."
+  },
+  "close": {
+   "date": {
+    "value": "2005-06",
+    "unit": "date (financial close)",
+    "source": "https://www.iupindia.in/1005/PB_Airport_Privatization_29.html ; https://www.infrapppworld.com/update/gvk-infrastructure-inaugurates-bangalore-airport-new-terminal ; https://aera.gov.in/uploads/airports/16466592165337.pdf (para 1.1.2, 1.1.5)",
+    "period": "2001-2008",
+    "estimate": false,
+    "note": "Award Oct 2001; GoI CA signed 5 Jul 2004; close Jun 2005 (28 Jun per GVK); 30-month build from Jul 2005; opened 24 May 2008 (~3 years close to COD)."
+   },
+   "opening_date": {
+    "value": "2008-05-24",
+    "unit": "date (AOD)",
+    "source": "https://aera.gov.in/uploads/airports/16466592165337.pdf (para 1.1.5)",
+    "period": "2008",
+    "estimate": false,
+    "note": "HAL airport closed to commercial traffic at opening."
+   },
+   "project_cost_initial": {
+    "value": 1411.79,
+    "unit": "INR crore (4.5 mppa)",
+    "source": "https://aera.gov.in/uploads/airports/16466592165337.pdf (para 1.1.4)",
+    "period": "2005 financial close",
+    "estimate": false
+   },
+   "project_cost_redesign": {
+    "value": 1930.29,
+    "unit": "INR crore (11.4 mppa)",
+    "source": "https://aera.gov.in/uploads/airports/16466592165337.pdf (para 1.1.4)",
+    "period": "2005-2008",
+    "estimate": false,
+    "note": "Mid-build redesign 4.5 to 11.4 mppa; increase funded by extra lender debt."
+   },
+   "project_cost_final": {
+    "value": 2470.29,
+    "unit": "INR crore",
+    "source": "https://aera.gov.in/uploads/airports/16466592165337.pdf (para 1.1.4)",
+    "period": "2005-2008",
+    "estimate": false,
+    "note": "Includes Rs 540 cr extension works (equity plus debt). +75% on close cost for 2.5x capacity: template for a phase-1 resize funded by extra debt."
+   },
+   "senior_debt": {
+    "value": 736,
+    "unit": "INR crore (12-year rupee loan)",
+    "source": "https://infrastructure.greenstreet.com/articles/114711/bial-setting-the-template ; https://www.iupindia.in/1005/PB_Airport_Privatization_29.html",
+    "period": "2005 financial close",
+    "estimate": false,
+    "note": "~52% of Rs 1,412 cr. ICICI arranger and sole lender (to syndicate); fully non-recourse; no completion guarantees; a further ~USD 20 m loan sized to final cost. Rate, moratorium and DSRA at close not disclosed."
+   },
+   "capital_mix": {
+    "value": {
+     "senior_debt": 0.52,
+     "state_loan": 0.25,
+     "equity": 0.23,
+     "debt_incl_state_loan": 0.77,
+     "senior_over_senior_plus_equity": 0.69
+    },
+    "unit": "fraction of Rs 1,412 cr close cost",
+    "source": "https://infrastructure.greenstreet.com/articles/114711/bial-setting-the-template ; https://www.iupindia.in/1005/PB_Airport_Privatization_29.html",
+    "period": "2005 financial close",
+    "estimate": false,
+    "note": "736 / 350 / 326 cr. Senior:(senior+equity) 69% sits inside ZMI's 60-75% gearing slider."
+   },
+   "equity_cr": {
+    "value": 326,
+    "unit": "INR crore at close",
+    "source": "https://infrastructure.greenstreet.com/articles/114711/bial-setting-the-template",
+    "period": "2005",
+    "estimate": false,
+    "note": "Share capital Rs 384.6 cr by FY2010 (B.PAC Table 4)."
+   },
+   "equity_holders": {
+    "value": {
+     "siemens": 0.4,
+     "zurich": 0.17,
+     "lnt": 0.17,
+     "ksiidc": 0.13,
+     "aai": 0.13
+    },
+    "unit": "fraction of equity",
+    "source": "https://infrastructure.greenstreet.com/articles/114711/bial-setting-the-template ; https://indianinfrastructure.com/2008/06/22/turbulent-take-off-bangalore-international-airport-starts-operations/",
+    "period": "2005-2008",
+    "estimate": false,
+    "note": "Private 74%, state 26%."
+   },
+   "balance_sheet_fy2010_fy2011": {
+    "value": {
+     "pat": [
+      77.7,
+      132.1
+     ],
+     "secured_loans": [
+      1381.6,
+      1285.7
+     ],
+     "state_loan": [
+      333.5,
+      333.5
+     ],
+     "share_capital": [
+      384.6,
+      384.6
+     ],
+     "gross_block": [
+      1974,
+      1987
+     ],
+     "accumulated_pl_start_fy10": -151.1,
+     "accumulated_pl_end_fy11": 58.8
+    },
+    "unit": "INR crore [FY2010, FY2011]",
+    "source": "https://aera.gov.in/uploads/stack_holder/16523840693125.pdf (Table 4)",
+    "period": "FY2010-FY2011",
+    "estimate": false,
+    "note": "Senior debt / (equity + state loan) 1.92 then 1.79. ~Rs 96 cr fall in FY2011 is first principal mixed with ECB FX restatement, consistent with a ~2-year post-COD moratorium (inference)."
+   },
+   "moratorium_after_cod_years": {
+    "value": 2,
+    "unit": "years (inferred)",
+    "source": "https://aera.gov.in/uploads/stack_holder/16523840693125.pdf (Table 4) ; https://www.aera.gov.in/uploads/consultations/5afeb1d1b2109FinalConsultationPaperBIALV9100518.pdf (para 3.2.1)",
+    "period": "2008-2010",
+    "estimate": true,
+    "note": "Not disclosed at close. Inferred: no principal reduction in FY2009-10, first fall in FY2011."
+   }
+  },
+  "ssa": {
+   "state_loan": {
+    "value": 350,
+    "unit": "INR crore, 0% interest, subordinated",
+    "source": "https://aera.gov.in/uploads/airports/16466592165337.pdf (para 1.1.3) ; https://infrastructure.greenstreet.com/articles/114711/bial-setting-the-template",
+    "period": "2005-",
+    "estimate": false,
+    "note": "GoK soft loan under the State Support Agreement; not fully drawn on day one; SBI letter of credit guaranteed the state commitment at ICICI's request. 25% of the close cost."
+   },
+   "state_loan_repayment": {
+    "value": {
+     "instalments": 20,
+     "first_year_after_close": 11,
+     "life_years": 30,
+     "prepay_from_surplus": true
+    },
+    "unit": "schedule",
+    "source": "https://infrastructure.greenstreet.com/articles/114711/bial-setting-the-template",
+    "period": "from 2005",
+    "estimate": false
+   },
+   "state_loan_deferral": {
+    "value": {
+     "outstanding_cr": 332.5,
+     "from": 2018,
+     "to": 2028,
+     "years": 10
+    },
+    "unit": "INR crore deferred",
+    "source": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=89665 ; https://aera.gov.in/uploads/stack_holder/16523840693125.pdf (p.9)",
+    "period": "2018-2028",
+    "estimate": false,
+    "note": "Karnataka Cabinet 22 Jun 2018. ICRA: 'additional cushion for debt servicing in second and third control periods' (the T2 build). B.PAC gives 333.5. Template for a state-support lever that defers at the expansion."
+   },
+   "state_loan_in_wacc": {
+    "value": {
+     "cost": 0.0,
+     "weight_cp2_trueup": 0.064,
+     "avg_balance_cr": 333
+    },
+    "unit": "cost and weight in AERA WACC",
+    "source": "https://aera.gov.in/uploads/airports/16466592165337.pdf (Tables 25, 26)",
+    "period": "CP2 true-up FY2017-21",
+    "estimate": false,
+    "note": "Consultation Table 25 weight 6.22%; decided Table 26 6.40%. A 0% tranche lowers allowed return and tariffs."
+   },
+   "land": {
+    "value": 4008,
+    "unit": "acres on lease (Land Lease Agreement)",
+    "source": "https://aera.gov.in/uploads/airports/16466592165337.pdf (para 1.1.3) ; https://indianinfrastructure.com/2024/04/05/state-approves-extension-of-concession-agreement-for-bengaluru-kempegowda-airport/",
+    "period": "2005-2068",
+    "estimate": false,
+    "note": "Rent amount not found; 'token rent' not confirmed. 2024: lease made coterminous with 2068; site-cost cap raised from ~Rs 212 cr to max Rs 302.15 cr; 6% annual rent escalation from May 2038 is unverified. Rent appears to recover the state's land cost. iupindia (2005) said 3,800 acres."
+   }
+  },
+  "ca": {
+   "concession_fee": {
+    "value": 0.04,
+    "unit": "fraction of gross revenue to GoI",
+    "source": "https://aera.gov.in/uploads/airports/16466592165337.pdf (paras 1.1.2, 3.7.13, 7.2.59-7.2.60)",
+    "period": "2008-2068",
+    "estimate": false,
+    "note": "CA clause 3.3. AERA includes only 4% of aero revenue in the ARR (hybrid till). Compare DIAL 45.99% (ppp.rev_share_dial)."
+   },
+   "term": {
+    "value": {
+     "initial_years": 30,
+     "extension_years": 30,
+     "end": "2068-05-24"
+    },
+    "unit": "years",
+    "source": "https://aera.gov.in/uploads/airports/16466592165337.pdf (para 1.1.2) ; https://www.icra.in/Rating/ShowRationalReportFilePdf/143328",
+    "period": "2008-2068",
+    "estimate": false,
+    "note": "Extension confirmed by MoCA letter."
+   },
+   "exclusivity": {
+    "value": {
+     "radius_km": 150,
+     "years": 25,
+     "until": "2033-05"
+    },
+    "unit": "km / years",
+    "source": "https://www.icra.in/Rating/ShowRationalReportFilePdf/143328 ; https://www.deccanherald.com/amp/story/india/karnataka/bengaluru/reopening-hal-airport-viable-but-is-bial-keen-897321.html",
+    "period": "2008-2033",
+    "estimate": false
+   },
+   "aai_role": {
+    "value": 0.13,
+    "unit": "fraction of equity",
+    "source": "https://aera.gov.in/uploads/airports/16466592165337.pdf (para 1.1.2, Table 1) ; https://www.icra.in/Rating/GetRationalReportFilePdf?id=89665",
+    "period": "2005-",
+    "estimate": false,
+    "note": "AAI CNS/ATM; government agencies for customs, immigration, security, met. AAI and GoK nominees on the board (ICRA)."
+   }
+  },
+  "debt": {
+   "t1_expansion": {
+    "value": {
+     "capex_cr": 1547,
+     "capacity_mppa": 20,
+     "completed": "FY2014"
+    },
+    "unit": "INR crore / mppa",
+    "source": "https://www.icra.in/Rating/ShowRationalReportFilePdf/39406",
+    "period": "FY2014",
+    "estimate": false,
+    "note": "Opening capacity 11.5 mppa; debottlenecked later to 26.5 mppa (ICRA 2019)."
+   },
+   "refi_2016": {
+    "value": {
+     "amount_cr": 1813.74,
+     "rate": 9.83,
+     "issued": "2016-11-14",
+     "maturity": "2033-09-30",
+     "rate_2019": 9.05,
+     "rate_from_2020_08_21": 7.85
+    },
+    "unit": "INR crore / % p.a.",
+    "source": "https://www.icra.in/Rating/ShowRationalReportFilePdf/39406 ; https://www.icra.in/Rating/GetRationalReportFilePdf?id=89665 ; https://aera.gov.in/uploads/airports/16466592165337.pdf (para 6.2.7)",
+    "period": "2016-2020",
+    "estimate": false,
+    "note": "Refinanced 8 years after opening to lengthen maturity before T2. ICRA AA- (Jun 2017) to AA (Aug 2017). CP2 actual cost of debt 9.06% (decided Table 26; 9.11% consultation)."
+   },
+   "ncd_2021_22": {
+    "value": {
+     "amount_cr": 1653.5,
+     "coupon": 8.35,
+     "tranches": [
+      {
+       "cr": 1000,
+       "allotted": "2021-06-30",
+       "maturing": "2027-2031"
+      },
+      {
+       "cr": 653.5,
+       "allotted": "2022-06-03",
+       "maturing": "2028-2032"
+      }
+     ]
+    },
+    "unit": "INR crore / %",
+    "source": "https://www.crisilratings.com/mnt/winshare/Ratings/RatingList/RatingDocs/BangaloreInternationalAirportLimited_November%2006_%202024_RR_355170.html",
+    "period": "2021-2032",
+    "estimate": false
+   },
+   "refi_2025_ncd": {
+    "value": {
+     "amount_cr": 9000,
+     "coupon": 8.15,
+     "tenor_years": 15,
+     "moratorium_years": 2,
+     "maturity": "2040-07-25",
+     "replaced_bank_loans_cr": 8069,
+     "tranches_cr": [
+      4362,
+      4638
+     ]
+    },
+    "unit": "INR crore / % / years",
+    "source": "https://www.icra.in/Rating/ShowRationalReportFilePdf/143328 ; https://www.crisilratings.com/mnt/winshare/Ratings/RatingList/RatingDocs/BangaloreInternationalAirportLimited_May%2022_%202026_RR_395809.html ; https://www.fairfaxindia.ca/wp-content/uploads/2026/03/Fairfax-India-2025-Annual-Report-WEBSITE.pdf (p.14) ; https://www.business-standard.com/amp/companies/news/bial-to-raise-over-535-mn-via-second-tranche-of-bonds-by-early-oct-report-125072800772_1.html",
+    "period": "FY2026-2040",
+    "estimate": false,
+    "note": "Unlisted AAA NCDs (ISIN INE888G07113), SBICAPs sole arranger; back-ended repayment. Coupon ~8.15% per Reuters/Fairfax. Fixed vs 'variable index-linked' conflict between BIAL release and ICRA annexure. Moratorium was 7 yrs in the Sep 2024 plan (ICRA id=130057), 2 yrs by May 2025 (id=134917). Template for refinance after stable years."
+   },
+   "repayment_schedule_change": {
+    "value": {
+     "before_refi": {
+      "FY2026": 462,
+      "FY2027": 660
+     },
+     "after_refi": {
+      "FY2027": 200,
+      "FY2028": 331
+     }
+    },
+    "unit": "INR crore scheduled principal",
+    "source": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=134917 ; https://www.icra.in/Rating/ShowRationalReportFilePdf/143328",
+    "period": "FY2026-FY2028",
+    "estimate": false
+   },
+   "dsra": {
+    "value": 2,
+    "unit": "quarters of debt service (NCDs)",
+    "source": "https://www.icra.in/Rating/ShowRationalReportFilePdf/143328 ; https://www.crisilratings.com/mnt/winshare/Ratings/RatingList/RatingDocs/BangaloreInternationalAirportLimited_May%2022_%202026_RR_395809.html",
+    "period": "FY2026",
+    "estimate": false,
+    "note": "DSR plus margin money Rs 459 cr at 31 Mar 2026 vs Rs 3,603.3 cr unencumbered cash. CRISIL says six months."
+   },
+   "covenants": {
+    "value": {
+     "downgrade_trigger_cumulative_dscr": 1.4,
+     "expected_dscr_over_tenure": 1.5,
+     "dividends": "restricted by covenants; cash ring-fenced"
+    },
+    "unit": "x DSCR",
+    "source": "https://www.icra.in/Rating/ShowRationalReportFilePdf/143328",
+    "period": "FY2026",
+    "estimate": false,
+    "note": "BIAL told AERA an ARR under-recovery could breach expansion-loan covenants (AERA Order 11/2021-22 p.160)."
+   },
+   "rating_arc": {
+    "value": [
+     "ICRA A (2015-03)",
+     "A+ (2016)",
+     "AA- (2017-06)",
+     "AA (2017-08)",
+     "AA watch-neg (2020-04)",
+     "AA Negative, withdrawn (2020-10)",
+     "CRISIL AA (2020-24)",
+     "ICRA AAA (2024-09 to 2026-05)"
+    ],
+    "unit": "rating path",
+    "source": "https://www.icra.in/Rating/GetRationalReportFilePdf/2668~Bangalore%20Airport_r_11052015.pdf ; https://www.icra.in/Rating/ShowRationalReportFilePdf/28620 ; https://www.icra.in/Rating/ShowRationalReportFilePdf/39406 ; https://www.icra.in/Rating/ShowRationalReportFilePdf/98487 ; https://www.icra.in/Rating/ShowRationalReportFilePdf/143328",
+    "period": "2015-2026",
+    "estimate": false
+   }
+  },
+  "aera": {
+   "control_periods": {
+    "value": [
+     {
+      "cp": "pre",
+      "fy": "2009-2011",
+      "order": "MoCA ad hoc; trued up later",
+      "till_nar_share": 0.3,
+      "return": 10.97,
+      "udf_dom_intl": [
+       260,
+       1070
+      ],
+      "landing_le100mt_dom_intl": [
+       187.9,
+       250.5
+      ],
+      "trueup_cr": 179.76,
+      "trueup_note": "+54.87 at Mar 2011 indexed to Mar 2022"
+     },
+     {
+      "cp": "CP1",
+      "fy": "2012-2016",
+      "order": "08/2014-15 (2014-06-10)",
+      "till_nar_share": 0.4,
+      "return": 11.55,
+      "coe": 16.0,
+      "cod": 9.73,
+      "debt_share": 0.7092,
+      "avg_rab_cr": [
+       1308.22,
+       1207.93,
+       1835.48,
+       2608.42,
+       2626.07
+      ],
+      "arr_cr": 2980.94,
+      "arr_pv_cr": 2318.4,
+      "ypp": 376.34,
+      "udf_dom_intl": {
+       "FY2015": [
+        342,
+        1368
+       ],
+       "FY2016": [
+        306,
+        1226
+       ]
+      },
+      "trueup_cr": -313.62,
+      "trueup_note": "trued up on 30% till at 10.97%, at Mar 2016"
+     },
+     {
+      "cp": "CP2",
+      "fy": "2017-2021",
+      "order": "18/2018-19 (2018-08-31)",
+      "till_nar_share": 0.3,
+      "return": 11.93,
+      "trueup_wacc": 11.76,
+      "avg_rab_cr": {
+       "FY2017": 2236.67,
+       "FY2021": 7707.87
+      },
+      "arr_cr": 5443.98,
+      "arr_after_cp1_netting_cr": 5130.37,
+      "arr_trued_up_cr": 3906.08,
+      "collections_cr": 4263.12,
+      "udf_dom_intl": {
+       "2018-09-16": [
+        100,
+        400
+       ],
+       "2019-04-01": [
+        139,
+        558
+       ],
+       "2020-04-01": [
+        179,
+        716
+       ],
+       "tdsat_interim_2019-04-16_to_08-15": [
+        306,
+        1226
+       ]
+      },
+      "trueup_cr": -974.14,
+      "trueup_note": "over-recovery PV at Mar 2022, mainly from late T2 capitalisation"
+     },
+     {
+      "cp": "CP3",
+      "fy": "2022-2026",
+      "order": "11/2021-22 (2021-08-28)",
+      "till_nar_share": 0.3,
+      "return": 11.59,
+      "trueup_wacc": 11.77,
+      "coe": 15.05,
+      "cod": 7.85,
+      "debt_share": 0.48,
+      "avg_rab_cr_ordered": [
+       4768.61,
+       7849.78,
+       10383.66,
+       10006.68,
+       9694.08
+      ],
+      "avg_rab_cr_actual": [
+       4507.11,
+       6898.43,
+       9358.51,
+       9367.07,
+       8982.32
+      ],
+      "arr_gross_cr": 10201.15,
+      "arr_net_cr": 8840.09,
+      "arr_net_by_year_cr": [
+       392.04,
+       1710.15,
+       2220.81,
+       2265.77,
+       2251.32
+      ],
+      "ypp": 447.53,
+      "ypp_asked": 1546.55,
+      "planned_shortfall_pv_cr": 940.63,
+      "aero_rev_planned_cr": [
+       443.57,
+       1113.29,
+       1619.76,
+       2203.87,
+       2359.68
+      ],
+      "aero_rev_actual_cr": [
+       541.94,
+       1145.54,
+       1794.81,
+       2433.29,
+       2696.64
+      ],
+      "udf_dom_intl": {
+       "2021-10": [
+        184,
+        839
+       ],
+       "FY2023": [
+        350,
+        1200
+       ],
+       "FY2024": [
+        450,
+        1400
+       ],
+       "FY2025-Dec2025": [
+        550,
+        1500
+       ],
+       "Jan-Mar2026": [
+        385,
+        1050
+       ]
+      },
+      "landing_le100mt_dom_intl": {
+       "2021-10": [
+        207,
+        410
+       ],
+       "FY2023": [
+        260,
+        440
+       ],
+       "FY2024": [
+        365,
+        660
+       ],
+       "FY2025": [
+        510,
+        685
+       ],
+       "Apr-Dec2025": [
+        510,
+        715
+       ],
+       "Jan-Mar2026": [
+        355,
+        500
+       ]
+      },
+      "trueup_cr": 603.38,
+      "trueup_note": "under-recovery PV at Mar 2027 (net ARR 8,961.95 vs actual 8,612.22)"
+     },
+     {
+      "cp": "CP4",
+      "fy": "2027-2031",
+      "order": "14/2026-27 (2026-08-20)",
+      "till_nar_share": 0.3,
+      "return": 11.99,
+      "coe": 15.05,
+      "cod": 8.68,
+      "debt_share": 0.48,
+      "avg_rab_cr": {
+       "FY2027": 9080.7,
+       "FY2031": 11977.2
+      },
+      "arr_net_cr": 14604.31,
+      "arr_pv_cr": 11751.55,
+      "pax_m": 301,
+      "ypp": 390.42,
+      "arr_asked_cr": 41398.93,
+      "udf_dep_dom_intl": {
+       "2026-09-01": [
+        300,
+        997
+       ],
+       "2030-05-01": [
+        160,
+        854
+       ]
+      },
+      "udf_arr_dom_intl": {
+       "2026-09-01": [
+        125,
+        426
+       ],
+       "2030-05-01": [
+        65,
+        366
+       ]
+      },
+      "landing_flat_dom_intl": {
+       "2026-09-01": [
+        442,
+        652
+       ],
+       "2030-05-01": [
+        295,
+        374
+       ]
+      }
+     }
+    ],
+    "unit": "per control period (INR crore, %, INR per pax)",
+    "source": "https://aera.gov.in/uploads/airports/5b1f90079005ao081415.pdf ; https://aera.gov.in/uploads/airports/16466592165337.pdf ; https://www.aera.gov.in/uploads/airports/17872763073873.pdf ; https://www.aera.gov.in/uploads/consultations/5afeb1d1b2109FinalConsultationPaperBIALV9100518.pdf ; https://bpac.in/wp-content/uploads/2018/10/Summary-of-AERA-order_2018_BPAC.pdf",
+    "period": "2008-2031",
+    "estimate": false,
+    "note": "CP2 first-year UDF conflict: BPAC/AERA 100/400 from 16 Sep 2018 (67% cut) vs ICRA/Deccan Herald 139/558 (55%). TDSAT interim collections ~101.91 cr (AERA) vs ~75 cr (ICRA). CP1 order came 3 yrs late, CP2 ~2.4 yrs late; old rates charged meanwhile and trued up."
+   },
+   "precp_shortfall": {
+    "value": 179.76,
+    "unit": "INR crore under-recovery (PV at 31 Mar 2022)",
+    "source": "https://aera.gov.in/uploads/airports/16466592165337.pdf (Tables 3, 5, 182)",
+    "period": "May 2008-Mar 2011 carried to Mar 2022",
+    "estimate": false,
+    "note": "54.87 at Mar 2011, indexed at 10.97% (x1.68) to 92.33 at 2016, then 11.74% (x1.95): x3.3 over 11 years. The carrying-cost mechanism. BIAL had claimed 411.09 indexed at Mar 2011; unindexed 357.59."
+   },
+   "fy2009_arr_vs_actual": {
+    "value": {
+     "arr_cr": 308.06,
+     "actual_cr": 241.04,
+     "shortfall_cr": -67.03,
+     "fy2010_over": 20.28,
+     "fy2011_over": 71.45
+    },
+    "unit": "INR crore (40% SRT recompute)",
+    "source": "https://www.aera.gov.in/uploads/consultations/5afeb1d1b2109FinalConsultationPaperBIALV9100518.pdf (Tables 2, 7; para 3.3.12)",
+    "period": "FY2009-FY2011",
+    "estimate": false,
+    "note": "AERA counted only from 1 Sep 2009 (when it existed): net over-recovery 83.28. Precedent: no true-up before the regulator exists."
+   },
+   "cp1_till_and_return": {
+    "value": 11.55,
+    "unit": "% FRoR (40% shared revenue till, CoE 16%)",
+    "source": "https://aera.gov.in/uploads/airports/5b1f90079005ao081415.pdf (Decisions 1, 10, 11; Tables 59, 101)",
+    "period": "CP1 FY2012-FY2016",
+    "estimate": false,
+    "note": "40%-vs-single-till UDF gap ~Rs 116.14 cr treated as a passenger transfer for capex, adjusted from RAB in CP2. Later trued up on 30% till at 10.97%: over-recovery 313.62 at Mar 2016. TDSAT (Dec 2020) upheld hybrid till."
+   },
+   "cp2_trueup_over_recovery": {
+    "value": -974.14,
+    "unit": "INR crore (PV at 31 Mar 2022, deducted from FY2022 ARR)",
+    "source": "https://aera.gov.in/uploads/airports/16466592165337.pdf (Table 57, para 3.13.9, Table 182 line L)",
+    "period": "CP2 true-up",
+    "estimate": false,
+    "note": "Collections 4,263.12 vs trued-up ARR 3,906.08; FY17 alone 597.25; PV factors 1.74 down to 1.12. Cause: T2 capitalised later than the tariff assumed. BIAL claimed a 4,886 cr under-recovery (litigation). CP4 nets with pre-control to 794.38."
+   },
+   "cp2_wacc_trueup": {
+    "value": {
+     "wacc": 11.76,
+     "coe": 16.0,
+     "cod": 9.06,
+     "w_equity": 0.4724,
+     "w_debt": 0.4636,
+     "w_state_loan": 0.064
+    },
+    "unit": "% / weights",
+    "source": "https://aera.gov.in/uploads/airports/16466592165337.pdf (Table 26)",
+    "period": "CP2 true-up FY2017-21",
+    "estimate": false
+   },
+   "cp3_wacc": {
+    "value": {
+     "fror": 11.59,
+     "coe": 15.05,
+     "cod": 7.85,
+     "debt_share": 0.48,
+     "trued_up": 11.77,
+     "asked": 16.51
+    },
+    "unit": "%",
+    "source": "https://aera.gov.in/uploads/airports/16466592165337.pdf (Tables 106, 108) ; https://www.aera.gov.in/uploads/airports/17872763073873.pdf (Table 118)",
+    "period": "CP3 FY2022-FY2026",
+    "estimate": false,
+    "note": "CoE from IIM Bangalore CAPM: beta 0.93, Rf 7.56%, ERP 8.06%. BIAL asked CoE 23.61%, CoD 10%."
+   },
+   "cp3_rab_t2_step": {
+    "value": {
+     "opening_fy22": 4427.38,
+     "additions": [
+      971.07,
+      5912.17,
+      161.03,
+      223.22,
+      285.09
+     ],
+     "closing_fy23": 10589.72,
+     "avg_ordered": [
+      4768.61,
+      7849.78,
+      10383.66,
+      10006.68,
+      9694.08
+     ],
+     "avg_actual": [
+      4507.11,
+      6898.43,
+      9358.51,
+      9367.07,
+      8982.32
+     ]
+    },
+    "unit": "INR crore aero RAB FY2022-FY2026",
+    "source": "https://aera.gov.in/uploads/airports/16466592165337.pdf (Table 102) ; https://www.aera.gov.in/uploads/airports/17872763073873.pdf (Table 118)",
+    "period": "CP3",
+    "estimate": false,
+    "note": "2.2x in two years as T2 entered at COD."
+   },
+   "cp3_arr_and_shortfall": {
+    "value": {
+     "gross_arr": 10201.15,
+     "nar_30pct": -874.75,
+     "concession_fee": 308.07,
+     "precp": 179.76,
+     "cp2_clawback": -974.14,
+     "net_arr": 8840.09,
+     "pv_arr": 6789.92,
+     "pv_planned_rev": 5849.29,
+     "shortfall_pv": 940.63,
+     "shortfall_share_of_pv_arr": 0.139,
+     "return": 4950.96,
+     "depreciation": 2427.57,
+     "opex": 2669.89,
+     "tax": 126.44,
+     "wc_interest": 26.3,
+     "pv_factors": [
+      1.0,
+      0.9,
+      0.8,
+      0.72,
+      0.64
+     ]
+    },
+    "unit": "INR crore over CP3",
+    "source": "https://aera.gov.in/uploads/airports/16466592165337.pdf (Table 182, paras 13.5.14, 13.6.3)",
+    "period": "CP3 FY2022-FY2026",
+    "estimate": false,
+    "note": "Deliberate smoothing: back-loaded tariff with the shortfall carried to CP4 at FRoR. 13.9% is PV/PV (10.6% would wrongly divide by nominal ARR)."
+   },
+   "cp3_trueup_shortfall": {
+    "value": 603.38,
+    "unit": "INR crore under-recovery into FY2027 ARR (PV at 31 Mar 2027, 11.77%)",
+    "source": "https://www.aera.gov.in/uploads/airports/17872763073873.pdf (Table 118, para 3.12.9)",
+    "period": "CP3 true-up",
+    "estimate": false,
+    "note": "Gross ARR 11,045.83, less NAR 1,289.51, less 794.38 = 8,961.95 vs actual 8,612.22. Consultation stage 239.1."
+   },
+   "cp4_wacc": {
+    "value": {
+     "wacc": 11.99,
+     "coe": 15.05,
+     "cod": 8.68,
+     "debt_share": 0.48,
+     "debt_range_cr": [
+      14087.19,
+      22754.98
+     ],
+     "new_debt_rate": "SBI 1-yr MCLR + 50 bps"
+    },
+    "unit": "%",
+    "source": "https://www.aera.gov.in/uploads/airports/17872763073873.pdf (Tables 210-211; paras 6.6.1-6.6.2)",
+    "period": "CP4 FY2027-FY2031",
+    "estimate": false,
+    "note": "CoD trued up at lower of actual or MCLR+50bps. IATA push to lower CoE rejected."
+   },
+   "cp4_baseline_arr": {
+    "value": {
+     "return": 6517.14,
+     "depreciation": 3901.58,
+     "om_incl_concession_fee": 6127.8,
+     "tax": 334.24,
+     "nar_30pct": -2879.82,
+     "cp3_trueup": 603.38,
+     "net_arr": 14604.31,
+     "pv": 11751.55,
+     "pax_m": 301,
+     "ypp": 390.42,
+     "asked": 41398.93
+    },
+    "unit": "INR crore over CP4",
+    "source": "https://www.aera.gov.in/uploads/airports/17872763073873.pdf (Table 288) ; https://www.deccanchronicle.com/nation/bengaluru-airport-aera-slashes-user-development-fee-to-rs-300-for-domestic-passengers-1981136",
+    "period": "CP4 FY2027-FY2031",
+    "estimate": false,
+    "note": "The building block in its plainest form."
+   },
+   "cp4_incremental_arr": {
+    "value": [
+     {
+      "asset": "T2 Ph2 terminal",
+      "capex_cr": 6030.3,
+      "aero_cr": 5291.67,
+      "asked_cr": 7480.47,
+      "cod": "2030-03-31",
+      "arr_cr": 1009.7,
+      "ypp_add": 22.19
+     },
+     {
+      "asset": "T2 Ph2 apron (40 stands)",
+      "capex_cr": 760,
+      "cod": "2029-06-30",
+      "arr_cr": 145.26,
+      "ypp_add": 3.19
+     },
+     {
+      "asset": "Eastern Connectivity Tunnel",
+      "capex_cr": 1600,
+      "aero_cr": 480,
+      "cod": "2029-06-30",
+      "arr_cr": 107.93,
+      "ypp_add": 2.37
+     }
+    ],
+    "unit": "INR crore",
+    "source": "https://www.aera.gov.in/uploads/airports/17872763073873.pdf (Tables 284-288)",
+    "period": "CP4",
+    "estimate": false,
+    "note": "Tariff steps on commissioning, by addendum; nothing pre-funded during construction."
+   },
+   "asked_vs_allowed": {
+    "value": {
+     "cp3_ypp_ratio": 3.46,
+     "cp4_arr_ratio": 2.83
+    },
+    "unit": "x (asked / allowed)",
+    "source": "https://aera.gov.in/uploads/airports/16466592165337.pdf (paras 13.1.2, 13.2.3) ; https://www.aera.gov.in/uploads/airports/17872763073873.pdf (Table 288)",
+    "period": "CP3-CP4",
+    "estimate": true,
+    "note": "Ratios are my arithmetic. Basis for appeal odds."
+   }
+  },
+  "path": {
+   "fy": {
+    "value": [
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025,
+     2026
+    ],
+    "unit": "fiscal year ending March",
+    "source": "research/bial.md section 3",
+    "period": "FY2009-FY2026",
+    "estimate": false,
+    "note": "Index for every path array. null = not published."
+   },
+   "pax_m": {
+    "value": [
+     7.23,
+     9.93,
+     11.63,
+     12.71,
+     11.99,
+     12.86,
+     15.4,
+     18.98,
+     22.88,
+     26.91,
+     33.31,
+     32.36,
+     10.92,
+     16.3,
+     31.9,
+     37.6,
+     41.9,
+     44.5
+    ],
+    "unit": "million passengers",
+    "source": "https://www.aera.gov.in/uploads/consultations/5afeb1d1b2109FinalConsultationPaperBIALV9100518.pdf (Table 13) ; https://aera.gov.in/uploads/airports/16466592165337.pdf (Tables 19, 21) ; https://www.crisil.com/mnt/winshare/Ratings/RatingList/RatingDocs/BangaloreInternationalAirportLimited_October%2028,%202022_RR_302681.html ; https://www.icra.in/Rating/GetRationalReportFilePdf?id=130057 ; https://www.icra.in/Rating/ShowRationalReportFilePdf/143328",
+    "period": "FY2009-FY2026",
+    "estimate": false,
+    "note": "FY2009 is 312 days (8.45 annualised). FY2021 AAI actual (BIAL said 8.00). FY2024 derived (+18% on 31.9). Traffic exceeded the 20 mppa capacity from FY2017. FY2013 -5.7% (domestic -8.1%; Kingfisher collapse inferred)."
+   },
+   "aero_rev_cr": {
+    "value": [
+     241.04,
+     388.46,
+     440.7,
+     486.3,
+     474.28,
+     497.38,
+     715.96,
+     873.45,
+     null,
+     null,
+     null,
+     null,
+     null,
+     541.94,
+     1145.54,
+     1794.81,
+     2433.29,
+     2696.64
+    ],
+    "unit": "INR crore (AERA aero, incl. cargo/GH/fuel)",
+    "source": "https://www.aera.gov.in/uploads/consultations/5afeb1d1b2109FinalConsultationPaperBIALV9100518.pdf (Tables 7, 12) ; https://www.aera.gov.in/uploads/airports/17872763073873.pdf (Table 118)",
+    "period": "FY2009-FY2026",
+    "estimate": false,
+    "note": "FY2009-16 are AERA's proposed true-up figures. CP2 (FY2017-21) published only as a total: 4,263.12."
+   },
+   "aero_yield_per_pax": {
+    "value": [
+     333,
+     391,
+     379,
+     383,
+     396,
+     387,
+     465,
+     460,
+     null,
+     null,
+     null,
+     null,
+     null,
+     332,
+     359,
+     477,
+     581,
+     606
+    ],
+    "unit": "INR per passenger",
+    "source": "derived: aero_rev_cr / pax_m",
+    "period": "FY2009-FY2026",
+    "estimate": true,
+    "note": "Derived arithmetic."
+   },
+   "op_income_cr": {
+    "value": [
+     324,
+     null,
+     null,
+     null,
+     null,
+     646.44,
+     915.51,
+     1137.97,
+     1314.35,
+     1561.7,
+     1493.0,
+     1415,
+     552,
+     826,
+     1844.7,
+     2749.3,
+     3994.5,
+     4239
+    ],
+    "unit": "INR crore",
+    "source": "https://aera.gov.in/uploads/stack_holder/16523840693125.pdf (Table 2) ; https://www.icra.in/Rating/GetRationalReportFilePdf?id=89665 ; https://www.crisil.com/mnt/winshare/Ratings/RatingList/RatingDocs/Bangalore_International_Airport_Limited_November_04_2020_RR.html ; https://www.crisil.com/mnt/winshare/Ratings/RatingList/RatingDocs/BangaloreInternationalAirportLimited_October%2028,%202022_RR_302681.html ; https://www.icra.in/Rating/ShowRationalReportFilePdf/143328",
+    "period": "FY2009-FY2026",
+    "estimate": false,
+    "note": "FY2009 is an estimate (aero 241 + non-aero ~83). FY2020-22 CRISIL revenue; FY2023-25 ICRA consolidated; FY2026 ICRA (~+15% on 3,699 text basis). FY2024 ICRA text says 2,539. FY2025 includes ~272 one-off land income."
+   },
+   "nonaero_cr": {
+    "value": [
+     83,
+     null,
+     null,
+     null,
+     null,
+     149,
+     200,
+     265,
+     null,
+     null,
+     null,
+     null,
+     null,
+     284,
+     699,
+     954,
+     1561,
+     1542
+    ],
+    "unit": "INR crore",
+    "source": "derived: op_income_cr - aero_rev_cr (FY2009 from AERA 40% NAR deduction 33.33/0.4)",
+    "period": "FY2009-FY2026",
+    "estimate": true,
+    "note": "Mixed bases (AERA aero vs company OI); rough."
+   },
+   "ebitda_cr": {
+    "value": [
+     144,
+     null,
+     null,
+     null,
+     null,
+     385.34,
+     601.6,
+     803.58,
+     931.54,
+     1098,
+     975,
+     null,
+     null,
+     null,
+     1110,
+     1749,
+     2720,
+     3052
+    ],
+    "unit": "INR crore",
+    "source": "https://aera.gov.in/uploads/stack_holder/16523840693125.pdf (Table 2) ; https://www.icra.in/Rating/GetRationalReportFilePdf?id=89665 ; https://www.icra.in/Rating/ShowRationalReportFilePdf/143328",
+    "period": "FY2009-FY2026",
+    "estimate": true,
+    "note": "FY2014-17 reported; FY2018-19, FY2023-26 derived as margin x OI; FY2009 estimate (range 128-160)."
+   },
+   "ebitda_margin": {
+    "value": [
+     0.44,
+     null,
+     null,
+     null,
+     null,
+     0.6,
+     0.66,
+     0.71,
+     0.71,
+     0.703,
+     0.653,
+     null,
+     null,
+     null,
+     0.602,
+     0.636,
+     0.681,
+     0.72
+    ],
+    "unit": "fraction (OPBDIT/OI)",
+    "source": "https://aera.gov.in/uploads/stack_holder/16523840693125.pdf ; https://www.icra.in/Rating/ShowRationalReportFilePdf/39406 ; https://www.icra.in/Rating/GetRationalReportFilePdf?id=89665 ; https://www.icra.in/Rating/ShowRationalReportFilePdf/143328",
+    "period": "FY2009-FY2026",
+    "estimate": false,
+    "note": "All reported except FY2009 (estimate 0.40-0.46). FY2021-22 not published (collapse)."
+   },
+   "interest_cr": {
+    "value": [
+     135,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     187,
+     172,
+     183,
+     168,
+     196,
+     null,
+     null,
+     483,
+     920,
+     1088,
+     1050
+    ],
+    "unit": "INR crore",
+    "source": "derived: EBITDA / reported interest cover (https://www.icra.in/Rating/ShowRationalReportFilePdf/39406 ; https://www.icra.in/Rating/GetRationalReportFilePdf?id=89665 ; https://www.icra.in/Rating/ShowRationalReportFilePdf/143328)",
+    "period": "FY2009-FY2026",
+    "estimate": true,
+    "note": "FY2009 estimate 130-140; FY2020 estimate (IC 4.69 at FY2019-like margin); FY2026 assumed near FY2025 after refi at 8.15%."
+   },
+   "principal_cr": {
+    "value": [
+     0,
+     0,
+     96,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     6,
+     37,
+     null,
+     null,
+     null,
+     320,
+     513,
+     380
+    ],
+    "unit": "INR crore scheduled principal",
+    "source": "https://aera.gov.in/uploads/stack_holder/16523840693125.pdf (Table 4) ; https://www.icra.in/Rating/GetRationalReportFilePdf?id=89665 ; https://www.icra.in/Rating/GetRationalReportFilePdf?id=130057 ; https://www.icra.in/Rating/GetRationalReportFilePdf?id=134917 ; https://www.crisilratings.com/mnt/winshare/Ratings/RatingList/RatingDocs/BangaloreInternationalAirportLimited_November%2006_%202024_RR_355170.html",
+    "period": "FY2009-FY2026",
+    "estimate": true,
+    "note": "Reported: FY2020 ~37, FY2025 ~513. FY2011 ~96 includes FX restatement. FY2019 ~6 derived from DSCR 5.6. FY2024 estimate 250-400 (CRISIL: T2 loans 10,206 to 9,718 by Nov 2024). FY2026 estimate 300-460 (462 pre-refi schedule)."
+   },
+   "interest_cover": {
+    "value": [
+     1.07,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     4.3,
+     5.43,
+     6.0,
+     5.8,
+     4.69,
+     0.47,
+     1.22,
+     2.3,
+     1.9,
+     2.5,
+     null
+    ],
+    "unit": "x OPBDIT/interest",
+    "source": "https://www.icra.in/Rating/ShowRationalReportFilePdf/39406 ; https://www.icra.in/Rating/GetRationalReportFilePdf?id=89665 ; https://www.crisil.com/mnt/winshare/Ratings/RatingList/RatingDocs/Bangalore_International_Airport_Limited_November_04_2020_RR.html ; https://www.crisil.com/mnt/winshare/Ratings/RatingList/RatingDocs/BangaloreInternationalAirportLimited_October%2028,%202022_RR_302681.html ; https://www.icra.in/Rating/ShowRationalReportFilePdf/143328",
+    "period": "FY2009-FY2026",
+    "estimate": false,
+    "note": "All reported except FY2009 (estimate 1.0-1.15)."
+   },
+   "dscr": {
+    "value": [
+     1.07,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     5.6,
+     3.9,
+     0.45,
+     1.15,
+     2.0,
+     1.45,
+     1.65,
+     2.1
+    ],
+    "unit": "x EBITDA/(interest+principal), pre-tax",
+    "source": "research/bial.md section 3 (https://www.icra.in/Rating/GetRationalReportFilePdf?id=89665 for FY2019)",
+    "period": "FY2009-FY2026",
+    "estimate": true,
+    "note": "Only FY2019 (5.6x, ICRA) is reported. Ranges: FY2009 1.0-1.15; FY2021 <0.5; FY2022 1.1-1.2; FY2023 ~2.0 (<=2.3); FY2024 1.3-1.5; FY2025 1.55-1.7; FY2026 2.0-2.25. Lender CFADS would be lower (tax, maintenance capex)."
+   },
+   "dscr_basis": {
+    "value": [
+     "E",
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     "R",
+     "E",
+     "E",
+     "E",
+     "E",
+     "E",
+     "E",
+     "E"
+    ],
+    "unit": "R reported / E estimate",
+    "source": "research/bial.md section 3",
+    "period": "FY2009-FY2026",
+    "estimate": false
+   },
+   "fy2009_first_year": {
+    "value": {
+     "loss_cr": -97.03,
+     "pre_opening_loss_cr": -53.28,
+     "accumulated_loss_cr": -150.31,
+     "dom_udf_months_late": 7,
+     "dom_udf_granted": 260,
+     "dom_udf_asked": 675
+    },
+    "unit": "INR crore / months",
+    "source": "https://www.aera.gov.in/uploads/consultations/5afeb1d1b2109FinalConsultationPaperBIALV9100518.pdf (para 3.2.1)",
+    "period": "FY2009",
+    "estimate": false,
+    "note": "BIAL's own statements quoted by AERA. Intl UDF 1,070 from AOD."
+   },
+   "covid": {
+    "value": {
+     "revenue_cr": [
+      1415,
+      552,
+      826
+     ],
+     "pat_cr": [
+      287,
+      -543,
+      -357
+     ],
+     "interest_cover": [
+      4.69,
+      0.47,
+      1.22
+     ],
+     "adj_debt_to_networth": [
+      1.16,
+      2.16,
+      3.21
+     ]
+    },
+    "unit": "[FY2020, FY2021, FY2022]",
+    "source": "https://www.crisil.com/mnt/winshare/Ratings/RatingList/RatingDocs/Bangalore_International_Airport_Limited_November_04_2020_RR.html ; https://www.crisil.com/mnt/winshare/Ratings/RatingList/RatingDocs/BangaloreInternationalAirportLimited_October%2028,%202022_RR_302681.html ; https://www.icra.in/Rating/ShowRationalReportFilePdf/98487",
+    "period": "FY2020-FY2022",
+    "estimate": false,
+    "note": "ICRA AA put on Negative and withdrawn 8 Oct 2020. FY2021 is the only reported sub-1.0x year."
+   },
+   "post_t2": {
+    "value": {
+     "op_income_cr": [
+      1844.7,
+      2749.3,
+      3994.5
+     ],
+     "margin": [
+      0.602,
+      0.636,
+      0.681
+     ],
+     "pat_cr": [
+      487.3,
+      -56.8,
+      584.0
+     ],
+     "debt_to_opbdit": [
+      9.4,
+      6.6,
+      4.1
+     ],
+     "interest_cover": [
+      2.3,
+      1.9,
+      2.5
+     ],
+     "implied_debt_cr": [
+      10440,
+      11540,
+      11150
+     ]
+    },
+    "unit": "[FY2023, FY2024, FY2025]",
+    "source": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=130057 ; https://www.icra.in/Rating/ShowRationalReportFilePdf/143328",
+    "period": "FY2023-FY2025",
+    "estimate": false,
+    "note": "Leverage peak FY2023 (9.4x, T2 opens); coverage trough FY2024 (1.9x, T2 repayment starts); recovery FY2025 on the CP3 tariff step. Implied debt is derived."
+   },
+   "fy2026_latest": {
+    "value": {
+     "pax_m": 44.5,
+     "op_income_cr": 4239,
+     "margin": 0.72,
+     "nonaero_growth": 0.2,
+     "unencumbered_cash_cr": 3603.3,
+     "dsr_margin_money_cr": 459
+    },
+    "unit": "mixed",
+    "source": "https://www.icra.in/Rating/ShowRationalReportFilePdf/143328",
+    "period": "FY2026",
+    "estimate": false
+   },
+   "t2_dscr_warning": {
+    "value": "FY2024",
+    "unit": "first year of T2 principal",
+    "source": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=89665 ; https://aera.gov.in/uploads/airports/16466592165337.pdf (p.160)",
+    "period": "CP3",
+    "estimate": false,
+    "note": "ICRA 2019: 'suppressed projected debt coverage metrics expected in third control period'; BIAL to AERA: under-recovery would mean defaulting on loan covenants under the expansion financing agreements. The real lender-warning point."
+   },
+   "cy2025_fairfax": {
+    "value": {
+     "revenue_usd_m": 532.1,
+     "ebitda_usd_m": 374.2,
+     "margin": 0.7,
+     "net_income_usd_m": 107.8,
+     "aero_usd_m": 237.1,
+     "nonaero_other_usd_m": 295.1,
+     "pax_m": 43.8,
+     "intl_share": 0.16,
+     "roe": 0.24
+    },
+    "unit": "USD million",
+    "source": "https://www.fairfaxindia.ca/wp-content/uploads/2026/03/Fairfax-India-2025-Annual-Report-WEBSITE.pdf (pp.11-14)",
+    "period": "CY2025",
+    "estimate": false,
+    "note": "Non-aero plus other operating income (incl. real estate) now exceeds aero."
+   }
+  },
+  "t2": {
+   "financial_close": {
+    "value": {
+     "programme_cr": 13352,
+     "debt_cr": 10206,
+     "sbi_cr": 5100,
+     "axis_cr": 5106,
+     "debt_equity": "80:20",
+     "moratorium_after_completion_years": 1,
+     "repayment_years": 10,
+     "door_to_door_years": 14.25,
+     "date": "2019-08-06",
+     "rate_2020": 7.85
+    },
+    "unit": "INR crore / years",
+    "source": "https://www.itln.in/bial-raises-rs10206-crore-through-banks-achieves-financial-closure-aviation ; https://www.icra.in/Rating/GetRationalReportFilePdf?id=89665 ; https://aera.gov.in/uploads/airports/16466592165337.pdf (para 6.2.7)",
+    "period": "2019",
+    "estimate": false,
+    "note": "Floating, 1-yr MCLR linked. Later syndicated (SBI 2,951, Canara 2,481, Union 1,905, Axis 1,429, BoM 952; all to 30 Sep 2034; CRISIL Nov 2024). ICRA calls the split debt:internal accruals 4:1. SBI had funded ~500 cr of runway earthworks before close."
+   },
+   "funding_split": {
+    "value": {
+     "spent_fy17_19_cr": 2368,
+     "balance_fy20_23_cr": 10984,
+     "debt_cr": 10206,
+     "internal_accruals_cr": 778,
+     "equity_in_by_mar2019": 0.7,
+     "hard_cost_fixed_price_share": 0.65
+    },
+    "unit": "INR crore",
+    "source": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=89665",
+    "period": "2019",
+    "estimate": false
+   },
+   "capex_actual": {
+    "value": {
+     "cost_cr": 11403,
+     "capacity_from_mppa": 26.5,
+     "capacity_to_mppa": 51.5,
+     "aera_approved_share": 0.9
+    },
+    "unit": "INR crore / mppa",
+    "source": "https://www.icra.in/Rating/ShowRationalReportFilePdf/143328 ; https://www.icra.in/Rating/GetRationalReportFilePdf?id=130057",
+    "period": "Phase 2 FY2017-FY2024",
+    "estimate": false,
+    "note": "15% under the 13,352 close budget. Balance expected in CP4 RAB."
+   },
+   "cp2_approved_capex": {
+    "value": {
+     "approved_cr": 10342.4,
+     "gap_to_bial_cr": 1616.8
+    },
+    "unit": "INR crore",
+    "source": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=89665",
+    "period": "CP2 order 2018-08-31",
+    "estimate": false,
+    "note": "~14% disallowance risk at approval, reviewed on actuals."
+   },
+   "cp2_udf_cut_and_tdsat": {
+    "value": {
+     "udf_dom_intl": [
+      139,
+      558
+     ],
+     "interim_udf": [
+      306,
+      1226
+     ],
+     "interim_window": "2019-04-16 to 2019-08-15",
+     "interim_collected_cr": {
+      "icra": 75,
+      "aera": 101.91
+     }
+    },
+    "unit": "INR per departing pax / crore",
+    "source": "https://www.icra.in/Rating/GetRationalReportFilePdf?id=89665 ; https://aera.gov.in/uploads/airports/16466592165337.pdf (paras 3.12.4-3.12.5)",
+    "period": "CP2",
+    "estimate": false,
+    "note": "Regulator does not pre-fund the expansion; cash in construction comes from the old base and lenders."
+   },
+   "t2p1_capitalised": {
+    "value": {
+     "total_cr": 4579.32,
+     "aero_share": 0.8766,
+     "aero_cr": 4014.23,
+     "bial_claim_cr": 4749.95,
+     "claim_hard_cr": 3565.67,
+     "claim_soft_cr": 545.8,
+     "claim_financing_allowance_cr": 638.47,
+     "capacity_mppa": 25,
+     "area_sqm": 255645
+    },
+    "unit": "INR crore",
+    "source": "https://aera.gov.in/uploads/airports/16466592165337.pdf (Tables 69, 99, 100)",
+    "period": "FY2023",
+    "estimate": false
+   },
+   "deferred_package": {
+    "value": {
+     "total_cr": 7458.57,
+     "idc_cr": 1044.83,
+     "idc_share_of_total": 0.14,
+     "idc_on_top_of_cost": 0.163,
+     "aero_cr": 6292.5,
+     "fy22_cr": 846.26,
+     "fy23_cr": 6612.31,
+     "cp3_capex_approved_cr": 8883.44,
+     "cp3_capex_claimed_cr": 10645.14,
+     "cp3_capex_actual_cr": 8524.81
+    },
+    "unit": "INR crore",
+    "source": "https://aera.gov.in/uploads/airports/16466592165337.pdf (Tables 94, 100) ; https://www.aera.gov.in/uploads/stack_holder/17841244347199.pdf",
+    "period": "CP3",
+    "estimate": false,
+    "note": "T2 Ph1 4,579.32; landside Ph1b 1,495.65; MMTH 537.34; apron Ph2 447.17; south runway Ph2 286.56; utilities 67.48; maintenance 45.05. IDC capitalised into RAB."
+   },
+   "delay_penalty_rule": {
+    "value": 0.01,
+    "unit": "fraction of project cost off ARR if capitalisation slips; no further IDC",
+    "source": "https://aera.gov.in/uploads/airports/16466592165337.pdf (paras 3.3.16-3.3.17, 5.2.10-5.2.18, 5.5.6-5.5.9)",
+    "period": "CP2-CP3",
+    "estimate": false,
+    "note": "TDSAT upheld 16 Dec 2020. Waived to 31 Mar 2022 for COVID; T2 capitalisation moved to Dec 2022; ~50 cr extra PMC after Mar 2021 disallowed."
+   },
+   "timeline": {
+    "value": {
+     "works_start": "FY2017",
+     "design_unveiled": "2019-04-02",
+     "runway2_departures": "2019-12",
+     "runway2_first_landing": "2020-03-19",
+     "t2_inaugurated": "2022-11-11",
+     "t2_domestic": "2023-01-15",
+     "t2_international": "2023-09-12",
+     "cod_target": "2021-03-31",
+     "slip_months": 21
+    },
+    "unit": "dates",
+    "source": "https://www.thenewsminute.com/karnataka/second-runway-bengaluru-airport-marks-first-landing-120673 ; https://www.som.com/news/soms-design-for-new-garden-terminal-at-kempegowda-international-airport-in-bengaluru-india-unveiled/ ; https://indianinfrastructure.com/2022/11/12/terminal-2-of-kempegowda-airport-gets-inaugurated/ ; https://livefromalounge.com/bengaluru-airport-transition-september-12-2023/",
+    "period": "2016-2023",
+    "estimate": false,
+    "note": "Slip months is my arithmetic (Mar 2021 to Jan 2023)."
+   },
+   "delay_causes": {
+    "value": {
+     "igu_glass": [
+      0.06,
+      0.89,
+      6.5
+     ],
+     "bamboo_ceiling": [
+      0.12,
+      0.98
+     ],
+     "boarding_bridges": [
+      0.0,
+      0.77
+     ]
+    },
+    "unit": "[actual, planned share delivered, months impact] by May 2020",
+    "source": "https://aera.gov.in/uploads/airports/16466592165337.pdf (paras 5.2.12-5.2.15)",
+    "period": "2020",
+    "estimate": false,
+    "note": "COVID labour and imported long-lead items; accepted by AERA; no passenger inconvenience since traffic collapsed."
+   },
+   "unit_costs": {
+    "value": {
+     "phase2_all_in_per_mppa": 456,
+     "t2p1_asset_per_mppa": 183,
+     "t2p2_terminal_per_mppa": 286,
+     "t2p1_terminal_per_sqm_2019": 116092,
+     "t2p1_terminal_per_sqm_fy25": 150105
+    },
+    "unit": "INR crore per added mppa / INR per sqm",
+    "source": "derived from https://www.icra.in/Rating/ShowRationalReportFilePdf/143328 ; https://aera.gov.in/uploads/airports/16466592165337.pdf (Table 100) ; https://aera.gov.in/uploads/stack_holder/17813314277439.pdf (p.111)",
+    "period": "2019-2025",
+    "estimate": true,
+    "note": "456 is nominal FY2017-24; 286 is FY2025 prices; not like-for-like."
+   },
+   "t2p2": {
+    "value": {
+     "mecon_cr": 5713,
+     "bial_claim_cr": 7176,
+     "aera_approved_cr": 6030.3,
+     "capacity_from": 25,
+     "capacity_to": 45,
+     "area_allowed_sqm": 243855,
+     "apron_cr": 754.9
+    },
+    "unit": "INR crore",
+    "source": "https://aera.gov.in/uploads/stack_holder/17813314277439.pdf ; https://www.aera.gov.in/uploads/airports/17872763073873.pdf (Table 284)",
+    "period": "CP4",
+    "estimate": false
+   },
+   "next_programme": {
+    "value": {
+     "bial_claim_cr": 18635,
+     "mecon_cr": 13598,
+     "icra_cr": 21000,
+     "debt_equity": "80:20",
+     "capacity_mppa": [
+      75,
+      80
+     ],
+     "mecon_idc_basis": "70:30 at 9%"
+    },
+    "unit": "INR crore",
+    "source": "https://aera.gov.in/uploads/stack_holder/17813314277439.pdf ; https://www.icra.in/Rating/ShowRationalReportFilePdf/143328",
+    "period": "CP4-CP5 (beyond FY2029)",
+    "estimate": false,
+    "note": "MECON is the consultant's assessment, not AERA's final determination."
+   },
+   "zmi_1b_template": {
+    "value": {
+     "debt_equity": "80:20",
+     "moratorium_after_cod_years": 1,
+     "repayment_years": 10,
+     "door_to_door_years": 14,
+     "idc_share_of_rab_addition": [
+      0.14,
+      0.16
+     ],
+     "rab_entry": "at COD",
+     "late_penalty": 0.01,
+     "planned_shortfall_share_of_pv_arr": 0.139,
+     "slip_event_months": 21,
+     "cr_per_mppa_terminal": 286,
+     "cr_per_mppa_with_runway": 456
+    },
+    "unit": "template",
+    "source": "derived from bial.t2.* and bial.aera.*",
+    "period": "game",
+    "estimate": true,
+    "note": "Mechanisms copied from BIAL's T2; numbers to be scaled in tools/concession_model.py."
+   }
+  },
+  "owners": {
+   "ladder": {
+    "value": [
+     {
+      "date": "2009-12",
+      "block": 0.17,
+      "buyer": "GVK",
+      "seller": "L&T",
+      "price": "Rs 686 cr at Rs 105/share",
+      "implied_100pct": {
+       "inr_cr": 4040,
+       "usd_bn": 0.877
+      }
+     },
+     {
+      "date": "2009-12-29",
+      "block": 0.12,
+      "buyer": "GVK",
+      "seller": "Zurich",
+      "price": "Rs 484.6 cr at Rs 105/share",
+      "implied_100pct": {
+       "inr_cr": 4040,
+       "usd_bn": 0.877
+      },
+      "note": "announced 5 Oct 2009; Zurich kept 5% and board seat; operator to 2015"
+     },
+     {
+      "date": "2011-08",
+      "block": 0.14,
+      "buyer": "GVK (ROFR)",
+      "seller": "Siemens",
+      "price": "Rs 114/share, ~Rs 614-620 cr (USD 134-136 m)",
+      "implied_100pct": {
+       "inr_cr": 4440,
+       "usd_bn": 0.972
+      },
+      "note": "after Siemens lock-in ended Jun 2011 (~3 yrs post-COD); GVK 43% largest, not majority"
+     },
+     {
+      "date": "2017-03-24",
+      "block": 0.38,
+      "buyer": "Fairfax",
+      "seller": "GVK 33% + Zurich 5%",
+      "price": "INR 25.22 bn (~USD 385 m)",
+      "implied_100pct": {
+       "usd_bn": 1.0
+      }
+     },
+     {
+      "date": "2017-07-13",
+      "block": 0.1,
+      "buyer": "Fairfax",
+      "seller": "GVK",
+      "price": "~USD 200 m (fair value ~123; ~77 expensed)",
+      "implied_100pct": {
+       "usd_bn": 2.0
+      },
+      "note": "premium to buy out an exiting sponsor (38 to 48%), not control"
+     },
+     {
+      "date": "2018-05-16",
+      "block": 0.06,
+      "buyer": "Fairfax",
+      "seller": "Siemens",
+      "price": "~USD 67 m",
+      "implied_100pct": {
+       "usd_bn": 1.12
+      },
+      "note": "48 to 54%: the majority block, at about fair value"
+     },
+     {
+      "date": "2021-09-16",
+      "block": "11.5% of Anchorage (43.6% of BIAL)",
+      "buyer": "OMERS",
+      "seller": "Fairfax",
+      "price": "INR 9.5 bn (USD 129.2 m)",
+      "implied_100pct": {
+       "inr_bn": 189.7,
+       "usd_bn": 2.6
+      },
+      "note": "ratchet to 15% if Anchorage IPO < USD 1.0 bn; long-stop 16 Sep 2026"
+     },
+     {
+      "date": "2023",
+      "block": 0.1,
+      "buyer": "Fairfax",
+      "seller": "Siemens",
+      "price": "USD 250 m (INR 20.7 bn)",
+      "implied_100pct": {
+       "usd_bn": 2.5
+      },
+      "note": "single block; 3%+7% split not confirmed"
+     },
+     {
+      "date": "2025-02-20",
+      "block": 0.1,
+      "buyer": "Fairfax",
+      "seller": "Siemens",
+      "price": "USD 255 m in 3 instalments (84.15 / 94.35 / 76.5)",
+      "implied_100pct": {
+       "usd_bn": 2.55
+      },
+      "note": "64 to 74%; Siemens out 20 yrs after close"
+     },
+     {
+      "date": "2025-12-31",
+      "block": "74% fair value",
+      "buyer": "-",
+      "seller": "-",
+      "price": "USD 2,187.4 m",
+      "implied_100pct": {
+       "usd_bn": 3.0
+      }
+     }
+    ],
+    "unit": "blocks",
+    "source": "https://www.businesstoday.in/story/gvk-buys-14percent-siemens-stake-in-bangalore-airport/1/18126.html ; https://centreforaviation.com/analysis/reports/gvk-seeking-bigger-slice-of-bangalore-and-mumbai-airports-16670 ; https://centreforaviation.com/analysis/reports/gvk-power-raises-stake-in-profitable-bengaluru-airport-committed-to-domestic-airport-sector-57687 ; https://newsroom.flughafen-zuerich.ch/en/zurich-airport-divests-12-in-bangalore-and-keeps-5-in-preparation-for-further-growth-in-india/ ; https://fairfaxindia.ca/wp-content/uploads/FIH-PR-March-24-2017-FAIRFAX-INDIA-ACQUIRES-38-OF-BANGALORE-INTERNATIONAL-AIRPORT-LIMITED.pdf ; https://fairfaxindia.ca/wp-content/uploads/2017-Q2-Press-Release-FIH-Final.pdf ; https://www.fairfaxindia.ca/wp-content/uploads/May-16-2018-FIH-BIAL-54-l-Interest.pdf ; https://fairfaxindia.ca/wp-content/uploads/PR-Completion-of-Sale-of-Minority-Position-of-Anchorage-Infrastructure.pdf ; https://fairfaxindia.ca/wp-content/uploads/2025/03/Fairfax-India-Annual-Report-2024.pdf ; https://www.fairfaxindia.ca/wp-content/uploads/2026/03/Fairfax-India-2025-Annual-Report-WEBSITE.pdf",
+    "period": "2009-2025",
+    "estimate": false,
+    "note": "Implied 100% values are derived (2009/2011 INR from share count 384.6 m; USD from CAPA). Mar 2017 to Dec 2025 ~13.3% a year in USD."
+   },
+   "shareholding_path": {
+    "value": [
+     {
+      "date": "2008",
+      "siemens": 0.4,
+      "zurich": 0.17,
+      "lnt": 0.17,
+      "aai": 0.13,
+      "ksiidc": 0.13
+     },
+     {
+      "date": "2011-08",
+      "gvk": 0.43,
+      "siemens": 0.26,
+      "zurich": 0.05,
+      "aai": 0.13,
+      "ksiidc": 0.13
+     },
+     {
+      "date": "2017-08",
+      "fairfax": 0.48,
+      "siemens": 0.26,
+      "aai": 0.13,
+      "ksiidc": 0.13
+     },
+     {
+      "date": "2021-03",
+      "fairfax": 0.54,
+      "siemens": 0.2,
+      "aai": 0.13,
+      "ksiidc": 0.13
+     },
+     {
+      "date": "2025-02",
+      "fairfax": 0.74,
+      "aai": 0.13,
+      "ksiidc": 0.13
+     }
+    ],
+    "unit": "fraction of equity",
+    "source": "https://www.businesstoday.in/story/gvk-buys-14percent-siemens-stake-in-bangalore-airport/1/18126.html ; https://www.icra.in/Rating/ShowRationalReportFilePdf/39406 ; https://aera.gov.in/uploads/airports/16466592165337.pdf (Table 1) ; https://www.icra.in/Rating/ShowRationalReportFilePdf/143328",
+    "period": "2008-2025",
+    "estimate": false,
+    "note": "Fairfax 74% = 43.6% via Anchorage + 30.4% direct (69.0% fully diluted after OMERS)."
+   },
+   "lockin": {
+    "value": {
+     "sponsor_lockin_end": "2011-06",
+     "years_after_cod": 3
+    },
+    "unit": "date / years",
+    "source": "https://www.businesstoday.in/story/gvk-buys-14percent-siemens-stake-in-bangalore-airport/1/18126.html",
+    "period": "2008-2011",
+    "estimate": false,
+    "note": "The '51% for 7 years' rule is from later AAI PPP norms, not BIAL."
+   },
+   "fairfax_return": {
+    "value": {
+     "cost_usd_m": 1158.0,
+     "fair_value_usd_m": 2187.4,
+     "unrealised_gain_usd_m": 1029.4,
+     "annualised_return": 0.11,
+     "annualised_return_2024": 0.101
+    },
+    "unit": "USD million / fraction",
+    "source": "https://www.fairfaxindia.ca/wp-content/uploads/2026/03/Fairfax-India-2025-Annual-Report-WEBSITE.pdf ; https://fairfaxindia.ca/wp-content/uploads/2025/03/Fairfax-India-Annual-Report-2024.pdf",
+    "period": "Mar 2017-Dec 2025",
+    "estimate": false,
+    "note": "A real sponsor return to compare with the game's equity IRR target (15.5%)."
+   },
+   "dividends": {
+    "value": 2.2,
+    "unit": "USD million cumulative interest and dividends to Fairfax (2017-2025)",
+    "source": "https://www.fairfaxindia.ca/wp-content/uploads/2026/03/Fairfax-India-2025-Annual-Report-WEBSITE.pdf ; https://www.icra.in/Rating/GetRationalReportFilePdf?id=89665",
+    "period": "2017-2025",
+    "estimate": false,
+    "note": "Ring-fenced cash and restrictive dividend covenants: cash went to capex and deleveraging."
+   },
+   "valuation_2025": {
+    "value": {
+     "usd_bn_100pct": 3.0,
+     "usd_bn_2024": 2.55
+    },
+    "unit": "USD bn (100% equity)",
+    "source": "https://www.fairfaxindia.ca/wp-content/uploads/2026/03/Fairfax-India-2025-Annual-Report-WEBSITE.pdf (p.13) ; https://fairfaxindia.ca/wp-content/uploads/2025/03/Fairfax-India-Annual-Report-2024.pdf",
+    "period": "2025-12-31",
+    "estimate": false
+   },
+   "dcf_inputs": {
+    "value": {
+     "units": 5,
+     "discount_rate": [
+      0.122,
+      0.175
+     ],
+     "terminal_growth": 0.035,
+     "units_2024": 4,
+     "discount_rate_2024": [
+      0.124,
+      0.173
+     ],
+     "discount_rate_2023": [
+      0.124,
+      0.169
+     ]
+    },
+    "unit": "after-tax rates",
+    "source": "https://www.fairfaxindia.ca/wp-content/uploads/2026/03/Fairfax-India-2025-Annual-Report-WEBSITE.pdf ; https://fairfaxindia.ca/wp-content/uploads/2025/03/Fairfax-India-Annual-Report-2024.pdf",
+    "period": "2023-2025",
+    "estimate": false,
+    "note": "2025 revisions: higher CP4/CP5 capex (T2 Ph2, T3), higher UDFs from CP5 on a higher RAB."
+   },
+   "multiples_2025": {
+    "value": {
+     "p_normalised_fcf_ex_airport_city": 13.8,
+     "p_normalised_fcf_2024": 10.1,
+     "pe": 28.3,
+     "pb": 6.7,
+     "net_debt_to_equity": 1.6,
+     "roe_2025": 0.24,
+     "roe_3yr_avg": 0.18,
+     "roe_cp2_avg": 0.14,
+     "book_equity_usd_m": 439
+    },
+    "unit": "x / fraction",
+    "source": "https://www.fairfaxindia.ca/wp-content/uploads/2026/03/Fairfax-India-2025-Annual-Report-WEBSITE.pdf ; https://fairfaxindia.ca/wp-content/uploads/2025/03/Fairfax-India-Annual-Report-2024.pdf",
+    "period": "2025",
+    "estimate": false
+   },
+   "ev_ebitda_2025": {
+    "value": 9.9,
+    "unit": "x EV/EBITDA",
+    "source": "derived from https://www.fairfaxindia.ca/wp-content/uploads/2026/03/Fairfax-India-2025-Annual-Report-WEBSITE.pdf",
+    "period": "2025",
+    "estimate": true,
+    "note": "(3.0 + 1.6 x 0.439) / 0.3742. Equity/EBITDA 8.0x (2025), 8.5x (2024)."
+   },
+   "airport_city": {
+    "value": {
+     "acres": 460,
+     "developed_or_under_way": 128
+    },
+    "unit": "acres",
+    "source": "https://www.fairfaxindia.ca/wp-content/uploads/2026/03/Fairfax-India-2025-Annual-Report-WEBSITE.pdf (pp.13-14)",
+    "period": "2025",
+    "estimate": false,
+    "note": "BACL 100% SPV: hotel, business park, arena, convention centre, Air India and IndiGo MROs. Value cut in 2025 as land went to airport capex."
+   }
+  },
+  "scale": {
+   "traffic_factor": {
+    "value": 5.0,
+    "unit": "x ZMI / BIAL traffic",
+    "source": "derived: game.design_day_movements_by_level (L4 4,194 / L1 837 = 5.0) ; bial.path.pax_m",
+    "period": "game",
+    "estimate": true,
+    "note": "Opening: ZMI ~44.5 m (BLR moves in) vs BIAL 8.45-9.93 m = 4.5-5.3x. Mature: ZMI L4 ~220 m vs BIAL FY2026 44.5 m = ~5.0x."
+   },
+   "capacity_factor": {
+    "value": {
+     "phase1": 3.9,
+     "full_build": 4.1
+    },
+    "unit": "x",
+    "source": "derived: ZMI 45 / 209 mppa (money-design.md) vs BIAL 11.4 / 51.5 mppa",
+    "period": "game",
+    "estimate": true
+   },
+   "capex_factor_real": {
+    "value": {
+     "phase1": 7.0,
+     "full_build": 5.1,
+     "bial_full_build_2025_cr": 20500,
+     "bial_phase1_2025_cr": 5100
+    },
+    "unit": "x (2025-26 rupees)",
+    "source": "derived: bial.close.project_cost_final, bial.debt.t1_expansion, bial.t2.capex_actual deflated by WPI; capex.zmi_full_build_capex_cr",
+    "period": "game",
+    "estimate": true,
+    "note": "WPI ratios approximate (FY2008 x2.07, FY2013 x1.45, FY2017-24 x1.15), from memory, not fetched from eaindustry.nic.in."
+   },
+   "rab_per_pax_warning": {
+    "value": {
+     "bial_opening_rab_per_pax_2025_inr": 5100,
+     "zmi_1a_rab_per_pax_inr": 9200,
+     "bial_fy2009_arr_per_pax_2025_inr": 755,
+     "zmi_1a_building_block_per_pax_inr": [
+      1300,
+      1500
+     ]
+    },
+    "unit": "INR per annual passenger",
+    "source": "derived (research/bial.md section 6)",
+    "period": "game",
+    "estimate": true,
+    "note": "ZMI 1A is ~1.8x more capital per passenger than BIAL's phase 1. Close the gap with heavier smoothing, a smaller 1A, or the state-support loan; no hidden multiplier."
+   },
+   "time_alignment": {
+    "value": [
+     {
+      "bial": "FY2009-11 opening squeeze",
+      "bial_op_years": [
+       1,
+       3
+      ],
+      "zmi_years": [
+       5,
+       7
+      ]
+     },
+     {
+      "bial": "FY2014-19 plateau + T1",
+      "bial_op_years": [
+       6,
+       11
+      ],
+      "zmi_years": [
+       8,
+       10
+      ]
+     },
+     {
+      "bial": "FY2017-24 T2 build and squeeze",
+      "bial_op_years": [
+       9,
+       16
+      ],
+      "zmi_years": [
+       10,
+       16
+      ]
+     },
+     {
+      "bial": "FY2025-26 recovery ~70% margin",
+      "bial_op_years": [
+       17,
+       18
+      ],
+      "zmi_years": [
+       19,
+       25
+      ]
+     }
+    ],
+    "unit": "mapping",
+    "source": "research/bial.md section 6",
+    "period": "game",
+    "estimate": true,
+    "note": "Opening arc maps year n to n+4; the T2 arc is compressed because BOM/DEL arrive by year 14."
+   }
+  }
  }
 }

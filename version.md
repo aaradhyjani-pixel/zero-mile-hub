@@ -78,6 +78,24 @@ Costs are ₹ crore at today's prices, from money.json's stage costs where they 
 | **Cargo terminal** | ~₹1,000 (est.) | Freight income at night, when the runways are quiet |
 | **Maintenance hangar** | ~₹800 (est.) | An airline bases aircraft here: more early-morning departures |
 
+### F. Design and experience: how beautiful is your terminal?
+
+**Beauty is a revenue decision, not decoration.** A calm, beautiful terminal keeps passengers longer and in a better mood, and people in that state spend far more on food, shops, lounges and duty-free: their spending is very sensitive to how the place makes them feel. Under the hybrid till, AERA counts only **30% of shop and food income** against your airline charges, so **about 70% of every extra rupee a passenger spends stays with the owner**. That is how Bengaluru's "terminal in a garden" became a margin story for BIAL and for Fairfax, its owner.
+
+Every new terminal or pier asks you to choose its grade:
+
+| Grade | Cost | What it does in play |
+|---|---|---|
+| **A plain shed** | the base cost | Cheapest. Passengers pass through; spending per passenger stays low; airlines see no reason to prefer you |
+| **Standard** | about +8% (est.) | Average spending |
+| **A terminal in a garden** (natural light, gardens inside, local art, a calm layout) | about +20% and a little longer to build (est.) | Spending per passenger climbs season by season; airlines and passengers choose you when they have a choice; it can earn the jackpot below |
+
+What makes the experience in play (the "calm" the ledger already tracks): short security and immigration queues, short walks (the people mover), no crowding at peaks, the garden grade, and **what you charge in the shops**. Price the coffee too high and spending falls, because spending is elastic. So "keep airport prices close to city prices" is a real lever too.
+
+**The catch:** AERA reviews what you spend on the building. If it decides part of the garden grade was more than an efficient airport needed, it leaves that part out of the costs your airline charges recover. That money then has to come back through the shops. The beautiful terminal is a bet that passengers will spend; if traffic doesn't come, it is an expensive, empty garden.
+
+**What really happened (the card for this decision):** Bengaluru's Terminal 2, designed by SOM with gardens by Grant Associates, opened to domestic flights on 15 January 2023 and to international flights on 12 September 2023 (research/notes.md, blr-01 and blr-02). BIAL's shop, food and other non-airline income per passenger rose from about **₹219 in FY2023** to about **₹308 in FY2025** (excluding a one-off land sale) and about **₹347 in FY2026** (derived from research/bial.md: non-aero income ÷ passengers). That is roughly 40–60% in three years. T2 also added a lot of shop space, and prices rose meanwhile, so the card says what happened, not that beauty alone caused it.
+
 ## 5. The craziness, both ways
 
 **The rule:** every big choice carries a **jackpot** as well as a downside. The game rewards a bet that pays off far beyond the plan, and it lets success **snowball**: one win makes the next one more likely, because the network compounds. Wild things happen *because of what you built and when*, never at random, and the upside should feel as dramatic as the trouble.
@@ -94,6 +112,7 @@ Costs are ₹ crore at today's prices, from money.json's stage costs where they 
 | Chose **50% spare capacity** in a pier everyone said was too big | A rival hub's runway closes for repairs for a season (or Dubai is shut by a storm) | **You are the only one with room**: you absorb their traffic overnight, and some of it never goes back |
 | Kept fees low and service high on opening day | **IndiGo makes VSI its main hub**, not just a bank | Feeder flights from 30 cities, and each new international route fills itself |
 | Ran a flawless **cricket final** or **state visit** day | The world watches the airport work | A one-day revenue spike, and an international airline signs because it saw the day |
+| Built the **terminal in a garden** and kept shop prices near city prices | It is named among the world's most beautiful airports; people choose to connect here; they arrive early and stay longer | Spending per passenger climbs every season, and 70% of it is yours: the margin that makes your stake jump |
 | Bought **NIIF's stake** cheaply during the crisis | The crisis ends and the airport recovers fast | You own 80% of a company worth far more: the single biggest jump in your return |
 
 When a jackpot lands it gets its own big moment: a front page ("THE NORTH LANDS AT NAGPUR"), a record on the bank chart, a stamp in the file, and a bar on Black Box page 2.
@@ -108,6 +127,7 @@ When a jackpot lands it gets its own big moment: a front page ("THE NORTH LANDS 
 | Skipped the **fog system** | December mornings divert *your* flights to someone else's airport |
 | Skipped the **people mover** | The far piers miss their connections, and passengers rebook through Doha |
 | Grew one airline too big | IndiGo threatens to move its bank to Delhi unless you cut charges |
+| Built the garden grade where traffic never came, or priced the shops too high | AERA leaves the extra out of your charges, and the shops don't make it back: a beautiful, expensive, quiet terminal |
 | Spent too fast | The banks warn you, then freeze new building until you put in more money |
 | Left a gap in your network | GMR's Hyderabad hub, or Dubai, cuts prices to take the routes you don't serve |
 
@@ -141,4 +161,4 @@ The current flight (the chapters, the years-later boards) becomes the frame betw
 2. **How long is a season?** A full 8 to 10 minute day each time, or a shorter 4 to 5 minute peak with the rest simulated?
 3. **2D or 3D for building?** Building in 2D only is much faster to make well; the 3D view would show what you built.
 4. **Can you lose?** If the banks take control, does the concession end there (as today), or do you get one rescue?
-5. **Which three decisions matter most to you for step 1?** My suggestion: remote stands, a new pier, the people mover.
+5. **Which three decisions matter most to you for step 1?** My suggestion now: a new pier **with its beauty grade**, remote stands, and the people mover. Together they show capacity, cost, connections and spending per passenger in one season.

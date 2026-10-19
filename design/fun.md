@@ -29,7 +29,6 @@ For each test a chapter fails, generate **at least 10 ideas**, using at least 4 
    - Mumbai closed by floods for two days in 2005;
    - Kochi shut by the Kerala floods in 2018;
    - Delhi's winter fog and its CAT III diversions;
-   - Ahmedabad's kite festival leaving string on the runway;
    - Jet Airways and Go First stopping overnight;
    - the 2010 volcanic ash cloud;
    - Heathrow shut by a substation fire in 2025.
@@ -38,7 +37,7 @@ For each test a chapter fails, generate **at least 10 ideas**, using at least 4 
 2. **The decision comes back as a person.** A past choice returns as a named character who remembers it, such as Plateau Air's operations chief, the lender partner, the AERA officer or the SPG officer. People are more memorable than percentages.
 3. **The jackpot twin.** Every kind of trouble has an upside of the same size. If fog can hurt you, fog elsewhere can send you sixty diverted jets at 4 a.m. Upsides are earned by earlier choices: spare stands, a cargo terminal, trust.
 4. **The flipped constraint.** Give the player far too little (one runway for a day) or far too much (double the traffic tonight), then let them choose how to cope.
-5. **Indian calendar.** Monsoon, Diwali and wedding season, Holi, Uttarayan kites, the Kumbh Mela, an IPL or World Cup final, election season (the model code of conduct), Nagpur's orange harvest, and Haj season.
+5. **Indian calendar.** Monsoon, Diwali and wedding season, Holi, the Kumbh Mela, an IPL or World Cup final, election season (the model code of conduct), Nagpur's orange harvest, and Haj season.
 6. **The clock on the paper.** Paper screens get real time pressure: the banks' letter expires when the shift ends; an airline's offer is open for one bank only.
 7. **Founder moments.** You speak, negotiate or bet: a press conference after a bad day, a board vote with named directors, a double-or-nothing pitch, a rival poaching your COO mid-crisis.
 8. **Second-order chain.** One choice → a visible effect → someone else's reaction → a new choice, all inside one chapter.
@@ -106,19 +105,19 @@ Cruise works because it's the only chapter where a decision is felt live (hold L
 |---|---|---|---|---|---|---|
 | 1 | **Fog windfall:** Delhi is fogged in at 04:00; 60 northbound jets ask to divert to VSI within 20 minutes. Open the remote stands and earn a night's fees, or refuse and protect the morning bank. | Climb | 3, 1, 9 | the stands you built (Pushback) and your trust with airlines | 3 / 3 / 2 / M | **4.0** |
 | 2 | **Orange night freight:** Nagpur's orange harvest; 40 freighters a night to the Gulf, if your cargo terminal exists. | Climb/Cruise | 5, 3, 9 | Sanchori's cargo clause, or a cargo terminal built at a board | 3 / 2 / 2 / M | **3.5** |
-| 3 | **Kite string on runway 2 (Uttarayan):** a safety call, so no price. Close the runway for a sweep, or keep it open with inspections. | Takeoff | 1, 5 | none (weather-like), but your number of runways decides how much it hurts | 2 / 2 / 1 / S | **5.0** |
+| 3 | **The chip bet:** while you raise money, a chip assembly-and-test plant in MIHAN, next to your cargo apron, asks VSIAL to co-invest. Fifteen years later its chips fly out as high-value cargo, and in year 25 the stake is sold. Full card: `design/ideas/chip-bet.md`. | Climb (the fundraising board) | 7, 3, 2 | your cash, the cargo terminal (Sanchori's clause or a board), your lender | 3 / 3 / 2 / M | **4.0** |
 | 4 | **Overnight move, live:** Takeoff becomes the real Bengaluru-style night move, with aircraft ferrying in, a belt failure and a stand clash, using the incidents that already exist. | Takeoff | 1, 9, 4 | phased vs big bang; short trials | 3 / 3 / 2 / L | 2.7 |
 | 5 | **The collapse auction:** when an airline stops flying, its slots and parked jets go to auction tonight; bid for the evening bank. | Turbulence | 3, 7 | your cash, and whether you cured with your own money | 3 / 3 / 2 / M | **4.0** |
 | 6 | **Press conference after a bad day:** three questions from The Zero Mile Times; your answers move airline trust. | any | 7, 2 | the worst number on your last bill | 2 / 2 / 2 / S | **6.0** |
 | 7 | **Mumbai floods divert to you (2005-style):** two days of Mumbai's flights; capacity test. | Cruise | 1, 4 | lean vs big phase 1 | 3 / 2 / 2 / M | 3.5 |
 | 8 | **Election inauguration:** officials want phase 2 opened before the model code of conduct, half-finished. Open early, or wait. | Landing | 5, 7 | phase 2 timing | 3 / 3 / 2 / M | **4.0** |
 | 9 | **The rival poaches your COO** in the middle of the crisis; match the offer, let them go, or counter-poach. | Turbulence | 7, 10 | Kármán Line's return | 2 / 2 / 1 / S | **5.0** |
-| 10 | **World Cup final at Jamtha:** 90 charters in 6 hours. | Landing | 5, 9 | stands, the access road (Zero Mile District) | 3 / 2 / 2 / M | 3.5 |
+| 10 | **World Cup final at Nagpur's cricket stadium:** 90 charters in 6 hours. | Landing | 5, 9 | stands, the access road (Zero Mile District) | 3 / 2 / 2 / M | 3.5 |
 | 11 | **Double-or-nothing A380 base pitch:** stake half a year's fees to win Air India's widebody base. | Cruise | 7, 3 | your connection record (the hold-London call) | 3 / 3 / 2 / M | **4.0** |
 | 12 | **Private-capital conditions bite back:** the audit-committee seat questions a bill; the cargo clause triggers #2; the test strip runs its first drone inspection mid-shift. | various | 2, 8 | the lender you chose | 2 / 2 / 2 / M | 3.0 |
 
 **Recommended build order:**
 1. **Wire the 8 incidents that already exist** (the build session's step 1). Every chapter gets live Decide and Feel at once. It's cheap and it's all in the engine already.
-2. **#6 Press conference and #3 kite string:** cheap, high priority.
-3. **#1 Fog windfall, #5 Collapse auction, #8 Election inauguration, #11 A380 pitch:** the jackpots.
+2. **#6 Press conference:** cheap, high priority.
+3. **#3 The chip bet, #1 Fog windfall, #5 Collapse auction, #8 Election inauguration, #11 A380 pitch:** the jackpots and the long bets.
 4. **#4 Overnight move, live:** the big one, part of Level 5.

@@ -2472,6 +2472,21 @@ function vsmStyle(){if(document.getElementById('vsmCss'))return;
 .vsm .two{gap:10px 36px}
 .vsm #tPlan p{font-size:13px;line-height:1.6}
 .vsm #tPlan .src{font-size:11.5px;color:var(--zpe)}.vsm #tPlan .src a{color:var(--zi)}
+/* warm first page (the user's call, 19 Oct 2026): a saffron desk, warm cream papers, a saffron primary button.
+   --rec (#ff5a1f, international orange) stays the Black Box's alone; saffron is the start menu's. Contrast: ink #1d2024 on
+   saffron #f29a2e ≈ 8:1; #1d1208 on the button #e8821e ≈ 6.6:1; #4a2a08 on saffron ≈ 5.6:1. */
+.vsm{--saffron:#f29a2e;--terra:#a8480f;--zs:#f29a2e;--zp:#fff7ea;--zd:#fdf0dc;--zw2:#fff3e2;--rule:#ead6b5;
+  background-image:linear-gradient(rgba(120,55,0,.17) 1px,transparent 1px),linear-gradient(90deg,rgba(120,55,0,.17) 1px,transparent 1px),linear-gradient(rgba(120,55,0,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(120,55,0,.07) 1px,transparent 1px)}
+.vsm-mark small{color:#4a2a08}
+.vsm-tb{background:rgba(255,247,234,.88)}
+.vsm .tabs2 button.on::after{background:var(--terra)}
+.vsm #tConc .go:not(.ghost){background:#e8821e;color:#1d1208;box-shadow:inset 0 -3px 0 var(--terra),0 2px 6px rgba(120,55,0,.25)}
+.vsm #tConc .go:not(.ghost):hover{background:#f29a2e}
+.vsm #tConc .go.ghost:hover{color:var(--terra)}
+.vsm .plate{background:#e8821e!important;color:#1d1208!important;box-shadow:inset 0 -3px 0 var(--terra)}
+.vsm .zcf{--zs:#fbe6c4;background-color:#fbe6c4!important;background-image:linear-gradient(rgba(120,55,0,.10) 1px,transparent 1px),linear-gradient(90deg,rgba(120,55,0,.10) 1px,transparent 1px)!important;background-size:24px 24px!important}
+.vsm .zcf .zdk-go{background:#e8821e;color:#1d1208;box-shadow:inset 0 -3px 0 var(--terra),0 2px 6px rgba(120,55,0,.25)}
+.vsm .zcf .zdk-go:hover{background:#f29a2e}
 @media (max-width:1300px){.vsm{padding:0 18px 12px}.vsm-paper{padding:20px 28px 18px}.vsm .lc{padding:12px 13px}.vsm .lc p{font-size:12px;line-height:1.45}.vsm .hw li{padding:0 13px}}
 @media (max-height:860px){.vsm-top{height:50px}.vsm-dh{padding-bottom:8px;margin-bottom:12px}.vsm h2.t{font-size:25px}.vsm-h{margin-bottom:8px}.vsm .levels{margin-bottom:8px}.vsm .lc{gap:5px}.vsm h2{margin-top:10px;margin-bottom:4px}.vsm .cfgrow{margin-top:2px}.vsm .seg2 button{padding:3px 0}}
 @media (prefers-reduced-motion:reduce){.vsm-paper.arrive,.vsm-stamp.down{animation:none}}

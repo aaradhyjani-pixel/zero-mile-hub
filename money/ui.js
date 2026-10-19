@@ -2736,26 +2736,49 @@ M.privateCapital=function(opts,st,done){
 @keyframes zpcIn{from{transform:rotate(-5deg) scale(2.2);opacity:0}to{transform:rotate(-5deg) scale(1);opacity:1}}
 .zpc .ln{fill:none;stroke:#1d2024;stroke-width:1.6;stroke-linecap:round;transition:stroke-dashoffset 1.2s ease}.zpc .ln.charge{stroke:#c22a2e;stroke-dasharray:6 5}.zpc .ln.docs{stroke:#676c71;stroke-dasharray:2 5}
 .zpc .nd circle{fill:#fffdf7;stroke:#1d2024;stroke-width:1.6}.zpc .nd text,.zpc .pl{font-family:'Kalam',cursive;font-size:13px;fill:#5c6166}.zpc .nd text,.zpc .pl{paint-order:stroke;stroke:#fffdf7;stroke-width:5px;stroke-linejoin:round}.zpc .nd .nm{fill:#1d2024;font-size:14.5px}
+.zpc .fc{display:block;width:96px;height:96px;flex:none}.zpc .fc .lid{transform-origin:50% 50%;transform-box:fill-box;animation:zpcBlink 4.6s infinite}
+.zpc .fc .hd{transform-origin:50% 90%;transform-box:fill-box;animation:zpcNod 6s ease-in-out infinite}.zpc .fc.talk .mo{animation:zpcTalk .22s ease-in-out 8 alternate}
+@keyframes zpcBlink{0%,93%,100%{transform:scaleY(0)}95.5%{transform:scaleY(1)}}@keyframes zpcNod{0%,100%{transform:rotate(0)}50%{transform:rotate(-2deg) translateY(1px)}}
+@keyframes zpcTalk{from{transform:scaleY(1)}to{transform:scaleY(2.2)}}.zpc .fc .mo{transform-origin:50% 50%;transform-box:fill-box}
+.zpc .card{display:grid;grid-template-columns:96px 1fr auto;gap:6px 18px;align-items:center;border-top:1.5px solid #1d2024;padding:16px 0}.zpc .card.no{opacity:.45}
+.zpc .bub{position:relative;display:inline-block;background:#fff;border:1.5px solid #1d2024;border-radius:12px;padding:6px 12px;font-family:'Kalam',cursive;font-size:16px;margin:0 0 6px}
+.zpc .bub::before{content:'';position:absolute;left:-9px;top:14px;border:8px solid transparent;border-right-color:#1d2024;border-left:0}
+.zpc .bub::after{content:'';position:absolute;left:-6px;top:15px;border:7px solid transparent;border-right-color:#fff;border-left:0}
+.zpc .card h3{font-size:20px}.zpc .who{margin:2px 0 0;color:#3a3f44}.zpc .intro{font-size:15px;max-width:720px}
+.zpc .meet{display:flex;gap:18px;align-items:flex-start;margin:8px 0 14px}.zpc .rg{margin:10px 0 4px}.zpc .rg i{font-family:'Libre Caslon Text',Georgia,serif;font-size:17px}.zpc .rg small{display:block;font-family:'Kalam',cursive;color:#8a8f94;font-size:14px}
 .zpc .ask{background:#fbe6c4;padding:10px 14px;margin:8px 0 12px;border-left:4px solid #e8821e}.zpc .rep{font-family:'Libre Caslon Text',Georgia,serif;font-size:17px;margin:4px 0 8px}</style><div class="pg"></div>`;
   document.body.appendChild(ov);const pg=ov.querySelector('.pg'),sfx=n=>{try{M.sfx&&M.sfx(n);}catch(e){}};
   const close=v=>{ov.remove();done(v);};const pct=v=>(+v).toFixed(2).replace(/0$/,'').replace(/\.0$/,'')+'%';
   const hash=t=>{let h=2166136261;for(const c of String(t)){h^=c.charCodeAt(0);h=Math.imul(h,16777619)>>>0;}return (h%2147483646)+1;};
+  const face=(h,mood,talk)=>{const f=h.face||{},sk=f.skin||'#c99670',hr=f.hair||'#333',m=mood||'calm';
+    const mouth=m==='happy'?'<path class="mo" d="M40 66 Q48 74 56 66" fill="none" stroke="#1d2024" stroke-width="2.2" stroke-linecap="round"/>':m==='no'?'<path class="mo" d="M40 70 Q48 63 56 70" fill="none" stroke="#1d2024" stroke-width="2.2" stroke-linecap="round"/>':'<path class="mo" d="M41 67 L55 67" fill="none" stroke="#1d2024" stroke-width="2.2" stroke-linecap="round"/>';
+    const brow=m==='no'?'<path d="M33 41 L42 44 M63 41 L54 44" stroke="#1d2024" stroke-width="2" stroke-linecap="round"/>':m==='happy'?'<path d="M33 42 Q37.5 39 42 42 M54 42 Q58.5 39 63 42" fill="none" stroke="#1d2024" stroke-width="2" stroke-linecap="round"/>':'<path d="M33 42 L42 42 M54 42 L63 42" stroke="#1d2024" stroke-width="2" stroke-linecap="round"/>';
+    const hair={bald:`<path d="M24 40 Q22 30 28 26 M72 40 Q74 30 68 26" fill="none" stroke="${hr}" stroke-width="5" stroke-linecap="round"/>`,
+      short:`<path d="M23 44 Q22 16 48 15 Q74 16 73 44 Q70 26 48 25 Q28 26 23 44Z" fill="${hr}"/>`,
+      bun:`<circle cx="48" cy="12" r="9" fill="${hr}"/><path d="M22 50 Q20 15 48 16 Q76 15 74 50 Q70 27 48 26 Q27 27 22 50Z" fill="${hr}"/>`,
+      curly:`<g fill="${hr}">${[[26,30],[33,20],[43,15],[53,15],[63,20],[70,30],[23,42],[73,42]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="8"/>`).join('')}</g>`}[f.hairStyle||'short'];
+    return `<svg class="fc${talk?' talk':''}" viewBox="0 0 96 96" aria-hidden="true"><g class="hd">
+      <path d="M18 96 Q20 78 48 76 Q76 78 78 96Z" fill="${f.shirt||'#e8e2d4'}" stroke="#1d2024" stroke-width="1.6"/>
+      <ellipse cx="48" cy="48" rx="25" ry="29" fill="${sk}" stroke="#1d2024" stroke-width="1.6"/>${hair}${brow}
+      <circle cx="38" cy="50" r="2.6" fill="#1d2024"/><circle cx="58" cy="50" r="2.6" fill="#1d2024"/>
+      <rect class="lid" x="33" y="46" width="10" height="8" fill="${sk}"/><rect class="lid" x="53" y="46" width="10" height="8" fill="${sk}"/>
+      ${f.glasses?'<circle cx="38" cy="50" r="7" fill="none" stroke="#1d2024" stroke-width="1.5"/><circle cx="58" cy="50" r="7" fill="none" stroke="#1d2024" stroke-width="1.5"/><path d="M45 50 L51 50" stroke="#1d2024" stroke-width="1.5"/>':''}
+      <path d="M48 52 Q46 60 49 61" fill="none" stroke="#1d2024" stroke-width="1.4" stroke-linecap="round"/>
+      ${f.moustache?'<path d="M39 63 Q48 59 57 63 Q48 61 39 63Z" fill="#2b2622" stroke="#2b2622" stroke-width="1.5"/>':''}${mouth}</g></svg>`;};
   const loanCr=(()=>{try{const q=opts.previewClose&&opts.previewClose({gearing:st.gearing,repayment:st.repayment,bid:st.bid,phase1:st.phase1,stateLoan:st.stateLoan,lender:'banks'});return q&&q.debtCr||30000;}catch(e){return 30000;}})();
   const cr=v=>'₹'+Math.round(v).toLocaleString('en-IN')+' cr';
   function list(){const left=D.houses.filter(h=>!st.privateDeclined.includes(h.id));
-    pg.innerHTML=`<h2>Private capital</h2><p class="sub">Four family lenders lend outside the banks. Each has its own way of saying yes. Choose one to pitch.</p>`+
-    (left.length?'':`<p class="rep">All four houses declined. The banks' standard loan stands.</p><p><button id="zpcX2">Back to the banks</button></p>`)+
-    D.houses.map(h=>{const no=st.privateDeclined.includes(h.id);return `<div class="h${no?' no':''}"><div><h3>${esc(h.name)}</h3><small>${h.sub?esc(h.sub)+' · ':''}${esc(h.home)}</small></div>
-      <button data-h="${h.id}"${no?' disabled':''}>${no?'Declined':'Pitch them'}</button>${no?'<span class="stp">DECLINED</span>':''}
-      <p style="grid-column:1/-1;margin:6px 0 0">${esc(h.bio)}</p>
-      <p class="op">“${esc(h.opening)}”</p>
-      <div class="rl">${(h.lines||[]).map(l=>`<span><i>${esc(l.t)}</i><small>${esc(l.m)}</small></span>`).join('')}</div>
-      <dl><dt>How to pitch</dt><dd>${esc(h.pitch)}</dd><dt>They accept</dt><dd>${esc(h.accept)}</dd><dt>They refuse</dt><dd>${esc(h.refuse)}</dd><dt>They invest in</dt><dd>${esc(h.invest)}</dd></dl></div>`;}).join('')+
+    pg.innerHTML=`<h2>Private capital</h2><p class="sub intro">Banks are not the only lenders. These four families lend too, each in their own way. Pick one, choose how to pitch, and see what they say. You can always stay with the banks.</p>`+
+    (left.length?'':`<p class="rep">All four declined. The banks' standard loan stands.</p><p><button id="zpcX2">Back to the banks</button></p>`)+
+    D.houses.map(h=>{const no=st.privateDeclined.includes(h.id);return `<div class="card${no?' no':''}">${face(h,no?'no':'calm',!no)}
+      <div><div class="bub">${esc(no?'Not this time.':h.want)}</div><h3>${esc(h.name)}</h3><p class="who">${esc(h.who)} <small>· ${esc(h.home)}</small></p></div>
+      <button data-h="${h.id}"${no?' disabled':''}>${no?'Declined':'Meet them'}</button></div>`;}).join('')+
     `<p><button class="q" id="zpcX">Not now: stay with the banks</button></p>`;
     pg.querySelectorAll('[data-h]:not([disabled])').forEach(b=>b.onclick=()=>{sfx('turn');angle(D.houses.find(h=>h.id===b.dataset.h));});
     pg.querySelector('#zpcX').onclick=()=>close(null);const x2=pg.querySelector('#zpcX2');if(x2)x2.onclick=()=>close(null);pg.scrollTop=0;}
-  function angle(h){pg.innerHTML=`<h2>${esc(h.name)}</h2><p class="sub">${esc(h.home)}. How will you pitch them?</p><p class="op">“${esc(h.opening)}”</p><p>${esc(h.pitch)}</p>`+
-    Object.entries(D.angles).map(([k,v])=>`<p><button data-a="${k}">${esc(v)}</button></p>`).join('')+`<p><button class="q" id="zpcB">Back to the four houses</button></p>`;
+  function angle(h){pg.innerHTML=`<div class="meet">${face(h,'calm',true)}<div><h2>${esc(h.name)}</h2><p class="sub" style="margin:0">${esc(h.home)}</p><div class="bub" style="margin-top:8px">${esc(h.opening)}</div></div></div>
+      <p><b>They say yes to:</b> ${esc(h.accept)}<br><b>They say no to:</b> ${esc(h.refuse)}</p><p class="sub" style="margin:14px 0 8px">How will you pitch them?</p>`+
+    Object.entries(D.angles).map(([k,v])=>`<p><button data-a="${k}">${esc(v)}</button></p>`).join('')+`<p><button class="q" id="zpcB">Back to the four families</button></p>`;
     pg.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{sfx('slide');run(h,b.dataset.a);});pg.querySelector('#zpcB').onclick=list;pg.scrollTop=0;}
   function run(h,a){const R=opts.pitchPrivate(h.id,a,hash([st.parent,st.founder,h.id,a].join('|')));
     pg.innerHTML=`<h2>${esc(h.name)}</h2><p class="sub">Your pitch: ${esc(D.angles[a])}. While they decide, the money moves through their network.</p>
@@ -2812,7 +2835,8 @@ M.privateCapital=function(opts,st,done){
   function result(h,R){const r=pg.querySelector('#zpcR'),sheet=pg.querySelector('.sheet');sfx('thud');
     sheet.insertAdjacentHTML('beforeend',`<span class="stp${R.outcome==='negotiated'||R.outcome==='rejected'?'':' g'}">${esc(R.stamp)}</span>`);
     const T=R.better||R.negotiated||R.approved,lbl={better:'Their condition',negotiated:'Held back',rejected:'Why'}[R.outcome];
-    r.innerHTML=`<p class="rep">“${esc(R.reply)}”</p>`+(lbl&&R.extra?`<div class="ask"><b>${lbl}:</b> ${esc(R.extra)}</div>`:'')+
+    const mood=R.outcome==='rejected'?'no':R.outcome==='negotiated'?'calm':'happy',rl=(h.lines||{})[R.outcome==='rejected'?'no':R.outcome==='negotiated'?'harder':'done'];
+    r.innerHTML=`<div class="meet">${face(h,mood,true)}<div><p class="rep" style="margin-top:0">“${esc(R.reply)}”</p>${rl?`<p class="rg"><i>${esc(rl.t)}</i><small>${esc(rl.m)}</small></p>`:''}</div></div>`+(lbl&&R.extra?`<div class="ask"><b>${lbl}:</b> ${esc(R.extra)}</div>`:'')+
       (R.outcome==='better'?`<p>Accept it and they lend at <b>${pct(R.better.rate)}</b> over <b>${R.better.years} years</b>. Decline and they lend on their usual terms: ${pct(R.approved.rate)} over ${R.approved.years} years.</p>
         <p><button id="zpcY">Accept their condition</button> <button class="q" id="zpcN">Decline, take the usual terms</button></p>`
       :R.outcome==='rejected'?`<p>No loan from ${esc(h.name)} this time.</p><p><button id="zpcO">Pitch another house</button> <button class="q" id="zpcK">Stay with the banks</button></p>`

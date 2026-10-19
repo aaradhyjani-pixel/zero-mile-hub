@@ -761,7 +761,7 @@
     var m = shift.money, pax = shift.pax;
     if (m && m.lines && pax > 0) {
       var c = 0;
-      m.lines.forEach(function (l) { if (/sla|care|fuel/.test(l.key || '')) c += Math.abs(l.amount || 0); });
+      m.lines.forEach(function (l) { if (/penalty|sla|care|fuel/.test(l.key || '')) c += Math.abs(l.amount || 0); });
       dis = c * 1e7 / pax;
     }
     if (dis == null || !isFinite(dis)) dis = 60 + 400 * Math.max(0, 0.85 - otp) + 300 * Math.max(0, 0.9 - cx);

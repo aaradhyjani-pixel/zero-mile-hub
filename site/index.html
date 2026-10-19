@@ -16026,6 +16026,7 @@ M.mount=function(){
   const ov=document.createElement('div');ov.id='zmmOv';ov.hidden=true;ov.innerHTML='<div class="zmm-sheet" id="zmmSheet" role="dialog" aria-modal="true"></div>';app.appendChild(ov);
   // keys typed in a money dialog belong to it: the game's window shortcuts (Space pauses, 1-3 set speed) must not see them
   ov.addEventListener('keydown',e=>e.stopPropagation());
+  sfxWire();
   // P&L tab in the right rail
   const bar=document.querySelector('#tabs .tabbar'),tabs=$('#tabs');
   if(bar&&tabs){const b=document.createElement('button');b.dataset.tab='pl';b.id='zmmPLBtn';b.textContent='P&L';b.hidden=true;bar.appendChild(b);
@@ -16411,12 +16412,12 @@ function sigPad(cv,onChange){
     for(const s of strokes){if(s.length===1){g.fillStyle=INK;g.beginPath();g.arc(s[0].x,s[0].y,1.3,0,7);g.fill();continue;}
       for(let i=1;i<s.length;i++)seg(s[Math.max(0,i-2)],s[i-1],s[i],s[i].w||2.2);}}
   const changed=()=>onChange(ink>=60);
-  cv.addEventListener('pointerdown',e=>{if(locked)return;e.preventDefault();try{cv.setPointerCapture(e.pointerId);}catch(_){}const p=pt(e);p.w=w;cur=[p];strokes.push(cur);redraw();changed();});
+  cv.addEventListener('pointerdown',e=>{if(locked)return;e.preventDefault();try{cv.setPointerCapture(e.pointerId);}catch(_){}const p=pt(e);p.w=w;cur=[p];strokes.push(cur);redraw();changed();M.sfx('scratch',{v:.3});});
   cv.addEventListener('pointermove',e=>{if(!cur||locked)return;const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];
-    for(const ev of (evs.length?evs:[e])){const p=pt(ev),l=cur[cur.length-1],d=Math.hypot(p.x-l.x,p.y-l.y);if(d<0.7)continue;
-      const v=d/Math.max(1,p.t-l.t),target=Math.max(1.05,Math.min(3,3.2-v*1.15));w=w*.72+target*.28;p.w=w;cur.push(p);ink+=d;seg(cur[Math.max(0,cur.length-3)],cur[cur.length-2],p,w);}
-    changed();});
-  const end=()=>{cur=null;changed();};cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
+    let vm=0;for(const ev of (evs.length?evs:[e])){const p=pt(ev),l=cur[cur.length-1],d=Math.hypot(p.x-l.x,p.y-l.y);if(d<0.7)continue;
+      const v=d/Math.max(1,p.t-l.t),target=Math.max(1.05,Math.min(3,3.2-v*1.15));if(v>vm)vm=v;w=w*.72+target*.28;p.w=w;cur.push(p);ink+=d;seg(cur[Math.max(0,cur.length-3)],cur[cur.length-2],p,w);}
+    if(vm)M.sfx('scratch',{v:vm});changed();});
+  const end=()=>{if(cur)M.sfx('scratch',{stop:true});cur=null;changed();};cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
   cv.style.touchAction='none';requestAnimationFrame(fit);
   return {clear(){strokes=[];ink=0;redraw();changed();},empty:()=>strokes.length===0,png:()=>cv.toDataURL('image/png'),lock(){locked=true;}};}
 
@@ -17028,15 +17029,166 @@ function photoSvg(kind){const t=document.getElementById('planTpl'),vb=CROPS[kind
   // no masterplan on the page: a plain ink drawing of a pier with widebodies on its stands (drawn dark-on-light, then inverted like the plan)
   let s='';for(let i=0;i<7;i++){const x=70+i*78;s+=`<path d="M${x} 118 v-46 M${x-20} 70 h40 M${x} 52 v-18" stroke="#fff" stroke-width="3"/><path d="M${x} 150 v46 M${x-20} 198 h40 M${x} 216 v18" stroke="#fff" stroke-width="3"/>`;}
   return `<svg viewBox="0 0 640 260" preserveAspectRatio="xMidYMid slice"><rect width="640" height="260" fill="#0f1417"/><rect x="20" y="118" width="600" height="32" fill="none" stroke="#fff" stroke-width="3"/>${s}</svg>`;}
-/* a paper slap: a short filtered noise burst. Silent if audio is not allowed yet. */
-/* hub.js keeps its AudioContext private, so this has its own; it follows the game's Sound on/off button (#snd). */
-function noise(dur,cut,gain,at,pow){try{const sb=document.getElementById('snd');if(sb&&!sb.classList.contains('on'))return;
-  const A=window.AudioContext||window.webkitAudioContext;if(!A)return;const a=M._ac||(M._ac=new A());if(a.state==='suspended')a.resume();if(a.state==='closed')return;
-  const n=Math.floor(a.sampleRate*dur),b=a.createBuffer(1,n,a.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,pow);
-  const s=a.createBufferSource();s.buffer=b;const f=a.createBiquadFilter();f.type='lowpass';f.frequency.value=cut;const g=a.createGain();g.gain.value=gain;s.connect(f);f.connect(g);g.connect(a.destination);s.start(a.currentTime+at);}catch(e){}}
-const slap=()=>noise(.16,1600,.5,.36,5);
-/* the stamp: a short low thud, timed to the stamp's landing */
-const thud=()=>noise(.11,320,.9,.12,3);
+/* ---------- sound (DESIGN.md §16): a small synthesised layer, Web Audio only, no files, no network ----------
+   hub.js keeps its AudioContext private, so this has its own: one context, a master gain and a soft compressor.
+   Every sound follows the game's Sound on/off button (#snd): off means silent, and no audio node is even made.
+   Nothing sounds before the first click or key press (the browser's autoplay rule); the context resumes on it.
+   Each hit varies a little in pitch, timing and filter, so a run of the same sound never sounds like a loop.
+   ZMMoney.sfx(name, opts) plays one; ZMMoney.ambience(true|false|'auto') sets the desk's room tone. */
+const SFX={ctx:null,out:null,amb:null,scr:null,gest:false,want:'auto',open:false,last:{},log:null};
+if(/[?&]sfxlog\b/.test(location.search))SFX.log=window.__zmmSfxLog=[];
+function sfxLog(name){if(!SFX.log)return;SFX.log.push({name,t:Math.round(performance.now())});if(SFX.log.length>400)SFX.log.shift();}
+function soundOn(){const b=document.getElementById('snd');if(b)return b.classList.contains('on');
+  try{return JSON.parse(localStorage.getItem('zm_snd'))!==false;}catch(e){return true;}}
+function sfxBus(a){const m=a.createGain();m.gain.value=.9;const c=a.createDynamicsCompressor();
+  c.threshold.value=-18;c.knee.value=12;c.ratio.value=3;c.attack.value=.003;c.release.value=.2;m.connect(c);c.connect(a.destination);return m;}
+function sfxCtx(){if(!SFX.gest||!soundOn())return null;
+  if(!SFX.ctx){const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;try{SFX.ctx=M._ac=new A();}catch(e){return null;}SFX.out=sfxBus(SFX.ctx);}
+  const a=SFX.ctx;if(a.state==='closed')return null;if(a.state==='suspended'){try{const p=a.resume();if(p&&p.catch)p.catch(()=>{});}catch(e){}}return a;}
+/* noise, made once per context: white for paper and pens, brown (seamless loop) for the room */
+const NB=new WeakMap();
+function nbuf(a,kind){let c=NB.get(a);if(!c){c={};NB.set(a,c);}if(c[kind])return c[kind];
+  const sr=a.sampleRate,n=Math.floor(sr*(kind==='brown'?6:2)),F=Math.floor(sr*.25),b=a.createBuffer(1,n,sr),d=b.getChannelData(0);
+  if(kind==='brown'){const g=new Float32Array(n+F);let l=0;for(let i=0;i<n+F;i++){l=(l+.02*(Math.random()*2-1))/1.02;g[i]=l*3.5;}
+    for(let i=0;i<n;i++)d[i]=i<F?g[n+i]*(1-i/F)+g[i]*(i/F):g[i];}   // the tail fades into the head, so the loop has no seam
+  else for(let i=0;i<n;i++)d[i]=Math.random()*2-1;
+  return c[kind]=b;}
+const rr=(x,y)=>x+Math.random()*(y-x);
+function env(p,t,peak,att,dec){p.setValueAtTime(0.0001,t);p.linearRampToValueAtTime(peak,t+att);p.exponentialRampToValueAtTime(0.0001,t+att+dec);}
+/* a filtered noise burst */
+function burst(a,dest,t,o){const s=a.createBufferSource();s.buffer=nbuf(a,o.buf||'white');const f=a.createBiquadFilter();f.type=o.type||'bandpass';
+  f.frequency.setValueAtTime(o.f,t);if(o.f2)f.frequency.exponentialRampToValueAtTime(o.f2,t+o.dur);f.Q.value=o.q||1;
+  const g=a.createGain(),att=o.att||.002;env(g.gain,t,o.gain,att,Math.max(.005,o.dur-att));s.connect(f);f.connect(g);g.connect(dest);
+  s.start(t,Math.random()*1.4);s.stop(t+o.dur+.06);return g;}
+/* a short pitched body (wood, the desk, a chime) */
+function tone(a,dest,t,o){const s=a.createOscillator();s.type=o.wave||'sine';s.frequency.setValueAtTime(o.f,t);if(o.f2)s.frequency.exponentialRampToValueAtTime(o.f2,t+o.dur);
+  const g=a.createGain(),att=o.att||.002;env(g.gain,t,o.gain,att,o.dur);s.connect(g);g.connect(dest);s.start(t);s.stop(t+att+o.dur+.06);return g;}
+const SOUNDS={
+  // a key on a desk typewriter: a bright tick, a little wood under it, the type bar settling
+  type(a,d,t,o){const v=rr(.86,1.14),g=(o.soft?.6:1)*rr(.8,1.1);burst(a,d,t,{dur:.016*v,f:3100*v,q:1.4,gain:.17*g});
+    tone(a,d,t,{f:205*v,f2:120,dur:.028,gain:.07*g});burst(a,d,t+rr(.012,.022),{dur:.012,f:1500*v,q:2,gain:.05*g});},
+  // Enter: the key, the carriage running back, the bell-less stop
+  ret(a,d,t){SOUNDS.type(a,d,t,{});burst(a,d,t+.03,{dur:.17,f:rr(1500,1800),f2:rr(650,750),q:1.2,gain:.06,att:.04});
+    tone(a,d,t+.2,{f:rr(140,160),f2:90,dur:.07,gain:.14});burst(a,d,t+.2,{dur:.035,type:'lowpass',f:900,gain:.13});},
+  // a pencil tick in a box: two strokes, short then long
+  tick(a,d,t,o){const g=o.off?.55:1;burst(a,d,t,{dur:rr(.024,.034),f:rr(2600,3400),f2:rr(1800,2200),q:1.1,gain:.14*g,att:.004});
+    burst(a,d,t+rr(.045,.06),{dur:rr(.05,.07),f:rr(3000,3800),f2:rr(2000,2600),q:1.1,gain:.16*g,att:.006});tone(a,d,t,{f:rr(700,900),dur:.012,gain:.02*g});},
+  // the ruler's slider passing a mark
+  detent(a,d,t){burst(a,d,t,{dur:.008,f:rr(1700,2300),q:3,gain:.09});tone(a,d,t,{f:rr(1150,1300),dur:.012,gain:.014,wave:'triangle'});},
+  // the pen leaving the paper
+  lift(a,d,t){burst(a,d,t,{dur:.012,f:rr(3500,4500),q:2,gain:.05});},
+  // a signature put down in one go (where the player's saved signature is placed, not drawn)
+  sign(a,d,t){let u=t;for(let i=0;i<5;i++){const L=rr(.06,.13);burst(a,d,u,{dur:L,f:rr(2000,3600),f2:rr(1500,4200),q:.9,gain:rr(.05,.08),att:L*.3});u+=L+rr(.01,.04);}SOUNDS.lift(a,d,u);},
+  // a page sliding off the desk onto the pile
+  slide(a,d,t,o){const L=rr(.32,.42),g=o.gain||1;burst(a,d,t,{dur:L,f:rr(2200,2800),f2:rr(700,900),q:.7,gain:.11*g,att:L*.35});
+    burst(a,d,t+L*.9,{dur:.05,type:'lowpass',f:1200,gain:.05*g});},
+  // the next page arriving: lifted, turned, laid flat
+  turn(a,d,t){burst(a,d,t,{dur:.2,f:rr(1400,1800),f2:rr(3000,3600),q:.8,gain:.05,att:.12});
+    burst(a,d,t+.2,{dur:.09,f:rr(900,1200),q:.9,gain:.08,att:.004});tone(a,d,t+.2,{f:110,f2:70,dur:.05,gain:.04});},
+  // the rubber stamp: a low body, the rubber's thump, the paper's slap, the handle's knock
+  thud(a,d,t,o){const g=o.gain||1,v=rr(.93,1.07);tone(a,d,t,{f:105*v,f2:52,dur:.16,gain:.42*g,att:.003});
+    burst(a,d,t,{dur:.09,type:'lowpass',f:380*v,q:.7,gain:.55*g,att:.001});burst(a,d,t+.004,{dur:.035,f:1700*v,q:.9,gain:.14*g,att:.001});
+    tone(a,d,t+.002,{f:240*v,f2:160,dur:.05,gain:.08*g,wave:'triangle'});},
+  // the company seal pressed into the paper: deeper, and the fibres crunch
+  seal(a,d,t){tone(a,d,t,{f:72,f2:38,dur:.32,gain:.5,att:.004});burst(a,d,t,{dur:.14,type:'lowpass',f:260,gain:.5,att:.002});
+    for(let i=0;i<9;i++)burst(a,d,t+.02+i*rr(.014,.024),{dur:.012,f:rr(600,1400),q:2.5,gain:rr(.05,.11)*(1-i/12)});
+    burst(a,d,t+.26,{dur:.06,f:2000,q:1,gain:.03});},
+  // one flap of the split-flap board
+  flap(a,d,t,o){const g=o.gain||1;burst(a,d,t,{dur:.012,f:rr(2800,3600),q:2.2,gain:.22*g});tone(a,d,t,{f:rr(1000,1250),dur:.018,gain:.04*g,wave:'triangle'});
+    burst(a,d,t+rr(.025,.04),{dur:.01,f:rr(2000,2600),q:2,gain:.1*g});},
+  // the red tape: a cloth rustle, and a small snap when it is tied
+  tape(a,d,t,o){const L=rr(.3,.4),tie=!!o.tie,s=a.createBufferSource();s.buffer=nbuf(a,'white');const f=a.createBiquadFilter();f.type='bandpass';
+    f.frequency.setValueAtTime(tie?900:1400,t);f.frequency.linearRampToValueAtTime(tie?1400:800,t+L);f.Q.value=1.3;
+    const tr=a.createGain();tr.gain.value=.6;const lfo=a.createOscillator();lfo.frequency.value=rr(22,30);const ld=a.createGain();ld.gain.value=.4;lfo.connect(ld);ld.connect(tr.gain);
+    const g=a.createGain();env(g.gain,t,.09,L*.3,L*.7);s.connect(f);f.connect(tr);tr.connect(g);g.connect(d);s.start(t,Math.random());s.stop(t+L+.06);lfo.start(t);lfo.stop(t+L+.06);
+    if(tie)burst(a,d,t+L,{dur:.03,f:1100,q:1.5,gain:.07});},
+  // a newspaper dropped on the desk
+  slap(a,d,t){burst(a,d,t,{dur:.07,f:2400,f2:1200,q:.6,gain:.05,att:.05});burst(a,d,t+.07,{dur:.1,type:'lowpass',f:1400,gain:.3,att:.001});tone(a,d,t+.07,{f:95,f2:60,dur:.08,gain:.12});},
+  // a memo torn in two
+  tear(a,d,t){for(let i=0;i<14;i++)burst(a,d,t+i*rr(.014,.022),{dur:.02,f:rr(1800,4200),q:1.6,gain:rr(.05,.1)});burst(a,d,t,{dur:.3,f:2600,f2:1600,q:.6,gain:.05,att:.1});},
+  // far across the terminal: the two-tone announcement chime, low-passed, with the hall's echo
+  chime(a,d,t){const lp=a.createBiquadFilter();lp.type='lowpass';lp.frequency.value=rr(1200,1700);const dl=a.createDelay(1);dl.delayTime.value=rr(.17,.23);
+    const fb=a.createGain();fb.gain.value=.33;const wet=a.createGain();wet.gain.value=.5;lp.connect(d);lp.connect(dl);dl.connect(fb);fb.connect(dl);dl.connect(wet);wet.connect(d);
+    const k=rr(.98,1.02),seq=Math.random()<.7?[659.25,523.25]:[523.25,659.25,783.99];
+    seq.forEach((f,i)=>{tone(a,lp,t+i*.62,{f:f*k,dur:1.8,gain:.05,att:.015});tone(a,lp,t+i*.62,{f:f*k*2.01,dur:.7,gain:.008,att:.01});});
+    setTimeout(()=>{try{fb.disconnect();}catch(e){}},9000);},
+  // far off: an aircraft taking off, a slow swell of rumble
+  jet(a,d,t){const L=rr(7,10),s=a.createBufferSource();s.buffer=nbuf(a,'brown');s.loop=true;const f=a.createBiquadFilter();f.type='lowpass';
+    f.frequency.setValueAtTime(150,t);f.frequency.linearRampToValueAtTime(rr(380,460),t+L*.55);f.frequency.linearRampToValueAtTime(140,t+L);
+    const g=a.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(.3,t+L*.55);g.gain.linearRampToValueAtTime(0.0001,t+L);
+    s.connect(f);f.connect(g);g.connect(d);s.start(t,rr(0,4));s.stop(t+L+.1);}};
+/* the shortest gap between two of the same sound (ms), so a burst of events never machine-guns */
+const SFX_GAP={type:22,ret:80,tick:60,detent:45,lift:40,sign:400,slide:150,turn:200,thud:110,seal:250,flap:18,tape:250,slap:250,tear:300,chime:3000,jet:5000};
+M.sfx=function(name,o){o=o||{};if(name==='scratch')return scratch(o);const fn=SOUNDS[name];if(!fn)return false;
+  const now=performance.now();if(now-(SFX.last[name]||0)<(SFX_GAP[name]||30))return false;const a=sfxCtx();if(!a)return false;SFX.last[name]=now;
+  const dest=(name==='chime'||name==='jet')&&SFX.amb?SFX.amb.bus:SFX.out;
+  try{fn(a,dest,a.currentTime+.005+(+o.delay||0),o);}catch(e){return false;}sfxLog(name);return true;};
+/* the pen on paper while the player signs: loudness and brightness follow the stroke's speed; it fades if the pen rests */
+function scratch(o){if(o.stop){const r=SFX.scr;SFX.scr=null;if(!r||!SFX.ctx)return false;const t=SFX.ctx.currentTime;
+    hold(r.g.gain,t);r.g.gain.setTargetAtTime(0.0001,t,.015);try{r.s.stop(t+.12);}catch(e){}sfxLog('scratch:stop');M.sfx('lift');return true;}
+  let r=SFX.scr;if(!r){const a=sfxCtx();if(!a)return false;const t=a.currentTime,s=a.createBufferSource();s.buffer=nbuf(a,'white');s.loop=true;
+    const hp=a.createBiquadFilter();hp.type='highpass';hp.frequency.value=700;const bp=a.createBiquadFilter();bp.type='bandpass';bp.frequency.value=2200;bp.Q.value=.9;
+    const g=a.createGain();g.gain.value=0.0001;s.connect(hp);hp.connect(bp);bp.connect(g);g.connect(SFX.out);s.start(t,Math.random());r=SFX.scr={s,bp,g};sfxLog('scratch:start');}
+  const v=+o.v||0;if(!v||!SFX.ctx)return true;const t=SFX.ctx.currentTime,k=Math.min(1,v/1.6);   // v: px per ms
+  hold(r.g.gain,t);r.g.gain.setTargetAtTime((.012+.12*k)*rr(.85,1.12),t,.02);r.g.gain.setTargetAtTime(0.0001,t+.07,.04);
+  hold(r.bp.frequency,t);r.bp.frequency.setTargetAtTime((1400+3200*k)*rr(.9,1.1),t,.03);return true;}
+function hold(p,t){if(p.cancelAndHoldAtTime)p.cancelAndHoldAtTime(t);else{const v=p.value;p.cancelScheduledValues(t);p.setValueAtTime(v,t);}}
+/* the desk's room: very quiet filtered brown noise that drifts, and every 20–40 s something far away in the terminal */
+const ROOM=.16;
+function ambSync(){const on=(SFX.want===true||(SFX.want==='auto'&&SFX.open))&&SFX.gest&&soundOn();if(on&&!SFX.amb)ambStart();else if(!on&&SFX.amb)ambStop(soundOn()?1:.12);}
+function ambStart(){const a=sfxCtx();if(!a)return;const t=a.currentTime,bus=a.createGain();bus.gain.setValueAtTime(0.0001,t);bus.gain.linearRampToValueAtTime(1,t+1.5);bus.connect(SFX.out);
+  const s=a.createBufferSource();s.buffer=nbuf(a,'brown');s.loop=true;const f=a.createBiquadFilter();f.type='lowpass';f.frequency.value=rr(260,320);f.Q.value=.5;
+  const l1=a.createOscillator();l1.frequency.value=rr(.05,.09);const d1=a.createGain();d1.gain.value=80;l1.connect(d1);d1.connect(f.frequency);
+  const g=a.createGain();g.gain.value=ROOM;const l2=a.createOscillator();l2.frequency.value=rr(.025,.04);const d2=a.createGain();d2.gain.value=ROOM*.25;l2.connect(d2);d2.connect(g.gain);
+  s.connect(f);f.connect(g);g.connect(bus);s.start(t,Math.random()*5);l1.start(t);l2.start(t);
+  const amb=SFX.amb={bus,nodes:[s,l1,l2],timer:0};sfxLog('ambience:start');
+  const cue=first=>{amb.timer=setTimeout(()=>{if(SFX.amb!==amb)return;M.sfx(Math.random()<.65?'chime':'jet');cue(false);},first?rr(10000,18000):rr(20000,40000));};cue(true);}
+function ambStop(fade){const amb=SFX.amb;SFX.amb=null;if(!amb)return;clearTimeout(amb.timer);const a=SFX.ctx;sfxLog('ambience:stop');if(!a)return;const t=a.currentTime;
+  hold(amb.bus.gain,t);amb.bus.gain.linearRampToValueAtTime(0.0001,t+fade);amb.nodes.forEach(n=>{try{n.stop(t+fade+.05);}catch(e){}});setTimeout(()=>{try{amb.bus.disconnect();}catch(e){}},fade*1000+200);}
+/* ZMMoney.ambience(true|false|'auto'): true keeps the room tone on, false keeps it off, 'auto' (the default) plays it while a
+   paper screen is open. Sound off or no gesture yet still means silent. Returns whether it is playing. */
+M.ambience=function(on){SFX.want=on===true||on===false?on:'auto';ambSync();return !!SFX.amb;};
+/* wired once, after mount: the first gesture, the Sound button, and the desk overlay (typing, ticks, rulers, stamps, pages) */
+function sfxWire(){
+  if(!SFX.wired){SFX.wired=true;
+    const g=()=>{if(SFX.gest)return;SFX.gest=true;sfxCtx();ambSync();};
+    document.addEventListener('pointerdown',g,true);document.addEventListener('keydown',g,true);
+    // the game's Sound button: hub.js flips its class in its own click handler, so look once it has run
+    document.addEventListener('click',e=>{if(!e.target.closest||!e.target.closest('#snd'))return;setTimeout(()=>{
+      if(!soundOn()){if(SFX.scr)scratch({stop:true});ambSync();const a=SFX.ctx;if(a&&a.state==='running')setTimeout(()=>{if(!soundOn())a.suspend().catch(()=>{});},200);}else ambSync();},0);},true);}
+  const ov=$('#zmmOv');if(!ov||ov._sfx)return;ov._sfx=true;SFX.open=!ov.hidden;
+  ov.addEventListener('keydown',e=>{const t=e.target;if(!t||!(t.tagName==='TEXTAREA'||t.tagName==='INPUT'&&/^(text|search|email|tel|)$/.test(t.type||'')))return;
+    if(e.key==='Enter')M.sfx('ret');else if(e.key.length===1||e.key==='Backspace'||e.key==='Delete')M.sfx('type',{soft:e.key.length>1});},true);
+  ov.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[role=radio],[role=checkbox]');if(!b||b.disabled||b.getAttribute('aria-disabled')==='true')return;
+    const was=b.getAttribute('aria-checked')==='true';setTimeout(()=>{const now=b.getAttribute('aria-checked')==='true';if(b.getAttribute('role')==='radio'&&was)return;M.sfx('tick',{off:was&&!now});},0);},true);
+  ov.addEventListener('input',e=>{const t=e.target;if(t&&t.type==='range')M.sfx('detent');},true);
+  const turnIn=reduced()?0:.12;
+  new MutationObserver(recs=>{let st=0,seal=0,leave=0,arrive=0;
+    for(const r of recs){const el=r.target;
+      if(r.type==='attributes'){if(el===ov){if(r.attributeName==='hidden'){SFX.open=!ov.hidden;ambSync();if(SFX.open)arrive=1;}continue;}
+        const was=' '+(r.oldValue||'')+' ',cl=el.classList;if(!cl)continue;
+        if(cl.contains('zdk-seal')&&cl.contains('down')&&was.indexOf(' down ')<0)seal=1;
+        else if(cl.contains('zdk-doc')&&cl.contains('leave')&&was.indexOf(' leave ')<0)leave=1;
+        else if(cl.contains('zdk-doc')&&cl.contains('arrive')&&was.indexOf(' arrive ')<0)arrive=1;}
+      else for(const n of r.addedNodes){if(n.nodeType!==1)continue;
+        if(n.matches('.zdk-stamp.down,.zcs-day.down'))st=Math.max(st,n.matches('.big,.zcs-day')?2:1);
+        else if(n.matches('.zdk-doc.arrive'))arrive=1;}}
+    if(seal)M.sfx('seal',{delay:turnIn});
+    if(st)M.sfx('thud',{delay:turnIn,gain:st===2?1.15:1});
+    if(leave)M.sfx('slide');
+    if(arrive&&!st&&!seal)M.sfx('turn');
+  }).observe(ov,{subtree:true,childList:true,attributes:true,attributeFilter:['class','hidden'],attributeOldValue:true});}
+/* offline render, for the tests: ZMMoney._sfxRender(name) → Promise<{name, peak, rms, rmsDb}> through the same master chain */
+M._sfxRender=function(name,o){const O=window.OfflineAudioContext||window.webkitOfflineAudioContext;if(!O)return Promise.resolve(null);
+  const sr=44100,sec=name==='jet'?11:name==='ambience'?6:name==='chime'?4:name==='scratch'?1.2:1.2,a=new O(1,sr*sec,sr),out=sfxBus(a);
+  if(name==='ambience'){const s=a.createBufferSource();s.buffer=nbuf(a,'brown');s.loop=true;const f=a.createBiquadFilter();f.type='lowpass';f.frequency.value=290;f.Q.value=.5;const g=a.createGain();g.gain.value=ROOM*1.25;s.connect(f);f.connect(g);g.connect(out);s.start(0);}
+  else if(name==='scratch'){const s=a.createBufferSource();s.buffer=nbuf(a,'white');s.loop=true;const hp=a.createBiquadFilter();hp.type='highpass';hp.frequency.value=700;
+    const bp=a.createBiquadFilter();bp.type='bandpass';bp.frequency.value=4600;bp.Q.value=.9;const g=a.createGain();g.gain.value=.132;s.connect(hp);hp.connect(bp);bp.connect(g);g.connect(out);s.start(0);s.stop(1);}   // the fastest stroke, held for 1 s
+  else{const fn=SOUNDS[name];if(!fn)return Promise.resolve(null);fn(a,out,.01,o||{});}
+  const p=a.startRendering();return (p&&p.then?p:new Promise(r=>{a.oncomplete=e=>r(e.renderedBuffer);})).then(b=>{const d=b.getChannelData(0);let pk=0,ss=0,n=0;
+    for(let i=0;i<d.length;i++){const v=Math.abs(d[i]);if(v>pk)pk=v;if(v>1e-4){ss+=v*v;n++;}}const rms=Math.sqrt(ss/Math.max(1,n));
+    return {name,peak:+pk.toFixed(3),rms:+rms.toFixed(4),rmsDb:+(20*Math.log10(rms||1e-9)).toFixed(1)};});};
+const slap=()=>M.sfx('slap',{delay:.36});
 
 /* ZMMoney.frontPage(opts) → Promise<void>. opts = VSIEra.ch5.frontPage(state):
    {masthead, dateLine, price, lead, deck, sub:{head, body}, columns:[{head, body} ×2], photo:{kind, caption}}
@@ -17093,9 +17245,9 @@ M.decision=function(o){o=o||{};return new Promise(res=>{
   sh.querySelectorAll('.zdk-ticks button').forEach(b=>b.onclick=()=>{if(done||b.disabled)return;pick=b.dataset.id;sh.querySelectorAll('.zdk-ticks button').forEach(x=>x.setAttribute('aria-checked',x===b?'true':'false'));
     const c=ch.find(x=>x.id===pick);go.disabled=false;go.textContent=actOf(c);slipNow();});
   go.onclick=()=>{if(done||!pick)return;done=true;go.disabled=true;
-    const me=sh.querySelector('#z5Me .ink');const sgs=sh.querySelector('.zdk-sigs');if(sgs&&doc.scrollHeight>doc.clientHeight)doc.scrollTo({top:doc.scrollHeight,behavior:reduced()?'auto':'smooth'});me.innerHTML=o.signature?`<img src="${esc(o.signature)}" alt="Your signature">`:H(o.founder||M.cfg.spvShort);
+    const me=sh.querySelector('#z5Me .ink');const sgs=sh.querySelector('.zdk-sigs');if(sgs&&doc.scrollHeight>doc.clientHeight)doc.scrollTo({top:doc.scrollHeight,behavior:reduced()?'auto':'smooth'});me.innerHTML=o.signature?`<img src="${esc(o.signature)}" alt="Your signature">`:H(o.founder||M.cfg.spvShort);M.sfx('sign');
     const word=(o.stamps||{})[pick]||(pick==='decline'?'Declined':'Signed');
-    (sgs||doc).insertAdjacentHTML('beforeend',stampHtml(word,'down',sd));doc.classList.remove('arrive');if(!reduced())thud();
+    (sgs||doc).insertAdjacentHTML('beforeend',stampHtml(word,'down',sd));doc.classList.remove('arrive');
     const fin=()=>{close();res({choice:pick,signedOn:isoDay(sd||now)});};
     if(reduced()){setTimeout(fin,700);return;}
     setTimeout(()=>{const p=sh.querySelector('#zdkPile'),n=Math.min(5,p.children.length),cd=document.createElement('div');cd.className='zdk-card';cd.style.setProperty('--i',n);cd.style.setProperty('--r','-3deg');
@@ -17443,7 +17595,7 @@ M.concessionFile=function(el,o){mountS();if(typeof el==='string')el=document.que
   // untie: the tape slides off (0.4 s), the cover opens, then the game opens the desk at the right document
   let going=false;root.querySelector('#zcfGo').onclick=()=>{if(going)return;going=true;const c=root.querySelector('.zcf-cover');
     const go=()=>{going=false;if(o.onContinue)o.onContinue();setTimeout(()=>c&&c.classList.remove('untie','open'),1500);};
-    if(reduced()||!c){go();return;}c.classList.add('untie');noise(.25,700,.08,0,1.5);setTimeout(()=>{c.classList.add('open');setTimeout(go,300);},400);};
+    if(reduced()||!c){go();return;}c.classList.add('untie');M.sfx('tape');setTimeout(()=>{c.classList.add('open');setTimeout(go,300);},400);};
   root.querySelector('#zcfNew').onclick=()=>{M.confirmTear(o.company).then(ok=>{if(ok&&o.onNew)o.onNew({confirmed:true});});};
   return root;};
 /* ZMMoney.confirmTear(company) → Promise<boolean>. Asks once, on paper. A second call for the same company within 4 s of a
@@ -17468,7 +17620,7 @@ M.confirmTear=function(company){mountF();company=company||'Your company';
       const r=memo.getBoundingClientRect();let q=29;const rnd=()=>((q=(q*9301+49297)%233280)/233280);const pts=[];for(let y=0;y<=100;y+=5)pts.push([46+rnd()*8,y]);
       const L=`polygon(0 0,${pts.map(p=>p[0]+'% '+p[1]+'%').join(',')},0 100%)`,R=`polygon(100% 0,${pts.map(p=>p[0]+'% '+p[1]+'%').join(',')},100% 100%)`;
       const halves=[L,R].map((cp,i)=>{const h=memo.cloneNode(true);h.classList.add('half');h.removeAttribute('role');h.style.width=r.width+'px';h.style.clipPath=cp;h.style.transform='translate(-50%,-50%) rotate(-.6deg)';v.appendChild(h);return h;});
-      memo.style.visibility='hidden';thud();
+      memo.style.visibility='hidden';M.sfx('tear');
       requestAnimationFrame(()=>requestAnimationFrame(()=>{halves[0].style.transform='translate(calc(-50% - 70px),calc(-50% + 40px)) rotate(-9deg)';halves[1].style.transform='translate(calc(-50% + 70px),calc(-50% + 60px)) rotate(8deg)';halves.forEach(h=>h.style.opacity='0');}));
       setTimeout(()=>{v.hidden=true;v.innerHTML='';fin(true);},620);};
     setTimeout(()=>{const k=v.querySelector('#zcfTn');k&&k.focus({preventScroll:true});},30);});
@@ -17905,7 +18057,7 @@ M.ACTS=['','The Deal','The Network','The Long Game'];
 const CH_SUB=['','win the concession','build the airport','open the doors','wire the country','take on the Gulf','the crisis','hand it back','the record'];
 const actOf=n=>n<=3?1:n<=5?2:3;
 const nIn=v=>Math.round(+v||0).toLocaleString('en-IN');
-const quiet=()=>noise(.22,900,.12,0,2);   // a very quiet paper slide
+const quiet=()=>M.sfx('slide',{gain:.6});   // a very quiet paper slide
 
 /* ---------- the strip (§14.1) ----------
    ZMMoney.setStrip(o) sets where the player is in the flight, or clears it (null). Every desk screen shows it at the top
@@ -17974,7 +18126,7 @@ M.flaps=function(b,opt){mountS();b=b||{};opt=opt||{};return new Promise(res=>{
     // the next chapter's strip slides into the holder as its front page arrives (set after the page opens, so the slide plays there)
     if(b.frontPage&&opt.land!==false){const pr=M.frontPage(b.frontPage);if(opt.strip)M.setStrip(opt.strip);pr.then(()=>res());}else{if(opt.strip)M.setStrip(opt.strip);close();res();}};
   const finish=()=>{if(done)return;done=true;clearTimeout(timer);setYear(y1);setHead(lines.length?lines[lines.length-1]:'',true);setTimeout(land,reduced()?0:380);};
-  const tick=()=>{if(done)return;k++;cur+=dir;setYear(cur);setHead(head(k));noise(.035,2600,.05+.16*(1-k/n),0,6);if(k>=n){finish();return;}timer=setTimeout(tick,STEP);};
+  const tick=()=>{if(done)return;k++;cur+=dir;setYear(cur);setHead(head(k));M.sfx('flap',{gain:.35+.65*(1-k/n)});if(k>=n){finish();return;}timer=setTimeout(tick,STEP);};
   sh.querySelector('#zflStage').onclick=()=>{if(reduced()&&!done){done=true;land();return;}finish();};
   if(reduced()){setYear(y1);lead.textContent=head(0);return;}   // the final year and the first headline; a click goes on
   timer=setTimeout(tick,260);
@@ -18040,7 +18192,7 @@ M.closeFile=function(o){mountS();o=o||{};return new Promise(res=>{
   sh.querySelector('#zcfBack').onclick=()=>{close();res();};
   if(reduced()){tie.classList.add('filing','tied');desk.classList.add('dim');return;}
   quiet();requestAnimationFrame(()=>requestAnimationFrame(()=>tie.classList.add('filing')));
-  setTimeout(()=>{tie.classList.add('tied');noise(.3,700,.1,0,1.5);},620);setTimeout(()=>desk.classList.add('dim'),1150);
+  setTimeout(()=>{tie.classList.add('tied');M.sfx('tape',{tie:true});},620);setTimeout(()=>desk.classList.add('dim'),1150);
 });};
 
 function moreCue(doc){const m=document.createElement('i');m.className='zs-more';m.setAttribute('aria-hidden','true');m.textContent='more below ↓';doc.appendChild(m);
@@ -18083,7 +18235,7 @@ M.minutes=function(o){mountS();o=o||{};return new Promise(res=>{
     const me=sh.querySelector('#zsChair .ink');const sgs=sh.querySelector('.zdk-sigs');
     if(doc.scrollHeight>doc.clientHeight)doc.scrollTo({top:doc.scrollHeight,behavior:reduced()?'auto':'smooth'});
     const word=o.stamp||'Approved';
-    setTimeout(()=>{me.innerHTML=o.signature?`<img src="${esc(o.signature)}" alt="Your signature">`:H(o.founder||M.cfg.spvShort);sgs.insertAdjacentHTML('beforeend',stampHtml(word,'down',sd));if(!reduced())thud();},reduced()?0:R.length*220+200);
+    setTimeout(()=>{me.innerHTML=o.signature?`<img src="${esc(o.signature)}" alt="Your signature">`:H(o.founder||M.cfg.spvShort);M.sfx('sign');sgs.insertAdjacentHTML('beforeend',stampHtml(word,'down',sd));},reduced()?0:R.length*220+200);
     const adopted={};R.forEach(r=>adopted[r.id]=sel.has(r.id));
     const fin=()=>{close();res({adopted,ids:R.filter(r=>sel.has(r.id)).map(r=>r.id),approvedOn:isoDay(sd||now)});};
     if(reduced()){setTimeout(fin,900);return;}
@@ -18133,7 +18285,7 @@ M.letter=function(o){mountS();o=o||{};return new Promise(res=>{
   go.onclick=()=>{if(done||!pick)return;done=true;go.disabled=true;
     const me=sh.querySelector('#zsMe .ink'),sgs=sh.querySelector('.zdk-sigs');if(doc.scrollHeight>doc.clientHeight)doc.scrollTo({top:doc.scrollHeight,behavior:reduced()?'auto':'smooth'});
     me.innerHTML=o.signature?`<img src="${esc(o.signature)}" alt="Your signature">`:H(o.founder||M.cfg.spvShort);
-    const word=(o.stamps||{})[pick]||STAMP[pick]||'Filed';sgs.insertAdjacentHTML('beforeend',stampHtml(word,'down',sd));if(!reduced())thud();
+    const word=(o.stamps||{})[pick]||STAMP[pick]||'Filed';sgs.insertAdjacentHTML('beforeend',stampHtml(word,'down',sd));
     const out={choice:pick,signedOn:isoDay(sd||now)};
     if(pick==='refuse'){setTimeout(()=>M.stepIn(Object.assign({founder:o.founder,company:o.parent,date:o.date},o.stepIn||{})).then(()=>res(out)),reduced()?600:1500);return;}
     const fin=()=>{close();res(out);};

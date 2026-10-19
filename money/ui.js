@@ -2040,6 +2040,13 @@ const CSSS=`
 .zfs-h.night{padding:3px 3px 4px;background:rgba(10,14,17,.86);border:1px solid #2b353c;border-radius:3px;box-shadow:0 8px 20px rgba(0,0,0,.5)}
 .zfs-h.night .zfs-e>em{right:auto;left:calc(100% + 10px);color:#c9cfd3}
 #app>.zfs-h.night{position:absolute;left:12px;top:8px;z-index:7}
+#top .zfs-h.night{padding:0;background:transparent;border:0;box-shadow:none;align-self:center}
+#top .zfs-h.night .zfs-bay,#top .zfs-h.night .zfs .cs,#top .zfs-h.night .zfs .dc,#top .zfs-h.night .zfs .sk{display:none}
+#top .zfs-h.night .zfs{grid-template-columns:84px 80px;height:36px;border-left-width:4px}
+#top .zfs-h.night .zfs>span{padding:0 6px}
+#top .zfs-h.night .zfs b{font-size:14px}
+#top .zfs-h.night .zfs .yr b{font-size:11px}
+#top .zfs-h.night .zfs small{font-size:9.5px}
 @media (max-width:1280px){.zfs{grid-template-columns:78px 120px 96px minmax(150px,186px) 56px}.zdk>.zfs-h{right:20px}}
 @media (prefers-reduced-motion:reduce){.zfs.slide,.zfs-e.dropin{animation:none}}
 
@@ -2598,7 +2605,7 @@ M.stepIn=function(o){mountS();o=o||{};return new Promise(res=>{
    opts: {company, founder, start (1–4: open at that page, skipping the casing)}. The casing opens on "open it"; each page pulls out
    of it; "Close the Black Box" resolves. --rec orange appears here and nowhere else. */
 const BX_TITLES=['','The return','What made the return','What happened','How you work'];
-function bxRuler(p){const bs=(p.benchmarks||[]).map(b=>({label:b.label,source:b.source,lo:Array.isArray(b.pct)?+b.pct[0]:+b.pct,hi:Array.isArray(b.pct)?+b.pct[1]:b.pctHi!=null?+b.pctHi:+b.pct})).filter(b=>isFinite(b.lo));
+function bxRuler(p){const bs=(p.benchmarks||[]).map(b=>({label:b.label,source:b.cite||b.source,lo:Array.isArray(b.pct)?+b.pct[0]:+b.pct,hi:Array.isArray(b.pct)?+b.pct[1]:b.pctHi!=null?+b.pctHi:+b.pct})).filter(b=>isFinite(b.lo));
   const r=+p.returnPct,vals=bs.flatMap(b=>[b.lo,b.hi]).concat(isFinite(r)?[r]:[]);
   const mn=Math.min(0,Math.floor(Math.min(...vals)/5)*5),mx=Math.max(20,Math.ceil((Math.max(...vals)+1)/5)*5),sp=mx-mn,X=v=>(v-mn)/sp*100;
   const ticks=[];for(let k=0;k<=sp;k++)ticks.push(`<line x1="${k/sp*100}%" x2="${k/sp*100}%" y1="0" y2="${k%5===0?13:6}"/>`);

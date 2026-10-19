@@ -4695,15 +4695,13 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
     for(let n=3;n<=7;n++){const e0=E.chapters[n].eras[0];if(e0>st.era||(e0===st.era&&!played))return {n,step:n===3?'front':'flaps',past:[]};}
     return {n:7,step:'flaps',past:[]};},
   leave(){if(!FL.live)return;FL.live=false;FL.nightOff();const st=CAMP.st;if(st&&st.flight&&!FL.bot){st.flight.left=true;FL.save();}},
-  nightOff(){try{if(FL.night){FL.night.remove();FL.night=null;}document.querySelectorAll('#top>.zfs-h').forEach(h=>h.remove());const l=$('#top .lvl');if(l){l.hidden=false;l.style.display='';}fitCam();}catch(e){}},
+  nightOff(){try{if(FL.night){FL.night.remove();FL.night=null;}document.querySelectorAll('#top .zfs-h').forEach(h=>h.remove());const l=$('#top .lvl');if(l)l.querySelectorAll(':scope>span').forEach(x=>x.style.display='');fitCam();}catch(e){}},
   // the night strip takes the level title's place in the ops HUD (DESIGN.md §14.1), in the header's flow: it never covers the
   // clock, the speed buttons or the numbers, and the paper tags avoid it with the rest of #top
   nightOn(){const Z=window.ZMMoney,top=$('#top');if(!Z||!Z.strip||!top)return null;const h=Z.strip(top,'night');if(!h)return null;
-    if(!$('#flNightCss')){const c=document.createElement('style');c.id='flNightCss';c.textContent='#top>.zfs-h.night{position:relative;left:auto;top:auto;flex:0 0 auto;margin-right:78px}';document.head.appendChild(c);}
-    top.insertBefore(h,top.firstChild);
-    const l=top.querySelector('.lvl');if(l){l.hidden=true;l.style.display='none';}
-    try{fitCam();}catch(e){}   // the HUD grew: the map region, the zoom buttons and the pins' free area start under it
-    return h;},   // (.lvl is display:flex, which beats [hidden])
+    if(!$('#flNightCss')){const c=document.createElement('style');c.id='flNightCss';c.textContent='#top .zfs-h.night{position:relative;left:auto;top:auto;flex:0 0 auto}';document.head.appendChild(c);}
+    const l=top.querySelector('.lvl');   // the strip takes the level's slot, so the HUD row keeps its width
+    if(l){l.querySelectorAll(':scope>span').forEach(x=>x.style.display='none');l.appendChild(h);}else top.insertBefore(h,top.firstChild);return h;},
 
   // ---- the run: one step at a time, saved after each ----
   async run(){if(FL.busy)return;const E=CAMP.E(),Z=window.ZMMoney;if(!CAMP.st||!CAMP.st.flight){menu('concession');return;}
@@ -15029,7 +15027,7 @@ requestAnimationFrame(frame);
     var l5Now = 100 - st.stake - 20, l5After = l5Now + (st.stake - m);
     return choiceDoc(st, {year: CH6.year, docType: 'banks-letter', docId: 'banks-letter-' + cal(CH6.year), title: 'Letter from the banks to ' + VSIAL,
       parties: {from: lenderName(st.s) + ' and the State Bank consortium', to: VSIAL + ', for ' + who, signatory: {name: 'The lenders\' agent', title: 'For the banks'}},
-      body: ['The crisis means the airport will earn ' + (need.worst != null ? coverWords(need.worst) : 'too little for its loan payments') + ' in ' + cal(need.worstYear || CH6.year) + '.',
+      body: ['The crisis means the airport will earn ' + (need.worst != null ? coverWords(need.worst).replace(' earned', '') : 'too little for its loan payments') + ' in ' + cal(need.worstYear || CH6.year) + '.',
         'The banks ask the owners to put in ' + cr(X) + ' of fresh money this year, enough to bring the hardest year back to ₹110 earned for every ₹100 due.',
         'If no money comes, the banks will take control of the airport and its owners\' shares will be lost.'],
       choices: [
@@ -15354,6 +15352,10 @@ requestAnimationFrame(frame);
     if (dcf.discount_rate) out.push({id: 'fairfax', label: 'What Fairfax\'s own valuation of Bengaluru\'s airport assumes it earns', lowPct: dcf.discount_rate[0] * 100, highPct: dcf.discount_rate[1] * 100, pct: [Math.round(dcf.discount_rate[0] * 1000) / 10, Math.round(dcf.discount_rate[1] * 1000) / 10], year: 2025, source: src('bial.owners.dcf_inputs'), key: 'bial.owners.dcf_inputs'});
     if (roe != null) out.push({id: 'aera', label: 'What AERA allows Delhi\'s airport on its shareholders\' money', pct: roe, source: src('till.fair_return_on_equity'), key: 'till.fair_return_on_equity'});
     if (cod != null) out.push({id: 'banks', label: 'What the banks charged', pct: cod, source: src('till.efficient_cost_of_debt'), key: 'till.efficient_cost_of_debt'});
+    var CITE = {fairfax: 'Fairfax India Holdings, Annual Report 2025: the discount rates in its valuation of Bangalore International Airport.',
+      aera: 'AERA consultation paper on Delhi airport (aera.gov.in), para 7.2.3 and Table 238: the fair return on shareholders\' money.',
+      banks: 'AERA, the same consultation paper, paras 7.2.7 to 7.2.10: the efficient cost of Delhi airport\'s debt.'};
+    out.forEach(function (b) { b.cite = CITE[b.id] || b.label; });   // readable citations: the browser build strips money.json's source fields
     return out;
   }
   function npvRate() { var b = benchmarks().filter(function (x) { return x.id === 'fairfax'; })[0]; return b ? b.lowPct / 100 : 0.122; }
@@ -15513,7 +15515,7 @@ requestAnimationFrame(frame);
     var p1 = {returnPct: rp.returnPct, words: rp.words, moneyInCr: rp.investedCr, moneyOutCr: rp.returnedCr, valueCr: rp.valueCr, line: rp.line, company: rp.company,
       ended: banks ? 'banks' : 'handback', endedYear: banks ? cal(o.year || state.year || 1) : cal(60),
       endedOn: banks ? cal(o.year || state.year || 1) + String(state.signedOn || '2026-04-01').slice(4) : (state.endsOn || null), endedWords: rp.ending,
-      benchmarks: rp.benchmarks.map(function (b) { return {id: b.id, label: b.label, pct: b.pct, year: b.year, source: b.source, key: b.key}; })};
+      benchmarks: rp.benchmarks.map(function (b) { return {id: b.id, label: b.label, pct: b.pct, year: b.year, source: b.source, url: b.source, cite: b.cite, key: b.key}; })};
     a.bars = a.barsWithWords;
     var p2 = {method: a.method, words: a.words, bars: a.bars.map(function (b) { return {decision: b.group, label: b.label, chosen: b.chosen, npvCr: b.npvCr, sharePct: b.sharePct, sentence: b.sentence}; }),
       everythingElsePct: a.everythingElse.sharePct, everythingElseCr: a.everythingElse.npvCr, closing: a.powerLaw, sentences: a.sentences, totalCr: a.totalCr, checkSum: a.checkSum, groups: a.groups};
@@ -17607,6 +17609,13 @@ const CSSS=`
 .zfs-h.night{padding:3px 3px 4px;background:rgba(10,14,17,.86);border:1px solid #2b353c;border-radius:3px;box-shadow:0 8px 20px rgba(0,0,0,.5)}
 .zfs-h.night .zfs-e>em{right:auto;left:calc(100% + 10px);color:#c9cfd3}
 #app>.zfs-h.night{position:absolute;left:12px;top:8px;z-index:7}
+#top .zfs-h.night{padding:0;background:transparent;border:0;box-shadow:none;align-self:center}
+#top .zfs-h.night .zfs-bay,#top .zfs-h.night .zfs .cs,#top .zfs-h.night .zfs .dc,#top .zfs-h.night .zfs .sk{display:none}
+#top .zfs-h.night .zfs{grid-template-columns:84px 80px;height:36px;border-left-width:4px}
+#top .zfs-h.night .zfs>span{padding:0 6px}
+#top .zfs-h.night .zfs b{font-size:14px}
+#top .zfs-h.night .zfs .yr b{font-size:11px}
+#top .zfs-h.night .zfs small{font-size:9.5px}
 @media (max-width:1280px){.zfs{grid-template-columns:78px 120px 96px minmax(150px,186px) 56px}.zdk>.zfs-h{right:20px}}
 @media (prefers-reduced-motion:reduce){.zfs.slide,.zfs-e.dropin{animation:none}}
 
@@ -18165,7 +18174,7 @@ M.stepIn=function(o){mountS();o=o||{};return new Promise(res=>{
    opts: {company, founder, start (1–4: open at that page, skipping the casing)}. The casing opens on "open it"; each page pulls out
    of it; "Close the Black Box" resolves. --rec orange appears here and nowhere else. */
 const BX_TITLES=['','The return','What made the return','What happened','How you work'];
-function bxRuler(p){const bs=(p.benchmarks||[]).map(b=>({label:b.label,source:b.source,lo:Array.isArray(b.pct)?+b.pct[0]:+b.pct,hi:Array.isArray(b.pct)?+b.pct[1]:b.pctHi!=null?+b.pctHi:+b.pct})).filter(b=>isFinite(b.lo));
+function bxRuler(p){const bs=(p.benchmarks||[]).map(b=>({label:b.label,source:b.cite||b.source,lo:Array.isArray(b.pct)?+b.pct[0]:+b.pct,hi:Array.isArray(b.pct)?+b.pct[1]:b.pctHi!=null?+b.pctHi:+b.pct})).filter(b=>isFinite(b.lo));
   const r=+p.returnPct,vals=bs.flatMap(b=>[b.lo,b.hi]).concat(isFinite(r)?[r]:[]);
   const mn=Math.min(0,Math.floor(Math.min(...vals)/5)*5),mx=Math.max(20,Math.ceil((Math.max(...vals)+1)/5)*5),sp=mx-mn,X=v=>(v-mn)/sp*100;
   const ticks=[];for(let k=0;k<=sp;k++)ticks.push(`<line x1="${k/sp*100}%" x2="${k/sp*100}%" y1="0" y2="${k%5===0?13:6}"/>`);

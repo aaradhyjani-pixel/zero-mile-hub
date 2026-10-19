@@ -3107,15 +3107,13 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
     for(let n=3;n<=7;n++){const e0=E.chapters[n].eras[0];if(e0>st.era||(e0===st.era&&!played))return {n,step:n===3?'front':'flaps',past:[]};}
     return {n:7,step:'flaps',past:[]};},
   leave(){if(!FL.live)return;FL.live=false;FL.nightOff();const st=CAMP.st;if(st&&st.flight&&!FL.bot){st.flight.left=true;FL.save();}},
-  nightOff(){try{if(FL.night){FL.night.remove();FL.night=null;}document.querySelectorAll('#top>.zfs-h').forEach(h=>h.remove());const l=$('#top .lvl');if(l){l.hidden=false;l.style.display='';}fitCam();}catch(e){}},
+  nightOff(){try{if(FL.night){FL.night.remove();FL.night=null;}document.querySelectorAll('#top .zfs-h').forEach(h=>h.remove());const l=$('#top .lvl');if(l)l.querySelectorAll(':scope>span').forEach(x=>x.style.display='');fitCam();}catch(e){}},
   // the night strip takes the level title's place in the ops HUD (DESIGN.md §14.1), in the header's flow: it never covers the
   // clock, the speed buttons or the numbers, and the paper tags avoid it with the rest of #top
   nightOn(){const Z=window.ZMMoney,top=$('#top');if(!Z||!Z.strip||!top)return null;const h=Z.strip(top,'night');if(!h)return null;
-    if(!$('#flNightCss')){const c=document.createElement('style');c.id='flNightCss';c.textContent='#top>.zfs-h.night{position:relative;left:auto;top:auto;flex:0 0 auto;margin-right:78px}';document.head.appendChild(c);}
-    top.insertBefore(h,top.firstChild);
-    const l=top.querySelector('.lvl');if(l){l.hidden=true;l.style.display='none';}
-    try{fitCam();}catch(e){}   // the HUD grew: the map region, the zoom buttons and the pins' free area start under it
-    return h;},   // (.lvl is display:flex, which beats [hidden])
+    if(!$('#flNightCss')){const c=document.createElement('style');c.id='flNightCss';c.textContent='#top .zfs-h.night{position:relative;left:auto;top:auto;flex:0 0 auto}';document.head.appendChild(c);}
+    const l=top.querySelector('.lvl');   // the strip takes the level's slot, so the HUD row keeps its width
+    if(l){l.querySelectorAll(':scope>span').forEach(x=>x.style.display='none');l.appendChild(h);}else top.insertBefore(h,top.firstChild);return h;},
 
   // ---- the run: one step at a time, saved after each ----
   async run(){if(FL.busy)return;const E=CAMP.E(),Z=window.ZMMoney;if(!CAMP.st||!CAMP.st.flight){menu('concession');return;}

@@ -916,7 +916,9 @@
     if (row) {
       var life = 1 - Math.pow(1 + (sp.life_rate || 0.075), -Math.max(0, 60 - row.year));
       var hubNet = Math.max(0, (row.hubInc || 0) - (row.hubCost || 0));
-      var core = P.ev_multiple * Math.max(0, row.ebitda - hubNet) * life, rab = eng.rab(row.t, false)[0];
+      // the asset base a buyer pays for: what is in service, or (if larger) what is in service next year, so a terminal
+      // finished but opening next year counts at once; without this the stake looks to jump the year it opens (F5)
+      var core = P.ev_multiple * Math.max(0, row.ebitda - hubNet) * life, rab = Math.max(eng.rab(row.t, false)[0], eng.rab(row.t + 1, false)[0]);
       if (rab > 0 && sp.ev_rab_check) core = Math.min(core, sp.ev_rab_check[1] * rab);
       var g = eng.c.hub_growth || 0, gBase = P.growth.cagr_by_era[Math.min(11, Math.floor((row.year - 1) / 5))];
       var prem = Math.min(sp.growth_prem_cap || 6, (sp.growth_prem_per_pp_over || 3) * Math.max(0, (g - gBase) * 100));
@@ -1023,7 +1025,7 @@
     state.year = ys[2];
     var so = 0, sr = 0; eng.c.tranches.forEach(function (x) { if (x.out > 0.5) { so += x.out; sr += x.out * x.rate; } });
     state.lastReport = {light: rep.light, cover: rep.coverWorst, payoutShare: rep.payoutShare, debtCr: rep.debtCr, worstYear: rep.worstYear,
-      stakeValueCr: rep.stakeValueCr, ratePct: so > 0 ? Math.round(sr / so * 10) / 10 : null};
+      stakeValueCr: rep.stakeValueCr, returnPerYear: rep.returnPerYear, ratePct: so > 0 ? Math.round(sr / so * 10) / 10 : null};
     if (rep.banksTookControl || ys[2] >= 60) {
       state.over = rep.banksTookControl ? {reason: 'banks', year: eng.step_in.t + 1} : {reason: 'handback', year: 60};
       state.final = finalOf(state, eng);
@@ -1119,7 +1121,7 @@
     var banks = o.reason === 'banks';
     var line = banks ? state.parent + ' lost Vikram Sarabhai International to its banks in ' + (2025 + (o.year || 0)) + '. ₹' + Math.round(f.investedCr || 0).toLocaleString('en-IN') + ' crore invested.' :
       state.parent + ' ran Vikram Sarabhai International for 60 years. ₹' + Math.round(f.returnedCr || 0).toLocaleString('en-IN') + ' crore returned on ₹' + Math.round(f.investedCr || 0).toLocaleString('en-IN') + ' crore invested.';
-    return {band: banks ? 'The banks took control' : 'Handback · ' + (state.endsOn || '2085'), title: banks ? 'The concession ends early' : 'Sixty years, handed back',
+    return {band: banks ? 'The banks took control' : 'Handback · ' + (state.endsOn ? fmtDate(state.endsOn) : '2085'), title: banks ? 'The concession ends early' : 'Sixty years, handed back',
       hero: line, sections: [{title: 'Your company\'s ' + state.stake + '%', rows: [
         {label: 'Money put in', amount: f.investedCr || 0, kind: 'cost'},
         {label: 'Dividends received', amount: f.dividendsCr || 0, kind: 'rev'},
@@ -1129,6 +1131,24 @@
   }
 
 
+  // F1: an income-statement-shaped page ({band, title, hero, sections, moments}) as one page of the annual report for
+  // ZMMoney.bill ({title, year, paragraph, table, margin, cover, stake}); text rows (a return, "Yes") go into the note.
+  // o: {per (the period every figure is in, e.g. '2034–38'), state (for the cover and the stake)}
+  function asBill(is, o) {
+    is = is || {}; o = o || {};
+    var st = o.state || {}, lr = st.lastReport || {}, table = [], notes = [];
+    (is.sections || []).forEach(function (sec) {
+      (sec.rows || []).forEach(function (r) {
+        if (typeof r.amount === 'number') table.push({label: r.label + (/^Cash in hand/.test(r.label) ? (o.at ? ', ' + o.at : '') : r.per || o.per ? ', ' + (r.per || o.per) : ''), cr: Math.round(r.amount)});
+        else if (r.amount != null && r.amount !== '') notes.push(r.label + ': ' + r.amount + '.');
+      });
+    });
+    var strip = function (h) { return String(h || '').replace(/<[^>]*>/g, ''); };
+    return {title: strip(is.title), year: is.band || '', paragraph: strip(is.hero), table: table,
+      margin: notes.concat(is.moments || []).join(' '), per: o.per || '',
+      cover: {ratio: lr.cover != null ? lr.cover : null, words: coverWords(lr.cover != null ? lr.cover : null), light: lr.light || 'green'},
+      stake: {pct: st.stake || 0, valueCr: lr.stakeValueCr != null ? lr.stakeValueCr : 0}, cta: is.cta};
+  }
   // Airport City ordered at the board after game year y: its plan, cost and what the land earns once full (model: print_airport_city)
   function acPlan(y) {
     ensure();
@@ -1144,6 +1164,40 @@
   // The construction years (E0, years 1-4): ZMMoney.construction(opts) → {choices:{eventId: optionId}, finishedOn}
   // ---------------------------------------------------------------------------------------------
   var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  // dates as people write them: '2039-04-01' → '1 April 2039' (the stamps keep '01 APR 2039')
+  function fmtDate(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
+    return m ? (+m[3]) + ' ' + MONTHS[+m[2] - 1] + ' ' + m[1] : String(iso || '');
+  }
+  // the documents signed so far in a concession, for the file card and the pile: {id, title, date, stamp, summary}
+  function campaignDocs(state) {
+    ensure();
+    if (!state) return [];
+    var on = state.signedOn || '2026-04-01', md = on.slice(4), at = function (y) { return cal(y) + md; };
+    var docs = [{id: 'concession', title: 'Concession Agreement', date: on, stamp: 'EXECUTED',
+      summary: 'Sixty years to build and run Vikram Sarabhai International, signed by ' + (state.founder || 'the director') + ' for ' + (state.parent || 'Your company') + '.'}];
+    (state.history || []).forEach(function (h) {
+      if (h.construction) docs.push({id: 'construction', title: 'Construction record', date: (h.construction && h.construction.finishedOn) || at(4), stamp: 'FILED',
+        summary: 'The airport was built and opened.'});
+      else if (h.board) { var ys = eraYears(h.era); docs.push({id: 'board-' + h.era, title: 'Board minutes, ' + cal(ys[2]), date: at(ys[2]), stamp: 'APPROVED',
+        summary: 'Dividend ' + cr(h.board.dividendCr || 0) + (h.board.prepayCr ? ', loans prepaid ' + cr(h.board.prepayCr) : '') + ((h.board.bought || []).length ? ', approved: ' + h.board.bought.length + ' investment' + (h.board.bought.length > 1 ? 's' : '') : '') + '.'}); }
+      else if (h.era) { var y2 = eraYears(h.era); docs.push({id: 'report-' + h.era, title: 'Annual report, ' + cal(y2[1]) + '–' + String(cal(y2[2])).slice(2), date: at(y2[2]), stamp: 'FILED',
+        summary: (h.cover != null ? coverWords(h.cover) + ' in the hardest year' : 'No loan payments due') + '; your ' + (state.stake || 0) + '% worth ' + cr((h.stakeValueCr) || 0) + '.'}); }
+    });
+    return docs;
+  }
+  // the Concession tab's file card: the three plain numbers and where the concession has got to (ZMMoney.concessionFile)
+  function fileCard(state) {
+    ensure();
+    if (!state) return null;
+    var lr = state.lastReport || {}, h = (state.history || []).filter(function (x) { return x.cashCr != null; }).pop() || {};
+    var cov = lr.cover != null ? lr.cover : null;
+    return {company: state.parent || 'Your company', founder: state.founder || '', signature: state.signature || null, signedOn: state.signedOn || null,
+      year: state.year || 1, calYear: cal(state.year || 1), era: state.era || 1, building: !!state.building,
+      stake: {pct: state.stake || 0, valueCr: lr.stakeValueCr != null ? lr.stakeValueCr : null},
+      cover: {words: state.building ? 'No loan payments due until the airport opens' : coverWords(cov), light: lr.light || 'green'},
+      cashCr: h.cashCr != null ? h.cashCr : Math.round(state.cash || 0), docs: campaignDocs(state)};
+  }
   function addMonths(iso, m) {
     var d = iso ? new Date(iso + 'T12:00:00Z') : new Date(Date.UTC(2026, 3, 1, 12));
     if (isNaN(d)) d = new Date(Date.UTC(2026, 3, 1, 12));
@@ -1330,6 +1384,7 @@
     return {'feeders-2033': 'Feeder agreement, ' + cal(8), phase1: 'Phase 1 choice, ' + cal(1), 'budget-2034': 'Capital budget, ' + cal(CH5.radarYear)}[id] ||
       (/^skyward-/.test(id) ? CH5.partner + ' agreement, ' + cal(CH5.year) : d ? d.title : id);
   }
+  function dw(doc) { if (doc && doc.date) doc.dateWords = fmtDate(doc.date); return doc; }   // F6: '1 April 2039' beside the ISO date
   function ch5Doc(state, id) { return (state.docs || []).filter(function (d) { return d.id === id; })[0] || null; }
   var GULF_SRC = {label: 'AP, "Dubai International Airport, busiest for world travel, sees record 92.3 million passengers in 2024"', url: 'https://www.yahoo.com/news/dubai-international-airport-busiest-world-081648847.html'};
   // VSIEra.ch5.script: the chapter as plain data. Text templates fill {name} from the state and the engine;
@@ -1412,9 +1467,16 @@
   function ch5Fixture(opts) {
     ensure();
     opts = opts || {};
-    var phase1 = opts.phase1 === 'big' ? 'big' : 'lean', radar = opts.radar === 'bought' ? 'bought' : 'skipped';
-    var st = newCampaign({parent: opts.parent || 'Meridian Infra', founder: opts.founder || 'Asha Rao', phase1: phase1, bid: {type: 'share', value: 15},
+    // opts.from: the player's own saved concession (zm_campaign): the chapter starts from their onboarding (company,
+    // founder, signature, signing day, bid, phase 1, the State's loan, lender, borrowing and repayment). Without it, the
+    // sample company (Meridian Infra, Asha Rao).
+    var F = opts.from && opts.from.s ? opts.from : null;
+    var phase1 = F ? (F.phase1 === 'big' ? 'big' : 'lean') : opts.phase1 === 'big' ? 'big' : 'lean', radar = opts.radar === 'bought' ? 'bought' : 'skipped';
+    var st = newCampaign(F ? {parent: F.parent, founder: F.founder, signature: F.signature, phase1: phase1, bid: F.bid, gearing: F.gearing, repayment: F.repayment,
+      lender: F.lender, stateLoan: F.stateLoan, cure: F.s.cure !== false, signedOn: F.signedOn, endsOn: F.endsOn} :
+      {parent: opts.parent || 'Meridian Infra', founder: opts.founder || 'Asha Rao', phase1: phase1, bid: {type: 'share', value: 15},
       gearing: 70, repayment: 'sculpted', cure: true, signedOn: opts.signedOn || '2026-04-01', endsOn: opts.endsOn || '2086-03-31'}, 1);
+    st.sample = !F;
     st = applyConstruction(st, {choices: {monsoon: 'pay', overrun: 'pay', trials: 'full'}, finishedOn: '2030-04-01'});
     if (radar === 'bought') st.s.extra_pay = [{year: CH5.radarYear, cr: CH5.radarCr}];
     var EX = {1: {stars: 3, otp: 0.88, cx: 0.93, safety: 100}, 2: {stars: 3, otp: 0.94, cx: 0.95, safety: 100}, 3: {stars: 3, otp: 0.82, cx: 0.9, safety: 100}};
@@ -1439,6 +1501,7 @@
       {id: 'feeders-2033', title: 'Feeder agreement with ' + CH5.feederAirline + ', ' + cal(8), year: 8, date: ch5Date(st, 8).iso, kind: 'route-agreement', stamp: 'SIGNED',
         summary: CH5.feederAirline + ' flies ' + CH5.feeders.length + ' Indian cities into VSI in one bank each afternoon, timed so its passengers can change planes here.'}];
     st.ch5.rates = {perConnectionCr: r.perConnectionCr, missedCostCr: r.missedCostCr, holdCostCr: r.holdCostCr};
+    st.docs.forEach(dw);
     return st;
   }
   function ch5Choices(state) {   // each line's banks a year at the first Skyward year's prices, if every connection holds
@@ -1467,7 +1530,7 @@
       sub: {head: F.sub.head, body: fill(F.sub.body, v)},
       columns: F.columns.map(function (c) { return {head: c.head, body: fill(c.body, v)}; }),
       photo: {kind: F.photo.kind, caption: fill(F.photo.caption, v)},
-      company: state.parent, founder: state.founder || 'Asha Rao', signature: state.founder || 'Asha Rao',
+      company: state.parent, founder: state.founder || 'Asha Rao', signature: state.signature || state.founder || 'Asha Rao',
       sources: [GULF_SRC]};
   }
   function ch5Decision(state) {
@@ -1507,6 +1570,7 @@
       summary: id === 'three' ? 'You signed ' + CH5.partner + ' for banks to London, Singapore and Nairobi from ' + cal(CH5.banksFrom) + ': ' + c.day.toLocaleString('en-IN') + ' connections a day, worth about ' + cr(c.yearCr) + ' a year if they hold.' :
         id === 'london' ? 'You signed ' + CH5.partner + ' for London only from ' + cal(CH5.banksFrom) + ': ' + c.day.toLocaleString('en-IN') + ' connections a day, worth about ' + cr(c.yearCr) + ' a year if they hold.' :
         'You declined ' + CH5.partner + '. Its long-haul flights went to ' + CH5.rival + '.'};
+    dw(doc);
     state.docs = (state.docs || []).filter(function (x) { return x.id !== doc.id; }).concat([doc]);
     return state;
   }
@@ -1617,7 +1681,9 @@
     var lead = choice === 'decline' ?
       'Declining ' + CH5.partner + ' kept the risk off your books, and passed up about ' + stakeWords(delta) + ' on your ' + pct + ' by ' + y1 + ', had the three banks held.' :
       'Signing ' + CH5.partner + (delta >= 0 ? ' added about ' + stakeWords(delta) + ' to ' : ' cost about ' + stakeWords(-delta) + ' off ') + 'your ' + pct + ' of VSIAL by ' + y1 + '.';
-    var stakeLine = who + ' owns ' + pct + ' of VSIAL, worth about ' + stakeWords(stakeNow) + ' in ' + y1 + (stakeThen != null ? ', up from ' + stakeWords(stakeThen) + ' in ' + cal(CH5.year) + ' as the airport grew' : '') + '. ' +
+    var thenY = cal(eraYears(Math.max(1, (state.era || 4) - 1))[2]), retPct = rep.returnPerYear;
+    var stakeLine = who + ' owns ' + pct + ' of VSIAL, worth about ' + stakeWords(stakeNow) + ' in ' + y1 + (stakeThen != null ? ', up from ' + stakeWords(stakeThen) + ' in ' + thenY + ' as the airport grew and paid down its loans' : '') + '. ' +
+      (retPct != null ? 'Counting everything put in since ' + cal(0) + ', that is about ' + retPct + '% a year. ' : '') +
       (choice === 'decline' ? 'With ' + CH5.partner + '\'s three banks: about ' + stakeWords(alt) + '.' : 'Without ' + CH5.partner + ': about ' + stakeWords(alt) + '.');
     // the margin note: cause and effect, in the adviser's hand
     var margin, routes = [];
@@ -1640,18 +1706,19 @@
       'In ' + y1 + ' Vikram Sarabhai International ran its domestic banks only: ' + domMadeYr.toLocaleString('en-IN') + ' passengers a year changed between ' + CH5.feederAirline + '\'s flights here' + (domMissYr ? ', and ' + domMissYr.toLocaleString('en-IN') + ' missed theirs' : '') + '. ' + CH5.partner + ' built its Indian traffic through ' + CH5.rival + '.' :
       'From ' + cal(CH5.banksFrom) + ', ' + CH5.partner + ' flew ' + andList(ch5Dests(choice)) + ' out of VSI twice a day. ' +
       Math.round(madeYr).toLocaleString('en-IN') + ' passengers a year changed planes here instead of in the Gulf' + (missYr >= 1 ? ', and ' + Math.round(missYr).toLocaleString('en-IN') + ' missed their flight' : '') + '.';
-    var table = choice === 'decline' ? [] : [{label: 'Earned', cr: Math.round(earnedCr)}, {label: 'Spent', cr: Math.round(spentCr)}, {label: 'Connections to ' + CH5.partner, made: Math.round(madeYr), missed: Math.round(missYr)}];
-    table.push({label: 'Domestic connections', made: domMadeYr, missed: domMissYr});
+    // F4: every figure on the page in one period, a year (from the first Skyward year), and labelled so
+    var table = choice === 'decline' ? [] : [{label: 'Earned a year', cr: Math.round(earnedCr)}, {label: 'Spent a year', cr: Math.round(spentCr)}, {label: 'Connections to ' + CH5.partner + ', a year', made: Math.round(madeYr), missed: Math.round(missYr)}];
+    table.push({label: 'Domestic connections, a year', made: domMadeYr, missed: domMissYr});
     var bill = {title: 'Annual report, ' + y1, year: y1, lead: lead, paragraph: paragraph, per: 'a year, from ' + cal(CH5.banksFrom),
       table: table, margin: margin, routes: routes,
       cover: {ratio: cov == null ? null : Math.floor(cov * 100 + 1e-9) / 100, words: coverWords(cov), light: lightOf(cov), years: cal(CH5.banksFrom) + '–' + y1},
-      stake: {pct: rep.stakePct, valueCr: stakeNow, withoutCr: choice === 'decline' ? null : Math.round(alt), passedUpCr: choice === 'decline' ? Math.round(delta) : null, deltaCr: Math.round(delta), words: stakeLine},
+      stake: {pct: rep.stakePct, valueCr: stakeNow, year: y1, thenCr: stakeThen != null ? stakeThen : null, thenYear: thenY, returnPct: retPct, withoutCr: choice === 'decline' ? null : Math.round(alt), passedUpCr: choice === 'decline' ? Math.round(delta) : null, deltaCr: Math.round(delta), words: stakeLine},
       signed: {name: st.founder || 'Asha Rao', title: 'Director, for ' + (st.parent || 'Meridian Infra')},
-      era: {earnedCr: Math.round(hubEarned), spentCr: Math.round(hubSpent), growthPct: Math.round(growth * 1000) / 10}};
+      era: {earnedCr: Math.round(hubEarned), spentCr: Math.round(hubSpent), growthPct: Math.round(growth * 1000) / 10, years: cal(CH5.banksFrom) + '–' + String(y1).slice(2)}};
     var card = ch5Card(5);
     st.ch5.result = {made: made, missed: missed, held: held, share: share, growth: growth};
     st.ch5.bill = bill;
-    st.docs = (st.docs || []).concat([{id: 'report-' + y1, title: 'Annual report, ' + y1, year: eraYears(4)[2], date: ch5Date(st, eraYears(4)[2]).iso, kind: 'report', stamp: 'FILED', summary: margin || paragraph}]);
+    st.docs = (st.docs || []).concat([dw({id: 'report-' + y1, title: 'Annual report, ' + y1, year: eraYears(4)[2], date: ch5Date(st, eraYears(4)[2]).iso, kind: 'report', stamp: 'FILED', summary: margin || paragraph})]);
     return {state: st, bill: bill, card: card, report: rep};
   }
   var ch5 = {script: CH5_SCRIPT, card: ch5Card, fixture: ch5Fixture, frontPage: ch5FrontPage, decision: ch5Decision, applyDecision: ch5ApplyDecision, briefing: ch5Briefing,
@@ -1665,6 +1732,7 @@
     newCampaign: newCampaign, needsConstruction: needsConstruction, constructionOpts: constructionOpts, applyConstruction: applyConstruction,
     levelFor: levelFor, applyShift: applyShift, boardOptions: boardOptions, applyBoard: applyBoard,
     isOver: isOver, endOpts: endOpts, handbackOpts: handbackOpts, acPlan: acPlan,
+    fmtDate: function (iso) { ensure(); return fmtDate(iso); }, campaignDocs: campaignDocs, fileCard: fileCard, asBill: asBill,
     // for tests and bots
     _internal: {simulate: simulate, sizeDebt: sizeDebt, shiftOps: shiftOps, opsProfile: function (n, y) { ensure(); return opsProfile(n, y); }, eraYears: eraYears, irr: irr, P: function () { ensure(); return P; }}
   };

@@ -961,7 +961,7 @@ M.incomeStatement=function(o){o=o||{};return new Promise(res=>{
   const sh=open(`<div class="band"><span>${esc(o.band||'Income statement')}</span><span>${esc(M.cfg.spvShort)}</span></div><div class="in"><h1>${esc(o.title||'The numbers')}</h1>
    ${o.hero?`<div class="zmm-hero">${o.hero}</div>`:''}
    <table class="zmm-is">${secs}</table>
-   ${o.compare&&o.compare.length?`<h2>${esc(o.compareLabel||'EBITDA margin compared')}</h2>${o.compare.map(c=>`<div class="zmm-cmp ${c.me?'me':''}"><span>${esc(c.name)}</span><div class="bar"><i style="width:${c.value/mx*100}%"></i></div><span class="mono">${c.value}%</span></div>`).join('')}`:''}
+   ${o.compare&&o.compare.length?`<h2>${esc(o.compareLabel||'How much of each rupee each airport keeps')}</h2>${o.compare.map(c=>`<div class="zmm-cmp ${c.me?'me':''}"><span>${esc(c.name)}</span><div class="bar"><i style="width:${c.value/mx*100}%"></i></div><span class="mono">${c.value}%</span></div>`).join('')}`:''}
    ${o.moments&&o.moments.length?`<h2>The most expensive moments</h2><ul style="color:var(--ink-2);padding-left:18px">${o.moments.map(m=>`<li>${esc(m)}</li>`).join('')}</ul>`:''}
    <div class="zmm-row"><button class="zmm-go" id="zmmI1">${esc(o.cta||'Continue')}</button>${o.cta2?`<button class="zmm-ghost" id="zmmI2">${esc(o.cta2)}</button>`:''}</div></div>`);
   sh.querySelector('#zmmI1').onclick=()=>{close();res('cta');};const b2=sh.querySelector('#zmmI2');if(b2)b2.onclick=()=>{close();res('cta2');};});};
@@ -1245,17 +1245,17 @@ window.__zmmConstructionDemo=over=>M.construction(Object.assign({founder:'Asha R
 
 /* ---------- glossary terms the economy introduces (merge into hub.js GL) ---------- */
 M.terms={
-  aero:{t:'Aeronautical revenue',d:'Money from flying: landing fees by aircraft weight, parking fees per hour on a stand, and the user development fee each departing passenger pays. India\'s regulator AERA caps it.'},
-  nonaero:{t:'Non-aeronautical revenue',d:'Money from everything else: shops, duty-free, food, car parks, the hotel, advertising, cargo. AERA does not cap it, which is why airports make their real profit here.'},
-  mtow:{t:'MTOW',d:'Maximum take-off weight. Landing fees are charged per tonne of it, so an A380 (575 t) pays many times an A320 (79 t).'},
-  udf:{t:'User development fee (UDF)',d:'A charge on every departing passenger\'s ticket that goes to the airport, set by AERA. New airports get higher UDFs because they still have to pay back the cost of building.'},
+  aero:{t:'Fees from airlines and passengers',d:'Money from flying: landing fees by aircraft weight, parking fees per hour on a stand, and the user development fee each departing passenger pays. India\'s regulator AERA caps it.'},
+  nonaero:{t:'Shops, food, parking and property',d:'Money from everything else: shops, duty-free, food, car parks, the hotel, advertising, cargo. AERA does not cap it, which is why airports make their real profit here.'},
+  mtow:{t:'Aircraft weight',d:'The heaviest an aircraft may be at take-off. Landing fees are charged per tonne of it, so an A380 (575 t) pays many times an A320 (79 t).'},
+  udf:{t:'Passenger fee',d:'A charge on every departing passenger\'s ticket that goes to the airport, set by AERA. New airports get higher UDFs because they still have to pay back the cost of building.'},
   aera:{t:'AERA',d:'The Airports Economic Regulatory Authority of India. Every five years it sets how much a major airport may charge airlines and passengers, from the airport\'s asset base, costs and a fair return.'},
-  rab:{t:'Regulated asset base (RAB)',d:'What the regulator counts as invested in the airport. Charges are set so the airport earns a fair return on it. Build more and the RAB grows; it shrinks as assets depreciate.'},
-  till:{t:'Hybrid till',d:'Under AERA\'s hybrid till, 30% of an airport\'s non-aeronautical revenue is used to lower what airlines and passengers pay. The other 70% the airport keeps.'},
-  trueup:{t:'True-up',d:'If AERA lets an airport charge less than it was owed in one five-year period, the shortfall is carried into the next, with interest. Early squeezes can be recovered later.'},
+  rab:{t:'What AERA counts as invested',d:'What the regulator counts as invested in the airport. Charges are set so the airport earns a fair return on it. Build more and it grows; it shrinks as the buildings and runways wear out.'},
+  till:{t:'AERA\'s share of your shop income',d:'Under AERA\'s rules, 30% of an airport\'s non-aeronautical revenue is used to lower what airlines and passengers pay. The other 70% the airport keeps.'},
+  trueup:{t:'Money AERA owes you, or you owe it',d:'If AERA lets an airport charge less than it was owed in one five-year period, the shortfall is carried into the next, with interest. Early squeezes can be recovered later.'},
   dscr:{t:'Loan cover',d:'How much the airport earns for every ₹100 of loan repayment due that year. At ₹100 it can only just pay. Below ₹120 the banks warn you. Below ₹110 you break their condition. Below ₹100 they can take control.'},
   stepin:{t:'Banks take control',d:'If the airport cannot pay its loans, the lenders can take control of the concession company and replace its management. In the game that ends your concession.'},
-  sla:{t:'SLA',d:'Service level agreement: the promises the airport makes to its airlines, such as how long they wait for a stand. Breaking them costs penalties.'},
+  sla:{t:'Promises to airlines',d:'The promises the airport makes to its airlines, such as how long they wait for a stand. Breaking them costs penalties.'},
   ebitda:{t:'Operating profit',d:'What the airport earns from running itself, before paying its loans and before wear on its buildings. Bengaluru keeps about 72 paise of every rupee, Delhi about 37.'},
   irr:{t:'Your yearly return',d:'The yearly return on the money your company put in, counting every rupee out and every dividend back, over the whole concession.'},
   spv:{t:'Concession company',d:'A company set up for this one airport. Its loans stay with it, so if the airport fails, your parent company is not on the hook.'},

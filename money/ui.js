@@ -2711,7 +2711,10 @@ M.minutes=function(o){mountS();o=o||{};return new Promise(res=>{
 M.nameBlocked=function(raw){let t=String(raw||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
   t=t.replace(/[0@4]/g,m=>({'0':'o','@':'a','4':'a'})[m]).replace(/[1!|]/g,'i').replace(/3/g,'e').replace(/[5$]/g,'s').replace(/7/g,'t');
   t=t.replace(/[^a-z]/g,'').replace(/ph/g,'f').replace(/ck/g,'k').replace(/ee/g,'i').replace(/y/g,'i').replace(/(.)\1+/g,'$1');
-  if(['hardik','aradhi','fiana','fiona','saras'].some(r=>t.includes(r)))return true;
+  if(['hardik','aradhi','fiana','fiona','saras','khakhra','khakra','kakhra'].some(r=>t.includes(r)))return true;
+  const words=String(raw||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[0@4]/g,m=>({'0':'o','@':'a','4':'a'})[m]).replace(/[1!|]/g,'i').replace(/3/g,'e').replace(/[5$]/g,'s')
+    .split(/[^a-z]+/).filter(Boolean).map(w=>w.replace(/ee/g,'i').replace(/y/g,'i').replace(/(.)\1+/g,'$1'));
+  if(words.some(w=>w==='jani'||w.includes('patel')))return true;   // Jani as a whole word (Janice and Janine pass); Patel within one word
   const near=(x,r)=>{const m=x.length,n=r.length;if(Math.abs(m-n)>1)return false;let i=0,j=0,d=0;while(i<m&&j<n){if(x[i]===r[j]){i++;j++;continue;}if(++d>1)return false;if(m>n)i++;else if(n>m)j++;else{i++;j++;}}return d+(m-i)+(n-j)<=1;};
   for(const r of ['hardik','aradhi'])for(let L=r.length;L<=r.length+1;L++)for(let k=0;k+L<=t.length;k++)if(near(t.slice(k,k+L),r))return true;
   return false;};

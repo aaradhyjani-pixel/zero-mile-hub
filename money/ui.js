@@ -1321,6 +1321,10 @@ const CSS5=`
 .z5-dec .zdk-note .big{display:block;font-family:var(--fh);font-weight:700;font-size:34px;line-height:1.05;margin:6px 0 4px;color:var(--zt)}
 .z5-dec .zdk-note .mon{display:block;font-family:var(--fh);font-size:21px;line-height:1.2}
 .z5-dec .zdk-note .dim{color:var(--zpe)}
+.z5-dec .zdk-note{width:min(300px,calc(100% - 30px))}
+.z5-sl{margin:10px 0 0;padding:0 0 0 10px;border-left:3px solid transparent;color:#55595e;font-size:15px;line-height:1.3}
+.z5-sl b{display:block;font-weight:700;font-size:15.5px;color:#3b3f44}.z5-sl span{display:block}
+.z5-sl.on{border-left-color:var(--zr);color:#1d2024}.z5-sl.on b{color:var(--zt);font-size:17px}
 .zdk-card.z5c{cursor:pointer;pointer-events:auto}.zdk-card.z5c:hover span{color:var(--zr)}
 .z5 .zdk-pile{pointer-events:auto}
 /* 7.3 the briefing: a torn notepad sheet pinned top-left over the live ops view (not a modal) */
@@ -1336,7 +1340,7 @@ const CSS5=`
 .z5-pad li{position:relative;margin:0 0 6px}
 .z5-pad li::before{content:counter(list-item) '.';position:absolute;left:-22px;top:1px;font-family:var(--fh);font-size:16px;color:#3b3f44}
 .z5-pad li .h{display:block;font-family:var(--fh);font-size:16.5px;line-height:1.52;color:#22262b}
-.z5-ref{display:inline;font-family:var(--ft);font-size:11.5px;color:var(--zpe);text-decoration:underline;text-underline-offset:2px;padding:0;cursor:pointer}
+.z5-ref{display:block;width:fit-content;margin-left:auto;text-align:right;font-family:var(--ft);font-size:11.5px;color:var(--zpe);text-decoration:underline;text-underline-offset:2px;padding:0;cursor:pointer}
 .z5-ref:hover{color:var(--zr)}
 .z5-watch{margin:8px 0 4px}
 .z5-watch small{display:block;font-family:var(--ft);font-size:11.5px;color:var(--zpe)}
@@ -1345,18 +1349,20 @@ const CSS5=`
 .z5-pad footer button{background:var(--zt);color:#fcfcf9;font-family:var(--f-sign);font-weight:700;font-size:16px;padding:7px 14px;border-radius:2px}
 .z5-pad footer span{font-family:var(--ft);font-size:11.5px;color:var(--zpe)}
 /* the paper trail: tags pinned to the map */
-#z5Tags{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden}
-.z5-tag{position:absolute;left:0;top:0;width:0;height:0;will-change:transform}
+#z5Tags{position:absolute;inset:0;z-index:3;pointer-events:none;overflow:hidden}
+.z5-tag{position:absolute;left:0;top:0;width:0;height:0;will-change:transform;--cx:14px;--cy:-74px}
 .z5-tag[hidden]{display:none}
-.z5-tag .an{position:absolute;left:-5px;top:-5px;width:10px;height:10px;border-radius:50%;background:#c22a2e;box-shadow:0 0 0 2px #fcfcf9,0 1px 4px rgba(0,0,0,.6)}
-.z5-tag .th{position:absolute;left:0;bottom:0;width:0;height:30px;border-left:1.5px solid rgba(252,252,249,.85)}
-.z5-tag button{position:absolute;left:-14px;bottom:28px;width:126px;box-sizing:border-box;padding:12px 10px 8px 12px;text-align:left;background:#fcfcf9;color:#1d2024;pointer-events:auto;cursor:pointer;transform:rotate(-2deg);box-shadow:0 8px 16px rgba(0,0,0,.45),0 1px 2px rgba(0,0,0,.4)}
-.z5-tag button::before{content:'';position:absolute;left:10px;top:-5px;width:10px;height:10px;border-radius:50%;background:#c22a2e;box-shadow:inset -2px -2px 0 rgba(0,0,0,.22),0 2px 3px rgba(0,0,0,.45)}
+.z5-tag .an{position:absolute;left:-6px;top:-6px;width:12px;height:12px;border-radius:50%;background:#c22a2e;box-shadow:0 0 0 2px #fcfcf9,0 1px 4px rgba(0,0,0,.6);pointer-events:auto;cursor:pointer}
+.z5-tag .th{position:absolute;left:0;top:0;width:var(--tl,0);height:1.5px;margin-top:-.75px;background:rgba(252,252,249,.85);transform:rotate(var(--ta,0rad));transform-origin:0 50%;transition:opacity .25s}
+.z5-tag button{position:absolute;left:0;top:0;width:120px;box-sizing:border-box;padding:8px 9px 7px 10px;text-align:left;background:#fcfcf9;color:#1d2024;pointer-events:auto;cursor:pointer;transform:translate(var(--cx),var(--cy)) rotate(-1.5deg);box-shadow:0 6px 12px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.4);transition:opacity .25s}
+.z5-tag:not(.open) button,.z5-tag:not(.open) .th{opacity:0;pointer-events:none}
 .z5-tag button:hover b{color:var(--zr)}
-.z5-tag b{display:block;font-family:var(--ft);font-weight:700;font-size:11px;line-height:1.25;margin-bottom:3px}
-.z5-tag span{display:block;font-family:var(--fh);font-size:14px;line-height:1.22;color:#2a2d31}
+.z5-tag b{display:block;font-family:var(--ft);font-weight:700;font-size:10.5px;line-height:1.2;margin-bottom:2px}
+.z5-tag span{display:block;font-family:var(--fh);font-size:13px;line-height:1.18;color:#2a2d31}
+.z5-tag.flash .an{animation:z5Flash .5s ease-in-out 3}
+@keyframes z5Flash{50%{transform:scale(1.9);box-shadow:0 0 0 3px #fcfcf9,0 0 10px 4px rgba(194,42,46,.8)}}
 .z5-tag.pin button{animation:z5Pin .32s cubic-bezier(.3,1.5,.5,1) both}
-@keyframes z5Pin{from{opacity:0;transform:rotate(-2deg) translateY(-14px) scale(1.25)}to{opacity:1;transform:rotate(-2deg)}}
+@keyframes z5Pin{from{opacity:0;transform:translate(var(--cx),var(--cy)) rotate(-1.5deg) translateY(-14px) scale(1.25)}to{opacity:1;transform:translate(var(--cx),var(--cy)) rotate(-1.5deg)}}
 /* a document from the pile, read-only */
 #z5Doc{position:absolute;inset:0;z-index:34;display:flex;align-items:center;justify-content:center;background:rgba(6,9,11,.5)}
 #z5Doc[hidden]{display:none}
@@ -1382,7 +1388,9 @@ const CSS5=`
 .z5-hl b{display:block;font-family:var(--ft);font-weight:700;font-size:19px;margin:2px 0 10px}
 .z5-hl .zdk-dscr{margin:0 0 4px;max-width:420px}
 .z5-hl .zdk-dscr .lb{font-family:var(--fh);color:#3b3f44}
-.z5 .z5-stake{font-family:var(--ft);font-size:14px;margin:18px 0 0;color:#1d2024}
+.z5 .z5-stake{font-family:var(--ft);font-size:14px;line-height:1.55;margin:16px 0 0;color:#1d2024}
+.z5 .z5-ld{font-weight:700;font-size:15.5px;color:#1d2024}
+.z5-sgn{margin:14px 0 0;display:flex;align-items:flex-end;gap:14px;font-family:var(--ft);font-size:12.5px;color:#3b3f44}.z5-sgn .ink .h{font-size:26px;color:#1d3a8a}
 .z5-mn{grid-column:2!important;grid-row:2/9;align-self:start;position:relative;margin-top:96px;padding-left:20px;font-family:var(--fh);font-weight:700;font-size:20px;line-height:1.32;color:#2c3036;transform:rotate(-2.2deg)}
 .z5-mn svg{position:absolute;left:-6px;top:-8px;width:20px;height:calc(100% + 16px);overflow:visible}
 .z5-mn small{display:block;margin-top:8px;font-weight:400;font-size:15px;color:var(--zpe)}
@@ -1402,6 +1410,7 @@ const CSS5=`
 let css5=false;
 function mount5(){M.mount();if(css5)return;css5=true;const st=document.createElement('style');st.id='zmmCss5';st.textContent=CSS5;document.head.appendChild(st);loadDeskFonts();}
 const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+const dayOf=v=>{if(!v)return undefined;const d=new Date(/^\d{4}-\d{2}-\d{2}$/.test(v)?v+'T12:00:00':v);return isFinite(d)?d:undefined;};
 const isoDay=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const longDay=d=>`${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 const paras=t=>(Array.isArray(t)?t:String(t||'').split(/\n\n+/)).filter(Boolean);
@@ -1416,7 +1425,7 @@ const stampFor=d=>d.stamp||({agreement:'Executed',concession:'Executed',budget:'
 /* a desk for the paper screens: grid paper with the masterplan in faint drafting ink */
 function desk5(cls,inner){mount5();const plan=document.getElementById('planTpl');
   return open(`<div class="zdk z5 ${cls||''}">${INK_DEFS}<div class="zdk-sheet" aria-hidden="true"><div class="zdk-plan">${plan?plan.innerHTML:''}</div></div>${inner}</div>`,'zmm-ob');}
-function pileCards(docs){return (docs||[]).slice(-5).map((d,n)=>`<div class="zdk-card z5c" style="--i:${n};--r:${[-4,3,-2,5,-3][n%5]}deg;animation:none" data-doc="${esc(d.id)}" title="Open: ${esc(d.title)}"><span>${esc(d.title)}</span><i></i><i></i><i class="s"></i>${stampHtml(stampFor(d),'mini')}</div>`).join('');}
+function pileCards(docs){return (docs||[]).slice(-5).map((d,n)=>`<div class="zdk-card z5c" style="--i:${n};--r:${[-4,3,-2,5,-3][n%5]}deg;animation:none" data-doc="${esc(d.id)}" title="Open: ${esc(d.title)}"><span>${esc(d.title)}</span><i></i><i></i><i class="s"></i>${stampHtml(stampFor(d),'mini',dayOf(d.date))}</div>`).join('');}
 function wirePile(root,docs){root.querySelectorAll('.zdk-card.z5c').forEach(c=>c.onclick=()=>{const d=(docs||[]).find(x=>x.id===c.dataset.doc)||findDoc(c.dataset.doc);if(d)M.openDoc(d);});}
 
 /* the photo box: the masterplan, cropped to the detail that matters, in pen and ink */
@@ -1465,7 +1474,7 @@ M.frontPage=function(o){o=o||{};return new Promise(res=>{
    One document; the adviser's slip shows the ticked choice's one big number; signing brings down the red stamp. */
 M.decision=function(o){o=o||{};return new Promise(res=>{
   const ch=o.choices||[],pa=o.parties||{},sg=Object.assign({hand:{font:'La Belle Aurore',size:30,adv:.46,slant:2,rot:-4,ink:'#14161a',weight:.2,flourish:'under'}},pa.signatory||{});
-  const pile=o.pile||PILE,now=new Date(),dateTxt=o.date||longDay(now);
+  const pile=o.pile||PILE,now=new Date(),sd=dayOf(o.date),dateTxt=sd?longDay(sd):(o.date||longDay(now));
   const docName={'route-agreement':'Route agreement','capital-budget':'Capital budget','order':'Regulator\'s order','letter':'Letter'}[o.docType]||'Agreement';
   let pick=null,done=false;
   const sh=desk5('z5-dec',`<header class="zdk-top"><div class="zdk-mark">${vsiLogo(30)}<span>${esc(M.cfg.airportName)}</span></div></header>
@@ -1473,8 +1482,6 @@ M.decision=function(o){o=o||{};return new Promise(res=>{
     <main class="zdk-main"><div class="zdk-col"><article class="zdk-doc arrive" id="zdkDoc">
       <div class="zdk-dh">${vsiLogo(22)}<span>${esc(docName)} · ${esc(o.docId||'')}</span><span class="dt">${esc(dateTxt)}</span></div>
       <h2>${esc(o.title||docName)}</h2>
-      <p class="t">This agreement is made at Nagpur on ${esc(dateTxt)}, between:</p>
-      <ol class="zdk-parties"><li>${esc(pa.airport||M.cfg.spvName)} (“the Airport”); and</li><li>${esc(pa.airline||'Skyward')} (“the Airline”).</li></ol>
       ${paras(o.body).map(p=>`<p class="t">${esc(p)}</p>`).join('')}
       <p class="t">The parties agree to the line ticked below.</p>
       <div class="zdk-ticks" role="radiogroup" aria-label="The terms">${ch.map(c=>`<button role="radio" aria-checked="false" data-id="${esc(c.id)}"><i></i><span>${esc(c.label)}</span>${c.terms?`<small>${esc(c.terms)}</small>`:''}</button>`).join('')}</div>
@@ -1485,20 +1492,20 @@ M.decision=function(o){o=o||{};return new Promise(res=>{
   wirePile(sh,pile);
   const doc=sh.querySelector('#zdkDoc'),note=sh.querySelector('#zdkNote'),go=sh.querySelector('#z5Sign');
   const actOf=c=>c.act||(c.id==='decline'?'Decline the agreement':'Sign the agreement');
+  // every line's connections, money and stake at once, so the three can be compared; the ticked one gets its warning
   const slipNow=()=>{const c=ch.find(x=>x.id===pick);
-    if(!c){note.innerHTML=`<h3>${esc(o.slipQuestion||'What each line does for VSI')}</h3><p class="dim">Tick one line and I’ll tell you what it means for the hub: connections a day, and money a year.</p>`;return;}
-    const s=c.slip||{};note.innerHTML=`<h3>${esc(c.label)}</h3>${s.big?`<b class="big">${esc(s.big)}</b>`:''}${s.money?`<span class="mon">${esc(s.money)}</span>`:''}${s.line?`<p>${esc(s.line)}</p>`:''}`;};
+    note.innerHTML=`<h3>${esc(o.slipQuestion||'What each line does for VSI')}</h3>${ch.map(x=>{const s=x.slip||{};return `<div class="z5-sl${x.id===pick?' on':''}"><b>${esc(x.label)}</b><span>${esc([s.big,s.money].filter(Boolean).join(' · '))}</span>${s.stake?`<span>${esc(s.stake)}</span>`:''}</div>`;}).join('')}${c&&c.slip&&c.slip.line?`<p>${esc(c.slip.line)}</p>`:''}`;};
   slipNow();
   sh.querySelectorAll('.zdk-ticks button').forEach(b=>b.onclick=()=>{if(done)return;pick=b.dataset.id;sh.querySelectorAll('.zdk-ticks button').forEach(x=>x.setAttribute('aria-checked',x===b?'true':'false'));
     const c=ch.find(x=>x.id===pick);go.disabled=false;go.textContent=actOf(c);slipNow();});
   go.onclick=()=>{if(done||!pick)return;done=true;go.disabled=true;
     const me=sh.querySelector('#z5Me .ink');const sgs=sh.querySelector('.zdk-sigs');if(sgs&&doc.scrollHeight>doc.clientHeight)doc.scrollTo({top:doc.scrollHeight,behavior:reduced()?'auto':'smooth'});me.innerHTML=o.signature?`<img src="${esc(o.signature)}" alt="Your signature">`:H(o.founder||M.cfg.spvShort);
     const word=(o.stamps||{})[pick]||(pick==='decline'?'Declined':'Signed');
-    const sd=o.date?new Date(o.date):null;(sgs||doc).insertAdjacentHTML('beforeend',stampHtml(word,'down',sd&&isFinite(sd)?sd:undefined));doc.classList.remove('arrive');if(!reduced())thud();
-    const fin=()=>{close();res({choice:pick,signedOn:isoDay(now)});};
+    (sgs||doc).insertAdjacentHTML('beforeend',stampHtml(word,'down',sd));doc.classList.remove('arrive');if(!reduced())thud();
+    const fin=()=>{close();res({choice:pick,signedOn:isoDay(sd||now)});};
     if(reduced()){setTimeout(fin,700);return;}
     setTimeout(()=>{const p=sh.querySelector('#zdkPile'),n=Math.min(5,p.children.length),cd=document.createElement('div');cd.className='zdk-card';cd.style.setProperty('--i',n);cd.style.setProperty('--r','-3deg');
-      cd.innerHTML=`<span>${esc(o.title||docName)}</span><i></i><i></i><i class="s"></i>${stampHtml(word,'mini')}`;doc.classList.add('leave');note.style.opacity='0';setTimeout(()=>p.appendChild(cd),380);},900);
+      cd.innerHTML=`<span>${esc(o.title||docName)}</span><i></i><i></i><i class="s"></i>${stampHtml(word,'mini',sd)}`;doc.classList.add('leave');note.style.opacity='0';setTimeout(()=>p.appendChild(cd),380);},900);
     setTimeout(fin,2100);};
 });};
 
@@ -1510,14 +1517,14 @@ M.briefing=function(o){o=o||{};mount5();return new Promise(res=>{
   const app=$('#app');if(!app){res();return;}
   const old=$('#z5Brief');if(old)old.remove();
   const docs=o.docs||PILE,dOf=id=>id==null?null:(docs.find(d=>d.id===id||d.title===id)||findDoc(id)||{title:id});
-  const ref=id=>{const d=dOf(id);return d?`<button class="z5-ref" data-doc="${esc(id)}">${esc(d.title)}${d.year!=null&&!/\d{4}/.test(d.title)?', '+esc(d.year):''}</button>`:'';};
+  const ref=(id,short)=>{const d=dOf(id);return d?`<button class="z5-ref" data-doc="${esc(id)}">${esc(short||d.title)}${!short&&d.year!=null&&!/\d{4}/.test(d.title)?', '+esc(d.year):''}</button>`:'';};
   // a torn top edge: a seeded zigzag, so the same sheet always tears the same way
   let q=17;const rnd=()=>((q=(q*9301+49297)%233280)/233280);const pts=['0% 100%','100% 100%'];for(let x=100;x>=0;x-=2.5)pts.push(`${x}% ${(rnd()*7).toFixed(1)}px`);
   const el=document.createElement('aside');el.className='z5v z5-brief';el.id='z5Brief';el.setAttribute('role','note');el.setAttribute('aria-label',o.title||'Handover');
   const sec=Math.max(0,+(o.autoStartSec==null?6:o.autoStartSec));
   el.innerHTML=`<i class="z5-pin" aria-hidden="true"></i><div class="z5-pad" style="clip-path:polygon(${pts.join(',')})">
     <header><b>${esc(o.title||'Duty manager’s handover')}</b><span>${esc(o.date||'')}</span></header>
-    <ol>${(o.lines||[]).slice(0,3).map(l=>`<li><span class="h">${esc(l.text)}</span>${ref(l.docId!=null?l.docId:l.doc)}</li>`).join('')}</ol>
+    <ol>${(o.lines||[]).slice(0,3).map(l=>`<li><span class="h">${esc(l.text)}</span>${ref(l.docId!=null?l.docId:l.doc,l.ref)}</li>`).join('')}</ol>
     ${o.watch?`<div class="z5-watch"><small>The one thing to watch</small><span>${esc(o.watch)}</span></div>`:''}
     <footer><button id="z5Go">Start the shift</button><span id="z5Cd"></span></footer></div>`;
   el.addEventListener('keydown',e=>e.stopPropagation());
@@ -1537,7 +1544,7 @@ M.openDoc=function(doc){mount5();if(typeof doc==='string')doc=findDoc(doc)||{tit
   let v=$('#z5Doc');if(!v){v=document.createElement('div');v.id='z5Doc';v.className='z5v';app.appendChild(v);v.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape')v._close&&v._close();});}
   const yr=doc.year!=null?(doc.year>1900?String(doc.year):'Year '+doc.year+' of the concession'):'';
   v.innerHTML=`<article class="z5-rd" role="dialog" aria-modal="true" aria-label="${esc(doc.title||'Document')}" tabindex="-1"><div class="zdk-dh">${vsiLogo(20)}<span>From the pile${yr?' · '+esc(yr):''}</span></div>
-    <h2>${esc(doc.title||'')}</h2>${paras(doc.summary).map(p=>`<p>${esc(p)}</p>`).join('')}${stampHtml(stampFor(doc),'',doc.stampedOn?new Date(doc.stampedOn):undefined)}
+    <h2>${esc(doc.title||'')}</h2>${paras(doc.summary).map(p=>`<p>${esc(p)}</p>`).join('')}${stampHtml(stampFor(doc),'',dayOf(doc.stampedOn||doc.date))}
     <button class="zdk-q" id="z5DocX">Put it back on the pile</button></article>`;
   v.hidden=false;
   const fin=()=>{v.hidden=true;v._close=null;window.dispatchEvent(new CustomEvent('zmm-doc',{detail:{open:false,doc}}));res();};
@@ -1550,19 +1557,33 @@ M.openDoc=function(doc){mount5();if(typeof doc==='string')doc=findDoc(doc)||{tit
    screen point relative to #app (call every frame); ZMMoney.tagRemove(id). Clicking a tag opens its document. */
 const TAGS=new Map();
 function tagLayer(){mount5();let l=$('#z5Tags');if(!l){const app=$('#app');if(!app)return null;l=document.createElement('div');l.id='z5Tags';l.className='z5v';
-  const fl=$('#zmmFloat');if(fl&&fl.nextSibling)app.insertBefore(l,fl.nextSibling);else app.appendChild(l);}return l;}
+  const fl=$('#zmmFloat');if(fl)app.insertBefore(l,fl);else app.appendChild(l);}return l;}   // under the floaters
+/* a tag is open (card showing) for 8 s after it is pinned or flashed, then it folds to its pin; hovering or clicking the
+   pin opens it again. ZMMoney.tagAt(id, sx, sy, cx?, cy?): cx, cy put the card's top-left relative to the pin (the game
+   picks a side away from the action and clear of its panels); without them the card sits up and to the right. */
+const TAG_OPEN_MS=8000;
+function tagOpen(t,ms){t.classList.add('open');clearTimeout(t._fold);if(ms!==0)t._fold=setTimeout(()=>{if(!t.matches(':hover'))t.classList.remove('open');},ms||TAG_OPEN_MS);}
 let tagN=0;
 M.tag=function(id,o){
-  if(typeof id==='number'){const x=id,y=o,title=arguments[2],line=arguments[3],k='t'+(++tagN);
-    const el=M.tag(k,{doc:title,line,docId:title});M.tagAt(k,x,y);
-    return {el,move:(sx,sy)=>M.tagAt(k,sx,sy),remove:()=>M.tagRemove(k)};}
+  if(typeof id==='number'){const x=id,y=o,title=arguments[2],line=arguments[3],docId=arguments[4],k='t'+(++tagN);
+    const el=M.tag(k,{doc:title,line,docId:docId||title});M.tagAt(k,x,y);
+    return {el,move:(sx,sy,cx,cy)=>M.tagAt(k,sx,sy,cx,cy),remove:()=>M.tagRemove(k),flash:()=>M.tagFlash(k),
+      size:()=>{const b=el&&el.querySelector('button');return b?{w:b.offsetWidth||120,h:b.offsetHeight||60}:{w:120,h:60};}};}
   o=o||{};const l=tagLayer();if(!l)return null;let t=TAGS.get(id);
-  if(!t){t=document.createElement('div');t.className='z5-tag'+(reduced()?'':' pin');t.hidden=true;l.appendChild(t);TAGS.set(id,t);}
-  t.dataset.id=id;t.innerHTML=`<i class="th" aria-hidden="true"></i><i class="an" aria-hidden="true"></i><button title="Open: ${esc(o.doc||'')}"><b>${esc(o.doc||'')}</b><span>${esc(o.line||'')}</span></button>`;
+  if(!t){t=document.createElement('div');t.className='z5-tag'+(reduced()?'':' pin');t.hidden=true;l.appendChild(t);TAGS.set(id,t);
+    t.addEventListener('mouseenter',()=>tagOpen(t,0));t.addEventListener('mouseleave',()=>tagOpen(t,2500));}
+  t.dataset.id=id;t.innerHTML=`<i class="th" aria-hidden="true"></i><button title="Open: ${esc(o.doc||'')}"><b>${esc(o.doc||'')}</b><span>${esc(o.line||'')}</span></button><i class="an" title="${esc(o.doc||'')}"></i>`;
   t.querySelector('button').onclick=()=>{const d=(o.docId&&findDoc(o.docId))||{title:o.doc,summary:o.line};M.openDoc(d);};
+  t.querySelector('.an').onclick=()=>{if(t.classList.contains('open')){clearTimeout(t._fold);t.classList.remove('open');}else tagOpen(t);};
+  tagOpen(t);
   return t;};
-M.tagAt=function(id,sx,sy){const t=TAGS.get(id);if(!t)return;if(!isFinite(sx)||!isFinite(sy)){t.hidden=true;return;}t.hidden=false;t.style.transform=`translate(${Math.round(sx)}px,${Math.round(sy)}px)`;};
-M.tagRemove=function(id){const t=TAGS.get(id);if(t){t.remove();TAGS.delete(id);}};
+M.tagAt=function(id,sx,sy,cx,cy){const t=TAGS.get(id);if(!t)return;if(!isFinite(sx)||!isFinite(sy)){t.hidden=true;return;}t.hidden=false;t.style.transform=`translate(${Math.round(sx)}px,${Math.round(sy)}px)`;
+  if(isFinite(cx)&&isFinite(cy)&&(t._cx!==Math.round(cx)||t._cy!==Math.round(cy))){t._cx=Math.round(cx);t._cy=Math.round(cy);const b=t.querySelector('button'),w=b?b.offsetWidth:120,h=b?b.offsetHeight:60;
+    t.style.setProperty('--cx',t._cx+'px');t.style.setProperty('--cy',t._cy+'px');
+    const ex=t._cx+w/2,ey=t._cy+h/2;t.style.setProperty('--tl',Math.hypot(ex,ey).toFixed(1)+'px');t.style.setProperty('--ta',Math.atan2(ey,ex).toFixed(3)+'rad');}};
+M.tagFlash=function(id){const t=TAGS.get(id);if(!t)return;tagOpen(t);t.classList.remove('flash');void t.offsetWidth;t.classList.add('flash');};
+M.tagOpen=function(id){const t=TAGS.get(id);return !!(t&&t.classList.contains('open'));};
+M.tagRemove=function(id){const t=TAGS.get(id);if(t){clearTimeout(t._fold);t.remove();TAGS.delete(id);}};
 M.tagClear=function(){for(const id of [...TAGS.keys()])M.tagRemove(id);};
 
 /* connection floaters: ZMMoney.connFloat(sx, sy, {made, cr}) → "+46 connections · ₹0.4 cr" in green;
@@ -1597,10 +1618,12 @@ M.bill=function(o){o=o||{};return new Promise(res=>{
     <main class="zdk-main"><div class="zdk-col"><article class="zdk-doc arrive" id="zdkDoc">
       <div class="zdk-dh">${vsiLogo(22)}<span>${esc(M.cfg.spvShort)} · Annual report${yr?' '+esc(yr):''}</span><span class="dt">page ${esc(o.page||7)}</span></div>
       <h2>${esc(o.title||'The year in one page')}</h2>
+      ${o.lead?`<p class="t z5-ld">${esc(o.lead)}</p>`:''}
       ${paras(o.paragraph).map(p=>`<p class="t">${esc(p)}</p>`).join('')}
       <table class="zdk-tab">${(o.table||[]).map(row).join('')}</table>
-      ${cv.words?`<div class="z5-hl"><small>Can the airport pay the banks?</small><b>${esc(cv.words)}</b>${pos!=null?`<div class="zdk-dscr"><div class="sc"><i class="a"></i><i class="b"></i><i class="c"></i><span style="left:${pos}%"></span></div><div class="lb"><span style="left:0">the banks take control</span><span style="right:0">${esc(mood)}</span></div></div>`:''}</div>`:''}
-      ${stk.pct!=null?`<p class="z5-stake">Your company owns ${esc(stk.pct)}% of ${esc(M.cfg.spvShort)}${stk.valueCr!=null?`, worth about ${fmt(+stk.valueCr)}`:''}.</p>`:''}
+      ${cv.words?`<div class="z5-hl"><small>Can the airport pay the banks?${cv.years?` Hardest year, ${esc(cv.years)}`:''}</small><b>${esc(cv.words)}</b>${pos!=null?`<div class="zdk-dscr"><div class="sc"><i class="a"></i><i class="b"></i><i class="c"></i><span style="left:${pos}%"></span></div><div class="lb"><span style="left:0">the banks take control</span><span style="right:0">${esc(mood)}</span></div></div>`:''}</div>`:''}
+      ${stk.words?`<p class="z5-stake">${esc(stk.words)}</p>`:stk.pct!=null?`<p class="z5-stake">Your company owns ${esc(stk.pct)}% of ${esc(M.cfg.spvShort)}${stk.valueCr!=null?`, worth about ${fmt(+stk.valueCr)}`:''}.</p>`:''}
+      ${o.signed?`<div class="z5-sgn"><div class="ink">${H(o.signed.name)}</div><span><b>${esc(o.signed.name)}</b>, ${esc(o.signed.title||'')}</span></div>`:''}
       ${o.margin?`<aside class="z5-mn"><svg viewBox="0 0 20 100" preserveAspectRatio="none" aria-hidden="true"><path d="M14 2 C4 4 10 40 2 50 C10 60 4 96 14 98" fill="none" stroke="#3b3f44" stroke-width="1.6" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>${esc(o.margin)}<small>${esc(o.adviser||'your adviser')}</small></aside>`:''}
     </article><div class="zdk-acts"><button class="zdk-go" id="z5Close">${esc(o.cta||'Close the books')}</button></div></div></main>`);
   wirePile(sh,pile);

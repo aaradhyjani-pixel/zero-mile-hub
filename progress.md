@@ -238,3 +238,39 @@ Runs (lean, radar skipped; HUB.ff + HUB.ch5.answer): hub-smart (three banks, hol
 - Engine scale: the year-14 fixture's stake value (₹3.9 lakh cr on the bill, ₹1.1 lakh cr on the front page) and 165 million passengers in 2038 look far too high, and the two screens disagree. From era.js's engine, not Chapter 5.
 - A connection floater can sit under a plan tag; the 2D stream dots are faint at the default zoom; the decision body prints the date as 2039-04-01.
 - Clicking the briefing sheet's middle can land on a document link (opens the doc instead of starting); "Start the shift" or the countdown always work.
+
+## 2026-10-19 — Chapter 5 fix pass after the §8 review (branch money)
+
+**§8 answers (after this pass)**
+
+Jobs
+1. One sentence? **Yes.** "I bet the airport on a long-haul hub against Doha, then had to make the Lucknow passengers catch London" (menu, headline, header, handover all say it).
+2. Nothing left to delete? **Yes, now.** Deleted: the "ops teams have the routine" coach card (Chapter 5 shows no coach toasts; they stay in the Coach tab), the duplicate trail tag (the document's own tag moves to the incident and flashes), the decline bill's ₹0/₹0/0 table (it now shows only the domestic connections), the second money statement on the signed bill (the 2040–43 sentence), the agreement's legal preamble (all three ticks now sit above the fold).
+3. Decision on the airfield with a tag? **Yes.** Smaller tags (120px, short name + one line), pinned off the airfield; stamps carry each document's own date (01 APR 2034 on the 2034 budget, not today's date).
+4. A moment to tell a friend? **Yes.** The held London flight; the hold card now gives today's cost and the year's (₹16 lakh today / ₹5 cr a year to hold, against ₹29 lakh / ₹9 cr a year plus a London flight worth ₹70 cr a year to let go), the same figures as the bill.
+5. Feeling first? **Yes, now.** The bill opens with what the decision did to the player's stake ("Signing Skyward added about ₹5,200 cr to your 64% of VSIAL by 2043"), shows the stake with and without Skyward, and the adviser's slip lists every line's connections, money and stake before any tick. The banks' number is now read over the Skyward years (2040–43): ₹130 signed against ₹129 declined. It cannot honestly move more: Skyward's banks are about 1% of a 230-million-passenger airport's income, so the stake carries the decision.
+
+Thiel
+1. Network is the moat, connections make the money? **Yes, now.** The stake values connections income on top of the regulator's cap on the asset base (money.json's own EV/asset-base check), with the growth premium for a network that is still adding routes; the agreement and slip say "12 cities × 3 destinations = 36 new one-stop routes"; card 5 ends on Dubai as the place the network connects (AP, ahead of Heathrow for a decade). Connections per destination stay additive (the shift's feeder bank fixes them); the multiplicative network model was not built.
+2. Compounding? **Partly (no).** A growing network is now worth more per rupee (growth premium up to +6 on the multiple, money.json), so holding the banks compounds into the stake. Not done: Frankfurt as a real later route (there is no later chapter to fly it in) and growth past 2043 (the engine still holds hub income flat in real terms after the era).
+3. Competition real and specific? **Partly (no).** Doha now has a move on the agreement (it offered Skyward the same banks with a 60-minute connection; VSI's is 40 minutes on one pier); Narmada Air threatens to move its bank to Delhi when connections slip (margin note); letting London go costs a London flight for the era. Not built: a rival timetable or a counter-offer mechanic; "three" still dominates when the shift is played well (that is the bet the chapter wants the player to make, with the stand shortage and the London call as its risk).
+4. Ownership visible? **Yes, now.** Stake on the slip for every line ("your 64%: +₹2,800 cr by 2043"), on the front page (₹31,900 cr, 2039), on the bill (₹1.51 lakh cr in 2043, ₹1.46 lakh cr without Skyward), and the annual report is signed "Asha Rao, Director, for Meridian Infra".
+5. Hub-smart clearly beats hub-blind? **Yes, now.** Hold vs let go: ₹1.51 vs ₹1.48 lakh cr (−₹3,100 cr on the stake; ₹1,436 vs ₹931 cr of connections over 2040–43; growth 12% vs 4%), and the let-go margin no longer promises Frankfurt. Smart vs decline: +₹5,200 cr on the stake. era_test now fails if holding is not worth more than ₹1,000 cr over letting go.
+
+**Lead's findings**
+| Item | What changed | Status |
+|---|---|---|
+| L1 stake | Cause: era.js valued the stake at 12 × EBITDA − net debt, ignoring money.json `world.game_stake_pricing` (life factor, EV ≤ 1.4 × the regulated asset base); 12 × EBITDA was 2.3–2.9 × the asset base. Now EV = min(12 × EBITDA × (1 − 1.075^−years left), 1.4 × asset base) + connections income × (12 + growth premium). Traffic is not the cause: tools/concession_model.py gives the same path (165.0 m in 2038, 223 m in 2039, capped at 1.1 × capacity), and era_test still matches it (the Python model has no stake value). One formatter (`stakeWords`) on every screen: front page ₹31,900 cr (2039); bill ₹1.51 lakh cr in 2043, "up from ₹31,900 cr in 2039 as the airport grew", ₹1.46 lakh cr without Skyward | done |
+| L2 tags | 120px cards (short document name + one line), placed off the airfield on the side nearest the pin, inside the free map area, clear of the HUD panels, the handover sheet, other cards and other pins, with a thread to the pin; one tag per document (the incident moves the document's own tag to the aircraft/runway and flashes it, then it goes back); folds to its pin after 8 s, reopens on hover or click; floaters drawn above tags | done |
+| L3 coach card | No coach toasts in Chapter 5 (they still go to the Coach tab; alarms still show) | done |
+| L4 hold card | Card text from era.js, same rates as the bill (2040 prices): hold ₹16 lakh today / ₹5 cr a year; let go ₹29 lakh today / ₹9 cr a year + Skyward drops a London flight, ₹70 cr a year (now real in the engine) | done |
+| L5 dates | One date set from era.js: front page and agreement 1 April 2039 (stamp 01 APR 2039), handover Sunday 1 April 2040 (first Skyward year), each pile document stamped with its own date (concession/phase 1 2026, feeders 2033, budget 2034) | done |
+| L6 briefing | Countdown "or it starts in 5 s" (6 s, era.js); document links are short names, right-aligned; a click on the sheet body starts the shift and opens no document (tested) | done |
+| L7 decline bill | Decline table shows only "Domestic connections 1,05,118 made · 9,330 missed" a year; signed bill shows them under Skyward's row | done |
+| L8 stream dots | 3.4px dots with a dark rim (was 2.1px, no rim) | done |
+
+**Runs** (lean, radar skipped): hub-smart (three, hold): shift 1,194 made / 0 missed, London held; bill ₹281 cr earned / ₹19 cr spent a year, 6,46,880 Skyward connections + 95,788 domestic a year, ₹130 per ₹100 due (2040–43), stake ₹1.51 lakh cr (+₹5,200 cr vs no Skyward). hub-blind (decline): 1,05,118 / 9,330 domestic a year, ₹129, stake ₹1.46 lakh cr, ₹2,800 cr passed up. Let London go (node): ₹1.48 lakh cr. 0 page errors, no banned words, real fonts on every screen.
+
+**Money-off gate** (expert fastbot, one at a time, nice -n 10): L1 124/89 (final build rerun 123/88), L2 234/93, L3 480/72, L4 744/80, all ★★★, 0 errors.
+
+**Open:** Frankfurt is margin text only (no later chapter flies it); hub income stops growing after 2043; Doha has no counter-offer mechanic; connections per destination are additive; the cover can't visibly move (Skyward is ~1% of income). Skyward's London widebody shows as B789 in the at-risk list (CH5_TYPE doesn't read 'A388').

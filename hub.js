@@ -293,7 +293,9 @@ function toastRoom(){const el=$('#toast'),app=$('#app'),a=app.getBoundingClientR
     if(tight!==lt.classList.contains('tight'))lt.classList.toggle('tight',tight);}
   HUDR.length=0;
   for(const s of HUD_FLOAT){const e=document.querySelector(s);if(!e||e.hidden)continue;const r=e.getBoundingClientRect(),cs=getComputedStyle(e);if(r.width>0&&r.height>0&&+cs.opacity>0.05&&cs.visibility!=='hidden')HUDR.push({l:r.left-a.left,t:r.top-a.top,r:r.right-a.left,b:r.bottom-a.top});}}
-function coach(t,d,alarm){coachItems.unshift({t,d,at:clk(T)});$('#coachList').innerHTML=coachItems.map(c=>`<div class="ci"><div class="tm">${c.at}</div><h4>${c.t}</h4>${c.d.startsWith('<')?c.d:`<p>${c.d}</p>`}</div>`).join('');showToast(t,d);$('#toast').classList.toggle('alarm',!!alarm);}
+function coach(t,d,alarm){coachItems.unshift({t,d,at:clk(T)});$('#coachList').innerHTML=coachItems.map(c=>`<div class="ci"><div class="tm">${c.at}</div><h4>${c.t}</h4>${c.d.startsWith('<')?c.d:`<p>${c.d}</p>`}</div>`).join('');
+  if(CH5&&!alarm)return;   // Chapter 5: the handover sheet briefs the shift, so tips stay in the Coach tab and never cover the map
+  showToast(t,d);$('#toast').classList.toggle('alarm',!!alarm);}
 function explain(k){if(seen.has(k))return;seen.add(k);const g=GL[k];if(g)coach(g.t,g.d);}
 // some lessons only need teaching once ever, not once per level
 function explainOnce(k){const done=store.get('zm_seen')||{};if(done[k]){seen.add(k);return;}done[k]=1;store.set('zm_seen',done);explain(k);}
@@ -2624,17 +2626,35 @@ function startChapter5(plan,hooks){
 // paper tags: ZMMoney.tag(x, y, docTitle, line) → {move(x,y), remove()}, moved every frame
 function ch5Tag(id,opts,where){if(!CH5||CH5.tags[id])return;const t=CH5.tags[id]=Object.assign({id,opts:{doc:opts.doc,line:opts.line,docId:opts.docId}},where);
   const a=ch5Anchor(t),p=ch5Scr(a.x,a.y,a.h)||{X:-999,Y:-999};
-  try{if(CH5.hooks.onTag)t.h=CH5.hooks.onTag(p.X,p.Y,t.opts.doc,t.opts.line);else if(window.ZMMoney&&ZMMoney.tag)t.h=ZMMoney.tag(p.X,p.Y,t.opts.doc,t.opts.line);}catch(e){console.warn('tag',e);}
+  try{if(CH5.hooks.onTag)t.h=CH5.hooks.onTag(p.X,p.Y,t.opts.doc,t.opts.line);else if(window.ZMMoney&&ZMMoney.tag)t.h=ZMMoney.tag(p.X,p.Y,t.opts.doc,t.opts.line,t.opts.docId);}catch(e){console.warn('tag',e);}
   logE(`${opts.doc}: ${opts.line}`);}
 function ch5TagOff(id){if(!CH5||!CH5.tags[id])return;const t=CH5.tags[id];delete CH5.tags[id];try{if(t.h&&t.h.remove)t.h.remove();}catch(e){}}
 function ch5Anchor(t){if(t.f&&!['gone','towed','cancelled'].includes(t.f.state))return{x:t.f.x,y:t.f.y,h:t.f.alt||0};if(t.x!=null)return{x:t.x,y:t.y,h:0};
   const a=t.anchor;if(a==='runway'){const r=t.r||LONGEST;return{x:lerp(r.x0,r.x1,0.5),y:r.y,h:0};}
   if(a==='transfer')return{x:procC.x,y:procC.y,h:0};
   const ids=a==='stands'?['ES','FS']:['EN','ES'],c=ids.map(i=>CONCI[i]).find(c=>c&&c.open!==false)||CONCI.EN;return c?{x:c.lx,y:c.ly,h:0}:{x:0,y:0,h:0};}
-function ch5Frame(){if(!CH5)return;ctx.save();screenT();ch5DrawStream();ctx.restore();screenT();const placed=[];for(const id in CH5.tags){const t=CH5.tags[id],a=ch5Anchor(t),p=ch5Scr(a.x,a.y,a.h);
-  // tags pinned near one another fan out to the right, so none covers another
-  let X=p?p.X:-999,Y=p?p.Y:-999;if(p){for(let k=0;k<4&&placed.some(q=>Math.abs(q.X-X)<150&&Math.abs(q.Y-Y)<135);k++)X+=152;placed.push({X,Y});}
-  try{if(t.h&&t.h.move)t.h.move(X,Y);}catch(e){}}}
+function ch5Frame(){if(!CH5)return;ctx.save();screenT();ch5DrawStream();ctx.restore();screenT();
+  // each tag's card sits off the airfield (the runways, stands and terminal are where the action is), on the side nearest
+  // its pin, inside the free map area and clear of the HUD's floating panels and of the other cards; a thread joins it to its pin
+  const R=cam.region||{L:0,R:VW,Tp:0,B:VH},G=14,placed=HUDR.map(h=>({l:h.l-4,t:h.t-4,r:h.r+4,b:h.b+4}));
+  const cs=[[EXT.x0,EXT.y0],[EXT.x1,EXT.y0],[EXT.x0,EXT.y1],[EXT.x1,EXT.y1]].map(([x,y])=>ch5Scr(x,y,0)).filter(Boolean);
+  const F=cs.length?{l:Math.min(...cs.map(q=>q.X)),r:Math.max(...cs.map(q=>q.X)),t:Math.min(...cs.map(q=>q.Y)),b:Math.max(...cs.map(q=>q.Y))}:null;
+  const hit=(a,b)=>a.l<b.r&&a.r>b.l&&a.t<b.b&&a.b>b.t,inR=b=>b.l>=R.L+4&&b.r<=R.R-4&&b.t>=R.Tp+4&&b.b<=R.B-4;
+  const bf=document.getElementById('z5Brief');if(bf){const a=$('#app').getBoundingClientRect(),r=bf.getBoundingClientRect();placed.push({l:r.left-a.left-6,t:r.top-a.top-6,r:r.right-a.left+6,b:r.bottom-a.top+6});}   // nor under the handover sheet
+  const pins={};for(const id in CH5.tags){const t=CH5.tags[id],a=ch5Anchor(t),p=ch5Scr(a.x,a.y,a.h);pins[id]=p;if(p)placed.push({l:p.X-10,t:p.Y-10,r:p.X+10,b:p.Y+10});}   // no card on another tag's pin
+  for(const id in CH5.tags){const t=CH5.tags[id],p=pins[id];
+    if(!p||p.X<R.L||p.X>R.R||p.Y<R.Tp||p.Y>R.B){try{t.h&&t.h.move&&t.h.move(NaN,NaN);}catch(e){}continue;}   // a pin off the free map area is hidden
+    const sz=(t.h&&t.h.size)?t.h.size():{w:120,h:60},w=sz.w,h=sz.h,cands=[];
+    if(F){const yc=clamp(p.Y-h/2,R.Tp+4,R.B-h-4),xc=clamp(p.X-w/2,R.L+4,R.R-w-4);
+      cands.push({l:F.r+G,t:yc,d:F.r-p.X},{l:F.l-G-w,t:yc,d:p.X-F.l},{l:xc,t:F.t-G-h,d:p.Y-F.t},{l:xc,t:F.b+G,d:F.b-p.Y});cands.sort((u,v)=>u.d-v.d);}
+    cands.push({l:p.X+G,t:p.Y-G-h},{l:p.X-G-w,t:p.Y-G-h},{l:p.X+G,t:p.Y+G},{l:p.X-G-w,t:p.Y+G});
+    let best=null;for(const c of cands){const box={l:c.l,t:c.t,r:c.l+w,b:c.t+h};if(!inR(box))continue;
+      // slide down the side until it clears the other cards
+      for(let k=0;k<8&&placed.some(q=>hit(box,q));k++){box.t+=h+8;box.b+=h+8;}
+      if(inR(box)&&!placed.some(q=>hit(box,q))){best=box;break;}}
+    if(!best){const l=clamp(p.X+G,R.L+4,R.R-w-4),tp=clamp(p.Y-G-h,R.Tp+4,R.B-h-4);best={l,t:tp,r:l+w,b:tp+h};}
+    placed.push(best);
+    try{if(t.h&&t.h.move)t.h.move(p.X,p.Y,best.l-p.X,best.t-p.Y);}catch(e){}}}
 function ch5ConnHud(){try{if(window.ZMMoney&&ZMMoney.setConnections)ZMMoney.setConnections({made:CH5.made,missed:CH5.missed});}catch(e){}}
 function ch5Float(x,y,h,data){const p=ch5Scr(x,y,h);if(!p)return;
   try{if(CH5.hooks.onConn){CH5.hooks.onConn(p.X,p.Y,data);return;}if(window.ZMMoney&&ZMMoney.connFloat){ZMMoney.connFloat(p.X,p.Y,data);return;}}catch(e){console.warn('connFloat',e);}
@@ -2652,7 +2672,7 @@ function ch5Settle(f,at){let made=0,missed=0;const tPush=at!=null?at:f.pushT;
 function ch5HubCard(){const H=CH5.plan.hub,lon=CH5.deps.find(d=>d.ch5Dest===H.dest);if(!lon){CH5.hubAsked=true;return;}
   CH5.hubAsked=true;const n=CH5.feeders.filter(f=>f.ch5Hub).length,rv=(CH5.plan.rates&&CH5.plan.rates.rival)||'Doha',fa=AL[CH5.feederAl].name,cost=(H.holdCostCr||0).toFixed(1),lost=H.letGoLostCr!=null?` (₹${(+H.letGoLostCr).toFixed(1)} cr of connections)`:'';
   const I={id:++INC,type:'hubhold',born:T,left:60,total:60,f:lon,botPick:0,title:`${H.from} is ${H.lateMin} min late: ${H.pax} for ${H.dest}`,
-    text:`${fa}'s ${n>1?`${n} flights`:'flight'} from ${H.from} ${n>1?'are':'is'} running ${H.lateMin} minutes late, with ${H.pax} passengers booked through to ${H.dest} on ${fl(lon)} at ${clk(lon.std)}. Hold ${H.dest} ${H.holdMin} minutes: it loses its slot at the other end (₹${cost} cr) and the ${H.pax} make it. Let it go: it leaves on time and the ${H.pax} rebook through ${rv}${lost}.`,
+    text:`${fa}'s ${n>1?`${n} flights`:'flight'} from ${H.from} ${n>1?'are':'is'} running ${H.lateMin} minutes late, with ${H.pax} passengers booked through to ${H.dest} on ${fl(lon)} at ${clk(lon.std)}. `+(H.holdLine&&H.letGoLine?`${H.holdLine} ${H.letGoLine}`:`Hold ${H.dest} ${H.holdMin} minutes: it loses its slot at the other end (₹${cost} cr) and the ${H.pax} make it. Let it go: it leaves on time and the ${H.pax} rebook through ${rv}${lost}.`),
     def:1,defText:`${fl(lon)} leaves on time and the ${H.pax} rebook through ${rv}.`,
     acts:[{l:`Hold ${H.dest} ${H.holdMin} min`,pri:1,fn(){ch5Answer('hold',I);}},{l:'Let it go',fn(){ch5Answer('go',I);}}]};
   S.incTypes.hubhold=(S.incTypes.hubhold||0)+1;incidents.push(I);renderInc();radio('AOCC',I.title+'.');logE(I.title+'.','miss');
@@ -2666,14 +2686,17 @@ function ch5Answer(k,I){if(!CH5||CH5.hubAnswer)return false;const H=CH5.plan.hub
 function ch5NoStand(f){f.ch5Stand=false;const w=Math.round(6+((f.id*7)%3))*60;f.ch5Wait=T+w;f.state='nogate';f.nogateSince=T-300;   // (penalties to the airline start at once: it was promised a stand)
   CH5.trail.happened=true;CH5.trail.minutesLost+=w/60;const P=CH5.plan.trail;
   radio('APRON',`${cs(f)}, no international stand free. Hold position, about ${w/60} minutes.`);
-  if(!CH5.tags.trail)ch5Tag('trail',Object.assign({docId:P.docId},P.tag||{doc:'Phase 1 plan',line:'You built lean: no stand for this widebody.'}),{f,anchor:'stands'});
+  ch5TrailTag(P,{f});
   return true;}
+function ch5TrailTag(P,at){const own=CH5.tags['plan-'+(P.docId||P.doc)];
+  if(own){if(own.f||own.r)return;own.trail=true;Object.assign(own,at);try{own.h&&own.h.flash&&own.h.flash();}catch(e){}return;}
+  if(!CH5.tags.trail)ch5Tag('trail',Object.assign({docId:P.docId},P.tag||{doc:P.doc,line:P.line}),Object.assign({anchor:at.r?'runway':'stands'},at));}
 function ch5Birds(){const P=CH5.plan.trail;const busy=r=>flights.filter(o=>o.rwy===r&&['hp','taxi_out','lineup','approach'].includes(o.state)).length;
   const r=RW.filter(r=>!r.locked&&r.mode!=='OFF').sort((a,b)=>busy(b)-busy(a))[0]||LONGEST;const mins=6;
   closeRw(r,mins*60,'Bird flock off the lakes');CH5.trail.happened=true;CH5.trail.minutesLost=mins;CH5.trail.runway=r.short;
   ops.push({id:++OPN,kind:'birds',r,x:lerp(r.x0,r.x1,0.5),y:r.y+(r.y<0?-1:1)*170,t0:T,dur:mins*60,sx:Math.min(r.x1+300,lerp(r.x0,r.x1,0.5)+900)});
   radio('WILDLIFE',`A flock off the lakes is over ${r.short}. Runway closed, about ${mins} minutes.`);
-  ch5Tag('trail',Object.assign({docId:P.docId},P.tag||{doc:'Capital budget, 2034',line:'You skipped the bird radar.'}),{r,anchor:'runway'});}
+  ch5TrailTag(P,{r});}
 /* the connection stream (2D map): when a feeder parks, its connecting passengers walk from its gate along the Mall (the
    train line on y=0) to each international gate as a thin line of dots. Made: they reach the gate and fade in sign yellow.
    Missed: they turn red and drift off the left edge toward the rival hub's label. Walking runs on sim time (the minimum
@@ -2689,10 +2712,10 @@ function ch5DrawStream(){const S5=CH5.stream;if(!S5||!S5.length||(typeof V3!=='u
   const rv=String((CH5.plan.rates&&CH5.plan.rates.rival)||'Doha').toUpperCase(),lbl={X:((cam.region&&cam.region.L)||0)+18,Y:Math.round(H*0.42)};let anyMiss=false;
   ctx.save();screenT();for(let gi=S5.length-1;gi>=0;gi--){const g=S5[gi],u0=(T-g.t0)/g.dur;let age=g.st==='walk'?0:now-g.tS;if(age<0)age=0;
     if(g.st==='made'&&age>4){S5.splice(gi,1);continue;}if(g.st==='missed'&&age>6){S5.splice(gi,1);continue;}if(g.st==='missed')anyMiss=true;
-    for(let i=0;i<g.n;i++){const u=u0-i*0.035;if(u<=0)continue;const q=ch5At(g.w,u);let X=sx(q.x),Y=sy(q.y),col='rgba(236,240,244,.92)',r=2.1;
-      if(g.st==='made'){if(u<1)col='rgba(244,196,48,.95)';else{const a=Math.max(0,1-age/4);col=`rgba(244,196,48,${a.toFixed(2)})`;r=2.1+age*0.6;}}
+    for(let i=0;i<g.n;i++){const u=u0-i*0.035;if(u<=0)continue;const q=ch5At(g.w,u);let X=sx(q.x),Y=sy(q.y),col='rgba(246,248,250,.98)',r=3.4;
+      if(g.st==='made'){if(u<1)col='rgba(244,196,48,.98)';else{const a=Math.max(0,1-age/4);col=`rgba(244,196,48,${a.toFixed(2)})`;r=3.4+age*0.7;}}
       else if(g.st==='missed'){const k=Math.min(1,Math.max(0,(age-i*0.06)/4.5)),e=k*k*(3-2*k);X=lerp(X,lbl.X-30,e)+Math.sin(i*1.7+age)*6*e;Y=lerp(Y,lbl.Y+((i%5)-2)*5,e);col=`rgba(255,77,63,${(1-Math.max(0,k-0.85)/0.15).toFixed(2)})`;}
-      ctx.fillStyle=col;ctx.beginPath();ctx.arc(X,Y,r,0,7);ctx.fill();}}
+      ctx.fillStyle=col;ctx.beginPath();ctx.arc(X,Y,r,0,7);ctx.fill();ctx.lineWidth=1.2;ctx.strokeStyle='rgba(8,10,12,.6)';ctx.stroke();}}
   if(anyMiss||CH5.missed>0){ctx.font='700 12px Barlow Condensed, sans-serif';ctx.textAlign='left';ctx.fillStyle='rgba(10,13,16,.75)';const w=ctx.measureText(rv).width+22;ctx.fillRect(lbl.X-6,lbl.Y-10,w,20);
     ctx.fillStyle='#ff4d3f';ctx.fillText('◀ '+rv,lbl.X,lbl.Y+4);}
   ctx.restore();}
@@ -2700,7 +2723,8 @@ function ch5Tick(){if(!CH5)return;const P=CH5.plan;
   if(!CH5.hubAsked&&CH5.hubEta!=null&&T>=CH5.hubEta-1200)ch5HubCard();
   if(P.trail&&P.trail.id==='birds'&&!CH5.trail.happened&&T>=CH5.firstStd-900)ch5Birds();
   // a tag comes off the map ten minutes after its incident is over
-  const tr=CH5.tags.trail;if(tr){const busy=tr.f?flights.some(f=>f.ch5Wait&&T<f.ch5Wait+600):tr.r?T<tr.r.closedUntil+600:false;if(!busy)ch5TagOff('trail');}}
+  for(const id in CH5.tags){const tr=CH5.tags[id];if(id!=='trail'&&!tr.trail)continue;const busy=tr.f?flights.some(f=>f.ch5Wait&&T<f.ch5Wait+600):tr.r?T<tr.r.closedUntil+600:false;
+    if(busy)continue;if(id==='trail')ch5TagOff('trail');else if(tr.f||tr.r){delete tr.f;delete tr.r;tr.trail=false;}}}
 function ch5End(){const P=CH5.plan;
   for(const f of flights)if(f.kind==='dep'&&f.links&&f.state!=='cancelled'){ch5Settle(f,T);f.links=null;}   // still at the gate when the day ended
   const st=stars(LV,S),otp=S.dep+S.arr?Math.round((S.depOnTime+S.arrOnTime)/(S.dep+S.arr)*100):0;

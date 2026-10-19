@@ -1638,7 +1638,9 @@ function toastRoom(){const el=$('#toast'),app=$('#app'),a=app.getBoundingClientR
     if(tight!==lt.classList.contains('tight'))lt.classList.toggle('tight',tight);}
   HUDR.length=0;
   for(const s of HUD_FLOAT){const e=document.querySelector(s);if(!e||e.hidden)continue;const r=e.getBoundingClientRect(),cs=getComputedStyle(e);if(r.width>0&&r.height>0&&+cs.opacity>0.05&&cs.visibility!=='hidden')HUDR.push({l:r.left-a.left,t:r.top-a.top,r:r.right-a.left,b:r.bottom-a.top});}}
-function coach(t,d,alarm){coachItems.unshift({t,d,at:clk(T)});$('#coachList').innerHTML=coachItems.map(c=>`<div class="ci"><div class="tm">${c.at}</div><h4>${c.t}</h4>${c.d.startsWith('<')?c.d:`<p>${c.d}</p>`}</div>`).join('');showToast(t,d);$('#toast').classList.toggle('alarm',!!alarm);}
+function coach(t,d,alarm){coachItems.unshift({t,d,at:clk(T)});$('#coachList').innerHTML=coachItems.map(c=>`<div class="ci"><div class="tm">${c.at}</div><h4>${c.t}</h4>${c.d.startsWith('<')?c.d:`<p>${c.d}</p>`}</div>`).join('');
+  if(CH5&&!alarm)return;   // Chapter 5: the handover sheet briefs the shift, so tips stay in the Coach tab and never cover the map
+  showToast(t,d);$('#toast').classList.toggle('alarm',!!alarm);}
 function explain(k){if(seen.has(k))return;seen.add(k);const g=GL[k];if(g)coach(g.t,g.d);}
 // some lessons only need teaching once ever, not once per level
 function explainOnce(k){const done=store.get('zm_seen')||{};if(done[k]){seen.add(k);return;}done[k]=1;store.set('zm_seen',done);explain(k);}
@@ -4212,17 +4214,35 @@ function startChapter5(plan,hooks){
 // paper tags: ZMMoney.tag(x, y, docTitle, line) → {move(x,y), remove()}, moved every frame
 function ch5Tag(id,opts,where){if(!CH5||CH5.tags[id])return;const t=CH5.tags[id]=Object.assign({id,opts:{doc:opts.doc,line:opts.line,docId:opts.docId}},where);
   const a=ch5Anchor(t),p=ch5Scr(a.x,a.y,a.h)||{X:-999,Y:-999};
-  try{if(CH5.hooks.onTag)t.h=CH5.hooks.onTag(p.X,p.Y,t.opts.doc,t.opts.line);else if(window.ZMMoney&&ZMMoney.tag)t.h=ZMMoney.tag(p.X,p.Y,t.opts.doc,t.opts.line);}catch(e){console.warn('tag',e);}
+  try{if(CH5.hooks.onTag)t.h=CH5.hooks.onTag(p.X,p.Y,t.opts.doc,t.opts.line);else if(window.ZMMoney&&ZMMoney.tag)t.h=ZMMoney.tag(p.X,p.Y,t.opts.doc,t.opts.line,t.opts.docId);}catch(e){console.warn('tag',e);}
   logE(`${opts.doc}: ${opts.line}`);}
 function ch5TagOff(id){if(!CH5||!CH5.tags[id])return;const t=CH5.tags[id];delete CH5.tags[id];try{if(t.h&&t.h.remove)t.h.remove();}catch(e){}}
 function ch5Anchor(t){if(t.f&&!['gone','towed','cancelled'].includes(t.f.state))return{x:t.f.x,y:t.f.y,h:t.f.alt||0};if(t.x!=null)return{x:t.x,y:t.y,h:0};
   const a=t.anchor;if(a==='runway'){const r=t.r||LONGEST;return{x:lerp(r.x0,r.x1,0.5),y:r.y,h:0};}
   if(a==='transfer')return{x:procC.x,y:procC.y,h:0};
   const ids=a==='stands'?['ES','FS']:['EN','ES'],c=ids.map(i=>CONCI[i]).find(c=>c&&c.open!==false)||CONCI.EN;return c?{x:c.lx,y:c.ly,h:0}:{x:0,y:0,h:0};}
-function ch5Frame(){if(!CH5)return;ctx.save();screenT();ch5DrawStream();ctx.restore();screenT();const placed=[];for(const id in CH5.tags){const t=CH5.tags[id],a=ch5Anchor(t),p=ch5Scr(a.x,a.y,a.h);
-  // tags pinned near one another fan out to the right, so none covers another
-  let X=p?p.X:-999,Y=p?p.Y:-999;if(p){for(let k=0;k<4&&placed.some(q=>Math.abs(q.X-X)<150&&Math.abs(q.Y-Y)<135);k++)X+=152;placed.push({X,Y});}
-  try{if(t.h&&t.h.move)t.h.move(X,Y);}catch(e){}}}
+function ch5Frame(){if(!CH5)return;ctx.save();screenT();ch5DrawStream();ctx.restore();screenT();
+  // each tag's card sits off the airfield (the runways, stands and terminal are where the action is), on the side nearest
+  // its pin, inside the free map area and clear of the HUD's floating panels and of the other cards; a thread joins it to its pin
+  const R=cam.region||{L:0,R:VW,Tp:0,B:VH},G=14,placed=HUDR.map(h=>({l:h.l-4,t:h.t-4,r:h.r+4,b:h.b+4}));
+  const cs=[[EXT.x0,EXT.y0],[EXT.x1,EXT.y0],[EXT.x0,EXT.y1],[EXT.x1,EXT.y1]].map(([x,y])=>ch5Scr(x,y,0)).filter(Boolean);
+  const F=cs.length?{l:Math.min(...cs.map(q=>q.X)),r:Math.max(...cs.map(q=>q.X)),t:Math.min(...cs.map(q=>q.Y)),b:Math.max(...cs.map(q=>q.Y))}:null;
+  const hit=(a,b)=>a.l<b.r&&a.r>b.l&&a.t<b.b&&a.b>b.t,inR=b=>b.l>=R.L+4&&b.r<=R.R-4&&b.t>=R.Tp+4&&b.b<=R.B-4;
+  const bf=document.getElementById('z5Brief');if(bf){const a=$('#app').getBoundingClientRect(),r=bf.getBoundingClientRect();placed.push({l:r.left-a.left-6,t:r.top-a.top-6,r:r.right-a.left+6,b:r.bottom-a.top+6});}   // nor under the handover sheet
+  const pins={};for(const id in CH5.tags){const t=CH5.tags[id],a=ch5Anchor(t),p=ch5Scr(a.x,a.y,a.h);pins[id]=p;if(p)placed.push({l:p.X-10,t:p.Y-10,r:p.X+10,b:p.Y+10});}   // no card on another tag's pin
+  for(const id in CH5.tags){const t=CH5.tags[id],p=pins[id];
+    if(!p||p.X<R.L||p.X>R.R||p.Y<R.Tp||p.Y>R.B){try{t.h&&t.h.move&&t.h.move(NaN,NaN);}catch(e){}continue;}   // a pin off the free map area is hidden
+    const sz=(t.h&&t.h.size)?t.h.size():{w:120,h:60},w=sz.w,h=sz.h,cands=[];
+    if(F){const yc=clamp(p.Y-h/2,R.Tp+4,R.B-h-4),xc=clamp(p.X-w/2,R.L+4,R.R-w-4);
+      cands.push({l:F.r+G,t:yc,d:F.r-p.X},{l:F.l-G-w,t:yc,d:p.X-F.l},{l:xc,t:F.t-G-h,d:p.Y-F.t},{l:xc,t:F.b+G,d:F.b-p.Y});cands.sort((u,v)=>u.d-v.d);}
+    cands.push({l:p.X+G,t:p.Y-G-h},{l:p.X-G-w,t:p.Y-G-h},{l:p.X+G,t:p.Y+G},{l:p.X-G-w,t:p.Y+G});
+    let best=null;for(const c of cands){const box={l:c.l,t:c.t,r:c.l+w,b:c.t+h};if(!inR(box))continue;
+      // slide down the side until it clears the other cards
+      for(let k=0;k<8&&placed.some(q=>hit(box,q));k++){box.t+=h+8;box.b+=h+8;}
+      if(inR(box)&&!placed.some(q=>hit(box,q))){best=box;break;}}
+    if(!best){const l=clamp(p.X+G,R.L+4,R.R-w-4),tp=clamp(p.Y-G-h,R.Tp+4,R.B-h-4);best={l,t:tp,r:l+w,b:tp+h};}
+    placed.push(best);
+    try{if(t.h&&t.h.move)t.h.move(p.X,p.Y,best.l-p.X,best.t-p.Y);}catch(e){}}}
 function ch5ConnHud(){try{if(window.ZMMoney&&ZMMoney.setConnections)ZMMoney.setConnections({made:CH5.made,missed:CH5.missed});}catch(e){}}
 function ch5Float(x,y,h,data){const p=ch5Scr(x,y,h);if(!p)return;
   try{if(CH5.hooks.onConn){CH5.hooks.onConn(p.X,p.Y,data);return;}if(window.ZMMoney&&ZMMoney.connFloat){ZMMoney.connFloat(p.X,p.Y,data);return;}}catch(e){console.warn('connFloat',e);}
@@ -4240,7 +4260,7 @@ function ch5Settle(f,at){let made=0,missed=0;const tPush=at!=null?at:f.pushT;
 function ch5HubCard(){const H=CH5.plan.hub,lon=CH5.deps.find(d=>d.ch5Dest===H.dest);if(!lon){CH5.hubAsked=true;return;}
   CH5.hubAsked=true;const n=CH5.feeders.filter(f=>f.ch5Hub).length,rv=(CH5.plan.rates&&CH5.plan.rates.rival)||'Doha',fa=AL[CH5.feederAl].name,cost=(H.holdCostCr||0).toFixed(1),lost=H.letGoLostCr!=null?` (₹${(+H.letGoLostCr).toFixed(1)} cr of connections)`:'';
   const I={id:++INC,type:'hubhold',born:T,left:60,total:60,f:lon,botPick:0,title:`${H.from} is ${H.lateMin} min late: ${H.pax} for ${H.dest}`,
-    text:`${fa}'s ${n>1?`${n} flights`:'flight'} from ${H.from} ${n>1?'are':'is'} running ${H.lateMin} minutes late, with ${H.pax} passengers booked through to ${H.dest} on ${fl(lon)} at ${clk(lon.std)}. Hold ${H.dest} ${H.holdMin} minutes: it loses its slot at the other end (₹${cost} cr) and the ${H.pax} make it. Let it go: it leaves on time and the ${H.pax} rebook through ${rv}${lost}.`,
+    text:`${fa}'s ${n>1?`${n} flights`:'flight'} from ${H.from} ${n>1?'are':'is'} running ${H.lateMin} minutes late, with ${H.pax} passengers booked through to ${H.dest} on ${fl(lon)} at ${clk(lon.std)}. `+(H.holdLine&&H.letGoLine?`${H.holdLine} ${H.letGoLine}`:`Hold ${H.dest} ${H.holdMin} minutes: it loses its slot at the other end (₹${cost} cr) and the ${H.pax} make it. Let it go: it leaves on time and the ${H.pax} rebook through ${rv}${lost}.`),
     def:1,defText:`${fl(lon)} leaves on time and the ${H.pax} rebook through ${rv}.`,
     acts:[{l:`Hold ${H.dest} ${H.holdMin} min`,pri:1,fn(){ch5Answer('hold',I);}},{l:'Let it go',fn(){ch5Answer('go',I);}}]};
   S.incTypes.hubhold=(S.incTypes.hubhold||0)+1;incidents.push(I);renderInc();radio('AOCC',I.title+'.');logE(I.title+'.','miss');
@@ -4254,14 +4274,17 @@ function ch5Answer(k,I){if(!CH5||CH5.hubAnswer)return false;const H=CH5.plan.hub
 function ch5NoStand(f){f.ch5Stand=false;const w=Math.round(6+((f.id*7)%3))*60;f.ch5Wait=T+w;f.state='nogate';f.nogateSince=T-300;   // (penalties to the airline start at once: it was promised a stand)
   CH5.trail.happened=true;CH5.trail.minutesLost+=w/60;const P=CH5.plan.trail;
   radio('APRON',`${cs(f)}, no international stand free. Hold position, about ${w/60} minutes.`);
-  if(!CH5.tags.trail)ch5Tag('trail',Object.assign({docId:P.docId},P.tag||{doc:'Phase 1 plan',line:'You built lean: no stand for this widebody.'}),{f,anchor:'stands'});
+  ch5TrailTag(P,{f});
   return true;}
+function ch5TrailTag(P,at){const own=CH5.tags['plan-'+(P.docId||P.doc)];
+  if(own){if(own.f||own.r)return;own.trail=true;Object.assign(own,at);try{own.h&&own.h.flash&&own.h.flash();}catch(e){}return;}
+  if(!CH5.tags.trail)ch5Tag('trail',Object.assign({docId:P.docId},P.tag||{doc:P.doc,line:P.line}),Object.assign({anchor:at.r?'runway':'stands'},at));}
 function ch5Birds(){const P=CH5.plan.trail;const busy=r=>flights.filter(o=>o.rwy===r&&['hp','taxi_out','lineup','approach'].includes(o.state)).length;
   const r=RW.filter(r=>!r.locked&&r.mode!=='OFF').sort((a,b)=>busy(b)-busy(a))[0]||LONGEST;const mins=6;
   closeRw(r,mins*60,'Bird flock off the lakes');CH5.trail.happened=true;CH5.trail.minutesLost=mins;CH5.trail.runway=r.short;
   ops.push({id:++OPN,kind:'birds',r,x:lerp(r.x0,r.x1,0.5),y:r.y+(r.y<0?-1:1)*170,t0:T,dur:mins*60,sx:Math.min(r.x1+300,lerp(r.x0,r.x1,0.5)+900)});
   radio('WILDLIFE',`A flock off the lakes is over ${r.short}. Runway closed, about ${mins} minutes.`);
-  ch5Tag('trail',Object.assign({docId:P.docId},P.tag||{doc:'Capital budget, 2034',line:'You skipped the bird radar.'}),{r,anchor:'runway'});}
+  ch5TrailTag(P,{r});}
 /* the connection stream (2D map): when a feeder parks, its connecting passengers walk from its gate along the Mall (the
    train line on y=0) to each international gate as a thin line of dots. Made: they reach the gate and fade in sign yellow.
    Missed: they turn red and drift off the left edge toward the rival hub's label. Walking runs on sim time (the minimum
@@ -4277,10 +4300,10 @@ function ch5DrawStream(){const S5=CH5.stream;if(!S5||!S5.length||(typeof V3!=='u
   const rv=String((CH5.plan.rates&&CH5.plan.rates.rival)||'Doha').toUpperCase(),lbl={X:((cam.region&&cam.region.L)||0)+18,Y:Math.round(H*0.42)};let anyMiss=false;
   ctx.save();screenT();for(let gi=S5.length-1;gi>=0;gi--){const g=S5[gi],u0=(T-g.t0)/g.dur;let age=g.st==='walk'?0:now-g.tS;if(age<0)age=0;
     if(g.st==='made'&&age>4){S5.splice(gi,1);continue;}if(g.st==='missed'&&age>6){S5.splice(gi,1);continue;}if(g.st==='missed')anyMiss=true;
-    for(let i=0;i<g.n;i++){const u=u0-i*0.035;if(u<=0)continue;const q=ch5At(g.w,u);let X=sx(q.x),Y=sy(q.y),col='rgba(236,240,244,.92)',r=2.1;
-      if(g.st==='made'){if(u<1)col='rgba(244,196,48,.95)';else{const a=Math.max(0,1-age/4);col=`rgba(244,196,48,${a.toFixed(2)})`;r=2.1+age*0.6;}}
+    for(let i=0;i<g.n;i++){const u=u0-i*0.035;if(u<=0)continue;const q=ch5At(g.w,u);let X=sx(q.x),Y=sy(q.y),col='rgba(246,248,250,.98)',r=3.4;
+      if(g.st==='made'){if(u<1)col='rgba(244,196,48,.98)';else{const a=Math.max(0,1-age/4);col=`rgba(244,196,48,${a.toFixed(2)})`;r=3.4+age*0.7;}}
       else if(g.st==='missed'){const k=Math.min(1,Math.max(0,(age-i*0.06)/4.5)),e=k*k*(3-2*k);X=lerp(X,lbl.X-30,e)+Math.sin(i*1.7+age)*6*e;Y=lerp(Y,lbl.Y+((i%5)-2)*5,e);col=`rgba(255,77,63,${(1-Math.max(0,k-0.85)/0.15).toFixed(2)})`;}
-      ctx.fillStyle=col;ctx.beginPath();ctx.arc(X,Y,r,0,7);ctx.fill();}}
+      ctx.fillStyle=col;ctx.beginPath();ctx.arc(X,Y,r,0,7);ctx.fill();ctx.lineWidth=1.2;ctx.strokeStyle='rgba(8,10,12,.6)';ctx.stroke();}}
   if(anyMiss||CH5.missed>0){ctx.font='700 12px Barlow Condensed, sans-serif';ctx.textAlign='left';ctx.fillStyle='rgba(10,13,16,.75)';const w=ctx.measureText(rv).width+22;ctx.fillRect(lbl.X-6,lbl.Y-10,w,20);
     ctx.fillStyle='#ff4d3f';ctx.fillText('◀ '+rv,lbl.X,lbl.Y+4);}
   ctx.restore();}
@@ -4288,7 +4311,8 @@ function ch5Tick(){if(!CH5)return;const P=CH5.plan;
   if(!CH5.hubAsked&&CH5.hubEta!=null&&T>=CH5.hubEta-1200)ch5HubCard();
   if(P.trail&&P.trail.id==='birds'&&!CH5.trail.happened&&T>=CH5.firstStd-900)ch5Birds();
   // a tag comes off the map ten minutes after its incident is over
-  const tr=CH5.tags.trail;if(tr){const busy=tr.f?flights.some(f=>f.ch5Wait&&T<f.ch5Wait+600):tr.r?T<tr.r.closedUntil+600:false;if(!busy)ch5TagOff('trail');}}
+  for(const id in CH5.tags){const tr=CH5.tags[id];if(id!=='trail'&&!tr.trail)continue;const busy=tr.f?flights.some(f=>f.ch5Wait&&T<f.ch5Wait+600):tr.r?T<tr.r.closedUntil+600:false;
+    if(busy)continue;if(id==='trail')ch5TagOff('trail');else if(tr.f||tr.r){delete tr.f;delete tr.r;tr.trail=false;}}}
 function ch5End(){const P=CH5.plan;
   for(const f of flights)if(f.kind==='dep'&&f.links&&f.state!=='cancelled'){ch5Settle(f,T);f.links=null;}   // still at the gate when the day ended
   const st=stars(LV,S),otp=S.dep+S.arr?Math.round((S.depOnTime+S.arrOnTime)/(S.dep+S.arr)*100):0;
@@ -12097,7 +12121,8 @@ requestAnimationFrame(frame);
     P.thr = J('game.dscr_thresholds', {warning: 1.2, covenant: 1.1, step_in: 1.0, step_in_eras: 2});
     P.lockup = J('finance.distribution_lockup', {nil_below: 1.2, half_below: 1.4, three_quarters_below: 1.55});
     P.rate = rate;
-    P.ev_multiple = (J('world.game_stake_pricing') || {}).base_multiple || 12;
+    P.sp = J('world.game_stake_pricing') || {};
+    P.ev_multiple = P.sp.base_multiple || 12;
     P.star_bonus = J('game.star_growth_bonus', {0: -0.03, 1: -0.01, 2: 0.005, 3: 0.015});
     P.rev_share = J('ppp.rev_share_bid_range', {low: 0.126, high: 0.4599});
     P.ppf = J('ppp.ppf_bid_range', {low: 115, high: 400.97});
@@ -12646,7 +12671,7 @@ requestAnimationFrame(frame);
       opex_bench: opx, opening_cost: opening, feeShare: feeShare, feePpf: feePpf, wacc: wacc,
       equity_need: equity_need, era: function (t) { return eraOf(t + 1); }, state_loan: state_loan, stage_list: stage_list,
       renewal_share: renewal, first_cod_t: st[names[0]].cod - 1, dis_in_opex: P.ops_profiles.base.dis[0], forecast: !!base,
-      nar_extra: acInc, hub_inc: hubInc, hub_cost: hubCost, pax_factor: frac > 0 ? function (t) { return t + 1 === yOpen ? 1 - frac : 1; } : null,
+      nar_extra: acInc, hub_inc: hubInc, hub_cost: hubCost, hub_growth: (!base && s.hub && s.hub.growth) || 0, pax_factor: frac > 0 ? function (t) { return t + 1 === yOpen ? 1 - frac : 1; } : null,
       fx: (!base && lenderOf(s).fx) ? {t: lenderOf(s).fx.year - 1, fall: lenderOf(s).fx.fall, names: names.filter(function (n) { var k = stageKey(n); return k === '1A' || k === '1B'; })} : null,
       lever: function (t, key) {
         if (base) return key === 'cure' || (key === 'defer_state_loan' && !!s.defer_state_loan);
@@ -12930,9 +12955,22 @@ requestAnimationFrame(frame);
   }
   function levelFor(state) { var e = state.era || 1; return e <= 4 ? e : 4; /* TODO Ship B: eras 5-12 play Level 5 */ }
 
+  // What the airport is worth to its owners (money.json world.game_stake_pricing): EV = EBITDA × multiple × (1 − 1.075^−years
+  // left), and a regulated airport never trades above ev_rab_check[1] × its asset base (AERA caps what the assets can earn).
+  // Connections income (Chapter 5) is valued on top of that cap, at the multiple plus the growth premium for a network that
+  // is still adding routes: the network is what an airport is worth beyond its regulated assets. Equity = EV − net debt.
   function stakeValue(eng, row) {
-    var debt = eng.c.tranches.reduce(function (a, x) { return a + x.out; }, 0);
-    var ev = P.ev_multiple * Math.max(0, row ? row.ebitda : 0);
+    var debt = eng.c.tranches.reduce(function (a, x) { return a + x.out; }, 0), sp = P.sp || {};
+    var ev = 0;
+    if (row) {
+      var life = 1 - Math.pow(1 + (sp.life_rate || 0.075), -Math.max(0, 60 - row.year));
+      var hubNet = Math.max(0, (row.hubInc || 0) - (row.hubCost || 0));
+      var core = P.ev_multiple * Math.max(0, row.ebitda - hubNet) * life, rab = eng.rab(row.t, false)[0];
+      if (rab > 0 && sp.ev_rab_check) core = Math.min(core, sp.ev_rab_check[1] * rab);
+      var g = eng.c.hub_growth || 0, gBase = P.growth.cagr_by_era[Math.min(11, Math.floor((row.year - 1) / 5))];
+      var prem = Math.min(sp.growth_prem_cap || 6, (sp.growth_prem_per_pp_over || 3) * Math.max(0, (g - gBase) * 100));
+      ev = core + (P.ev_multiple + prem) * hubNet * life;
+    }
     return Math.max(0, ev - debt - eng.sl_out + eng.cash + eng.dsra);
   }
   function eraReport(state, eng, e) {
@@ -13302,7 +13340,9 @@ requestAnimationFrame(frame);
       Nairobi: {code: 'NBO', std: '14:50', aircraft: 'B789', connecting: 220, seats: 290, mtow: 254}},
     hub: {from: 'Lucknow', code: 'LKO', lateMin: 25, pax: 380, holdMin: 20, dest: 'London'},
     stands: {need: 6, lean: 4},
-    letGoGrowthHit: 0.08   // (est.) route growth lost a year when London leaves the Lucknow passengers behind
+    mctMin: 40, rivalMctMin: 60 /* (est.) the domestic-to-international connection at VSI (hub.js CH5_LEVEL.xIntMin) and at Doha */,
+    letGoGrowthHit: 0.08   // (est.) route growth lost a year when London leaves the Lucknow passengers behind; Skyward also
+                           // drops one of its two daily London flights for the era
   };
   function ch5Rates(year) {
     ensure();
@@ -13322,13 +13362,22 @@ requestAnimationFrame(frame);
   function ch5PerBank(choice) { return ch5Dests(choice).reduce(function (a, d) { return a + CH5.intl[d].connecting; }, 0); }
   function cal(y) { return 2025 + y; }
   function crs(v) { return Math.abs(v) >= 1 ? cr(v) : '₹' + Math.max(1, Math.round(v * 100)) + ' lakh'; }   // small sums in lakh
+  function stakeWords(v) {   // the stake, rounded the same way on every screen
+    var a = Math.abs(v || 0);
+    return a >= 1e5 ? '₹' + (a / 1e5).toFixed(2) + ' lakh cr' : '₹' + (Math.round(a / 100) * 100).toLocaleString('en-IN') + ' cr';
+  }
   function andList(a) { return a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]; }
-  function ch5Date(state, year) {   // the player's signing day, in the given game year
+  function ch5Date(state, year) {   // the player's signing day, in the given game year (the chapter's one date set)
     var md = (state.signedOn || '2026-04-01').slice(5);
     var d = new Date(cal(year) + '-' + md + 'T12:00:00Z');
     if (isNaN(d)) d = new Date(Date.UTC(cal(year), 3, 1, 12));
     var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     return {iso: d.toISOString().slice(0, 10), words: days[d.getUTCDay()] + ', ' + d.getUTCDate() + ' ' + MONTHS[d.getUTCMonth()] + ' ' + d.getUTCFullYear()};
+  }
+  function ch5Short(state, id) {   // a document's short name, for the small tags and the handover's links
+    var d = ch5Doc(state, id);
+    return {'feeders-2033': 'Feeder agreement, ' + cal(8), phase1: 'Phase 1 choice, ' + cal(1), 'budget-2034': 'Capital budget, ' + cal(CH5.radarYear)}[id] ||
+      (/^skyward-/.test(id) ? CH5.partner + ' agreement, ' + cal(CH5.year) : d ? d.title : id);
   }
   function ch5Doc(state, id) { return (state.docs || []).filter(function (d) { return d.id === id; })[0] || null; }
   var GULF_SRC = {label: 'AP, "Dubai International Airport, busiest for world travel, sees record 92.3 million passengers in 2024"', url: 'https://www.yahoo.com/news/dubai-international-airport-busiest-world-081648847.html'};
@@ -13347,11 +13396,11 @@ requestAnimationFrame(frame);
     // the three options and what each does to the shift (distinct, visible: 3 departures / 1 / none)
     options: [
       {id: 'three', label: 'Sign for banks to London, Singapore and Nairobi', dests: ['London', 'Singapore', 'Nairobi'], stamp: 'SIGNED',
-        terms: 'Three departures per bank, two banks a day, from {from}.',
+        terms: 'Three departures per bank, two banks a day, from {from}: {cities} cities × 3 destinations = {pairs} new one-stop routes.',
         line: 'If the connections hold. Every passenger who misses one costs you passenger care, and the next flight may go to {rival}.',
         effects: {departures: 3, lucknowCall: true, trailPossible: true}},
       {id: 'london', label: 'Sign for London only', dests: ['London'], stamp: 'SIGNED',
-        terms: 'One London departure per bank, two banks a day, from {from}.',
+        terms: 'One London departure per bank, two banks a day, from {from}: {cities} new one-stop routes.',
         line: 'One route, less to go wrong. Singapore and Nairobi go to {rival}.',
         effects: {departures: 1, lucknowCall: true, trailPossible: true}},
       {id: 'decline', label: 'Decline', dests: [], stamp: 'DECLINED',
@@ -13360,23 +13409,23 @@ requestAnimationFrame(frame);
         effects: {departures: 0, lucknowCall: false, trailPossible: true}}],
     // the incident: two Lucknow feeders land late, 380 passengers for London; hold or go
     incident: {trigger: {from: 'Lucknow', code: 'LKO', flights: 2, lateMin: 25, dest: 'London', pax: 380, holdMin: 20, needs: 'a signed London bank'},
-      hold: 'London leaves {holdMin} minutes late and misses its Heathrow slot: about {holdCost}. The {pax} make it.',
-      go: 'London leaves on time. The {pax} miss it and {rival} wins them: about {lostCost} in passenger care and lost fees, and {partner} is furious.'},
+      hold: 'Hold London {holdMin} minutes: about {holdCost} today in fuel and the Heathrow slot ({holdYear} a year over the {lateDays} or so late days). The {pax} make it.',
+      go: 'Let it go: the {pax} rebook through {rival}, about {lostCost} today ({lostYear} a year), and {partner} drops one of its two daily London flights: {freqYear} a year.'},
     // the paper trail: a past choice resurfacing in this shift (first that applies)
     trails: [
-      {kind: 'stands', when: 'phase 1 built lean and a Skyward bank signed', doc: 'phase1', line: 'You built phase 1 lean: {lean} widebody stands for {need} widebodies.'},
+      {kind: 'stands', when: 'phase 1 built lean and a Skyward bank signed', doc: 'phase1', line: 'Built lean: {lean} widebody stands for {need}.'},
       {kind: 'birds', when: 'the bird radar skipped in the {radarYear} capital budget', doc: 'budget-2034', line: 'You skipped the bird radar.'}],
     // the bill: margin-note lines, cause then effect
     bill: {
-      held: 'You held London for the {from} passengers. On the {lateDays} or so late days a year that costs {holdCost} in Heathrow slots and keeps {kept} passengers off {rival}.',
-      letGo: 'You let London go without the {from} passengers. On the {lateDays} or so late days a year, {kept} people miss it and {rival} wins them.',
+      held: 'You held London for the {from} passengers. On the {lateDays} or so late days a year that costs {holdYear} in fuel and Heathrow slots and keeps {kept} passengers off {rival}.',
+      letGo: 'You let London go without the {from} passengers. On the {lateDays} or so late days a year, {kept} people miss it and {rival} wins them, and {partner} dropped one of its two daily London flights: {freqYear} a year.',
       missed: '{missed} connecting passengers a year miss their flight, at {careCost} in passenger care.',
       stands: 'Widebodies waiting for a stand cost {trailCost} a year in penalties.',
       birds: 'The birds off the lakes cost {trailCost} a year in delays.',
       growThree: '{partner} is adding a Frankfurt flight.',
       growLondon: '{partner} wants to add Singapore.',
       furious: '{partner} is furious, and is adding its next flight at {rival}.',
-      shrink: '{partner} is moving a flight to {rival}.',
+      shrink: '{partner} is moving a flight to {rival}, and {feeder} says it will move its afternoon bank to Delhi if its passengers keep missing flights.',
       declined: 'You declined {partner}. {rival} flies its passengers now, and an Indian city that wants London still changes planes in the Gulf.'},
     // "What really happened", one per chapter (research/history-cards.md as written; 5 from research/dubai.md)
     cards: {
@@ -13390,7 +13439,7 @@ requestAnimationFrame(frame);
         sources: [{label: 'Kempegowda International Airport, Wikipedia', url: 'https://en.wikipedia.org/wiki/BIAL'}]},
       4: {title: 'What really happened', text: 'Since 1998, Atlanta has been the world\'s busiest airport by passengers, every year except 2020. It is Delta\'s main hub: Delta and its regional partners carry about 80% of its passengers, on just over 1,000 flights a day to 225 destinations. Atlanta is not a giant city. Its airport is busy because it is the place where the network connects.',
         sources: [{label: 'Hartsfield–Jackson Atlanta International Airport, Wikipedia', url: 'https://en.wikipedia.org/wiki/Hartsfield%E2%80%93Jackson_Atlanta_International_Airport'}]},
-      5: {title: 'What really happened', text: 'In 1985 Dubai\'s government gave a new airline, Emirates, US$10 million and two leased aircraft; its first flight left Dubai for Karachi on 25 October that year. By 2024 Dubai International handled a record 92.3 million passengers, and India was its biggest market, at about 12 million.',
+      5: {title: 'What really happened', text: 'In 1985 Dubai\'s government gave a new airline, Emirates, US$10 million and two leased aircraft; its first flight left Dubai for Karachi on 25 October that year. By 2024 Dubai International handled a record 92.3 million passengers, and India was its biggest market, at about 12 million. It has been the world\'s busiest airport for international travel for a decade, ahead of London Heathrow. Like Atlanta, it is busy because it is where the network connects, not because of the city around it.',
         sources: [{label: 'Gulf News, "40 years of UAE: the launch of Emirates Airline"', url: 'https://gulfnews.com/news/uae/government/40-years-of-uae-the-launch-of-emirates-airline-1.920215'}, GULF_SRC]},
       6: {title: 'What really happened', variants: {
         airline: {text: '"On 17 April 2019, Jet Airways suspended all flight operations after lenders spurned an emergency funding request." Indian Oil had already stopped its fuel over unpaid dues.',
@@ -13428,33 +13477,41 @@ requestAnimationFrame(frame);
     st.ch5 = {};
     st.radar = radar;
     st.docs = [
-      {id: 'concession', title: 'Concession Agreement', year: 0, kind: 'agreement', stamp: 'EXECUTED',
+      {id: 'concession', title: 'Concession Agreement', year: 0, date: st.signedOn || ch5Date(st, 1).iso, kind: 'agreement', stamp: 'EXECUTED',
         summary: 'Sixty years to build and run Vikram Sarabhai International, signed by ' + (st.founder || 'the director') + ' for ' + st.parent + ', with AAI, the State through MADC and L5 Capital.'},
-      {id: 'phase1', title: 'Phase 1 choice, ' + cal(1), year: 1, kind: 'phase1', stamp: 'APPROVED',
+      {id: 'phase1', title: 'Phase 1 choice, ' + cal(1), year: 1, date: ch5Date(st, 1).iso, kind: 'phase1', stamp: 'APPROVED',
         summary: phase1 === 'lean' ? 'You built phase 1 lean: ' + ph.cap + ' million passengers a year and ' + CH5.stands.lean + ' widebody stands at the international pier, for ' + cr(ph.cost) + '.' :
           'You built phase 1 big: ' + ph.cap + ' million passengers a year and ' + CH5.stands.need + ' widebody stands at the international pier, for ' + cr(ph.cost) + '.'},
-      {id: 'budget-2034', title: 'Capital budget, ' + cal(CH5.radarYear), year: CH5.radarYear, kind: 'budget', stamp: 'APPROVED',
+      {id: 'budget-2034', title: 'Capital budget, ' + cal(CH5.radarYear), year: CH5.radarYear, date: ch5Date(st, CH5.radarYear).iso, kind: 'budget', stamp: 'APPROVED',
         summary: radar === 'bought' ? 'You bought the bird radar for ' + cr(CH5.radarCr * Math.pow(1 + P.cpi_forward, CH5.radarYear - 1)) + '. It watches the lakes east of runway 3.' :
           'You skipped the bird radar and saved ' + cr(CH5.radarCr * Math.pow(1 + P.cpi_forward, CH5.radarYear - 1)) + '. Nobody watches the lakes east of runway 3.'},
-      {id: 'feeders-2033', title: 'Feeder agreement with ' + CH5.feederAirline + ', ' + cal(8), year: 8, kind: 'route-agreement', stamp: 'SIGNED',
+      {id: 'feeders-2033', title: 'Feeder agreement with ' + CH5.feederAirline + ', ' + cal(8), year: 8, date: ch5Date(st, 8).iso, kind: 'route-agreement', stamp: 'SIGNED',
         summary: CH5.feederAirline + ' flies ' + CH5.feeders.length + ' Indian cities into VSI in one bank each afternoon, timed so its passengers can change planes here.'}];
     st.ch5.rates = {perConnectionCr: r.perConnectionCr, missedCostCr: r.missedCostCr, holdCostCr: r.holdCostCr};
     return st;
   }
-  function ch5Choices(state) {
+  function ch5Choices(state) {   // each line's banks a year at the first Skyward year's prices, if every connection holds
     var r = ch5Rates(CH5.banksFrom), days = P.p2a;
     return ['three', 'london', 'decline'].map(function (id) {
       var day = ch5PerBank(id) * CH5.banksPerDay, yr = day * days * r.perConnInr / 1e7;
       return {id: id, day: day, yearCr: yr};
     });
   }
+  // the player's stake at the end of the era (eraYears(4)[2]) with the given Skyward banks (null: none), for the
+  // counterfactuals on the slip and the bill
+  function ch5StakeAt(state, hub) {
+    var s = clone(state.s); delete s.hub; if (hub) s.hub = hub;
+    var eng = simulate(s, eraYears(4)[2]), row = eng.rows[eng.rows.length - 1];
+    return eng.step_in ? 0 : stakeValue(eng, row) * state.stake / 100;
+  }
+  function ch5Hub(yearCr, costCr, growth) { return {from: CH5.banksFrom, until: eraYears(4)[2], incCr: yearCr, costCr: costCr || 0, growth: growth || 0}; }
   function ch5FrontPage(state) {
     ensure();
     var eng = simulate(state.s, CH5.year - 1), last = eng.rows[eng.rows.length - 1], d = ch5Date(state, CH5.year);
     var paxM = last ? Math.round(last.pax) : 0, lr = state.lastReport || {}, F = CH5_SCRIPT.frontPage;
     var v = {feeder: CH5.feederAirline, cities: CH5.feeders.length, company: state.parent, paxM: paxM, lastYear: cal(CH5.year - 1),
       coverLine: lr.cover != null ? 'In its hardest recent year VSI earned ' + coverWords(lr.cover).replace(' earned', '') + ' to its banks.' : 'VSI has no loan payments due.',
-      stake: state.stake, stakeValue: cr(lr.stakeValueCr || 0), stands: state.phase1 === 'big' ? CH5.stands.need : CH5.stands.lean};
+      stake: state.stake, stakeValue: stakeWords(lr.stakeValueCr || 0), stands: state.phase1 === 'big' ? CH5.stands.need : CH5.stands.lean};
     return {masthead: F.masthead, dateLine: d.words + ' · Nagpur', price: F.price, lead: F.lead, deck: fill(F.deck, v),
       sub: {head: F.sub.head, body: fill(F.sub.body, v)},
       columns: F.columns.map(function (c) { return {head: c.head, body: fill(c.body, v)}; }),
@@ -13465,22 +13522,25 @@ requestAnimationFrame(frame);
   function ch5Decision(state) {
     ensure();
     var cs = ch5Choices(state), by = {}; cs.forEach(function (c) { by[c.id] = c; });
-    var lean = state.phase1 !== 'big', d = ch5Date(state, CH5.year);
+    var lean = state.phase1 !== 'big', d = ch5Date(state, CH5.year), y1 = eraYears(4)[2];
     var standLine = lean ? 'Skyward\'s afternoon bank needs ' + CH5.stands.need + ' widebody stands at the international pier. Your phase 1 built ' + CH5.stands.lean + '; the other widebodies will wait on the taxiways.' :
       'Skyward\'s afternoon bank needs ' + CH5.stands.need + ' widebody stands at the international pier. Your phase 1 built ' + CH5.stands.need + '.';
-    var vv = {rival: CH5.rival, partner: CH5.partner, from: cal(CH5.banksFrom)};
+    var vv = {rival: CH5.rival, partner: CH5.partner, from: cal(CH5.banksFrom), cities: CH5.feeders.length, pairs: CH5.feeders.length * 3};
+    var base = ch5StakeAt(state, null);
     function slip(id) {
       var c = by[id], o = ch5Opt(id);
-      if (id === 'decline') return {big: 'No new connections', money: '₹0 a year', line: fill(o.line, vv)};
-      return {big: '+' + c.day.toLocaleString('en-IN') + ' connections a day', money: cr(c.yearCr) + ' a year', line: fill(o.line, vv)};
+      if (id === 'decline') return {big: 'No new connections', money: '₹0 a year', stake: 'your ' + state.stake + '%: no change', line: fill(o.line, vv)};
+      var gain = ch5StakeAt(state, ch5Hub(c.yearCr)) - base;
+      return {big: '+' + c.day.toLocaleString('en-IN') + ' connections a day', money: cr(c.yearCr) + ' a year',
+        stake: 'your ' + state.stake + '%: +' + stakeWords(gain) + ' by ' + cal(y1), line: fill(o.line, vv)};
     }
-    return {docType: 'route-agreement', docId: 'skyward-' + cal(CH5.year), title: 'Route agreement: ' + CH5.partner + ' at Vikram Sarabhai International', date: d.iso,
+    return {docType: 'route-agreement', docId: 'skyward-' + cal(CH5.year), title: 'Route agreement: ' + CH5.partner + ' at Vikram Sarabhai International', date: d.iso, dateWords: d.words,
       parties: {airport: 'Vikram Sarabhai International Airport Limited (VSIAL)', airline: CH5.partner, signatory: CH5.signatory},
       body: [
         CH5.partner + ' will base long-haul flights at VSI from ' + cal(CH5.banksFrom) + ', timed to leave after ' + CH5.feederAirline + '\'s afternoon feeder bank, so passengers from ' + CH5.feeders.length + ' Indian cities can change planes here.',
+        CH5.rival + ' has offered ' + CH5.partner + ' the same banks, with a ' + CH5.rivalMctMin + '-minute connection. At VSI the connection is ' + CH5.mctMin + ' minutes, on one pier, on Indian soil.',
         'VSIAL undertakes that connecting passengers make their flights. When a feeder bank runs late, the duty manager may hold a departure, at VSIAL\'s cost.',
-        standLine,
-        'Each bank runs twice a day. VSIAL earns the passenger fee, the landing fee and what connecting passengers spend in the terminal.'],
+        standLine],
       choices: CH5_SCRIPT.options.map(function (o) { return {id: o.id, label: o.label, terms: fill(o.terms, vv), slip: slip(o.id), effects: o.effects}; }),
       stamps: {three: 'SIGNED', london: 'SIGNED', decline: 'DECLINED'}};
   }
@@ -13491,10 +13551,10 @@ requestAnimationFrame(frame);
     state.ch5 = state.ch5 || {};
     state.ch5.choice = id;
     var c = ch5Choices(state).filter(function (x) { return x.id === id; })[0];
-    var doc = {id: 'skyward-' + cal(CH5.year), title: 'Route agreement with ' + CH5.partner + ', ' + cal(CH5.year), year: CH5.year, kind: 'route-agreement',
+    var doc = {id: 'skyward-' + cal(CH5.year), title: 'Route agreement with ' + CH5.partner + ', ' + cal(CH5.year), year: CH5.year, date: ch5Date(state, CH5.year).iso, kind: 'route-agreement',
       stamp: id === 'decline' ? 'DECLINED' : 'SIGNED',
-      summary: id === 'three' ? 'You signed ' + CH5.partner + ' for banks to London, Singapore and Nairobi: ' + c.day.toLocaleString('en-IN') + ' connections a day, worth about ' + cr(c.yearCr) + ' a year if they hold.' :
-        id === 'london' ? 'You signed ' + CH5.partner + ' for London only: ' + c.day.toLocaleString('en-IN') + ' connections a day, worth about ' + cr(c.yearCr) + ' a year if they hold.' :
+      summary: id === 'three' ? 'You signed ' + CH5.partner + ' for banks to London, Singapore and Nairobi from ' + cal(CH5.banksFrom) + ': ' + c.day.toLocaleString('en-IN') + ' connections a day, worth about ' + cr(c.yearCr) + ' a year if they hold.' :
+        id === 'london' ? 'You signed ' + CH5.partner + ' for London only from ' + cal(CH5.banksFrom) + ': ' + c.day.toLocaleString('en-IN') + ' connections a day, worth about ' + cr(c.yearCr) + ' a year if they hold.' :
         'You declined ' + CH5.partner + '. Its long-haul flights went to ' + CH5.rival + '.'};
     state.docs = (state.docs || []).filter(function (x) { return x.id !== doc.id; }).concat([doc]);
     return state;
@@ -13506,21 +13566,29 @@ requestAnimationFrame(frame);
     if (state.radar !== 'bought') { var b = ch5Doc(state, 'budget-2034'); var bl = CH5_SCRIPT.trails[1].line, bdt = b ? b.title : 'Capital budget'; return {kind: 'birds', doc: bdt, line: bl, id: 'birds', docId: 'budget-2034', tag: {doc: bdt, line: bl}}; }
     return null;
   }
+  // the hold call's stakes, today and over a year, from the same rates the bill uses (the shift is in the first Skyward year)
+  function ch5HoldMoney(r) {
+    var H = CH5.hub, days = P.p2a, L = CH5.intl[H.dest];
+    return {holdCr: r.holdInr / 1e7, holdYearCr: r.holdInr * CH5.lateDaysPerYear / 1e7,
+      lostCr: H.pax * (r.perConnInr + r.careInr) / 1e7, lostYearCr: H.pax * (r.perConnInr + r.careInr) * CH5.lateDaysPerYear / 1e7,
+      freqYearCr: L.connecting * days * r.perConnInr / 1e7};
+  }
   function ch5ShiftPlan(state) {
     ensure();
-    var choice = (state.ch5 && state.ch5.choice) || 'decline', r = ch5Rates(CH5.year), dests = ch5Dests(choice);
+    var choice = (state.ch5 && state.ch5.choice) || 'decline', r = ch5Rates(CH5.banksFrom), dests = ch5Dests(choice);
     var intl = dests.map(function (d) { var x = CH5.intl[d]; return {id: 'SKW-' + x.code, dest: d, code: x.code, std: x.std, aircraft: x.aircraft, connecting: x.connecting}; });
-    var tr = ch5Trail(state), sky = 'skyward-' + cal(CH5.year), skyDoc = ch5Doc(state, sky), fdoc = ch5Doc(state, 'feeders-2033');
-    var tags = [{docId: 'feeders-2033', doc: fdoc ? fdoc.title : 'Feeder agreement', line: CH5.feederAirline + '\'s bank: ' + CH5.feeders.length + ' cities, ' + CH5.feederFrom + '–' + CH5.feederTo + '.', anchor: 'transfer'}];
-    if (dests.length) tags.push({docId: sky, doc: skyDoc ? skyDoc.title : 'Route agreement', line: CH5.partner + '\'s bank: ' + ch5PerBank(choice).toLocaleString('en-IN') + ' connecting to ' + andList(dests) + '.', anchor: 'intl-pier'});
-    else tags.push({docId: sky, doc: skyDoc ? skyDoc.title : 'Route agreement', line: 'You declined. ' + CH5.partner + ' flies from ' + CH5.rival + ' today.', anchor: 'intl-pier'});
+    var tr = ch5Trail(state), sky = 'skyward-' + cal(CH5.year);
+    // tags are small (§4: about 120px): a short name of the document and one line; clicking opens the full document
+    var tags = [{docId: 'feeders-2033', doc: 'Feeder agreement, ' + cal(8), line: CH5.feeders.length + ' cities, ' + CH5.feederFrom + '–' + CH5.feederTo + '.', anchor: 'transfer'}];
+    if (dests.length) tags.push({docId: sky, doc: CH5.partner + ' agreement, ' + cal(CH5.year), line: ch5PerBank(choice).toLocaleString('en-IN') + ' connecting a bank, ' + dests.length + (dests.length > 1 ? ' departures.' : ' departure.'), anchor: 'intl-pier'});
+    else tags.push({docId: sky, doc: CH5.partner + ' agreement, ' + cal(CH5.year), line: 'Declined: ' + CH5.partner + ' flies from ' + CH5.rival + '.', anchor: 'intl-pier'});
     if (tr) tags.push({docId: tr.docId, doc: tr.tag.doc, line: tr.tag.line, anchor: tr.id === 'stands' ? 'stands' : 'runway'});
-    var H = CH5.hub, lostCr = H.pax * (r.perConnInr + r.careInr) / 1e7;
+    var H = CH5.hub, m = ch5HoldMoney(r), hv = {holdMin: H.holdMin, pax: H.pax, rival: CH5.rival, partner: CH5.partner, lateDays: CH5.lateDaysPerYear,
+      holdCost: crs(m.holdCr), holdYear: crs(m.holdYearCr), lostCost: crs(m.lostCr), lostYear: crs(m.lostYearCr), freqYear: crs(m.freqYearCr)};
     var hub = dests.indexOf(H.dest) < 0 ? null : {id: 'feeder-late', from: H.from, code: H.code, flights: 2, lateMin: H.lateMin, dest: H.dest, pax: H.pax, holdMin: H.holdMin,
-      holdCostCr: r.holdCostCr, letGoLostCr: lostCr,
-      holdLine: fill(CH5_SCRIPT.incident.hold, {holdMin: H.holdMin, holdCost: crs(r.holdCostCr), pax: H.pax}),
-      letGoLine: fill(CH5_SCRIPT.incident.go, {pax: H.pax, rival: CH5.rival, lostCost: crs(lostCr), partner: CH5.partner})};
-    return {level: 3, year: CH5.year,
+      holdCostCr: m.holdCr, letGoLostCr: m.lostCr,
+      holdLine: fill(CH5_SCRIPT.incident.hold, hv), letGoLine: fill(CH5_SCRIPT.incident.go, hv)};
+    return {level: 3, year: CH5.banksFrom,
       feeder: {airline: CH5.feederAirline, cities: CH5.feeders.map(function (c) { return {code: c[1], name: c[0]}; }), from: CH5.feederFrom, to: CH5.feederTo, flights: CH5.feederFlights, paxEach: CH5.feederPaxEach},
       intl: intl,
       rates: {perConnectionCr: r.perConnectionCr, missedCostCr: r.missedCostCr, rival: CH5.rival},
@@ -13528,7 +13596,7 @@ requestAnimationFrame(frame);
       stands: {need: CH5.stands.need, have: state.phase1 === 'big' ? CH5.stands.need : CH5.stands.lean}};
   }
   function ch5Briefing(state) {
-    var plan = ch5ShiftPlan(state), d = ch5Date(state, CH5.year), sky = 'skyward-' + cal(CH5.year), lines = [];
+    var plan = ch5ShiftPlan(state), d = ch5Date(state, CH5.banksFrom), sky = 'skyward-' + cal(CH5.year), lines = [];
     var lon = plan.intl.filter(function (x) { return x.dest === 'London'; })[0];
     lines.push(lon ? {text: CH5.partner + '\'s London bank departs ' + lon.std + ' · ' + lon.connecting + ' connecting', docId: sky} :
       {text: 'No ' + CH5.partner + ' bank today: it flies from ' + CH5.rival, docId: sky});
@@ -13537,8 +13605,8 @@ requestAnimationFrame(frame);
     lines.push(tr && tr.id === 'stands' ? {text: CH5.stands.lean + ' widebody stands at the international pier for ' + CH5.stands.need + ' widebodies', docId: 'phase1'} :
       tr && tr.id === 'birds' ? {text: 'No bird radar: the lakes east of runway 3 are unwatched', docId: 'budget-2034'} :
       {text: 'Bird radar on, and a stand for every widebody', docId: 'budget-2034'});
-    lines.forEach(function (l) { var x = ch5Doc(state, l.docId); l.doc = x ? x.title : l.docId; });
-    return {title: 'Duty manager\'s handover', date: d.iso, lines: lines,
+    lines.forEach(function (l) { var x = ch5Doc(state, l.docId); l.doc = x ? x.title : l.docId; l.ref = ch5Short(state, l.docId); });
+    return {title: 'Duty manager\'s handover', date: d.words, lines: lines,
       watch: plan.hub ? 'The ' + CH5.hub.from + ' flights. If they run late, ' + CH5.hub.pax + ' people miss London.' : 'The feeder bank: get every domestic connection made.',
       autoStartSec: 6};
   }
@@ -13547,7 +13615,7 @@ requestAnimationFrame(frame);
     state = clone(state);
     result = result || {};
     state.ch5 = state.ch5 || {};
-    var choice = state.ch5.choice || 'decline', plan = ch5ShiftPlan(state), r = ch5Rates(CH5.banksFrom), days = P.p2a;
+    var choice = state.ch5.choice || 'decline', plan = ch5ShiftPlan(state), r = ch5Rates(CH5.banksFrom), days = P.p2a, perDay = CH5.banksPerDay;
     var made = 0, missed = 0, bd = result.byDest || {};
     var dests = Object.keys(bd);
     // money comes from Skyward connections only: the international departures hub.js reports in byDest
@@ -13555,13 +13623,15 @@ requestAnimationFrame(frame);
     if (choice === 'decline') { made = 0; missed = 0; }
     else if (dests.length) dests.forEach(function (k) { made += bd[k].made || 0; missed += bd[k].missed || 0; });
     else { made = result.made || 0; missed = result.missed || 0; }
-    var H = plan.hub, held = !!(H && result.held && result.held[H.dest]);
-    // the sample day without the late Lucknow flights, every bank of the year; the Lucknow call on the late days
+    var dom = result.domestic || {}, domMadeYr = Math.round((dom.made || 0) * perDay * days), domMissYr = Math.round((dom.missed || 0) * perDay * days);
+    var H = plan.hub, held = !!(H && result.held && result.held[H.dest]), letGo = !!(H && !held), hm = ch5HoldMoney(r);
     // a normal day: the Lucknow flights are on time, so their passengers connect without a hold. On the late days the
-    // 380 make London (held, at a slot cost) or miss it (let go)
-    var incMiss = H && !held ? Math.min(missed, H.pax) : 0;
-    var perDay = CH5.banksPerDay, normMade = made + incMiss, normMiss = missed - incMiss;
-    var madeYr = normMade * perDay * days - incMiss * CH5.lateDaysPerYear;
+    // 380 make London (held, at a slot cost) or miss it (let go); let go, and Skyward drops one of its two daily London
+    // flights for the era, with its connections
+    var incMiss = letGo ? Math.min(missed, H.pax) : 0;
+    var normMade = made + incMiss, normMiss = missed - incMiss;
+    var freqLost = letGo ? CH5.intl[H.dest].connecting * days : 0;
+    var madeYr = Math.max(0, normMade * perDay * days - incMiss * CH5.lateDaysPerYear - freqLost);
     var missYr = normMiss * perDay * days + incMiss * CH5.lateDaysPerYear;
     var holdsYr = H && held ? CH5.lateDaysPerYear : 0;
     var tr = plan.trail, trailMin = tr && result.trail && result.trail.happened ? Math.max(0, result.trail.minutesLost || 0) : 0;
@@ -13570,17 +13640,15 @@ requestAnimationFrame(frame);
     var careCr = missYr * r.careInr / 1e7, holdCr = holdsYr * r.holdInr / 1e7, trailCr = trailMin * r.standMinInr * trailDays / 1e7;
     var spentCr = careCr + holdCr + trailCr;
     var share = made + missed > 0 ? made / (made + missed) : null;
-    // route growth (est.): connections that hold bring new flights; misses send them to the rival
-    // the share that counts on a normal day (the Lucknow call is on the late days only)
     var normShare = normMade + normMiss > 0 ? normMade / (normMade + normMiss) : null;
     var yrShare = madeYr + missYr > 0 ? madeYr / (madeYr + missYr) : null;
-    // route growth (est.), a year through the era: connections that hold bring new flights, misses send them to Doha,
-    // and a partner whose flagship left without 380 of its passengers is slow to add more
-    var growth = yrShare == null ? 0 : Math.max(-0.12, Math.min(0.12, (yrShare - 0.9) * 2.4 - (H && !held ? CH5.letGoGrowthHit : 0)));
-    state.s.hub = {from: CH5.banksFrom, until: eraYears(state.era)[2], incCr: earnedCr, costCr: spentCr, growth: growth};
+    // route growth (est.), a year through the era: connections that hold bring new flights, misses send them to Doha;
+    // a partner whose flagship left without 380 of its passengers is slow to add more (after the cap, so it always shows)
+    var growth = yrShare == null ? 0 : Math.max(-0.12, Math.min(0.12, (yrShare - 0.9) * 2.4)) - (letGo ? CH5.letGoGrowthHit : 0);
+    state.s.hub = choice === 'decline' ? null : ch5Hub(earnedCr, spentCr, growth);
+    if (!state.s.hub) delete state.s.hub;
     var otp = result.otp != null ? result.otp : 0.85;
-    // the whole shift's connections (domestic too, if hub.js reports them) move the Mall and passenger care for the era;
-    // one bank of the day, so a quarter weight
+    // the whole shift's connections (domestic too) move the Mall and passenger care for the era; one bank of the day, so a quarter weight
     var allShare = result.made != null && result.made + (result.missed || 0) > 0 ? result.made / (result.made + (result.missed || 0)) : normShare;
     var cx = allShare == null ? 0.9 : Math.max(0.6, Math.min(0.97, 0.9 + (allShare - 0.9) * 0.25));
     var shift = {level: plan.level, stars: result.stars != null ? result.stars : 2, otp: otp, cx: cx, safety: 100};
@@ -13588,38 +13656,51 @@ requestAnimationFrame(frame);
     var eng = simulate(st.s, eraYears(4)[2]);
     var hubRows = eng.rows.filter(function (x) { return x.year >= CH5.banksFrom && x.year <= eraYears(4)[2]; });
     var hubEarned = hubRows.reduce(function (a, x) { return a + x.hubInc; }, 0), hubSpent = hubRows.reduce(function (a, x) { return a + x.hubCost; }, 0);
+    // the banks' number for the years Skyward flies (the era's worst year is 2039, before the first bank)
+    var cov = null; hubRows.forEach(function (x) { if (x.dscr != null && (cov == null || x.dscr < cov)) cov = x.dscr; });
     var y1 = cal(eraYears(4)[2]);
+    // what the decision did to the player's stake: with and without Skyward, the same year
+    var stakeNow = rep.stakeValueCr, stakeThen = (state.lastReport || {}).stakeValueCr;
+    var alt = choice === 'decline' ? ch5StakeAt(st, ch5Hub(ch5Choices(st)[0].yearCr)) : ch5StakeAt(st, null), delta = choice === 'decline' ? alt - stakeNow : stakeNow - alt;
+    var pct = st.stake + '%', who = st.parent || 'Your company';
+    var lead = choice === 'decline' ?
+      'Declining ' + CH5.partner + ' kept the risk off your books, and passed up about ' + stakeWords(delta) + ' on your ' + pct + ' by ' + y1 + ', had the three banks held.' :
+      'Signing ' + CH5.partner + (delta >= 0 ? ' added about ' + stakeWords(delta) + ' to ' : ' cost about ' + stakeWords(-delta) + ' off ') + 'your ' + pct + ' of VSIAL by ' + y1 + '.';
+    var stakeLine = who + ' owns ' + pct + ' of VSIAL, worth about ' + stakeWords(stakeNow) + ' in ' + y1 + (stakeThen != null ? ', up from ' + stakeWords(stakeThen) + ' in ' + cal(CH5.year) + ' as the airport grew' : '') + '. ' +
+      (choice === 'decline' ? 'With ' + CH5.partner + '\'s three banks: about ' + stakeWords(alt) + '.' : 'Without ' + CH5.partner + ': about ' + stakeWords(alt) + '.');
     // the margin note: cause and effect, in the adviser's hand
     var margin, routes = [];
-    var BL = CH5_SCRIPT.bill, mv = {from: H ? H.from : '', lateDays: CH5.lateDaysPerYear, holdCost: cr(holdCr), kept: H ? (H.pax * CH5.lateDaysPerYear).toLocaleString('en-IN') : '',
-      rival: CH5.rival, partner: CH5.partner, missed: Math.round(normMiss * perDay * days).toLocaleString('en-IN'), careCost: cr(normMiss * perDay * days * r.careInr / 1e7), trailCost: cr(trailCr)};
+    var BL = CH5_SCRIPT.bill, mv = {from: H ? H.from : '', lateDays: CH5.lateDaysPerYear, holdYear: cr(holdCr), kept: H ? (H.pax * CH5.lateDaysPerYear).toLocaleString('en-IN') : '',
+      rival: CH5.rival, partner: CH5.partner, feeder: CH5.feederAirline, freqYear: cr(freqLost * r.perConnInr / 1e7),
+      missed: Math.round(normMiss * perDay * days).toLocaleString('en-IN'), careCost: cr(normMiss * perDay * days * r.careInr / 1e7), trailCost: cr(trailCr)};
     if (choice === 'decline') margin = fill(BL.declined, mv);
     else {
       var bits = [];
       if (H) bits.push(fill(held ? BL.held : BL.letGo, mv));
       if (normMiss * perDay * days * r.careInr / 1e7 >= 1) bits.push(fill(BL.missed, mv));
       if (trailCr >= 1) bits.push(fill(tr.kind === 'stands' ? BL.stands : BL.birds, mv));
-      if (growth >= 0.05 && choice === 'three') { routes.push('Frankfurt'); bits.push(fill(BL.growThree, mv)); }
+      if (letGo) bits.push(fill(BL.furious, mv));
+      else if (growth >= 0.05 && choice === 'three') { routes.push('Frankfurt'); bits.push(fill(BL.growThree, mv)); }
       else if (growth >= 0.05) { routes.push('Singapore'); bits.push(fill(BL.growLondon, mv)); }
-      else if (H && !held) bits.push(fill(BL.furious, mv));
       else if (growth < 0) bits.push(fill(BL.shrink, mv));
       margin = bits.join(' ');
     }
     var paragraph = choice === 'decline' ?
-      'In ' + y1 + ' Vikram Sarabhai International ran its domestic banks only. ' + CH5.partner + ' built its Indian traffic through ' + CH5.rival + '. The airport stayed full and the loans were paid, but nothing new was added to the network.' :
+      'In ' + y1 + ' Vikram Sarabhai International ran its domestic banks only: ' + domMadeYr.toLocaleString('en-IN') + ' passengers a year changed between ' + CH5.feederAirline + '\'s flights here' + (domMissYr ? ', and ' + domMissYr.toLocaleString('en-IN') + ' missed theirs' : '') + '. ' + CH5.partner + ' built its Indian traffic through ' + CH5.rival + '.' :
       'From ' + cal(CH5.banksFrom) + ', ' + CH5.partner + ' flew ' + andList(ch5Dests(choice)) + ' out of VSI twice a day. ' +
-      Math.round(madeYr).toLocaleString('en-IN') + ' passengers a year changed planes here instead of in the Gulf' + (missYr >= 1 ? ', and ' + Math.round(missYr).toLocaleString('en-IN') + ' missed their flight' : '') + '. ' +
-      'Over ' + cal(CH5.banksFrom) + '–' + y1 + ' the connections earned ' + cr(hubEarned) + ' and cost ' + cr(hubSpent) + '.';
-    var bill = {title: 'Annual report, ' + y1, year: y1, paragraph: paragraph, per: 'a year, from ' + cal(CH5.banksFrom),
-      table: [{label: 'Earned', cr: Math.round(earnedCr)}, {label: 'Spent', cr: Math.round(spentCr)}, {label: 'Connections', made: Math.round(madeYr), missed: Math.round(missYr)}],
-      margin: margin, routes: routes,
-      cover: {ratio: rep.coverWorstExact == null ? null : Math.floor(rep.coverWorstExact * 100 + 1e-9) / 100, words: coverWords(rep.coverWorstExact), light: rep.light},
-      stake: {pct: rep.stakePct, valueCr: rep.stakeValueCr},
+      Math.round(madeYr).toLocaleString('en-IN') + ' passengers a year changed planes here instead of in the Gulf' + (missYr >= 1 ? ', and ' + Math.round(missYr).toLocaleString('en-IN') + ' missed their flight' : '') + '.';
+    var table = choice === 'decline' ? [] : [{label: 'Earned', cr: Math.round(earnedCr)}, {label: 'Spent', cr: Math.round(spentCr)}, {label: 'Connections to ' + CH5.partner, made: Math.round(madeYr), missed: Math.round(missYr)}];
+    table.push({label: 'Domestic connections', made: domMadeYr, missed: domMissYr});
+    var bill = {title: 'Annual report, ' + y1, year: y1, lead: lead, paragraph: paragraph, per: 'a year, from ' + cal(CH5.banksFrom),
+      table: table, margin: margin, routes: routes,
+      cover: {ratio: cov == null ? null : Math.floor(cov * 100 + 1e-9) / 100, words: coverWords(cov), light: lightOf(cov), years: cal(CH5.banksFrom) + '–' + y1},
+      stake: {pct: rep.stakePct, valueCr: stakeNow, withoutCr: choice === 'decline' ? null : Math.round(alt), passedUpCr: choice === 'decline' ? Math.round(delta) : null, deltaCr: Math.round(delta), words: stakeLine},
+      signed: {name: st.founder || 'Asha Rao', title: 'Director, for ' + (st.parent || 'Meridian Infra')},
       era: {earnedCr: Math.round(hubEarned), spentCr: Math.round(hubSpent), growthPct: Math.round(growth * 1000) / 10}};
     var card = ch5Card(5);
     st.ch5.result = {made: made, missed: missed, held: held, share: share, growth: growth};
     st.ch5.bill = bill;
-    st.docs = (st.docs || []).concat([{id: 'report-' + y1, title: 'Annual report, ' + y1, year: eraYears(4)[2], kind: 'report', stamp: 'FILED', summary: margin || paragraph}]);
+    st.docs = (st.docs || []).concat([{id: 'report-' + y1, title: 'Annual report, ' + y1, year: eraYears(4)[2], date: ch5Date(st, eraYears(4)[2]).iso, kind: 'report', stamp: 'FILED', summary: margin || paragraph}]);
     return {state: st, bill: bill, card: card, report: rep};
   }
   var ch5 = {script: CH5_SCRIPT, card: ch5Card, fixture: ch5Fixture, frontPage: ch5FrontPage, decision: ch5Decision, applyDecision: ch5ApplyDecision, briefing: ch5Briefing,
@@ -14965,6 +15046,10 @@ const CSS5=`
 .z5-dec .zdk-note .big{display:block;font-family:var(--fh);font-weight:700;font-size:34px;line-height:1.05;margin:6px 0 4px;color:var(--zt)}
 .z5-dec .zdk-note .mon{display:block;font-family:var(--fh);font-size:21px;line-height:1.2}
 .z5-dec .zdk-note .dim{color:var(--zpe)}
+.z5-dec .zdk-note{width:min(300px,calc(100% - 30px))}
+.z5-sl{margin:10px 0 0;padding:0 0 0 10px;border-left:3px solid transparent;color:#55595e;font-size:15px;line-height:1.3}
+.z5-sl b{display:block;font-weight:700;font-size:15.5px;color:#3b3f44}.z5-sl span{display:block}
+.z5-sl.on{border-left-color:var(--zr);color:#1d2024}.z5-sl.on b{color:var(--zt);font-size:17px}
 .zdk-card.z5c{cursor:pointer;pointer-events:auto}.zdk-card.z5c:hover span{color:var(--zr)}
 .z5 .zdk-pile{pointer-events:auto}
 /* 7.3 the briefing: a torn notepad sheet pinned top-left over the live ops view (not a modal) */
@@ -14980,7 +15065,7 @@ const CSS5=`
 .z5-pad li{position:relative;margin:0 0 6px}
 .z5-pad li::before{content:counter(list-item) '.';position:absolute;left:-22px;top:1px;font-family:var(--fh);font-size:16px;color:#3b3f44}
 .z5-pad li .h{display:block;font-family:var(--fh);font-size:16.5px;line-height:1.52;color:#22262b}
-.z5-ref{display:inline;font-family:var(--ft);font-size:11.5px;color:var(--zpe);text-decoration:underline;text-underline-offset:2px;padding:0;cursor:pointer}
+.z5-ref{display:block;width:fit-content;margin-left:auto;text-align:right;font-family:var(--ft);font-size:11.5px;color:var(--zpe);text-decoration:underline;text-underline-offset:2px;padding:0;cursor:pointer}
 .z5-ref:hover{color:var(--zr)}
 .z5-watch{margin:8px 0 4px}
 .z5-watch small{display:block;font-family:var(--ft);font-size:11.5px;color:var(--zpe)}
@@ -14989,18 +15074,20 @@ const CSS5=`
 .z5-pad footer button{background:var(--zt);color:#fcfcf9;font-family:var(--f-sign);font-weight:700;font-size:16px;padding:7px 14px;border-radius:2px}
 .z5-pad footer span{font-family:var(--ft);font-size:11.5px;color:var(--zpe)}
 /* the paper trail: tags pinned to the map */
-#z5Tags{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden}
-.z5-tag{position:absolute;left:0;top:0;width:0;height:0;will-change:transform}
+#z5Tags{position:absolute;inset:0;z-index:3;pointer-events:none;overflow:hidden}
+.z5-tag{position:absolute;left:0;top:0;width:0;height:0;will-change:transform;--cx:14px;--cy:-74px}
 .z5-tag[hidden]{display:none}
-.z5-tag .an{position:absolute;left:-5px;top:-5px;width:10px;height:10px;border-radius:50%;background:#c22a2e;box-shadow:0 0 0 2px #fcfcf9,0 1px 4px rgba(0,0,0,.6)}
-.z5-tag .th{position:absolute;left:0;bottom:0;width:0;height:30px;border-left:1.5px solid rgba(252,252,249,.85)}
-.z5-tag button{position:absolute;left:-14px;bottom:28px;width:126px;box-sizing:border-box;padding:12px 10px 8px 12px;text-align:left;background:#fcfcf9;color:#1d2024;pointer-events:auto;cursor:pointer;transform:rotate(-2deg);box-shadow:0 8px 16px rgba(0,0,0,.45),0 1px 2px rgba(0,0,0,.4)}
-.z5-tag button::before{content:'';position:absolute;left:10px;top:-5px;width:10px;height:10px;border-radius:50%;background:#c22a2e;box-shadow:inset -2px -2px 0 rgba(0,0,0,.22),0 2px 3px rgba(0,0,0,.45)}
+.z5-tag .an{position:absolute;left:-6px;top:-6px;width:12px;height:12px;border-radius:50%;background:#c22a2e;box-shadow:0 0 0 2px #fcfcf9,0 1px 4px rgba(0,0,0,.6);pointer-events:auto;cursor:pointer}
+.z5-tag .th{position:absolute;left:0;top:0;width:var(--tl,0);height:1.5px;margin-top:-.75px;background:rgba(252,252,249,.85);transform:rotate(var(--ta,0rad));transform-origin:0 50%;transition:opacity .25s}
+.z5-tag button{position:absolute;left:0;top:0;width:120px;box-sizing:border-box;padding:8px 9px 7px 10px;text-align:left;background:#fcfcf9;color:#1d2024;pointer-events:auto;cursor:pointer;transform:translate(var(--cx),var(--cy)) rotate(-1.5deg);box-shadow:0 6px 12px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.4);transition:opacity .25s}
+.z5-tag:not(.open) button,.z5-tag:not(.open) .th{opacity:0;pointer-events:none}
 .z5-tag button:hover b{color:var(--zr)}
-.z5-tag b{display:block;font-family:var(--ft);font-weight:700;font-size:11px;line-height:1.25;margin-bottom:3px}
-.z5-tag span{display:block;font-family:var(--fh);font-size:14px;line-height:1.22;color:#2a2d31}
+.z5-tag b{display:block;font-family:var(--ft);font-weight:700;font-size:10.5px;line-height:1.2;margin-bottom:2px}
+.z5-tag span{display:block;font-family:var(--fh);font-size:13px;line-height:1.18;color:#2a2d31}
+.z5-tag.flash .an{animation:z5Flash .5s ease-in-out 3}
+@keyframes z5Flash{50%{transform:scale(1.9);box-shadow:0 0 0 3px #fcfcf9,0 0 10px 4px rgba(194,42,46,.8)}}
 .z5-tag.pin button{animation:z5Pin .32s cubic-bezier(.3,1.5,.5,1) both}
-@keyframes z5Pin{from{opacity:0;transform:rotate(-2deg) translateY(-14px) scale(1.25)}to{opacity:1;transform:rotate(-2deg)}}
+@keyframes z5Pin{from{opacity:0;transform:translate(var(--cx),var(--cy)) rotate(-1.5deg) translateY(-14px) scale(1.25)}to{opacity:1;transform:translate(var(--cx),var(--cy)) rotate(-1.5deg)}}
 /* a document from the pile, read-only */
 #z5Doc{position:absolute;inset:0;z-index:34;display:flex;align-items:center;justify-content:center;background:rgba(6,9,11,.5)}
 #z5Doc[hidden]{display:none}
@@ -15026,7 +15113,9 @@ const CSS5=`
 .z5-hl b{display:block;font-family:var(--ft);font-weight:700;font-size:19px;margin:2px 0 10px}
 .z5-hl .zdk-dscr{margin:0 0 4px;max-width:420px}
 .z5-hl .zdk-dscr .lb{font-family:var(--fh);color:#3b3f44}
-.z5 .z5-stake{font-family:var(--ft);font-size:14px;margin:18px 0 0;color:#1d2024}
+.z5 .z5-stake{font-family:var(--ft);font-size:14px;line-height:1.55;margin:16px 0 0;color:#1d2024}
+.z5 .z5-ld{font-weight:700;font-size:15.5px;color:#1d2024}
+.z5-sgn{margin:14px 0 0;display:flex;align-items:flex-end;gap:14px;font-family:var(--ft);font-size:12.5px;color:#3b3f44}.z5-sgn .ink .h{font-size:26px;color:#1d3a8a}
 .z5-mn{grid-column:2!important;grid-row:2/9;align-self:start;position:relative;margin-top:96px;padding-left:20px;font-family:var(--fh);font-weight:700;font-size:20px;line-height:1.32;color:#2c3036;transform:rotate(-2.2deg)}
 .z5-mn svg{position:absolute;left:-6px;top:-8px;width:20px;height:calc(100% + 16px);overflow:visible}
 .z5-mn small{display:block;margin-top:8px;font-weight:400;font-size:15px;color:var(--zpe)}
@@ -15046,6 +15135,7 @@ const CSS5=`
 let css5=false;
 function mount5(){M.mount();if(css5)return;css5=true;const st=document.createElement('style');st.id='zmmCss5';st.textContent=CSS5;document.head.appendChild(st);loadDeskFonts();}
 const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+const dayOf=v=>{if(!v)return undefined;const d=new Date(/^\d{4}-\d{2}-\d{2}$/.test(v)?v+'T12:00:00':v);return isFinite(d)?d:undefined;};
 const isoDay=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const longDay=d=>`${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 const paras=t=>(Array.isArray(t)?t:String(t||'').split(/\n\n+/)).filter(Boolean);
@@ -15060,7 +15150,7 @@ const stampFor=d=>d.stamp||({agreement:'Executed',concession:'Executed',budget:'
 /* a desk for the paper screens: grid paper with the masterplan in faint drafting ink */
 function desk5(cls,inner){mount5();const plan=document.getElementById('planTpl');
   return open(`<div class="zdk z5 ${cls||''}">${INK_DEFS}<div class="zdk-sheet" aria-hidden="true"><div class="zdk-plan">${plan?plan.innerHTML:''}</div></div>${inner}</div>`,'zmm-ob');}
-function pileCards(docs){return (docs||[]).slice(-5).map((d,n)=>`<div class="zdk-card z5c" style="--i:${n};--r:${[-4,3,-2,5,-3][n%5]}deg;animation:none" data-doc="${esc(d.id)}" title="Open: ${esc(d.title)}"><span>${esc(d.title)}</span><i></i><i></i><i class="s"></i>${stampHtml(stampFor(d),'mini')}</div>`).join('');}
+function pileCards(docs){return (docs||[]).slice(-5).map((d,n)=>`<div class="zdk-card z5c" style="--i:${n};--r:${[-4,3,-2,5,-3][n%5]}deg;animation:none" data-doc="${esc(d.id)}" title="Open: ${esc(d.title)}"><span>${esc(d.title)}</span><i></i><i></i><i class="s"></i>${stampHtml(stampFor(d),'mini',dayOf(d.date))}</div>`).join('');}
 function wirePile(root,docs){root.querySelectorAll('.zdk-card.z5c').forEach(c=>c.onclick=()=>{const d=(docs||[]).find(x=>x.id===c.dataset.doc)||findDoc(c.dataset.doc);if(d)M.openDoc(d);});}
 
 /* the photo box: the masterplan, cropped to the detail that matters, in pen and ink */
@@ -15109,7 +15199,7 @@ M.frontPage=function(o){o=o||{};return new Promise(res=>{
    One document; the adviser's slip shows the ticked choice's one big number; signing brings down the red stamp. */
 M.decision=function(o){o=o||{};return new Promise(res=>{
   const ch=o.choices||[],pa=o.parties||{},sg=Object.assign({hand:{font:'La Belle Aurore',size:30,adv:.46,slant:2,rot:-4,ink:'#14161a',weight:.2,flourish:'under'}},pa.signatory||{});
-  const pile=o.pile||PILE,now=new Date(),dateTxt=o.date||longDay(now);
+  const pile=o.pile||PILE,now=new Date(),sd=dayOf(o.date),dateTxt=sd?longDay(sd):(o.date||longDay(now));
   const docName={'route-agreement':'Route agreement','capital-budget':'Capital budget','order':'Regulator\'s order','letter':'Letter'}[o.docType]||'Agreement';
   let pick=null,done=false;
   const sh=desk5('z5-dec',`<header class="zdk-top"><div class="zdk-mark">${vsiLogo(30)}<span>${esc(M.cfg.airportName)}</span></div></header>
@@ -15117,8 +15207,6 @@ M.decision=function(o){o=o||{};return new Promise(res=>{
     <main class="zdk-main"><div class="zdk-col"><article class="zdk-doc arrive" id="zdkDoc">
       <div class="zdk-dh">${vsiLogo(22)}<span>${esc(docName)} · ${esc(o.docId||'')}</span><span class="dt">${esc(dateTxt)}</span></div>
       <h2>${esc(o.title||docName)}</h2>
-      <p class="t">This agreement is made at Nagpur on ${esc(dateTxt)}, between:</p>
-      <ol class="zdk-parties"><li>${esc(pa.airport||M.cfg.spvName)} (“the Airport”); and</li><li>${esc(pa.airline||'Skyward')} (“the Airline”).</li></ol>
       ${paras(o.body).map(p=>`<p class="t">${esc(p)}</p>`).join('')}
       <p class="t">The parties agree to the line ticked below.</p>
       <div class="zdk-ticks" role="radiogroup" aria-label="The terms">${ch.map(c=>`<button role="radio" aria-checked="false" data-id="${esc(c.id)}"><i></i><span>${esc(c.label)}</span>${c.terms?`<small>${esc(c.terms)}</small>`:''}</button>`).join('')}</div>
@@ -15129,20 +15217,20 @@ M.decision=function(o){o=o||{};return new Promise(res=>{
   wirePile(sh,pile);
   const doc=sh.querySelector('#zdkDoc'),note=sh.querySelector('#zdkNote'),go=sh.querySelector('#z5Sign');
   const actOf=c=>c.act||(c.id==='decline'?'Decline the agreement':'Sign the agreement');
+  // every line's connections, money and stake at once, so the three can be compared; the ticked one gets its warning
   const slipNow=()=>{const c=ch.find(x=>x.id===pick);
-    if(!c){note.innerHTML=`<h3>${esc(o.slipQuestion||'What each line does for VSI')}</h3><p class="dim">Tick one line and I’ll tell you what it means for the hub: connections a day, and money a year.</p>`;return;}
-    const s=c.slip||{};note.innerHTML=`<h3>${esc(c.label)}</h3>${s.big?`<b class="big">${esc(s.big)}</b>`:''}${s.money?`<span class="mon">${esc(s.money)}</span>`:''}${s.line?`<p>${esc(s.line)}</p>`:''}`;};
+    note.innerHTML=`<h3>${esc(o.slipQuestion||'What each line does for VSI')}</h3>${ch.map(x=>{const s=x.slip||{};return `<div class="z5-sl${x.id===pick?' on':''}"><b>${esc(x.label)}</b><span>${esc([s.big,s.money].filter(Boolean).join(' · '))}</span>${s.stake?`<span>${esc(s.stake)}</span>`:''}</div>`;}).join('')}${c&&c.slip&&c.slip.line?`<p>${esc(c.slip.line)}</p>`:''}`;};
   slipNow();
   sh.querySelectorAll('.zdk-ticks button').forEach(b=>b.onclick=()=>{if(done)return;pick=b.dataset.id;sh.querySelectorAll('.zdk-ticks button').forEach(x=>x.setAttribute('aria-checked',x===b?'true':'false'));
     const c=ch.find(x=>x.id===pick);go.disabled=false;go.textContent=actOf(c);slipNow();});
   go.onclick=()=>{if(done||!pick)return;done=true;go.disabled=true;
     const me=sh.querySelector('#z5Me .ink');const sgs=sh.querySelector('.zdk-sigs');if(sgs&&doc.scrollHeight>doc.clientHeight)doc.scrollTo({top:doc.scrollHeight,behavior:reduced()?'auto':'smooth'});me.innerHTML=o.signature?`<img src="${esc(o.signature)}" alt="Your signature">`:H(o.founder||M.cfg.spvShort);
     const word=(o.stamps||{})[pick]||(pick==='decline'?'Declined':'Signed');
-    const sd=o.date?new Date(o.date):null;(sgs||doc).insertAdjacentHTML('beforeend',stampHtml(word,'down',sd&&isFinite(sd)?sd:undefined));doc.classList.remove('arrive');if(!reduced())thud();
-    const fin=()=>{close();res({choice:pick,signedOn:isoDay(now)});};
+    (sgs||doc).insertAdjacentHTML('beforeend',stampHtml(word,'down',sd));doc.classList.remove('arrive');if(!reduced())thud();
+    const fin=()=>{close();res({choice:pick,signedOn:isoDay(sd||now)});};
     if(reduced()){setTimeout(fin,700);return;}
     setTimeout(()=>{const p=sh.querySelector('#zdkPile'),n=Math.min(5,p.children.length),cd=document.createElement('div');cd.className='zdk-card';cd.style.setProperty('--i',n);cd.style.setProperty('--r','-3deg');
-      cd.innerHTML=`<span>${esc(o.title||docName)}</span><i></i><i></i><i class="s"></i>${stampHtml(word,'mini')}`;doc.classList.add('leave');note.style.opacity='0';setTimeout(()=>p.appendChild(cd),380);},900);
+      cd.innerHTML=`<span>${esc(o.title||docName)}</span><i></i><i></i><i class="s"></i>${stampHtml(word,'mini',sd)}`;doc.classList.add('leave');note.style.opacity='0';setTimeout(()=>p.appendChild(cd),380);},900);
     setTimeout(fin,2100);};
 });};
 
@@ -15154,14 +15242,14 @@ M.briefing=function(o){o=o||{};mount5();return new Promise(res=>{
   const app=$('#app');if(!app){res();return;}
   const old=$('#z5Brief');if(old)old.remove();
   const docs=o.docs||PILE,dOf=id=>id==null?null:(docs.find(d=>d.id===id||d.title===id)||findDoc(id)||{title:id});
-  const ref=id=>{const d=dOf(id);return d?`<button class="z5-ref" data-doc="${esc(id)}">${esc(d.title)}${d.year!=null&&!/\d{4}/.test(d.title)?', '+esc(d.year):''}</button>`:'';};
+  const ref=(id,short)=>{const d=dOf(id);return d?`<button class="z5-ref" data-doc="${esc(id)}">${esc(short||d.title)}${!short&&d.year!=null&&!/\d{4}/.test(d.title)?', '+esc(d.year):''}</button>`:'';};
   // a torn top edge: a seeded zigzag, so the same sheet always tears the same way
   let q=17;const rnd=()=>((q=(q*9301+49297)%233280)/233280);const pts=['0% 100%','100% 100%'];for(let x=100;x>=0;x-=2.5)pts.push(`${x}% ${(rnd()*7).toFixed(1)}px`);
   const el=document.createElement('aside');el.className='z5v z5-brief';el.id='z5Brief';el.setAttribute('role','note');el.setAttribute('aria-label',o.title||'Handover');
   const sec=Math.max(0,+(o.autoStartSec==null?6:o.autoStartSec));
   el.innerHTML=`<i class="z5-pin" aria-hidden="true"></i><div class="z5-pad" style="clip-path:polygon(${pts.join(',')})">
     <header><b>${esc(o.title||'Duty manager’s handover')}</b><span>${esc(o.date||'')}</span></header>
-    <ol>${(o.lines||[]).slice(0,3).map(l=>`<li><span class="h">${esc(l.text)}</span>${ref(l.docId!=null?l.docId:l.doc)}</li>`).join('')}</ol>
+    <ol>${(o.lines||[]).slice(0,3).map(l=>`<li><span class="h">${esc(l.text)}</span>${ref(l.docId!=null?l.docId:l.doc,l.ref)}</li>`).join('')}</ol>
     ${o.watch?`<div class="z5-watch"><small>The one thing to watch</small><span>${esc(o.watch)}</span></div>`:''}
     <footer><button id="z5Go">Start the shift</button><span id="z5Cd"></span></footer></div>`;
   el.addEventListener('keydown',e=>e.stopPropagation());
@@ -15181,7 +15269,7 @@ M.openDoc=function(doc){mount5();if(typeof doc==='string')doc=findDoc(doc)||{tit
   let v=$('#z5Doc');if(!v){v=document.createElement('div');v.id='z5Doc';v.className='z5v';app.appendChild(v);v.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape')v._close&&v._close();});}
   const yr=doc.year!=null?(doc.year>1900?String(doc.year):'Year '+doc.year+' of the concession'):'';
   v.innerHTML=`<article class="z5-rd" role="dialog" aria-modal="true" aria-label="${esc(doc.title||'Document')}" tabindex="-1"><div class="zdk-dh">${vsiLogo(20)}<span>From the pile${yr?' · '+esc(yr):''}</span></div>
-    <h2>${esc(doc.title||'')}</h2>${paras(doc.summary).map(p=>`<p>${esc(p)}</p>`).join('')}${stampHtml(stampFor(doc),'',doc.stampedOn?new Date(doc.stampedOn):undefined)}
+    <h2>${esc(doc.title||'')}</h2>${paras(doc.summary).map(p=>`<p>${esc(p)}</p>`).join('')}${stampHtml(stampFor(doc),'',dayOf(doc.stampedOn||doc.date))}
     <button class="zdk-q" id="z5DocX">Put it back on the pile</button></article>`;
   v.hidden=false;
   const fin=()=>{v.hidden=true;v._close=null;window.dispatchEvent(new CustomEvent('zmm-doc',{detail:{open:false,doc}}));res();};
@@ -15194,19 +15282,33 @@ M.openDoc=function(doc){mount5();if(typeof doc==='string')doc=findDoc(doc)||{tit
    screen point relative to #app (call every frame); ZMMoney.tagRemove(id). Clicking a tag opens its document. */
 const TAGS=new Map();
 function tagLayer(){mount5();let l=$('#z5Tags');if(!l){const app=$('#app');if(!app)return null;l=document.createElement('div');l.id='z5Tags';l.className='z5v';
-  const fl=$('#zmmFloat');if(fl&&fl.nextSibling)app.insertBefore(l,fl.nextSibling);else app.appendChild(l);}return l;}
+  const fl=$('#zmmFloat');if(fl)app.insertBefore(l,fl);else app.appendChild(l);}return l;}   // under the floaters
+/* a tag is open (card showing) for 8 s after it is pinned or flashed, then it folds to its pin; hovering or clicking the
+   pin opens it again. ZMMoney.tagAt(id, sx, sy, cx?, cy?): cx, cy put the card's top-left relative to the pin (the game
+   picks a side away from the action and clear of its panels); without them the card sits up and to the right. */
+const TAG_OPEN_MS=8000;
+function tagOpen(t,ms){t.classList.add('open');clearTimeout(t._fold);if(ms!==0)t._fold=setTimeout(()=>{if(!t.matches(':hover'))t.classList.remove('open');},ms||TAG_OPEN_MS);}
 let tagN=0;
 M.tag=function(id,o){
-  if(typeof id==='number'){const x=id,y=o,title=arguments[2],line=arguments[3],k='t'+(++tagN);
-    const el=M.tag(k,{doc:title,line,docId:title});M.tagAt(k,x,y);
-    return {el,move:(sx,sy)=>M.tagAt(k,sx,sy),remove:()=>M.tagRemove(k)};}
+  if(typeof id==='number'){const x=id,y=o,title=arguments[2],line=arguments[3],docId=arguments[4],k='t'+(++tagN);
+    const el=M.tag(k,{doc:title,line,docId:docId||title});M.tagAt(k,x,y);
+    return {el,move:(sx,sy,cx,cy)=>M.tagAt(k,sx,sy,cx,cy),remove:()=>M.tagRemove(k),flash:()=>M.tagFlash(k),
+      size:()=>{const b=el&&el.querySelector('button');return b?{w:b.offsetWidth||120,h:b.offsetHeight||60}:{w:120,h:60};}};}
   o=o||{};const l=tagLayer();if(!l)return null;let t=TAGS.get(id);
-  if(!t){t=document.createElement('div');t.className='z5-tag'+(reduced()?'':' pin');t.hidden=true;l.appendChild(t);TAGS.set(id,t);}
-  t.dataset.id=id;t.innerHTML=`<i class="th" aria-hidden="true"></i><i class="an" aria-hidden="true"></i><button title="Open: ${esc(o.doc||'')}"><b>${esc(o.doc||'')}</b><span>${esc(o.line||'')}</span></button>`;
+  if(!t){t=document.createElement('div');t.className='z5-tag'+(reduced()?'':' pin');t.hidden=true;l.appendChild(t);TAGS.set(id,t);
+    t.addEventListener('mouseenter',()=>tagOpen(t,0));t.addEventListener('mouseleave',()=>tagOpen(t,2500));}
+  t.dataset.id=id;t.innerHTML=`<i class="th" aria-hidden="true"></i><button title="Open: ${esc(o.doc||'')}"><b>${esc(o.doc||'')}</b><span>${esc(o.line||'')}</span></button><i class="an" title="${esc(o.doc||'')}"></i>`;
   t.querySelector('button').onclick=()=>{const d=(o.docId&&findDoc(o.docId))||{title:o.doc,summary:o.line};M.openDoc(d);};
+  t.querySelector('.an').onclick=()=>{if(t.classList.contains('open')){clearTimeout(t._fold);t.classList.remove('open');}else tagOpen(t);};
+  tagOpen(t);
   return t;};
-M.tagAt=function(id,sx,sy){const t=TAGS.get(id);if(!t)return;if(!isFinite(sx)||!isFinite(sy)){t.hidden=true;return;}t.hidden=false;t.style.transform=`translate(${Math.round(sx)}px,${Math.round(sy)}px)`;};
-M.tagRemove=function(id){const t=TAGS.get(id);if(t){t.remove();TAGS.delete(id);}};
+M.tagAt=function(id,sx,sy,cx,cy){const t=TAGS.get(id);if(!t)return;if(!isFinite(sx)||!isFinite(sy)){t.hidden=true;return;}t.hidden=false;t.style.transform=`translate(${Math.round(sx)}px,${Math.round(sy)}px)`;
+  if(isFinite(cx)&&isFinite(cy)&&(t._cx!==Math.round(cx)||t._cy!==Math.round(cy))){t._cx=Math.round(cx);t._cy=Math.round(cy);const b=t.querySelector('button'),w=b?b.offsetWidth:120,h=b?b.offsetHeight:60;
+    t.style.setProperty('--cx',t._cx+'px');t.style.setProperty('--cy',t._cy+'px');
+    const ex=t._cx+w/2,ey=t._cy+h/2;t.style.setProperty('--tl',Math.hypot(ex,ey).toFixed(1)+'px');t.style.setProperty('--ta',Math.atan2(ey,ex).toFixed(3)+'rad');}};
+M.tagFlash=function(id){const t=TAGS.get(id);if(!t)return;tagOpen(t);t.classList.remove('flash');void t.offsetWidth;t.classList.add('flash');};
+M.tagOpen=function(id){const t=TAGS.get(id);return !!(t&&t.classList.contains('open'));};
+M.tagRemove=function(id){const t=TAGS.get(id);if(t){clearTimeout(t._fold);t.remove();TAGS.delete(id);}};
 M.tagClear=function(){for(const id of [...TAGS.keys()])M.tagRemove(id);};
 
 /* connection floaters: ZMMoney.connFloat(sx, sy, {made, cr}) → "+46 connections · ₹0.4 cr" in green;
@@ -15241,10 +15343,12 @@ M.bill=function(o){o=o||{};return new Promise(res=>{
     <main class="zdk-main"><div class="zdk-col"><article class="zdk-doc arrive" id="zdkDoc">
       <div class="zdk-dh">${vsiLogo(22)}<span>${esc(M.cfg.spvShort)} · Annual report${yr?' '+esc(yr):''}</span><span class="dt">page ${esc(o.page||7)}</span></div>
       <h2>${esc(o.title||'The year in one page')}</h2>
+      ${o.lead?`<p class="t z5-ld">${esc(o.lead)}</p>`:''}
       ${paras(o.paragraph).map(p=>`<p class="t">${esc(p)}</p>`).join('')}
       <table class="zdk-tab">${(o.table||[]).map(row).join('')}</table>
-      ${cv.words?`<div class="z5-hl"><small>Can the airport pay the banks?</small><b>${esc(cv.words)}</b>${pos!=null?`<div class="zdk-dscr"><div class="sc"><i class="a"></i><i class="b"></i><i class="c"></i><span style="left:${pos}%"></span></div><div class="lb"><span style="left:0">the banks take control</span><span style="right:0">${esc(mood)}</span></div></div>`:''}</div>`:''}
-      ${stk.pct!=null?`<p class="z5-stake">Your company owns ${esc(stk.pct)}% of ${esc(M.cfg.spvShort)}${stk.valueCr!=null?`, worth about ${fmt(+stk.valueCr)}`:''}.</p>`:''}
+      ${cv.words?`<div class="z5-hl"><small>Can the airport pay the banks?${cv.years?` Hardest year, ${esc(cv.years)}`:''}</small><b>${esc(cv.words)}</b>${pos!=null?`<div class="zdk-dscr"><div class="sc"><i class="a"></i><i class="b"></i><i class="c"></i><span style="left:${pos}%"></span></div><div class="lb"><span style="left:0">the banks take control</span><span style="right:0">${esc(mood)}</span></div></div>`:''}</div>`:''}
+      ${stk.words?`<p class="z5-stake">${esc(stk.words)}</p>`:stk.pct!=null?`<p class="z5-stake">Your company owns ${esc(stk.pct)}% of ${esc(M.cfg.spvShort)}${stk.valueCr!=null?`, worth about ${fmt(+stk.valueCr)}`:''}.</p>`:''}
+      ${o.signed?`<div class="z5-sgn"><div class="ink">${H(o.signed.name)}</div><span><b>${esc(o.signed.name)}</b>, ${esc(o.signed.title||'')}</span></div>`:''}
       ${o.margin?`<aside class="z5-mn"><svg viewBox="0 0 20 100" preserveAspectRatio="none" aria-hidden="true"><path d="M14 2 C4 4 10 40 2 50 C10 60 4 96 14 98" fill="none" stroke="#3b3f44" stroke-width="1.6" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>${esc(o.margin)}<small>${esc(o.adviser||'your adviser')}</small></aside>`:''}
     </article><div class="zdk-acts"><button class="zdk-go" id="z5Close">${esc(o.cta||'Close the books')}</button></div></div></main>`);
   wirePile(sh,pile);

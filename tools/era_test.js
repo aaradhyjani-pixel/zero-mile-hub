@@ -220,11 +220,12 @@ function c5shift(plan, held, slack) {
   plan.intl.forEach(x => { let miss = Math.round(x.connecting * slack); if (plan.hub && x.dest === plan.hub.dest && !held) miss += plan.hub.pax; byDest[x.dest] = {made: x.connecting - miss, missed: miss}; });
   const dom = 900, domMiss = Math.round(dom * slack);
   const made = Object.values(byDest).reduce((a, b) => a + b.made, 0) + dom - domMiss, missed = Object.values(byDest).reduce((a, b) => a + b.missed, 0) + domMiss;
-  return {made, missed, byDest, held: plan.hub ? {[plan.hub.dest]: !!held} : {}, holdMin: held ? 20 : 0,
+  return {made, missed, byDest, domestic: {made: dom - domMiss, missed: domMiss}, held: plan.hub ? {[plan.hub.dest]: !!held} : {}, holdMin: held ? 20 : 0,
     trail: {happened: !!plan.trail, minutesLost: plan.trail ? 12 : 0}, money: {lines: []}, stars: 3, otp: 0.86};
 }
 const PLAYERS = [
   ['hub-smart', 'three', true, 0.03, 'signs three banks, holds London for the 380'],
+  ['hub-letgo', 'three', false, 0.03, 'signs three banks, lets London go'],
   ['hub-blind', 'decline', false, 0.03, 'declines Skyward']];
 const c5 = {}, c5texts = [JSON.stringify(fp), JSON.stringify(dc)];
 console.log('| Player | Plan | Earned ₹ cr a year | Spent ₹ cr a year | Connections made / missed a year | Earned / spent 2040-43 | Loan cover, hardest year | Your stake |\n|---|---|---|---|---|---|---|---|');
@@ -236,11 +237,12 @@ for (const [name, choice, held, slack, what] of PLAYERS) {
   plan.tags.forEach(t => { if (!(st.docs || []).some(d => d.id === t.docId)) fail('ch5 tag without a doc: ' + t.docId); });
   const r = C5.applyShift(st, c5shift(plan, held, slack));
   rt(r.state);
-  const b = r.bill, tb = b.table;
+  const b = r.bill, row = l => b.table.find(t => t.label === l) || {cr: 0, made: 0, missed: 0}, tb = [row('Earned'), row('Spent'), row('Connections to Skyward')];
   c5[name] = b;
   c5texts.push(JSON.stringify(br), JSON.stringify(plan), JSON.stringify(b), JSON.stringify(r.card));
   console.log('| ' + name + ' | ' + what + ' | ' + tb[0].cr + ' | ' + tb[1].cr + ' | ' + tb[2].made.toLocaleString('en-IN') + ' / ' + tb[2].missed.toLocaleString('en-IN') + ' | ' +
-    b.era.earnedCr + ' / ' + b.era.spentCr + ' | ' + b.cover.words + ' | ' + b.stake.pct + '%, ₹' + b.stake.valueCr.toLocaleString('en-IN') + ' cr |');
+    b.era.earnedCr + ' / ' + b.era.spentCr + ' | ' + b.cover.words + ' | ' + b.stake.pct + '%, ₹' + b.stake.valueCr.toLocaleString('en-IN') + ' cr (Skyward: ' + (b.stake.deltaCr >= 0 ? '+' : '') + b.stake.deltaCr.toLocaleString('en-IN') + ') |');
+  console.log('|  | lead: "' + b.lead + '" | | | | | | |');
   console.log('|  | margin: "' + b.margin + '" | | | | | | |');
   if (!b.margin) fail('ch5 bill for ' + name + ' has no margin note');
   if (!r.card.sources || r.card.sources.length < 1) fail('ch5 card without sources');
@@ -248,6 +250,9 @@ for (const [name, choice, held, slack, what] of PLAYERS) {
 const net = n => c5[n].era.earnedCr - c5[n].era.spentCr;
 if (!(c5['hub-smart'].stake.valueCr > c5['hub-blind'].stake.valueCr && net('hub-smart') > net('hub-blind') + 500)) fail('ch5: the hub-smart player does not clearly beat the hub-blind one');
 if (!/held London/.test(c5['hub-smart'].margin)) fail('ch5: the margin note does not read the London call');
+if (!(c5['hub-smart'].stake.valueCr - c5['hub-letgo'].stake.valueCr > 1000)) fail('ch5: holding London is not clearly worth more than letting it go');
+if (/Frankfurt/.test(c5['hub-letgo'].margin)) fail('ch5: the let-go margin still promises a new flight');
+if (!c5['hub-blind'].table.some(t => t.label === 'Domestic connections' && t.made > 0)) fail('ch5: the decline bill does not report the domestic connections');
 const nDep = ['three', 'london', 'decline'].map(id => C5.shiftPlan(C5.applyDecision(fx, id)).intl.length).join();
 if (nDep !== '3,1,0') fail('ch5: the three options should give 3, 1 and 0 departures, got ' + nDep);
 if ([1, 2, 3, 4, 5, 6, 7].some(n => { const c = C5.card(n); return !c || !c.text || !c.sources.length || !c.sources.every(x => x.url); })) fail('ch5: a chapter card without text or a source');

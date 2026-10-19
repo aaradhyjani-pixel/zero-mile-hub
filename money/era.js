@@ -851,7 +851,7 @@
     g = Math.min(0.75, Math.max(0.60, g));   // the player borrows 60–75%; the banks' own sizing for 1C/1D and phase 2 is separate
     var sl = o.state_loan != null ? o.state_loan : o.stateLoan;   // onboarding hands back stateLoan
     return {gearing: g, phase1: o.phase1 === 'big' ? 'big' : 'lean', state_loan: sl !== false, defer_state_loan: o.defer_state_loan !== false,
-      lender: P.lenders[o.lender] ? o.lender : 'banks', construction: null, ac_year: null,
+      lender: (housesReady(), P.lenders[o.lender]) ? o.lender : 'banks', construction: null, ac_year: null,
       profile: (o.repayment === 'equal' || o.profile === 'equal') ? 'equal' : 'sculpt', bid: {type: bid.type === 'ppf' ? 'ppf' : 'share', value: +bid.value},
       stance0: o.aera === 'hard' ? 'hard' : 'normal', refi: o.refi !== false, cure: !!o.cure, p2year: o.p2year || null, eraOps: {}, boards: {}, appeals: []};
   }
@@ -875,7 +875,8 @@
     return {def: 'banks', options: [
       {id: 'banks', who: 'Indian banks', label: 'Indian banks, in rupees', small: r + '% interest, repaid over ' + a.years + ' years'},
       {id: 'dollar', who: 'bondholders abroad', label: 'dollar bonds sold abroad', small: (r + (d.rate_delta || 0)) + '% interest, but if the rupee falls, every repayment grows'},
-      {id: 'infra', who: 'India\'s infrastructure bank', label: 'India\'s infrastructure bank', small: 'about ' + (r + (n.rate_delta || 0)) + '%, repaid over ' + (a.years + (n.years_add || 0)) + ' years, so each payment is smaller'}]};
+      {id: 'infra', who: 'India\'s infrastructure bank', label: 'India\'s infrastructure bank', small: 'about ' + (r + (n.rate_delta || 0)) + '%, repaid over ' + (a.years + (n.years_add || 0)) + ' years, so each payment is smaller'},
+      {id: 'private', who: 'private capital', label: 'private capital, from a family network', small: 'five houses; pitch one, and the terms depend on the pitch'}]};
   }
   // share-equivalent of a bid: the fee over base-case gross revenue (per-passenger bids converted at the base case)
   function shareEquiv(bid) {
@@ -946,6 +947,77 @@
     return {won: won, yours: se, best: best, winner: won ? null : top.name, rivals: rivals, margin: Math.round((se - best) * 10) / 10,
       line: won ? 'Your offer is the highest. The Authority awards the concession to you.' :
         top.name + ' offered ' + best + '% of everything the airport earns, more than your ' + se + '%. The concession goes to them.'};
+  }
+  // PRIVATE CAPITAL: five family networks that lend outside the banks (the user's call). Each is an affectionate, larger-than-life
+  // homage to a real trading tradition. Their terms move the loan's rate (percentage points) and tenor (years) like a lender.
+  // The pitch: three angles; each house prefers one. The result is approved, negotiated down, or a better deal with a crazy ask.
+  var HOUSES = [
+    {id: 'chettiar', name: 'Kottai & Kanakku: the Nagarathar Ledger House', home: 'Karaikudi, Chettinad', rate: -0.25, years: 4, likes: 'long',
+      bio: 'The Nattukottai Chettiars lent across Rangoon, Penang and Saigon before most banks had a branch there. Every rupee is entered twice, in Tamil, in a cloth-bound ledger older than your grandfather, and the books are balanced before the evening lamp is lit. They have never once asked for a pitch deck. They have asked for your grandfather\'s name.',
+      pitch: 'Arrive early. Bring audited numbers in a cloth-bound file. Speak in decades, not quarters, and never, ever say "roughly".',
+      accept: 'Steady cash that arrives on the same day every month; schedules that never slip; things you can touch.',
+      refuse: 'Projections that need the next round of money. A repayment one day late: that ends the friendship, and the grandchildren will hear about it.',
+      invest: 'Anything that collects a small fee forever: tolls, ports, temple towns. An airport passenger fee is their idea of heaven.',
+      ask: 'An Athangudi-tiled Chettinad corridor through Concourse A, a kolam drawn fresh at the main entrance every dawn, and the gate announcements read in Tamil first during Pongal.',
+      better: {rate: -0.6, years: 5},
+      network: ['Karaikudi: the elders meet in the courtyard after the evening puja', 'Hundi notes travel to Devakottai, Kanadukathan and Pallathur', 'Cousins in Penang and Singapore confirm by telephone, the old way', 'The ledger is balanced twice, in two different hands']},
+    {id: 'sanchore', name: 'Sanchore Sariya Syndicate', home: 'Sanchore, Jalore, with desks in Chennai and Mumbai', rate: 0.25, years: -2, likes: 'numbers',
+      bio: 'Half the steel bars holding up South India passed through a Sanchore family\'s hands. They price steel by the minute, settle by the evening, and can grade a TMT bar by the sound it makes when it hits the floor. Their loans are fast, a little expensive, and come with an opinion about your roof.',
+      pitch: 'Talk tonnes, not percentages. Show how much steel the terminal roof needs and when you need it on site. Decide in the meeting.',
+      accept: 'Projects that buy steel; fast decisions; cash that turns over weekly.',
+      refuse: 'Consultants. Second meetings. Anyone who says "let us revert".',
+      invest: 'Warehouses, logistics parks, construction, and anything with a very heavy roof.',
+      ask: 'Every tonne of phase-1 steel bought through the Syndicate, and the people mover named the Sanchore Express, with a brass plaque at both ends.',
+      better: {rate: -0.5, years: 2},
+      network: ['Sanchore: three brothers call the Chennai steel market from one phone', 'Mumbai\'s iron bazaar confirms the tonnage by lunchtime', 'Jalore sends the family guarantee by evening', 'The money moves the same night: they hate waiting']},
+    {id: 'palanpuri', name: 'Palanpur Brilliance Capital', home: 'Palanpur, Antwerp and the Bharat Diamond Bourse, Mumbai', rate: -0.5, years: 2, likes: 'long',
+      bio: 'Their grandfathers took Palanpur to Antwerp; now most of the world\'s diamonds pass through their families\' hands. A deal worth crores is sealed with a handshake and a single word, and the paperwork follows a week later, out of politeness. They can see a flaw at ten times magnification, and in your spreadsheet at one.',
+      pitch: 'Trust first, numbers second. Come to a vegetarian dinner and eat before sunset. Never round a number up: they will notice, and they will be too polite to tell you why they said no.',
+      accept: 'Clean books, family-run partners, relationships measured in generations.',
+      refuse: 'Leverage on leverage. Meat at the signing dinner. Anyone caught exaggerating, even once, even about the weather.',
+      invest: 'Diamonds, real estate, schools, hospitals, and the duty-free shop you haven\'t built yet.',
+      ask: 'A rent-free diamond vault and showroom airside, right after security, and a Jain kitchen in every concourse that closes at sunset.',
+      better: {rate: -0.75, years: 3},
+      network: ['Mumbai, Bharat Diamond Bourse: a quiet word between two cabins', 'Antwerp\'s Hoveniersstraat agrees on a family call', 'Palanpur\'s elders give their blessing at the family temple', 'A handshake. The money is already arranged; the papers will follow']},
+    {id: 'negev', name: 'Negev Runway Partners', home: 'Tel Aviv and Herzliya', rate: 0, years: 3, likes: 'idea',
+      bio: 'Former air-force engineers turned founders. They taught a desert to grow tomatoes and to recycle nine-tenths of its water, and they think your airport is a startup with a sixty-year runway. They will interrupt your pitch in the first minute, and that means they like you.',
+      pitch: 'Be blunt. Bring a demo, not a deck. When they ask "yes, but why not ten times bigger?", have an answer.',
+      accept: 'Bold technology, fast pilots, being told no and arguing back.',
+      refuse: 'Hierarchy, slow committees, a plan that has never been tested.',
+      invest: 'Water recycling, drones, cyber security, and airport technology they can sell to fifty other airports.',
+      ask: 'A live test zone on your apron for their driverless baggage tugs and drone runway inspections, and the right to sell what they learn to every airport on earth.',
+      better: {rate: -0.5, years: 4},
+      network: ['Herzliya: a WhatsApp group of former squadron mates lights up at 2 a.m.', 'A water-tech fund in Tel Aviv joins in eleven minutes', 'Two investors in New York say yes before reading the deck', 'The term sheet arrives with three typos and a very good rate']},
+    {id: 'bamboo', name: 'Kongsi Bamboo Capital', home: 'Singapore, Penang and Shantou', rate: -0.25, years: 5, likes: 'long',
+      bio: 'Family offices joined by clan halls from Singapore to Jakarta to Shantou: the Teochew and Fujianese "bamboo network". They never sign with strangers. You need an introduction from someone they already trust, and the money moves through cousins before it moves through banks.',
+      pitch: 'Get introduced. Eat together first. Talk about your father. Never bring a contract to the first dinner, and never mention the number four.',
+      accept: 'Trust built over dinners, patience, deals that work for three generations.',
+      refuse: 'Unlucky numbers. A rushed signing. Anyone who makes them lose face in public.',
+      invest: 'Ports, plantations, property, and anything with a good view of water and luck.',
+      ask: 'Gate 8 for their partner airlines, every flight number ending in 88, a feng shui master to re-align the main entrance, and a Teochew porridge stall that never closes.',
+      better: {rate: -1.0, years: 6},
+      network: ['Singapore: the clan hall\'s elders meet over tea', 'Penang and Jakarta cousins each take a share', 'Shantou\'s family office checks the date is auspicious', 'The money is pooled through the kongsi, quietly, by the eighth day']}];
+  var ANGLES = {long: 'The long view: trust, family and decades', numbers: 'The numbers: cash, tonnes and dates', idea: 'The big idea: technology, scale and ten times more'};
+  function housesReady() {
+    ensure();
+    HOUSES.forEach(function (h) {
+      P.lenders[h.id] = {rate_delta: h.rate, years_add: h.years};
+      P.lenders[h.id + '+'] = {rate_delta: h.better.rate, years_add: h.better.years};
+      P.lenders[h.id + '-'] = {rate_delta: h.rate + 0.5, years_add: h.years - 3};
+    });
+  }
+  function privateHouses() { housesReady(); return {angles: ANGLES, houses: HOUSES.map(function (h) { return Object.assign({}, h); })}; }
+  function pitchPrivate(id, angle, seed) {
+    housesReady();
+    var h = HOUSES.filter(function (x) { return x.id === id; })[0]; if (!h) return null;
+    var r = rng(seed || 1)(), fit = angle === h.likes ? [0.5, 0.9] : (angle === 'numbers' && h.likes !== 'numbers') || (angle === 'idea' && h.likes === 'long') ? [0.05, 0.4] : [0.2, 0.7];
+    var outcome = r < fit[0] ? 'better' : r < fit[1] ? 'approved' : 'negotiated', base = P.rate;
+    var terms = function (k) { var l = P.lenders[k]; return {lender: k, rate: Math.round((base + l.rate_delta) * 100) / 100, years: (P.vsi_loan_terms['1A'].years || 14) + l.years_add}; };
+    return {house: h.name, outcome: outcome, network: h.network.slice(),
+      approved: terms(h.id), better: outcome === 'better' ? terms(h.id + '+') : null, negotiated: outcome === 'negotiated' ? terms(h.id + '-') : null,
+      ask: outcome === 'better' ? h.ask : null,
+      line: outcome === 'better' ? h.name + ' offers more than you asked for, on one condition.' :
+        outcome === 'approved' ? h.name + ' approves the loan on its usual terms.' : h.name + ' liked you, but not that pitch. They lend, at a harder rate and a shorter term.'};
   }
   var _closeCache = {};
   function closeFigures(s, sz) {   // phase 1's split, in today's money so it adds up to the price on the agreement
@@ -3045,7 +3117,7 @@
     ch3: ch3, ch4: ch4, ch5: ch5, ch6: ch6, ch7: ch7, chapters: {3: ch3, 4: ch4, 5: ch5, 6: ch6, 7: ch7}, bridge: bridge, debrief: debrief, cliffhanger: cliffhanger, actBreak: actBreak,
     data: function (md) { load(md); _closeCache = {}; return API; },
     capexCr: capexCr, phase1Options: phase1Options, stateLoanOpt: stateLoanOpt, lenders: lenderOptions, partners: partners, bidTypes: bidTypes,
-    previewBid: previewBid, previewClose: previewClose, bidOpening: bidOpening, bidRivals: bidRivals, _tender: {BIDDERS: BIDDERS, reset: function () { _ceil = null; }, ceilings: function () { return rivalCeilings(); }},
+    previewBid: previewBid, previewClose: previewClose, bidOpening: bidOpening, bidRivals: bidRivals, privateHouses: privateHouses, pitchPrivate: pitchPrivate, _tender: {BIDDERS: BIDDERS, reset: function () { _ceil = null; }, ceilings: function () { return rivalCeilings(); }},
     newCampaign: newCampaign, needsConstruction: needsConstruction, constructionOpts: constructionOpts, applyConstruction: applyConstruction,
     levelFor: levelFor, applyShift: applyShift, boardOptions: boardOptions, applyBoard: applyBoard,
     isOver: isOver, endOpts: endOpts, handbackOpts: handbackOpts, acPlan: acPlan,

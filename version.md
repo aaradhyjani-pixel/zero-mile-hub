@@ -162,3 +162,12 @@ The current flight (the chapters, the years-later boards) becomes the frame betw
 3. **2D or 3D for building?** Building in 2D only is much faster to make well; the 3D view would show what you built.
 4. **Can you lose?** If the banks take control, does the concession end there (as today), or do you get one rescue?
 5. **Which three decisions matter most to you for step 1?** My suggestion now: a new pier **with its beauty grade**, remote stands, and the people mover. Together they show capacity, cost, connections and spending per passenger in one season.
+
+## 9. Added on 20 October (the user's notes, for Level 5)
+
+| Item | Note |
+|---|---|
+| **The tender interview** | Make the bid a scene, not a slider: before the envelopes open, AAI's tender committee interviews you (three questions on traffic, money and the plan), your answers move the committee's score, and a rival's pitch is overheard in the corridor. The sealed-bid simulation (built 20 October: three rivals valuing VSI from the engine at their own cost of capital) stays underneath. |
+| **Game estimates to verify** | The rivals' cost of capital, traffic views and shading (Adani 7.5% / ×1.08 / 0.62, GMR 8% / ×1.0 / 0.86, Zurich 8.5% / ×0.96 / 0.95); the market study's ₹25 cr (shown, not yet charged in the books); the private houses' rate and tenor changes; every "(est.)" cost in section 4. Cross-check each against a source before Level 5 ships. |
+| **First "crazy success" to build: the cargo terminal** | The fastest jackpot: a cargo terminal plus a night-capable runway lets a phone maker and a pharma exporter pick Nagpur, at the centre of India, as their export hub: night freight income at 2 a.m., its own front page, and its own bar on Black Box page 2. Not built yet. |
+| **Private capital** (built 20 October) | Five family networks on the loan page (Kottai & Kanakku: the Nagarathar Ledger House; Sanchore Sariya Syndicate; Palanpur Brilliance Capital; Negev Runway Partners; Kongsi Bamboo Capital). You pitch one with one of three angles, watch their network move the money, and get approved, negotiated down, or a better deal with a crazy condition (a Chettinad corridor, the Sanchore Express, a diamond vault airside, a drone test zone, Gate 8). Next: make each accepted condition appear in the game (the corridor, the vault, Gate 8). |

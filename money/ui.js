@@ -735,7 +735,11 @@ M.onboarding=function(opts){opts=opts||{};
       sh.querySelector('#zdkCN').textContent=q.note||'';};
     r.oninput=upd;upd();
     sh.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{st.repayment=b.dataset.r;sh.querySelectorAll('[data-r]').forEach(x=>x.setAttribute('aria-checked',x===b));upd();});
-    sh.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{st.lender=b.dataset.l;sh.querySelectorAll('[data-l]').forEach(x=>x.setAttribute('aria-checked',x===b));upd();});
+    sh.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{
+      const mark=x=>sh.querySelectorAll('[data-l]').forEach(y=>y.setAttribute('aria-checked',y===x));
+      if(b.dataset.l==='private'&&opts.privateHouses){M.privateCapital(opts,st,res=>{if(!res)return;st.lender=res.lender;st.privateLoan=res;mark(b);
+        const sm=b.querySelector('small');if(sm)sm.textContent=res.house+': '+res.rate+'% over '+res.years+' years'+(res.ask?', on their condition':'');upd();});return;}
+      st.lender=b.dataset.l;mark(b);upd();});
     sh.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{st.phase1=b.dataset.p;sh.querySelectorAll('[data-p]').forEach(x=>x.setAttribute('aria-checked',x===b));upd();});
     sh.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{st.stateLoan=b.dataset.s==='1';sh.querySelectorAll('[data-s]').forEach(x=>x.setAttribute('aria-checked',x===b));upd();});
     sh.querySelector('#zdkN').onclick=()=>stampAndFile('Sanctioned','Term sheet',docCA);
@@ -2707,6 +2711,50 @@ M.minutes=function(o){mountS();o=o||{};return new Promise(res=>{
    (or VSIEra.ch6.decision's choices), stamps?:{[id]:word}, founder, parent, signature?, pile?, stepIn?} */
 /* the bid opening table */
 (()=>{const c=document.createElement('style');c.textContent='.zbo tr.win td{font-weight:700;background:rgba(194,42,46,.06)} .zbo tr.win td:first-child{position:relative} .zbo .zdk-stamp{margin-left:10px;vertical-align:middle}';document.head.appendChild(c);})();
+/* PRIVATE CAPITAL on the loan page: five family networks; pitch one; watch the network move the money; take the terms. */
+M.privateCapital=function(opts,st,done){
+  const D=opts.privateHouses&&opts.privateHouses();if(!D||!opts.pitchPrivate){done(null);return;}
+  const ov=document.createElement('div');ov.className='zpc';ov.setAttribute('role','dialog');ov.setAttribute('aria-label','Private capital');
+  ov.innerHTML=`<style>.zpc{position:fixed;inset:0;z-index:9000;background:rgba(20,24,28,.55);display:flex;align-items:center;justify-content:center}
+.zpc .pg{width:min(980px,94vw);max-height:90vh;overflow:auto;background:#fffaf0;color:#1d2024;box-shadow:0 30px 80px rgba(0,0,0,.5);padding:28px 36px;font-family:'Courier Prime','Courier New',monospace;font-size:14px;line-height:1.55}
+.zpc h2{font-family:'Libre Caslon Text',Georgia,serif;font-size:30px;margin:0 0 4px}.zpc h3{font-family:'Libre Caslon Text',Georgia,serif;font-size:21px;margin:0}
+.zpc .sub{color:#676c71;margin:0 0 18px}.zpc .h{display:grid;grid-template-columns:1fr auto;gap:6px 20px;border-top:1.5px solid #1d2024;padding:14px 0}
+.zpc .h small{color:#676c71}.zpc .h dl{grid-column:1/-1;display:grid;grid-template-columns:130px 1fr;gap:4px 12px;margin:6px 0 0}.zpc dt{color:#676c71}.zpc dd{margin:0}
+.zpc button{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;border:0;padding:10px 18px;background:#e8821e;color:#1d1208;box-shadow:inset 0 -3px 0 #a8480f;cursor:pointer;align-self:start}
+.zpc button.q{background:none;box-shadow:none;text-decoration:underline;font-family:'Courier Prime',monospace;font-weight:400;font-size:13.5px}
+.zpc .net{position:relative;margin:18px 0;padding-left:26px}.zpc .net li{list-style:none;position:relative;margin:0 0 14px;opacity:0;transform:translateY(6px);transition:opacity .4s,transform .4s}
+.zpc .net li.on{opacity:1;transform:none}.zpc .net li::before{content:'';position:absolute;left:-22px;top:6px;width:10px;height:10px;border-radius:50%;background:#e8821e;box-shadow:0 0 0 4px rgba(232,130,30,.25)}
+.zpc .net li::after{content:'';position:absolute;left:-18px;top:18px;width:2px;height:22px;background:#e0c9a6}.zpc .net li:last-child::after{display:none}
+.zpc .stamp{display:inline-block;margin:6px 0 12px;padding:4px 12px;border:3px solid #c22a2e;color:#c22a2e;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:26px;letter-spacing:.08em;transform:rotate(-4deg)}
+.zpc .stamp.g{border-color:#1f6b3a;color:#1f6b3a}.zpc .ask{background:#fbe6c4;padding:12px 16px;margin:10px 0 14px;border-left:4px solid #e8821e}</style><div class="pg"></div>`;
+  document.body.appendChild(ov);const pg=ov.querySelector('.pg'),sfx=n=>{try{M.sfx&&M.sfx(n);}catch(e){}};
+  const close=v=>{ov.remove();done(v);};
+  const pct=v=>(+v).toFixed(2).replace(/0$/,'')+'%';
+  function list(){pg.innerHTML=`<h2>Private capital</h2><p class="sub">Five family networks lend outside the banks. Each has its own way of saying yes. Choose one to pitch.</p>`+
+    D.houses.map(h=>`<div class="h"><div><h3>${esc(h.name)}</h3><small>${esc(h.home)}</small></div><button data-h="${h.id}">Pitch them</button>
+      <p style="grid-column:1/-1;margin:6px 0 0">${esc(h.bio)}</p>
+      <dl><dt>How to pitch</dt><dd>${esc(h.pitch)}</dd><dt>They accept</dt><dd>${esc(h.accept)}</dd><dt>They refuse</dt><dd>${esc(h.refuse)}</dd><dt>They invest in</dt><dd>${esc(h.invest)}</dd></dl></div>`).join('')+
+    `<p><button class="q" id="zpcX">Not now: back to the banks</button></p>`;
+    pg.querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>{sfx('turn');angle(D.houses.find(h=>h.id===b.dataset.h));});pg.querySelector('#zpcX').onclick=()=>close(null);pg.scrollTop=0;}
+  function angle(h){pg.innerHTML=`<h2>${esc(h.name)}</h2><p class="sub">${esc(h.home)}. How will you pitch them?</p><p>${esc(h.pitch)}</p>`+
+    Object.entries(D.angles).map(([k,v])=>`<p><button data-a="${k}">${esc(v)}</button></p>`).join('')+`<p><button class="q" id="zpcB">Back to the five houses</button></p>`;
+    pg.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{sfx('slide');run(h,b.dataset.a);});pg.querySelector('#zpcB').onclick=list;pg.scrollTop=0;}
+  function run(h,a){const R=opts.pitchPrivate(h.id,a,Math.floor(Math.random()*2147483646)+1);
+    pg.innerHTML=`<h2>${esc(h.name)}</h2><p class="sub">Your pitch: ${esc(D.angles[a])}. Behind the scenes, the network goes to work.</p><ul class="net">${R.network.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><div id="zpcR"></div>`;
+    const li=[...pg.querySelectorAll('.net li')],step=(document.documentElement.matches&&matchMedia('(prefers-reduced-motion: reduce)').matches)?60:1100;
+    li.forEach((x,i)=>setTimeout(()=>{x.classList.add('on');sfx('tick');},400+i*step));
+    setTimeout(()=>result(h,R),500+li.length*step);}
+  function result(h,R){const r=pg.querySelector('#zpcR'),T=R.better||R.negotiated||R.approved;
+    const word=R.outcome==='better'?'BETTER OFFER':R.outcome==='approved'?'APPROVED':'NEGOTIATED DOWN';sfx('thud');
+    r.innerHTML=`<span class="stamp${R.outcome==='negotiated'?'':' g'}">${word}</span><p><b>${esc(R.line)}</b></p>`+
+      (R.outcome==='better'?`<div class="ask"><b>Their condition:</b> ${esc(R.ask)}</div><p>Accept it and they lend at <b>${pct(R.better.rate)}</b> over <b>${R.better.years} years</b>. Decline and they lend on their usual terms: ${pct(R.approved.rate)} over ${R.approved.years} years.</p>
+        <p><button id="zpcY">Accept their condition</button> <button class="q" id="zpcN">Decline, take the usual terms</button></p>`
+      :`<p>They lend at <b>${pct(T.rate)}</b> over <b>${T.years} years</b>.</p><p><button id="zpcY">Take this loan</button> <button class="q" id="zpcB2">Pitch another house</button></p>`);
+    const pick=(t,ask)=>close({lender:t.lender,house:h.name,rate:t.rate,years:t.years,ask:ask||null});
+    const y=r.querySelector('#zpcY');if(y)y.onclick=()=>pick(T,R.outcome==='better'?R.ask:null);
+    const n=r.querySelector('#zpcN');if(n)n.onclick=()=>pick(R.approved,null);
+    const b2=r.querySelector('#zpcB2');if(b2)b2.onclick=list;r.scrollIntoView({block:'end',behavior:'smooth'});}
+  list();};
 /* names that may not be used on the deal desk (the company or the director), with look-alike spellings caught too */
 M.nameBlocked=function(raw){let t=String(raw||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
   t=t.replace(/[0@4]/g,m=>({'0':'o','@':'a','4':'a'})[m]).replace(/[1!|]/g,'i').replace(/3/g,'e').replace(/[5$]/g,'s').replace(/7/g,'t');

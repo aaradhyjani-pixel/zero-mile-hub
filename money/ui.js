@@ -289,6 +289,23 @@ const CSS=`
 @media (prefers-reduced-motion:reduce){.zdk-plan,.zdk-plotter,.zdk-doc.arrive,.zdk-doc.leave,.zdk-doc.thud,.zdk-card,.zdk-note.arrive{animation:none}.zdk-plotter{display:none}.zdk-stamp.down,.zdk-seal.down{animation:none;opacity:.9}.zdk.finale{animation:none}}
 @media (max-width:1280px){.zdk-tb{right:12px;bottom:10px;font-size:9.5px}.zdk-tb td{padding:3px 7px}.zdk-main{grid-template-columns:minmax(200px,1fr) minmax(540px,600px) minmax(220px,1fr);padding:0 20px 18px}.zdk-doc{padding:30px 38px 28px}.zdk-pile{width:170px}.zdk-card{width:150px;height:196px}.zdk-note{margin-left:24px;width:min(240px,calc(100% - 24px))}}
 /*@ob-end*/
+/*@hb handback (year 60): the handover certificate, on duty paper */
+.zdk-hb .zdk-main{grid-template-columns:minmax(230px,.8fr) minmax(600px,740px) minmax(330px,1fr)}
+.zdk-hb .zdk-note p{color:#26292c;font-size:16px;max-width:none}
+.zdk-hb #zhbDoc:focus{outline:none}
+.zdk-sigs.hb .zdk-stamp.big{top:24%;right:50%;white-space:nowrap}
+.zdk-hb .zdk-ticks.insp button{cursor:default}
+.zdk-hb .zdk-ticks.insp button[aria-checked="true"] i::after{color:var(--zt)}
+.zdk-hb .zdk-tab .h.big{font-size:30px}
+.zhb-own{display:flex;justify-content:space-between;gap:12px;padding:1px 0}.zhb-own .h{font-size:19px}
+.zdk-sigs.hb{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 30px}
+.zdk-sigs.hb .s.then .ink{height:118px;align-items:center}
+.zdk-sigs.hb .s.then img{display:block;max-height:96px;max-width:100%;width:auto}
+.zdk-sigs.hb .s.then em{font-family:var(--fh);font-style:normal;font-size:16px;color:var(--zpe)}
+.zdk-sigs.hb .s>span .h{font-size:19px}
+.zdk-sigs.hb .zdk-flag{left:-18px}
+.zdk-sigs.hb .zdk-seal{right:-4%;width:104px;height:104px}
+/*@hb-end*/
 `;
 
 /* ---------- mount ---------- */
@@ -696,6 +713,118 @@ M.incomeStatement=function(o){o=o||{};return new Promise(res=>{
    ${o.moments&&o.moments.length?`<h2>The most expensive moments</h2><ul style="color:var(--ink-2);padding-left:18px">${o.moments.map(m=>`<li>${esc(m)}</li>`).join('')}</ul>`:''}
    <div class="zmm-row"><button class="zmm-go" id="zmmI1">${esc(o.cta||'Continue')}</button>${o.cta2?`<button class="zmm-ghost" id="zmmI2">${esc(o.cta2)}</button>`:''}</div></div>`);
   sh.querySelector('#zmmI1').onclick=()=>{close();res('cta');};const b2=sh.querySelector('#zmmI2');if(b2)b2.onclick=()=>{close();res('cta2');};});};
+
+/* ---------- handback (year 60): the handover certificate, on duty paper ----------
+   The concession ends. VSIAL hands the airport back to AAI and the State. The certificate records sixty years in plain
+   words; the player's day-one signature (from the Concession Agreement) sits beside an empty pad, and they sign again.
+   opts: {founder, parent, signature (PNG data URL from onboarding), signedOn, endsOn (YYYY-MM-DD), stakePct, stakeValueCr,
+          returnPct, paxTotalM, paidToStateCr, condition:'excellent'|'good'|'poor', assets:[text], owners:[{name,pct}], lines:[text]}
+   resolves {signature (PNG data URL), signedOn (YYYY-MM-DD, the real day the player signed), handedBackOn (= endsOn)}, or null for "Close". */
+M.handback=function(o){o=o||{};
+  loadDeskFonts();
+  const MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const parse=s=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(s||'');return m?new Date(+m[1],+m[2]-1,+m[3]):null;};
+  const ord=n=>n+(n%10===1&&n!==11?'st':n%10===2&&n!==12?'nd':n%10===3&&n!==13?'rd':'th');
+  const now=new Date(),d0=parse(o.signedOn)||now,d1=parse(o.endsOn)||new Date(d0.getFullYear()+M.cfg.years,d0.getMonth(),d0.getDate()-1);
+  const dLong=d=>`${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()}`,dDay=d=>`${ord(d.getDate())} day of ${MON[d.getMonth()]} ${d.getFullYear()}`;
+  const dStamp=d=>`${String(d.getDate()).padStart(2,'0')} ${MON[d.getMonth()].slice(0,3).toUpperCase()} ${d.getFullYear()}`;
+  const H=s=>`<span class="h">${esc(s)}</span>`;
+  const stamp=(word,small,cls)=>`<div class="zdk-stamp ${cls||''}" aria-label="Stamped: ${esc(word)}"><b>${esc(word)}</b><small>${esc(small)} · ${esc(M.cfg.spvShort)}</small></div>`;
+  const founder=o.founder||'The director',parent=o.parent||'Your company',yrs=M.cfg.years;
+  const pax=v=>v==null?'—':v>=1000?(v/1000).toFixed(2).replace(/\.?0+$/,'')+' billion':Math.round(v).toLocaleString('en-IN')+' million';
+  const pct=v=>v==null?'—':(+v).toFixed(1).replace(/\.0$/,'')+'%';
+  const owners=(o.owners&&o.owners.length?o.owners:[{name:parent,pct:o.stakePct}]).filter(w=>w&&w.name);
+  const cond=['excellent','good','poor'].indexOf(o.condition)<0?'good':o.condition;
+  const COND=[['excellent','in excellent condition','nothing to repair'],['good','in good condition, with ordinary wear','repairs within the handover allowance'],['poor','in poor condition','repairs charged to '+M.cfg.spvShort]];
+  const assets=(o.assets||[]).filter(Boolean),list=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' and '+a[a.length-1];
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const GUIL='url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 44 44"><rect width="44" height="44" fill="#dfeadf"/>'+rosette(22,22,19)+'</svg>')+'")';
+  const plan=document.getElementById('planTpl');
+  const late=new Date(d1.getFullYear()-5,d1.getMonth(),d1.getDate());
+  const pile=[['Concession','Executed',dStamp(d0)],['Board minutes','Approved',dStamp(late)],['AERA orders','Filed',dStamp(late)]];
+  return new Promise(res=>{
+  let finished=false;const done=v=>{if(finished)return;finished=true;close();res(v);};
+  const sh=open(`<div class="zdk zdk-hb" data-stage="hb">
+    <svg class="zdk-defs" width="0" height="0" aria-hidden="true"><defs>
+      <filter id="zdkInk" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="7" result="n"/>
+        <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.1 1.55" result="m"/><feComposite in="SourceGraphic" in2="m" operator="in"/></filter></defs></svg>
+    <div class="zdk-sheet" aria-hidden="true">
+      <div class="zdk-plan" style="--ink:3;animation:none">${plan?plan.innerHTML:''}</div>
+      <table class="zdk-tb"><tr><td colspan="2">${esc(M.cfg.airportName)}, Nagpur</td></tr><tr><td>Record drawing, as handed back</td><td>Sheet HB-60</td></tr><tr><td>Scale 1 : 25,000</td><td>Year ${yrs}</td></tr></table>
+    </div>
+    <header class="zdk-top"><div class="zdk-mark">${vsiLogo(30)}<span>${esc(M.cfg.airportName)}</span></div><button class="zdk-exit" id="zhbX">Close</button></header>
+    <div class="zdk-pile" aria-label="Sixty years of paperwork">${pile.map((p,n)=>`<div class="zdk-card" style="--r:${[-4,3,-2][n]}deg;--i:${n};animation:none"><span>${esc(p[0])}</span><i></i><i></i><i class="s"></i>${stamp(p[1],p[2],'mini')}</div>`).join('')}</div>
+    <main class="zdk-main"><div class="zdk-col">
+      <article class="zdk-doc duty${reduce?'':' arrive'}" id="zhbDoc" tabindex="-1" autofocus aria-label="Handover Certificate" style="--guil:${GUIL.replace(/"/g,'&quot;')}">
+        <div class="zdk-duty"><div class="den"><b>₹ 100</b><span>One hundred rupees</span></div>
+          <div class="dc"><span>Stamp duty paid</span><span>Handover instrument</span></div>
+          <div class="ser"><span>Serial</span><b>VSI ${String(127+Math.floor(d0.getTime()/8.64e7)%800).padStart(6,'0')}-H</b></div></div>
+        <header class="zdk-cah">${vsiLogo(44)}<div><h2>Handover Certificate</h2><p class="hi" lang="hi">हस्तांतरण प्रमाणपत्र</p></div></header>
+        <p class="t">This certifies that on the ${dDay(d1)}, at Nagpur, ${H(M.cfg.spvName)} handed ${esc(M.cfg.airportName)} back to the <b>Airports Authority of India</b> and the <b>State of Maharashtra</b>, at the end of the concession signed on ${H(dLong(d0))}: ${H(yrs+' years')}.</p>
+        <table class="zdk-tab kv"><tbody>
+          <tr><td>Term</td><td>${H(dLong(d0))} to ${H(dLong(d1))}</td></tr>
+          <tr><td>Passengers served</td><td><span class="h big">${esc(pax(o.paxTotalM))}</span><small>over ${yrs} years</small></td></tr>
+          ${assets.length?`<tr><td>Handed over in working order</td><td>${esc(list(assets))}</td></tr>`:''}
+          <tr><td>Paid to the State and AAI</td><td><span class="h">${esc(fmt(o.paidToStateCr))}</span><small>over the whole concession</small></td></tr>
+          <tr><td>Your return per year</td><td><span class="h">${esc(pct(o.returnPct))}</span><small>on the money ${esc(parent)} put in</small></td></tr>
+          <tr><td>Condition at handback, as inspected by AAI</td><td><div class="zdk-ticks insp" role="radiogroup" aria-label="Condition at handback">${COND.map(c=>`<button role="radio" aria-checked="${c[0]===cond}" aria-disabled="true" tabindex="-1"><i></i>${esc(c[1])} <small>${esc(c[2])}</small></button>`).join('')}</div></td></tr>
+          <tr><td>Owners of ${esc(M.cfg.spvShort)} at handback</td><td>${owners.map((w,k)=>`<div class="zhb-own">${k===0?H(w.name):esc(w.name)}<span>${esc(pct(w.pct))}</span></div>`).join('')}</td></tr>
+        </tbody></table>
+        ${o.lines&&o.lines.length?`<p class="t">The record also shows that:</p><ol class="zdk-cl">${o.lines.map(l=>`<li>${esc(l)}</li>`).join('')}</ol>`:''}
+        <p class="t">Received by the parties below. The concession is closed.</p>
+        <div class="zdk-sigs hb" id="zhbSigs">
+          <div class="s"><div class="ink">${scribble(11,'#1d1f22')}</div><span>For the Airports Authority of India</span><small>Authorised signatory, receiving</small></div>
+          <div class="s"><div class="ink">${scribble(23,'#1f3a8a')}</div><span>For the State of Maharashtra, through MADC</span><small>Authorised signatory, receiving</small></div>
+          <div class="s then"><div class="ink" id="zhbThen">${o.signature?`<img alt="Your signature on the Concession Agreement" src="${esc(o.signature)}">`:`<em>on the Concession Agreement, in the stack</em>`}</div>
+            <span>${H(founder)}</span><small>Day one · ${esc(dLong(d0))}</small></div>
+          <div class="s now"><span class="zdk-flag" id="zhbFlag" aria-hidden="true">Sign here</span><div class="zdk-pad"><canvas id="zhbSig" aria-label="Sign again here with your trackpad or mouse"></canvas><span class="hint" id="zhbHint">✕</span></div>
+            <span>${H(founder)}</span><small>Year ${yrs} · ${esc(dLong(d1))} · for ${esc(parent)} and ${esc(M.cfg.spvShort)}</small>
+            <div class="zdk-seal" id="zhbSeal" aria-hidden="true">${sealSvg()}</div></div>
+        </div>
+      </article>
+      <div class="zdk-acts"><button class="zdk-go" id="zhbN" disabled>Sign and hand back the airport</button><button class="zdk-q" id="zhbC" disabled>Clear</button></div></div>
+      <aside class="zdk-note${reduce?'':' arrive'}" aria-live="polite">
+        <h3>Sixty years, in one number</h3><div class="zdk-dscr"><b>${esc(pct(o.returnPct))} <small>a year</small></b></div>
+        <p>Your return per year on everything ${esc(parent)} put in, counting every dividend that came back.</p>
+        ${o.stakeValueCr!=null?`<h3>What you walk away with</h3><div class="zdk-dscr"><b>${esc(fmt(o.stakeValueCr))}</b></div><p>Your ${esc(pct(o.stakePct))} of ${esc(M.cfg.spvShort)} on the day you hand back. The airport itself now belongs to the State.</p>`:''}
+      </aside></main>
+  </div>`,'zmm-ob');
+  const desk=sh.querySelector('.zdk'),docEl=sh.querySelector('#zhbDoc');
+  sh.querySelector('#zhbX').onclick=()=>done(null);
+  // trim the day-one signature to its ink, so the two hands sit at the same size
+  const im=sh.querySelector('#zhbThen img');
+  if(im)im.onload=()=>{im.onload=null;try{const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;const g=c.getContext('2d');g.drawImage(im,0,0);
+    const a=g.getImageData(0,0,c.width,c.height).data;let x0=c.width,y0=c.height,x1=-1,y1=-1;
+    for(let y=0;y<c.height;y++)for(let x=0;x<c.width;x++)if(a[(y*c.width+x)*4+3]>16){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
+    if(x1<0)return;const p=6;x0=Math.max(0,x0-p);y0=Math.max(0,y0-p);x1=Math.min(c.width-1,x1+p);y1=Math.min(c.height-1,y1+p);
+    const t=document.createElement('canvas');t.width=x1-x0+1;t.height=y1-y0+1;t.getContext('2d').drawImage(c,x0,y0,t.width,t.height,0,0,t.width,t.height);im.src=t.toDataURL('image/png');}catch(_){}};
+  const go=sh.querySelector('#zhbN'),clr=sh.querySelector('#zhbC');
+  const pad=sigPad(sh.querySelector('#zhbSig'),ok=>{go.disabled=!ok;clr.disabled=pad.empty();sh.querySelector('#zhbHint').classList.toggle('gone',!pad.empty());sh.querySelector('#zhbFlag').classList.toggle('gone',!pad.empty());});
+  // walk the reader down to the two signatures, as a clerk would
+  setTimeout(()=>{const t=sh.querySelector('#zhbSigs');if(t&&!finished)docEl.scrollTo({top:Math.max(0,t.offsetTop-150),behavior:reduce?'auto':'smooth'});},reduce?0:1100);
+  clr.onclick=()=>pad.clear();
+  go.onclick=()=>{
+    const result={signature:pad.png(),signedOn:iso(new Date()),handedBackOn:iso(d1)};pad.lock();
+    sh.querySelectorAll('.zdk-acts button,#zhbX').forEach(b=>b.disabled=true);
+    sh.querySelector('#zhbSeal').classList.add('down');
+    const sigs=sh.querySelector('#zhbSigs'),big=()=>sigs.insertAdjacentHTML('beforeend',stamp(yrs+' years','Handed over · '+dStamp(d1),'down big'));
+    if(reduce){big();setTimeout(()=>done(result),1400);return;}
+    setTimeout(big,520);setTimeout(()=>docEl.classList.add('thud'),560);
+    setTimeout(()=>desk.classList.add('finale'),2400);setTimeout(()=>done(result),3800);};
+  });
+};
+/* ?moneymock=handback, or window.__zmmHandbackDemo(): the certificate with sample numbers and a drawn day-one signature */
+function hbSampleSig(){return new Promise(r=>{const svg=scribble(53,'#1f3a8a').replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" width="300" height="80" ');
+  const i=new Image();i.onload=()=>{const c=document.createElement('canvas');c.width=640;c.height=118;c.getContext('2d').drawImage(i,40,22,300,80);r(c.toDataURL('image/png'));};i.onerror=()=>r(null);
+  i.src='data:image/svg+xml,'+encodeURIComponent(svg);});}
+window.__zmmHandbackDemo=o=>hbSampleSig().then(sig=>M.handback(Object.assign({founder:'Asha Rao',parent:'Meridian Infra',signature:sig,signedOn:'2026-10-19',endsOn:'2086-10-18',
+  stakePct:68,stakeValueCr:21400,returnPct:14.6,paxTotalM:4180,paidToStateCr:198000,condition:'good',
+  assets:['four runways','Terminals 1 and 2','Satellites G and H','Zero Mile Tower','the APM train','the airport city'],
+  owners:[{name:'Meridian Infra',pct:68},{name:'L5 Capital',pct:12},{name:'Airports Authority of India',pct:10},{name:'State of Maharashtra, through MADC',pct:10}],
+  lines:['The banks were repaid in full in year 24.','The tightest year was year 31, when the airport earned ₹94 for every ₹100 due, and the banks let you keep it.','Penalties to airlines came to ₹3,900 cr over sixty years.']},o||{})));
+(function(){const go=()=>{if(/[?&]moneymock=handback\b/.test(location.search))window.__zmmHandbackDemo().then(r=>{window.__zmmResult=r;});};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else setTimeout(go,0);})();
 
 /* ---------- glossary terms the economy introduces (merge into hub.js GL) ---------- */
 M.terms={

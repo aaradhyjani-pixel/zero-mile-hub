@@ -126,3 +126,13 @@ Shipped in this pass:
   - The Delhi card gives −0.30 to 0.23 on the expert's debt.
   - `money-design.md` is rewritten: "BIAL, scaled", what the player sees (three numbers; two or three decisions an era; no true-up, RAB, WACC or sculpting as inputs), the side-by-side and DSCR-by-era tables. `design/finance.md` is new.
   - The PARAMS numbers are moved to new `money.json` keys.
+
+## 2026-10-19 — Year-60 handback screen (branch handback)
+| Item | Status |
+|---|---|
+| `ZMMoney.handback(opts)` in money/ui.js (new code and an `@hb` CSS block only) | done |
+| Harness `money/test_handback.html` and `?moneymock=handback` | done |
+| WebKit shots at 1440×900 and 1280×800, with real fonts asserted | done: /tmp/zmh/paper/handback_*.png |
+| Not wired: the economy must call it at year 60 with the real numbers | open (hub.js lane) |
+
+The certificate reuses the duty paper, ticks, signature pad, seal and stamp from the deal desk. The day-one signature is trimmed to its ink so both hands sit at the same size. Found while doing this: `.zmm-sheet p` (the old dark-sheet style) greys out and shrinks the paragraphs on every `.zdk-note` slip, including onboarding's. It is fixed for the handback slip only; the ui.js owner should add `.zdk .zdk-note p{color:#26292c;font-size:16.5px}`.

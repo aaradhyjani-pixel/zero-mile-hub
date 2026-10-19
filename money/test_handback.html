@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>Harness: year-60 handback certificate</title>
+<!-- Standalone harness for ZMMoney.handback (DESIGN.md §9). Serve the repo root and open /money/test_handback.html.
+     It loads the masterplan into #planTpl, loads ui.js, and opens the certificate with sample numbers and a drawn day-one signature. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>:root{--f-sign:'Barlow Condensed','Arial Narrow',sans-serif;--f-mono:'JetBrains Mono',monospace;--panel-edge:#26313a;--ink:#e8edf0;--ink-2:#b8c2c8;--ink-3:#7f8b93;--sign:#f2c230;--go:#3ad07f;--stop:#ff4d3f}
+html,body{margin:0;height:100%;background:#050709;color:var(--ink)}#app{position:fixed;inset:0}button{font:inherit;background:none;border:0;cursor:pointer;color:inherit}</style>
+</head><body><div id="app"></div><template id="planTpl"></template>
+<script>
+fetch('../masterplan.svg').then(r=>r.text()).catch(()=>'').then(t=>{document.getElementById('planTpl').innerHTML=t.replace(/<\?xml[^>]*\?>/,'');
+  const s=document.createElement('script');s.src='ui.js';s.onload=()=>window.__zmmHandbackDemo().then(r=>{window.__zmmResult=r;});document.body.appendChild(s);});
+</script></body></html>

@@ -471,7 +471,7 @@ function buildChip(){const k=$('#kpis');if(!k)return;const d=document.createElem
   k.insertBefore(d,k.firstChild);}
 M.setDay=function(o){M.mount();let c=$('#zmmChip');if(!c){buildChip();c=$('#zmmChip');if(!c)return;}
   const v=+o.total||0;c.querySelector('.v').textContent=fmt(v);c.classList.toggle('up',v>0);c.classList.toggle('dn',v<0);
-  c.querySelector('.r').textContent=o.ratePerHr==null?'—':fmt(o.ratePerHr,{sign:true})+' an hour';
+  if(!c.classList.contains('cx'))c.querySelector('.r').textContent=o.ratePerHr==null?'—':fmt(o.ratePerHr,{sign:true})+' an hour';
   if(lastTotal!=null&&Math.abs(v-lastTotal)>=0.005){const t=c.querySelector('.tick');const d=v-lastTotal;t.textContent=fmt(d,{sign:true});t.style.color=d>=0?'var(--go)':'var(--stop)';t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),900);}
   lastTotal=v;hist=o.history?o.history.slice(-60):hist.concat([v]).slice(-60);drawSpark(c.querySelector('canvas'));};
 function drawSpark(cv){const g=cv.getContext('2d');const W=cv.width,H=cv.height;g.clearRect(0,0,W,H);if(hist.length<2)return;
@@ -1262,8 +1262,401 @@ M.terms={
   concession:{t:'Concession',d:'The state\'s permission to build and run the airport for a fixed term, here 60 years, after which it is handed back.'}
 };
 
+/* ---------- Chapter 5 "Take on the Gulf": the four paper screen types (prompt-campaign.md §7) ----------
+   frontPage (The Zero Mile Times), decision (a route agreement), briefing (a torn notepad sheet pinned over the live
+   ops view), bill (one page of the annual report), plus the paper tags of the paper trail, the doc viewer for the
+   pile, connection floaters and the connections line under the money chip. Every figure arrives in opts from
+   money/era.js (VSIEra.ch5); nothing here invents a number. */
+const CSS5=`
+/* tokens for paper that sits over the live game (briefing, tags, doc viewer), the same as .zdk without the desk */
+.z5v{--zp:#fcfcf9;--zt:#1d2024;--zi:#1f3a8a;--zr:#c22a2e;--zw:#b06d12;--zg:#2b7a4b;--zpe:#676c71;
+  --ft:'Courier Prime','Courier New',monospace;--fd:'Libre Caslon Text',Georgia,serif;--fh:'Kalam','Segoe Print',cursive;color:var(--zt)}
+.z5 .zdk-plan{animation:none;opacity:.3}
+.z5-stage{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 24px 18px;z-index:1}
+.z5-acts{display:flex;align-items:center;gap:4px;padding-top:16px}
+/* 7.1 the front page: newsprint, dropped on the desk */
+.z5-np{--s:1;position:relative;width:860px;box-sizing:border-box;padding:22px 34px 26px;background:#efeee8;color:#16181a;
+  transform:rotate(-.7deg) scale(var(--s));transform-origin:50% 0;box-shadow:0 24px 50px rgba(30,40,50,.24),0 2px 5px rgba(30,40,50,.14)}
+.z5-np::after{content:'';position:absolute;left:0;right:0;top:50%;height:2px;background:rgba(0,0,0,.045);box-shadow:0 1px 0 rgba(255,255,255,.55);pointer-events:none}
+.z5-np.drop{animation:z5Drop .62s cubic-bezier(.2,.75,.25,1) both}
+.z5-np.away{animation:z5Away .42s cubic-bezier(.5,0,.8,.4) forwards}
+.z5-mast{display:grid;grid-template-columns:120px 1fr 120px;align-items:end;gap:12px;border-bottom:1px solid #16181a;padding-bottom:8px}
+.z5-mast h1{margin:0;text-align:center;font-family:var(--fd);font-weight:700;font-size:50px;line-height:1;letter-spacing:-.01em;white-space:nowrap}
+.z5-ear{font-family:var(--fd);font-size:11px;line-height:1.35;color:#3b3f44}.z5-ear.r{text-align:right}
+.z5-dl{display:flex;justify-content:space-between;gap:12px;border-bottom:3px double #16181a;padding:4px 0 5px;font-family:var(--fd);font-size:11.5px;letter-spacing:.02em}
+.z5 .z5-lead{margin:14px 0 6px;font-family:var(--fd);font-weight:700;font-size:44px;line-height:1.02;letter-spacing:-.015em;text-wrap:balance}
+.z5 .z5-deck{margin:0 0 12px;font-family:var(--fd);font-style:italic;font-size:17px;line-height:1.35;color:#2b2f33;max-width:62ch}
+.z5-body{display:grid;grid-template-columns:1fr 1fr 214px;column-gap:20px;border-top:1px solid #16181a;padding-top:12px}
+.z5-photo{grid-column:1/3;margin:0}
+.z5-photo .ph{position:relative;height:218px;overflow:hidden;background:#f6f5f0;border:1px solid #16181a}
+.z5-photo .ph svg{position:absolute;inset:0;width:100%;height:100%;filter:invert(1) grayscale(1) contrast(1.9);mix-blend-mode:multiply}
+.z5-photo .ph svg text{display:none}
+.z5-photo figcaption{margin-top:5px;font-family:var(--fd);font-style:italic;font-size:12px;line-height:1.35;color:#3b3f44}
+.z5-sub{grid-column:1/3;margin-top:10px}
+.z5 .z5-sub h3{text-wrap:balance;margin:0 0 5px;font-family:var(--fd);font-weight:700;font-size:20px;line-height:1.12}
+.z5 .z5-txt{font-family:var(--fd);font-size:13px;line-height:1.48;color:#16181a;text-align:justify;hyphens:auto;-webkit-hyphens:auto;margin:0;max-width:none}
+.z5 .z5-txt+.z5-txt{text-indent:1.2em}
+.z5-cc{column-count:2;column-gap:20px}
+.z5-cols{grid-column:3;grid-row:1/3;border-left:1px solid #16181a;padding-left:18px}
+.z5-cols section+section{border-top:1px solid #16181a;margin-top:12px;padding-top:10px}
+.z5-cols h4{margin:0 0 5px;font-family:var(--fd);font-weight:700;font-size:16px;line-height:1.15}
+.z5 .zdk-go{white-space:nowrap}
+@keyframes z5Drop{0%{opacity:0;transform:translateY(-46px) rotate(-5deg) scale(calc(var(--s)*1.1));box-shadow:0 60px 90px rgba(30,40,50,.12)}
+  62%{opacity:1;transform:translateY(5px) rotate(-.2deg) scale(var(--s))}80%{transform:translateY(-2px) rotate(-.8deg) scale(var(--s))}100%{opacity:1;transform:rotate(-.7deg) scale(var(--s))}}
+@keyframes z5Away{to{opacity:0;transform:translate(-30vw,60px) rotate(-9deg) scale(calc(var(--s)*.5))}}
+/* 7.2 the decision: a route agreement on white bond */
+.z5-dec .zdk-main{grid-template-columns:minmax(230px,1fr) minmax(600px,680px) minmax(250px,1fr)}
+.z5-dec .zdk-doc{padding:34px 50px 34px}
+.z5-dec .zdk-ticks button{padding:7px 0}
+.z5-dec .zdk-ticks small{font-size:12.5px;line-height:1.45}
+.z5-dec .zdk-sigs{grid-template-columns:repeat(2,minmax(0,1fr))}
+.z5-dec .zdk-sigs .ink img{height:50px;max-width:100%;object-fit:contain;object-position:left bottom}
+.z5-dec .zdk-sigs .ink .h{font-size:30px}
+.z5-dec .zdk-note .big{display:block;font-family:var(--fh);font-weight:700;font-size:34px;line-height:1.05;margin:6px 0 4px;color:var(--zt)}
+.z5-dec .zdk-note .mon{display:block;font-family:var(--fh);font-size:21px;line-height:1.2}
+.z5-dec .zdk-note .dim{color:var(--zpe)}
+.zdk-card.z5c{cursor:pointer;pointer-events:auto}.zdk-card.z5c:hover span{color:var(--zr)}
+.z5 .zdk-pile{pointer-events:auto}
+/* 7.3 the briefing: a torn notepad sheet pinned top-left over the live ops view (not a modal) */
+.z5-brief{position:absolute;left:16px;top:158px;z-index:28;width:338px;filter:drop-shadow(0 12px 18px rgba(0,0,0,.45)) drop-shadow(0 1px 2px rgba(0,0,0,.4));transform:rotate(-1.4deg);transform-origin:50% 0}
+.z5-brief.away{transition:transform .38s cubic-bezier(.5,0,.8,.4),opacity .38s;transform:translate(-40px,-30px) rotate(-8deg);opacity:0}
+.z5-pad{position:relative;padding:30px 22px 14px 44px;background-color:#fdfdf8;cursor:pointer;
+  background-image:linear-gradient(90deg,transparent 33px,rgba(194,42,46,.45) 33px,rgba(194,42,46,.45) 34.5px,transparent 34.5px),repeating-linear-gradient(180deg,transparent 0 25px,rgba(40,100,160,.2) 25px 26px);background-position:0 0,0 9px}
+.z5-pin{position:absolute;left:50%;top:-2px;z-index:2;width:16px;height:16px;margin-left:-8px;border-radius:50%;background:#c22a2e;box-shadow:inset -3px -3px 0 rgba(0,0,0,.22),0 3px 4px rgba(0,0,0,.4)}
+.z5-pad header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 6px}
+.z5-pad header b{font-family:var(--fd);font-weight:700;font-size:17px;line-height:1.2}
+.z5-pad header span{font-family:var(--ft);font-size:11.5px;color:var(--zpe);white-space:nowrap}
+.z5-pad ol{list-style:none;margin:0;padding:0}
+.z5-pad li{position:relative;margin:0 0 6px}
+.z5-pad li::before{content:counter(list-item) '.';position:absolute;left:-22px;top:1px;font-family:var(--fh);font-size:16px;color:#3b3f44}
+.z5-pad li .h{display:block;font-family:var(--fh);font-size:16.5px;line-height:1.52;color:#22262b}
+.z5-ref{display:inline;font-family:var(--ft);font-size:11.5px;color:var(--zpe);text-decoration:underline;text-underline-offset:2px;padding:0;cursor:pointer}
+.z5-ref:hover{color:var(--zr)}
+.z5-watch{margin:8px 0 4px}
+.z5-watch small{display:block;font-family:var(--ft);font-size:11.5px;color:var(--zpe)}
+.z5-watch span{font-family:var(--fh);font-weight:700;font-size:19px;line-height:1.35;color:#1d2024;text-decoration:underline wavy rgba(194,42,46,.8);text-decoration-thickness:1.5px;text-underline-offset:5px}
+.z5-pad footer{display:flex;align-items:center;gap:10px;margin-top:10px}
+.z5-pad footer button{background:var(--zt);color:#fcfcf9;font-family:var(--f-sign);font-weight:700;font-size:16px;padding:7px 14px;border-radius:2px}
+.z5-pad footer span{font-family:var(--ft);font-size:11.5px;color:var(--zpe)}
+/* the paper trail: tags pinned to the map */
+#z5Tags{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden}
+.z5-tag{position:absolute;left:0;top:0;width:0;height:0;will-change:transform}
+.z5-tag[hidden]{display:none}
+.z5-tag .an{position:absolute;left:-5px;top:-5px;width:10px;height:10px;border-radius:50%;background:#c22a2e;box-shadow:0 0 0 2px #fcfcf9,0 1px 4px rgba(0,0,0,.6)}
+.z5-tag .th{position:absolute;left:0;bottom:0;width:0;height:30px;border-left:1.5px solid rgba(252,252,249,.85)}
+.z5-tag button{position:absolute;left:-14px;bottom:28px;width:126px;box-sizing:border-box;padding:12px 10px 8px 12px;text-align:left;background:#fcfcf9;color:#1d2024;pointer-events:auto;cursor:pointer;transform:rotate(-2deg);box-shadow:0 8px 16px rgba(0,0,0,.45),0 1px 2px rgba(0,0,0,.4)}
+.z5-tag button::before{content:'';position:absolute;left:10px;top:-5px;width:10px;height:10px;border-radius:50%;background:#c22a2e;box-shadow:inset -2px -2px 0 rgba(0,0,0,.22),0 2px 3px rgba(0,0,0,.45)}
+.z5-tag button:hover b{color:var(--zr)}
+.z5-tag b{display:block;font-family:var(--ft);font-weight:700;font-size:11px;line-height:1.25;margin-bottom:3px}
+.z5-tag span{display:block;font-family:var(--fh);font-size:14px;line-height:1.22;color:#2a2d31}
+.z5-tag.pin button{animation:z5Pin .32s cubic-bezier(.3,1.5,.5,1) both}
+@keyframes z5Pin{from{opacity:0;transform:rotate(-2deg) translateY(-14px) scale(1.25)}to{opacity:1;transform:rotate(-2deg)}}
+/* a document from the pile, read-only */
+#z5Doc{position:absolute;inset:0;z-index:34;display:flex;align-items:center;justify-content:center;background:rgba(6,9,11,.5)}
+#z5Doc[hidden]{display:none}
+.z5-rd{position:relative;width:min(500px,calc(100% - 48px));box-sizing:border-box;padding:28px 34px 22px;background:var(--zp);transform:rotate(.6deg);box-shadow:0 22px 48px rgba(0,0,0,.4),0 2px 6px rgba(0,0,0,.2);overflow:hidden}
+.z5-rd h2{font-family:var(--fd);font-weight:700;font-size:26px;line-height:1.12;margin:0 0 10px;padding-right:120px}
+.z5-rd p{font-family:var(--ft);font-size:14px;line-height:1.6;margin:0 0 12px}
+.z5-rd .zdk-stamp{top:58px;right:24px;--tf:rotate(-9deg) scale(.7);transform-origin:right top}
+.z5-rd .zdk-q{padding-left:0}
+/* connection floaters and the connections line under the money chip (the game's night look) */
+.zmm-f.cx{color:#7dffb4;background:rgba(10,40,24,.78);border:1px solid rgba(58,208,127,.5);font-size:12.5px}
+.zmm-f.mx{color:#ffb1a8;background:rgba(48,12,10,.8);border:1px solid rgba(255,77,63,.55);font-size:12.5px}
+.zmm-chip.cx .r b{font-weight:500;color:var(--go)}.zmm-chip.cx .r i{font-style:normal;color:var(--stop)}
+/* 7.4 the bill: one page of the annual report on white bond, with the adviser's margin note */
+.z5-bill .zdk-main{grid-template-columns:minmax(200px,1fr) minmax(720px,800px) minmax(120px,.6fr)}
+.z5-bill .zdk-doc{display:grid;grid-template-columns:1fr 210px;column-gap:30px;padding:34px 34px 30px 50px}
+.z5-bill .zdk-doc>*{grid-column:1}
+.z5-bill .zdk-dh{grid-column:1/3}
+.z5-bill .zdk-tab td{padding:9px 0}
+.z5-bill .zdk-tab .n{font-weight:700}
+.z5-bill .zdk-tab .n i{font-style:normal;font-weight:400;color:var(--zr)}
+.z5-hl{margin:18px 0 0}
+.z5-hl small{display:block;font-family:var(--ft);font-size:12.5px;color:var(--zpe)}
+.z5-hl b{display:block;font-family:var(--ft);font-weight:700;font-size:19px;margin:2px 0 10px}
+.z5-hl .zdk-dscr{margin:0 0 4px;max-width:420px}
+.z5-hl .zdk-dscr .lb{font-family:var(--fh);color:#3b3f44}
+.z5 .z5-stake{font-family:var(--ft);font-size:14px;margin:18px 0 0}
+.z5-mn{grid-column:2!important;grid-row:2/9;align-self:start;position:relative;margin-top:96px;padding-left:20px;font-family:var(--fh);font-weight:700;font-size:20px;line-height:1.32;color:#2c3036;transform:rotate(-2.2deg)}
+.z5-mn svg{position:absolute;left:-6px;top:-8px;width:20px;height:calc(100% + 16px);overflow:visible}
+.z5-mn small{display:block;margin-top:8px;font-weight:400;font-size:15px;color:var(--zpe)}
+/* what really happened: a small index card */
+.z5-card{position:relative;width:480px;box-sizing:border-box;padding:26px 32px 20px;background-color:#fcfcf9;transform:rotate(-.6deg);box-shadow:0 20px 44px rgba(30,40,50,.22),0 2px 5px rgba(30,40,50,.12);
+  background-image:linear-gradient(180deg,transparent 64px,rgba(194,42,46,.5) 64px,rgba(194,42,46,.5) 65.5px,transparent 65.5px),repeating-linear-gradient(180deg,transparent 0 25px,rgba(40,100,160,.14) 25px 26px);background-position:0 0,0 13px}
+.z5 .z5-card h2{margin:0 0 22px;font-family:var(--fd);font-weight:700;font-size:25px;line-height:1.1}
+.z5 .z5-card p{margin:0;font-family:var(--fd);font-size:15.5px;line-height:26px}
+.z5 .z5-card p sup{font-family:var(--ft);font-size:10px;color:var(--zr)}
+.z5-card ol{margin:16px 0 0;padding:10px 0 0 18px;border-top:1px solid #9aa0a5;font-family:var(--ft);font-size:11.5px;line-height:1.5;color:#3b3f44}
+.z5-card ol a{color:inherit;text-underline-offset:2px}
+.z5-card ol a:hover{color:var(--zr)}
+@media (max-width:1280px){.z5-dec .zdk-main{grid-template-columns:minmax(190px,1fr) minmax(560px,620px) minmax(230px,1fr)}.z5-dec .zdk-doc{padding:28px 40px 28px}
+  .z5-bill .zdk-main{grid-template-columns:minmax(170px,1fr) minmax(700px,760px) minmax(40px,.4fr)}.z5-bill .zdk-doc{grid-template-columns:1fr 190px;padding:28px 28px 26px 40px}.z5-mn{font-size:18.5px}}
+@media (prefers-reduced-motion:reduce){.z5-np.drop,.z5-np.away,.z5-tag.pin button{animation:none}.z5-brief.away{transition:none}}
+`;
+let css5=false;
+function mount5(){M.mount();if(css5)return;css5=true;const st=document.createElement('style');st.id='zmmCss5';st.textContent=CSS5;document.head.appendChild(st);loadDeskFonts();}
+const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isoDay=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const longDay=d=>`${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+const paras=t=>(Array.isArray(t)?t:String(t||'').split(/\n\n+/)).filter(Boolean);
+
+/* the pile: documents the player has already signed, so tags and briefing lines can open them.
+   ZMMoney.setPile(state.docs) once per chapter; each doc {id, title, year, kind, summary, stamp?} */
+let PILE=[];
+M.setPile=function(docs){PILE=(docs||[]).slice();return PILE;};
+const findDoc=id=>PILE.find(d=>d.id===id);
+const stampFor=d=>d.stamp||({agreement:'Executed',concession:'Executed',budget:'Approved',minutes:'Approved','route-agreement':'Signed',route:'Signed',declined:'Declined',choice:'Approved',order:'Filed',letter:'Filed'}[d.kind])||'Filed';
+
+/* a desk for the paper screens: grid paper with the masterplan in faint drafting ink */
+function desk5(cls,inner){mount5();const plan=document.getElementById('planTpl');
+  return open(`<div class="zdk z5 ${cls||''}">${INK_DEFS}<div class="zdk-sheet" aria-hidden="true"><div class="zdk-plan">${plan?plan.innerHTML:''}</div></div>${inner}</div>`,'zmm-ob');}
+function pileCards(docs){return (docs||[]).slice(-5).map((d,n)=>`<div class="zdk-card z5c" style="--i:${n};--r:${[-4,3,-2,5,-3][n%5]}deg;animation:none" data-doc="${esc(d.id)}" title="Open: ${esc(d.title)}"><span>${esc(d.title)}</span><i></i><i></i><i class="s"></i>${stampHtml(stampFor(d),'mini')}</div>`).join('');}
+function wirePile(root,docs){root.querySelectorAll('.zdk-card.z5c').forEach(c=>c.onclick=()=>{const d=(docs||[]).find(x=>x.id===c.dataset.doc)||findDoc(c.dataset.doc);if(d)M.openDoc(d);});}
+
+/* the photo box: the masterplan, cropped to the detail that matters, in pen and ink */
+const CROPS={'intl-pier':'-1300 -1120 1500 760','pier':'-1300 -1120 1500 760','runway':'-2600 -3300 5200 2200','hall':'-3300 -1500 2500 1900','transfer':'-1900 -400 2300 1500'};
+function photoSvg(kind){const t=document.getElementById('planTpl'),vb=CROPS[kind]||CROPS['intl-pier'];
+  if(t&&t.innerHTML.indexOf('<svg')>=0)return t.innerHTML.replace(/<svg([^>]*?)viewBox="[^"]*"/,`<svg$1viewBox="${vb}" preserveAspectRatio="xMidYMid slice"`);
+  // no masterplan on the page: a plain ink drawing of a pier with widebodies on its stands (drawn dark-on-light, then inverted like the plan)
+  let s='';for(let i=0;i<7;i++){const x=70+i*78;s+=`<path d="M${x} 118 v-46 M${x-20} 70 h40 M${x} 52 v-18" stroke="#fff" stroke-width="3"/><path d="M${x} 150 v46 M${x-20} 198 h40 M${x} 216 v18" stroke="#fff" stroke-width="3"/>`;}
+  return `<svg viewBox="0 0 640 260" preserveAspectRatio="xMidYMid slice"><rect width="640" height="260" fill="#0f1417"/><rect x="20" y="118" width="600" height="32" fill="none" stroke="#fff" stroke-width="3"/>${s}</svg>`;}
+/* a paper slap: a short filtered noise burst. Silent if audio is not allowed yet. */
+function slap(){try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;const a=M._ac||(M._ac=new A());if(a.state!=='running')return;
+  const n=Math.floor(a.sampleRate*.16),b=a.createBuffer(1,n,a.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,5);
+  const s=a.createBufferSource();s.buffer=b;const f=a.createBiquadFilter();f.type='lowpass';f.frequency.value=1600;const g=a.createGain();g.gain.value=.5;s.connect(f);f.connect(g);g.connect(a.destination);s.start(a.currentTime+.36);}catch(e){}}
+
+/* ZMMoney.frontPage(opts) → Promise<void>. opts = VSIEra.ch5.frontPage(state):
+   {masthead, dateLine, price, lead, deck, sub:{head, body}, columns:[{head, body} ×2], photo:{kind, caption}}
+   optional: edition (left ear), cta (default "Turn it over"). The paper drops on the desk and settles; "Turn it over" resolves. */
+M.frontPage=function(o){o=o||{};return new Promise(res=>{
+  const cols=(o.columns||[]).slice(0,2),ph=o.photo||{};
+  const sh=desk5('z5-fp',`<div class="z5-stage"><article class="z5-np" id="z5Np" aria-label="${esc(o.masthead||'The Zero Mile Times')}">
+    <header class="z5-mast"><div class="z5-ear">${esc(o.edition||'Nagpur edition')}<br>Late city</div><h1>${esc(o.masthead||'The Zero Mile Times')}</h1><div class="z5-ear r">${esc(o.price||'')}<br>Weather: clear</div></header>
+    <div class="z5-dl"><span>${esc(o.dateLine||'')}</span><span>${esc(M.cfg.airportName)} and the world</span></div>
+    <h2 class="z5-lead">${esc(o.lead||'')}</h2>${o.deck?`<p class="z5-deck">${esc(o.deck)}</p>`:''}
+    <div class="z5-body"><figure class="z5-photo"><div class="ph">${photoSvg(ph.kind)}</div>${ph.caption?`<figcaption>${esc(ph.caption)}</figcaption>`:''}</figure>
+      ${o.sub?`<section class="z5-sub"><h3>${esc(o.sub.head)}</h3><div class="z5-cc">${paras(o.sub.body).map(p=>`<p class="z5-txt">${esc(p)}</p>`).join('')}</div></section>`:''}
+      <aside class="z5-cols">${cols.map(c=>`<section><h4>${esc(c.head)}</h4>${paras(c.body).map(p=>`<p class="z5-txt">${esc(p)}</p>`).join('')}</section>`).join('')}</aside></div>
+  </article><div class="z5-acts"><button class="zdk-go" id="z5Turn">${esc(o.cta||'Turn it over')}</button></div></div>`);
+  const np=sh.querySelector('#z5Np');
+  const fit=()=>{np.style.setProperty('--s',1);const h=np.offsetHeight,w=np.offsetWidth,av=sh.clientHeight-96,aw=sh.clientWidth-60;const s=Math.min(1,av/h,aw/w);np.style.setProperty('--s',s.toFixed(3));np.style.marginBottom=(-(1-s)*h)+'px';};
+  fit();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit);
+  if(!reduced()){np.classList.add('drop');slap();}
+  let gone=false;sh.querySelector('#z5Turn').onclick=()=>{if(gone)return;gone=true;
+    if(reduced()){close();res();return;}np.classList.remove('drop');void np.offsetWidth;np.classList.add('away');setTimeout(()=>{close();res();},430);};
+});};
+
+/* ZMMoney.decision(opts) → Promise<{choice, signedOn}>. opts = VSIEra.ch5.decision(state):
+   {docType, docId, title, parties:{airport, airline, signatory:{name, title, hand?}}, body:[typed paragraphs],
+    choices:[{id, label, terms, slip:{big, money, line}, act?}], stamps:{[id]: word}}
+   optional: date (shown on the document), founder, parent, signature (PNG data URL from onboarding), pile:[docs], slipQuestion.
+   One document; the adviser's slip shows the ticked choice's one big number; signing brings down the red stamp. */
+M.decision=function(o){o=o||{};return new Promise(res=>{
+  const ch=o.choices||[],pa=o.parties||{},sg=Object.assign({hand:{font:'La Belle Aurore',size:30,adv:.46,slant:2,rot:-4,ink:'#14161a',weight:.2,flourish:'under'}},pa.signatory||{});
+  const pile=o.pile||PILE,now=new Date(),dateTxt=o.date||longDay(now);
+  const docName={'route-agreement':'Route agreement','capital-budget':'Capital budget','order':'Regulator\'s order','letter':'Letter'}[o.docType]||'Agreement';
+  let pick=null,done=false;
+  const sh=desk5('z5-dec',`<header class="zdk-top"><div class="zdk-mark">${vsiLogo(30)}<span>${esc(M.cfg.airportName)}</span></div></header>
+    <div class="zdk-pile" id="zdkPile" aria-label="Documents on file">${pileCards(pile)}</div>
+    <main class="zdk-main"><div class="zdk-col"><article class="zdk-doc arrive" id="zdkDoc">
+      <div class="zdk-dh">${vsiLogo(22)}<span>${esc(docName)} · ${esc(o.docId||'')}</span><span class="dt">${esc(dateTxt)}</span></div>
+      <h2>${esc(o.title||docName)}</h2>
+      <p class="t">This agreement is made at Nagpur on ${esc(dateTxt)}, between:</p>
+      <ol class="zdk-parties"><li>${esc(pa.airport||M.cfg.spvName)} (“the Airport”); and</li><li>${esc(pa.airline||'Skyward')} (“the Airline”).</li></ol>
+      ${paras(o.body).map(p=>`<p class="t">${esc(p)}</p>`).join('')}
+      <p class="t">The parties agree to the line ticked below.</p>
+      <div class="zdk-ticks" role="radiogroup" aria-label="The terms">${ch.map(c=>`<button role="radio" aria-checked="false" data-id="${esc(c.id)}"><i></i><span>${esc(c.label)}</span>${c.terms?`<small>${esc(c.terms)}</small>`:''}</button>`).join('')}</div>
+      <div class="zdk-sigs"><div class="s"><div class="ink">${signSvg(sg)}</div><span><b>${esc(sg.name||'')}</b><br>${esc(sg.title||'Authorised signatory')}</span><small>for ${esc(pa.airline||'Skyward')}</small></div>
+        <div class="s" id="z5Me"><div class="ink"></div><span><b>${esc(o.founder||'Director')}</b><br>Director${o.parent?', for '+esc(o.parent):''}</span><small>for ${esc(M.cfg.spvShort)}</small></div></div>
+    </article><div class="zdk-acts"><button class="zdk-go" id="z5Sign" disabled>Tick one line first</button></div></div>
+    <aside class="zdk-note arrive" id="zdkNote" aria-live="polite"></aside></main>`);
+  wirePile(sh,pile);
+  const doc=sh.querySelector('#zdkDoc'),note=sh.querySelector('#zdkNote'),go=sh.querySelector('#z5Sign');
+  const actOf=c=>c.act||(c.id==='decline'?'Decline the agreement':'Sign the agreement');
+  const slipNow=()=>{const c=ch.find(x=>x.id===pick);
+    if(!c){note.innerHTML=`<h3>${esc(o.slipQuestion||'What each line does for VSI')}</h3><p class="dim">Tick one line and I’ll tell you what it means for the hub: connections a day, and money a year.</p>`;return;}
+    const s=c.slip||{};note.innerHTML=`<h3>${esc(c.label)}</h3>${s.big?`<b class="big">${esc(s.big)}</b>`:''}${s.money?`<span class="mon">${esc(s.money)}</span>`:''}${s.line?`<p>${esc(s.line)}</p>`:''}`;};
+  slipNow();
+  sh.querySelectorAll('.zdk-ticks button').forEach(b=>b.onclick=()=>{if(done)return;pick=b.dataset.id;sh.querySelectorAll('.zdk-ticks button').forEach(x=>x.setAttribute('aria-checked',x===b?'true':'false'));
+    const c=ch.find(x=>x.id===pick);go.disabled=false;go.textContent=actOf(c);slipNow();});
+  go.onclick=()=>{if(done||!pick)return;done=true;go.disabled=true;
+    const me=sh.querySelector('#z5Me .ink');me.innerHTML=o.signature?`<img src="${esc(o.signature)}" alt="Your signature">`:H(o.founder||M.cfg.spvShort);
+    const word=(o.stamps||{})[pick]||(pick==='decline'?'Declined':'Signed');
+    doc.insertAdjacentHTML('beforeend',stampHtml(word,'down'));doc.classList.remove('arrive');
+    const fin=()=>{close();res({choice:pick,signedOn:isoDay(now)});};
+    if(reduced()){setTimeout(fin,700);return;}
+    setTimeout(()=>{const p=sh.querySelector('#zdkPile'),n=Math.min(5,p.children.length),cd=document.createElement('div');cd.className='zdk-card';cd.style.setProperty('--i',n);cd.style.setProperty('--r','-3deg');
+      cd.innerHTML=`<span>${esc(o.title||docName)}</span><i></i><i></i><i class="s"></i>${stampHtml(word,'mini')}`;doc.classList.add('leave');note.style.opacity='0';setTimeout(()=>p.appendChild(cd),380);},900);
+    setTimeout(fin,2100);};
+});};
+
+/* ZMMoney.briefing(opts) → Promise<void>. opts = VSIEra.ch5.briefing(state):
+   {title, date, lines:[{text, docId}] (3), watch, autoStartSec}. optional: docs (else the pile from setPile).
+   A torn notepad sheet pinned top-left over the live ops view. It is not a modal: the game stays visible.
+   It resolves after autoStartSec (the countdown waits while a document is open), or on a click on the sheet. */
+M.briefing=function(o){o=o||{};mount5();return new Promise(res=>{
+  const app=$('#app');if(!app){res();return;}
+  const old=$('#z5Brief');if(old)old.remove();
+  const docs=o.docs||PILE,dOf=id=>docs.find(d=>d.id===id)||findDoc(id);
+  const ref=id=>{const d=dOf(id);return d?`<button class="z5-ref" data-doc="${esc(id)}">${esc(d.title)}${d.year!=null&&!/\d{4}/.test(d.title)?', '+esc(d.year):''}</button>`:'';};
+  // a torn top edge: a seeded zigzag, so the same sheet always tears the same way
+  let q=17;const rnd=()=>((q=(q*9301+49297)%233280)/233280);const pts=['0% 100%','100% 100%'];for(let x=100;x>=0;x-=2.5)pts.push(`${x}% ${(rnd()*7).toFixed(1)}px`);
+  const el=document.createElement('aside');el.className='z5v z5-brief';el.id='z5Brief';el.setAttribute('role','note');el.setAttribute('aria-label',o.title||'Handover');
+  const sec=Math.max(0,+(o.autoStartSec==null?6:o.autoStartSec));
+  el.innerHTML=`<i class="z5-pin" aria-hidden="true"></i><div class="z5-pad" style="clip-path:polygon(${pts.join(',')})">
+    <header><b>${esc(o.title||'Duty manager’s handover')}</b><span>${esc(o.date||'')}</span></header>
+    <ol>${(o.lines||[]).slice(0,3).map(l=>`<li><span class="h">${esc(l.text)}</span>${ref(l.docId)}</li>`).join('')}</ol>
+    ${o.watch?`<div class="z5-watch"><small>The one thing to watch</small><span>${esc(o.watch)}</span></div>`:''}
+    <footer><button id="z5Go">Start the shift</button><span id="z5Cd"></span></footer></div>`;
+  el.addEventListener('keydown',e=>e.stopPropagation());
+  app.appendChild(el);
+  let left=sec,reading=false,over=false;const cd=el.querySelector('#z5Cd');
+  const show=()=>{cd.textContent=sec?`or it starts in ${left} s`:'';};show();
+  const go=()=>{if(over)return;over=true;clearInterval(t);el.classList.add('away');setTimeout(()=>el.remove(),reduced()?0:400);res();};
+  const t=sec?setInterval(()=>{if(reading)return;left--;show();if(left<=0)go();},1000):0;
+  el.querySelectorAll('.z5-ref').forEach(b=>b.onclick=e=>{e.stopPropagation();const d=dOf(b.dataset.doc);if(!d)return;reading=true;M.openDoc(d).then(()=>{reading=false;});});
+  el.querySelector('.z5-pad').onclick=go;
+});};
+
+/* ZMMoney.openDoc(doc) → Promise<void>: a read-only page from the pile: title, year, summary, stamp.
+   doc may be an id from setPile. Fires window 'zmm-doc' {detail:{open:true|false, doc}} so the game can pause while it reads. */
+M.openDoc=function(doc){mount5();if(typeof doc==='string')doc=findDoc(doc)||{title:doc};doc=doc||{};return new Promise(res=>{
+  const app=$('#app');if(!app){res();return;}
+  let v=$('#z5Doc');if(!v){v=document.createElement('div');v.id='z5Doc';v.className='z5v';app.appendChild(v);v.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape')v._close&&v._close();});}
+  const yr=doc.year!=null?(doc.year>1900?String(doc.year):'Year '+doc.year+' of the concession'):'';
+  v.innerHTML=`<article class="z5-rd" role="dialog" aria-modal="true" aria-label="${esc(doc.title||'Document')}" tabindex="-1"><div class="zdk-dh">${vsiLogo(20)}<span>From the pile${yr?' · '+esc(yr):''}</span></div>
+    <h2>${esc(doc.title||'')}</h2>${paras(doc.summary).map(p=>`<p>${esc(p)}</p>`).join('')}${stampHtml(stampFor(doc),'',doc.stampedOn?new Date(doc.stampedOn):undefined)}
+    <button class="zdk-q" id="z5DocX">Put it back on the pile</button></article>`;
+  v.hidden=false;
+  const fin=()=>{v.hidden=true;v._close=null;window.dispatchEvent(new CustomEvent('zmm-doc',{detail:{open:false,doc}}));res();};
+  v._close=fin;v.onclick=e=>{if(e.target===v)fin();};v.querySelector('#z5DocX').onclick=fin;
+  setTimeout(()=>{const a=v.querySelector('#z5DocX');a&&a.focus({preventScroll:true});},30);
+  window.dispatchEvent(new CustomEvent('zmm-doc',{detail:{open:true,doc}}));
+});};
+
+/* paper tags on the map: ZMMoney.tag(id, {doc, line, docId}) creates one; ZMMoney.tagAt(id, sx, sy) puts its pin on a
+   screen point relative to #app (call every frame); ZMMoney.tagRemove(id). Clicking a tag opens its document. */
+const TAGS=new Map();
+function tagLayer(){mount5();let l=$('#z5Tags');if(!l){const app=$('#app');if(!app)return null;l=document.createElement('div');l.id='z5Tags';l.className='z5v';
+  const fl=$('#zmmFloat');if(fl&&fl.nextSibling)app.insertBefore(l,fl.nextSibling);else app.appendChild(l);}return l;}
+M.tag=function(id,o){o=o||{};const l=tagLayer();if(!l)return null;let t=TAGS.get(id);
+  if(!t){t=document.createElement('div');t.className='z5-tag'+(reduced()?'':' pin');t.hidden=true;l.appendChild(t);TAGS.set(id,t);}
+  t.dataset.id=id;t.innerHTML=`<i class="th" aria-hidden="true"></i><i class="an" aria-hidden="true"></i><button title="Open: ${esc(o.doc||'')}"><b>${esc(o.doc||'')}</b><span>${esc(o.line||'')}</span></button>`;
+  t.querySelector('button').onclick=()=>{const d=(o.docId&&findDoc(o.docId))||{title:o.doc,summary:o.line};M.openDoc(d);};
+  return t;};
+M.tagAt=function(id,sx,sy){const t=TAGS.get(id);if(!t)return;if(!isFinite(sx)||!isFinite(sy)){t.hidden=true;return;}t.hidden=false;t.style.transform=`translate(${Math.round(sx)}px,${Math.round(sy)}px)`;};
+M.tagRemove=function(id){const t=TAGS.get(id);if(t){t.remove();TAGS.delete(id);}};
+M.tagClear=function(){for(const id of [...TAGS.keys()])M.tagRemove(id);};
+
+/* connection floaters: ZMMoney.connFloat(sx, sy, {made, cr}) → "+46 connections · ₹0.4 cr" in green;
+   ZMMoney.connFloat(sx, sy, {missed, rival}) → "−18 missed · Doha wins them" in red. Same-kind floaters close together merge. */
+const clive=[];const nIN=n=>Math.round(n).toLocaleString('en-IN');
+M.connFloat=function(sx,sy,d){M.mount();d=d||{};const fl=$('#zmmFloat');if(!fl||!isFinite(sx)||!isFinite(sy))return;
+  const miss=d.missed!=null&&!(d.made>0),now=performance.now();for(let i=clive.length-1;i>=0;i--)if(now-clive[i].t>1700)clive.splice(i,1);
+  const txt=o=>miss?`−${nIN(o.n)} missed · ${o.rival||'Doha'} wins them`:`+${nIN(o.n)} connection${o.n===1?'':'s'}${o.cr!=null?' · '+fmt(o.cr):''}`;
+  const near=clive.find(o=>o.miss===miss&&(!miss||o.rival===d.rival)&&Math.abs(o.x-sx)<60&&Math.abs(o.y-sy)<36&&now-o.t<900);
+  if(near){near.n+=miss?+d.missed||0:+d.made||0;if(d.cr!=null)near.cr=(near.cr||0)+ +d.cr;near.el.textContent=txt(near);return;}
+  if(clive.length>=6){const o=clive.shift();o.el.remove();}
+  const o={x:sx,y:sy,t:now,miss,n:miss?+d.missed||0:+d.made||0,cr:d.cr!=null?+d.cr:null,rival:d.rival};
+  const e=document.createElement('div');e.className='zmm-f '+(miss?'mx':'cx');e.style.left=sx+'px';e.style.top=sy+'px';e.textContent=txt(o);fl.appendChild(e);o.el=e;clive.push(o);setTimeout(()=>e.remove(),1850);};
+/* ZMMoney.setConnections({made, missed}): the one line under the money chip. From then on it replaces the rate line. */
+M.setConnections=function(o){o=o||{};M.mount();let c=$('#zmmChip');if(!c){buildChip();c=$('#zmmChip');if(!c)return;}
+  c.classList.add('cx');c.querySelector('.r').innerHTML=`<b>${nIN(+o.made||0)}</b> connections · <i>${nIN(+o.missed||0)}</i> missed`;
+  c.title='Money made so far this shift. Under it: passengers who made their onward flight, and those who missed it.';};
+
+/* ZMMoney.bill(opts) → Promise<void>. opts = the bill from VSIEra.ch5.applyShift:
+   {title, year, paragraph, table:[{label:'Earned', cr}, {label:'Spent', cr}, {label:'Connections', made, missed}],
+    margin, cover:{ratio, words, light}, stake:{pct, valueCr}}. optional: page, adviser (signs the note), cta, pile.
+   One page of the annual report on white bond with one handwritten margin note. A reading moment: no stamp. */
+M.bill=function(o){o=o||{};return new Promise(res=>{
+  const cv=o.cover||{},r=+cv.ratio,stk=o.stake||{},pile=o.pile||PILE;
+  const yr=o.year!=null?String(o.year):'';
+  const row=t=>t.made!=null||t.missed!=null?`<tr><td>${esc(t.label)}</td><td class="n">${nIN(+t.made||0)} made · <i>${nIN(+t.missed||0)} missed</i></td></tr>`:`<tr><td>${esc(t.label)}</td><td class="n">${fmt(+t.cr)}</td></tr>`;
+  // the banks' scale: ₹90 to ₹190 earned per ₹100 due; the banks take control under ₹110 and warn under ₹130 (pencil hatching)
+  const pos=isFinite(r)?Math.max(1,Math.min(99,(r-0.9)/1.0*100)):null;
+  const mood={green:'The banks are relaxed',amber:'The banks are watching closely',red:'The banks are warning you'}[cv.light]||'';
+  const sh=desk5('z5-bill',`<header class="zdk-top"><div class="zdk-mark">${vsiLogo(30)}<span>${esc(M.cfg.airportName)}</span></div></header>
+    <div class="zdk-pile" id="zdkPile" aria-label="Documents on file">${pileCards(pile)}</div>
+    <main class="zdk-main"><div class="zdk-col"><article class="zdk-doc arrive" id="zdkDoc">
+      <div class="zdk-dh">${vsiLogo(22)}<span>${esc(M.cfg.spvShort)} · Annual report${yr?' '+esc(yr):''}</span><span class="dt">page ${esc(o.page||7)}</span></div>
+      <h2>${esc(o.title||'The year in one page')}</h2>
+      ${paras(o.paragraph).map(p=>`<p class="t">${esc(p)}</p>`).join('')}
+      <table class="zdk-tab">${(o.table||[]).map(row).join('')}</table>
+      ${cv.words?`<div class="z5-hl"><small>Can the airport pay the banks?</small><b>${esc(cv.words)}</b>${pos!=null?`<div class="zdk-dscr"><div class="sc"><i class="a"></i><i class="b"></i><i class="c"></i><span style="left:${pos}%"></span></div><div class="lb"><span style="left:0">the banks take control</span><span style="right:0">${esc(mood)}</span></div></div>`:''}</div>`:''}
+      ${stk.pct!=null?`<p class="z5-stake">Your company owns ${esc(stk.pct)}% of ${esc(M.cfg.spvShort)}${stk.valueCr!=null?`, worth about ${fmt(+stk.valueCr)}`:''}.</p>`:''}
+      ${o.margin?`<aside class="z5-mn"><svg viewBox="0 0 20 100" preserveAspectRatio="none" aria-hidden="true"><path d="M14 2 C4 4 10 40 2 50 C10 60 4 96 14 98" fill="none" stroke="#3b3f44" stroke-width="1.6" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>${esc(o.margin)}<small>${esc(o.adviser||'your adviser')}</small></aside>`:''}
+    </article><div class="zdk-acts"><button class="zdk-go" id="z5Close">${esc(o.cta||'Close the books')}</button></div></div></main>`);
+  wirePile(sh,pile);
+  sh.querySelector('#z5Close').onclick=()=>{close();res();};
+});};
+
+/* ZMMoney.whatHappened(opts) → Promise<void>. opts = the card from VSIEra.ch5.applyShift:
+   {title:'What really happened', text (2–3 sentences), sources:[{label, url}]}. optional: cta.
+   A small index card on the desk; each source is a numbered footnote. */
+M.whatHappened=function(o){o=o||{};return new Promise(res=>{
+  const src=o.sources||[];const sup=src.map((_,i)=>i+1).join(',');
+  const sh=desk5('z5-wh',`<div class="z5-stage"><article class="z5-card" aria-label="${esc(o.title||'What really happened')}"><h2>${esc(o.title||'What really happened')}</h2>
+    ${paras(o.text).map((p,i,a)=>`<p>${esc(p)}${i===a.length-1&&sup?`<sup>${sup}</sup>`:''}</p>`).join('')}
+    ${src.length?`<ol>${src.map(s=>`<li>${s.url?`<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.label)}</a>`:esc(s.label)}</li>`).join('')}</ol>`:''}
+  </article><div class="z5-acts"><button class="zdk-go" id="z5Back">${esc(o.cta||'Back to the airport')}</button></div></div>`);
+  sh.querySelector('#z5Back').onclick=()=>{close();res();};
+});};
+
+/* sample Chapter 5 data for ?moneymock=frontpage|decision|briefing|tags|bill|card. The real figures come from VSIEra.ch5. */
+const CH5={
+  docs:[{id:'ca',title:'Concession Agreement',year:2026,kind:'agreement',summary:'Signed by AAI, the State through MADC, L5 Capital and your company. Sixty years to build and run VSI, then hand it back.'},
+    {id:'p1',title:'Phase 1: the lean build',year:2027,kind:'choice',summary:'You built phase 1 for 45 million passengers a year: ₹60,000 cr. Piers A to D only. No widebody stands on the international side until phase 1B.'},
+    {id:'cb2034',title:'Capital budget, 2034',year:2034,kind:'budget',summary:'Approved: the departure planning system and the retail upgrade. Not approved: the bird radar (₹180 cr). The lakes south of the field stay unwatched.'},
+    {id:'ra2040',title:'Route agreement with Skyward',year:2040,kind:'route-agreement',summary:'Skyward flies a daily evening bank from VSI to London, Singapore and Nairobi, fed by the domestic bank from Lucknow, Indore, Patna and Bhopal.'}],
+  front:{masthead:'The Zero Mile Times',dateLine:'Nagpur, Monday 15 October 2040',price:'₹12',edition:'Nagpur edition',
+    lead:'DUBAI, DOHA OR NAGPUR? THE RACE FOR INDIA\'S TRAVELLERS',
+    deck:'A long-haul airline wants to make VSI its Indian hub. The Gulf airports want India\'s travellers to keep changing planes with them.',
+    sub:{head:'Skyward puts London, Singapore and Nairobi on the table',body:'Skyward\'s chief executive flew in on Saturday to offer VSIAL a daily evening bank of long-haul flights. Each would be filled by the domestic flights that land at VSI in the hour before.\n\nThe airline wants stands, a quick transfer and a promise that the feeders will not run late. VSIAL\'s board meets this week.'},
+    columns:[{head:'Feeders fill up',body:'Fourteen Indian cities now send a morning and an evening bank to VSI. Lucknow and Indore are full most days.'},
+      {head:'AERA holds charges',body:'The regulator kept airline charges where they were for five more years. VSIAL said it would live with the order.'}],
+    photo:{kind:'intl-pier',caption:'The international pier at VSI, where a London flight would board. Drawn by our staff artist.'}},
+  decision:{docType:'route-agreement',docId:'RA-2040-07',title:'Route agreement: Skyward',
+    parties:{airport:'Vikram Sarabhai International Airport Limited',airline:'Skyward',signatory:{name:'Daniel Okafor',title:'Chief Executive, Skyward'}},
+    body:['The Airline will base long-haul aircraft at the Airport and fly one bank of international departures each evening.','The Airport will give the Airline\'s flights stands on the international pier, and a transfer from the domestic bank in under an hour.','If a feeder lands late, the Airport may hold the departure. The slot it misses at the other end is the Airport\'s cost.'],
+    choices:[{id:'three',label:'London, Singapore and Nairobi, every evening',terms:'Three widebodies. Skyward wants three stands on the international pier.',act:'Sign for three routes',slip:{big:'+2,400 connections a day',money:'₹1,850 cr a year',line:'If the feeder bank holds. Every missed connection books via Doha next time.'}},
+      {id:'london',label:'London only, every evening',terms:'One widebody, one stand. Skyward may add routes later.',act:'Sign for London',slip:{big:'+900 connections a day',money:'₹690 cr a year',line:'Safer on stands. Singapore and Nairobi stay with Dubai and Doha.'}},
+      {id:'decline',label:'Decline the agreement',terms:'No international bank this chapter.',slip:{big:'0 new connections',money:'₹0 a year',line:'Nothing can go wrong tonight. Doha keeps India\'s travellers.'}}],
+    stamps:{three:'Signed',london:'Signed',decline:'Declined'}},
+  brief:{title:'Duty manager’s handover',date:'15 Oct 2040, 13:40',
+    lines:[{text:'Skyward’s London bank departs 14:10 · 380 connecting',docId:'ra2040'},{text:'Only two widebody stands on the international side',docId:'p1'},{text:'No bird radar: watch the lakes south of 28L',docId:'cb2034'}],
+    watch:'Lucknow’s feeder. If it’s late, London has to wait or go.',autoStartSec:6},
+  tags:[{id:'stands',doc:'Phase 1: the lean build',line:'No widebody stand free for Skyward 12.',docId:'p1'},{id:'birds',doc:'Capital budget, 2034',line:'You skipped the bird radar.',docId:'cb2034'}],
+  bill:{title:'The first year of the Gulf race',year:2040,page:7,
+    paragraph:'Skyward\'s evening bank to London, Singapore and Nairobi ran all year. Most feeders landed on time; when Lucknow ran late you held London. Two widebodies a night waited on taxiways for a stand.',
+    table:[{label:'Earned',cr:2140},{label:'Spent',cr:1610},{label:'Connections',made:612000,missed:41000}],
+    margin:'You held London twice. It cost ₹38 cr in slots and kept 760 passengers off Doha. Skyward is adding a Frankfurt flight.',
+    cover:{ratio:1.18,words:'₹118 earned for every ₹100 due',light:'amber'},stake:{pct:64,valueCr:23600}},
+  card:{title:'What really happened',text:'Emirates began flying from Dubai in October 1985 with two leased aircraft. Dubai grew its airport alongside the airline, and by 2014 it handled more international passengers than any other airport in the world.',
+    sources:[{label:'Emirates, “The Emirates Story”',url:'https://www.emirates.com/english/about-us/our-history/'},{label:'Airports Council International, World Airport Traffic Rankings 2014',url:'https://aci.aero/'}]}};
+M._ch5Sample=CH5;
+function ch5Mock(kind){M.setPile(CH5.docs);const H5=window.HUB;
+  const live=()=>{if(H5&&H5.startLevel){try{H5.view&&H5.view('2d');H5.startLevel(3);H5.ff&&H5.ff(kind==='tags'?420:2);H5.pause&&H5.pause();}catch(e){console.warn(e);}}};
+  if(kind==='frontpage')return M.frontPage(CH5.front);
+  if(kind==='decision')return M.decision(Object.assign({founder:'Asha Rao',parent:'Meridian Infra',date:'15 October 2040'},CH5.decision));
+  if(kind==='bill')return M.bill(CH5.bill);
+  if(kind==='card')return M.whatHappened(CH5.card);
+  if(kind==='briefing'){live();return M.briefing(Object.assign({},CH5.brief,{autoStartSec:600}));}
+  if(kind==='tags'){live();M.enable(true);M.setDay({total:142.6,ratePerHr:61});M.setConnections({made:1840,missed:380});
+    CH5.tags.forEach(t=>M.tag(t.id,t));
+    // pin each tag to a real aircraft on the map: a widebody at a stand, and one on final approach
+    const pickF=(want)=>{const fs=H5&&H5.flights?H5.flights():[];return fs.find(f=>f.sx!=null&&want(f));};
+    let fA=null,fB=null;const step=()=>{if(!fA||fA.sx==null)fA=pickF(f=>f.state==='at_gate');if(!fB||fB.sx==null)fB=pickF(f=>f.state==='approach'||f.state==='holding');
+      const app=$('#app').getBoundingClientRect();
+      M.tagAt('stands',fA?fA.sx:app.width*.42,fA?fA.sy:app.height*.5);M.tagAt('birds',fB?fB.sx:app.width*.3,fB?fB.sy:app.height*.25);requestAnimationFrame(step);};
+    step();
+    const fire=()=>{const r=$('#app').getBoundingClientRect();M.connFloat(r.width*.44,r.height*.56,{made:46,cr:0.4});M.connFloat(r.width*.56,r.height*.36,{missed:18,rival:'Doha'});};
+    fire();setInterval(fire,1600);return Promise.resolve();}
+  return Promise.resolve();}
+M._ch5Mock=ch5Mock;
+
 /* ---------- auto-mount, and a mock driver for screenshots: ?moneymock ---------- */
 function boot(){M.mount();if(!/[?&]moneymock\b/.test(location.search))return;
+  {const k=(location.search.match(/[?&]moneymock=(frontpage|decision|briefing|tags|bill|card)\b/)||[])[1];if(k){ch5Mock(k).then(r=>{window.__zmmResult=r;});return;}}
   M.enable(true);let total=0;const hs=[];
   setInterval(()=>{const d=(Math.random()-0.28)*0.9;total+=d;hs.push(total);M.setDay({total,ratePerHr:total/Math.max(1,hs.length)*60,history:hs});
     const map=$('#map');if(map){const r=map.getBoundingClientRect();M.float(r.width*(0.3+Math.random()*0.4),r.height*(0.3+Math.random()*0.4),d,{label:d>=0?'Landing':'Penalty'});}},700);

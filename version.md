@@ -78,15 +78,42 @@ Costs are ₹ crore at today's prices, from money.json's stage costs where they 
 | **Cargo terminal** | ~₹1,000 (est.) | Freight income at night, when the runways are quiet |
 | **Maintenance hangar** | ~₹800 (est.) | An airline bases aircraft here: more early-morning departures |
 
-## 5. The craziness (the game fights back)
+## 5. The craziness, both ways
 
-Things go wrong **because of what you built and when**, never at random:
+**The rule:** every big choice carries a **jackpot** as well as a downside. The game rewards a bet that pays off far beyond the plan, and it lets success **snowball**: one win makes the next one more likely, because the network compounds. Wild things happen *because of what you built and when*, never at random, and the upside should feel as dramatic as the trouble.
 
-- **Construction chaos:** a crane strays into a runway's approach path, so that runway is restricted for the day. The monsoon floods the dig for the new pier. A contractor cuts a power cable, and half the stands lose jet bridges.
-- **What you skipped comes back:** no backup power, a grid failure. No fog system, December diversions. No people mover, the far piers miss their connections.
-- **Success makes its own mess:** too many airlines want the same morning slots. IndiGo threatens to move its bank to Delhi unless you cut charges. A cricket final brings 60 charter flights in one evening.
-- **The rivals move:** GMR's Hyderabad hub cuts its charges to steal your transfer passengers. Dubai adds flights to every Indian city you don't connect.
-- **The banks watch:** spend too fast and the banks warn you, then freeze new building until you put in more money.
+### Crazy success (earned)
+
+| You did this | So this can happen | What you get |
+|---|---|---|
+| Built the **fog landing system** before anyone else in central and north India | A December fog closes Delhi, Lucknow and Jaipur for three days. **The whole north diverts to you** | A record day: 2 to 3 times your normal traffic, every diverted airline sees your airport, and some of them stay |
+| Built **widebody stands and the people mover** early | **Air India moves its entire international transfer bank** from Delhi to VSI | A new long-haul wave every evening; the network effect starts: each new route makes every feeder city worth more |
+| Held your connections at a 95%+ success rate for a few seasons | Airlines **bid against each other** for your morning and evening slots | Slot premiums, and AERA lets you keep more of the charges because your service is measurably better |
+| Built the **cargo terminal** and a night-capable runway | A pharma maker and a phone maker pick Nagpur, at the centre of India, as their export hub | **Night freight** fills the quiet hours: income at 2 a.m. |
+| Built **Zero Mile District** before the crowds came | The land around VSI becomes the place to be: hotels full, offices taken | Land income jumps, and a global hotel group pays for the next phase |
+| Chose **50% spare capacity** in a pier everyone said was too big | A rival hub's runway closes for repairs for a season (or Dubai is shut by a storm) | **You are the only one with room**: you absorb their traffic overnight, and some of it never goes back |
+| Kept fees low and service high on opening day | **IndiGo makes VSI its main hub**, not just a bank | Feeder flights from 30 cities, and each new international route fills itself |
+| Ran a flawless **cricket final** or **state visit** day | The world watches the airport work | A one-day revenue spike, and an international airline signs because it saw the day |
+| Bought **NIIF's stake** cheaply during the crisis | The crisis ends and the airport recovers fast | You own 80% of a company worth far more: the single biggest jump in your return |
+
+When a jackpot lands it gets its own big moment: a front page ("THE NORTH LANDS AT NAGPUR"), a record on the bank chart, a stamp in the file, and a bar on Black Box page 2.
+
+### Crazy trouble (also earned)
+
+| You did this | So this can happen |
+|---|---|
+| Opened a construction site next to a live runway | A crane strays into the approach path: that runway is restricted for the day |
+| Dug a pier through the monsoon without paying for pumps | The dig floods; the pier opens a season late |
+| Skipped **backup power** | A grid failure blacks out a concourse for an hour, mid-wave |
+| Skipped the **fog system** | December mornings divert *your* flights to someone else's airport |
+| Skipped the **people mover** | The far piers miss their connections, and passengers rebook through Doha |
+| Grew one airline too big | IndiGo threatens to move its bank to Delhi unless you cut charges |
+| Spent too fast | The banks warn you, then freeze new building until you put in more money |
+| Left a gap in your network | GMR's Hyderabad hub, or Dubai, cuts prices to take the routes you don't serve |
+
+### Why both matter
+
+Without the jackpots, the best a player can do is avoid disaster, which is a chore. With them, the same choice is both a bet and a risk: the big pier can be an empty-gate bill **or** the reason you swallow a rival's traffic. That is the game Thiel describes: a few bold bets make most of the return, and the Black Box shows exactly which ones did.
 
 ## 6. How it fits the concession
 

@@ -16,6 +16,20 @@ The defaults are:
 - Co-investor: L5 Capital: Lagrange Point Infrastructure Fund.
 - Rivals: Kármán Line Ventures, QNH Infragenesis and Thakral–Wainganga Airports.
 
+## Signatories (fictional people, each with their own hand)
+`M.cfg.signatories` names everyone who signs for another party. Override any of them with `ZMMoney.config({signatories:{aai:{name, sign, title, hand:{...}}}})`; the merge is per key, so you can change one person and keep the rest.
+
+| Key | Person | Title | Signs | Hand (script face, slant, flourish) |
+|---|---|---|---|---|
+| `aai` | Meenakshi Raghavan | Regional Executive Director, Western Region, AAI | the concession | Mrs Saint Delafield, black ink, sweeping underline |
+| `state` | Shirish V. Bhonsle | Vice-Chairman and Managing Director, MADC | the concession | Homemade Apple, blue ballpoint, upright, double dash |
+| `coinvestor` | Naomi Fernandes | Managing Partner, L5 Capital | the concession | Monsieur La Doulaise, navy fountain pen, loop back under the name |
+| `dgca` | Rajeshwari Natarajan | Joint Director General (Aerodromes), DGCA | the aerodrome licence | La Belle Aurore, black, tilted, zigzag paraph |
+| `aai60` | Kabir Sethna | Regional Executive Director, Western Region, AAI | the handback | Herr Von Muellerhoff, black, fast and steep |
+| `state60` | Tanvi Patwardhan | Managing Director, MADC | the handback | Allura, blue, round, a full stop |
+
+`signSvg(person)` (also `ZMMoney.signSvg`) draws the person's signing name (`sign`, for example "M. Raghavan") in their own script face. It applies their slant, tilt and weight, adds a flourish seeded from their name, and fixes the width with `textLength`, so the same person always signs the same way. The six faces load from Google Fonts in a second link (`#zdkSigFonts`, `display=block`, so a signature never shows in a fallback face); the screenshot harness serves them from `@fontsource` and checks that they have loaded. **Year 60:** nobody holds the same office for sixty years, so the handback is received by successor officials (`aai60`, `state60`), each in their own hand. The player's own day-one signature still appears beside their new one.
+
 ## HUD
 | Call | What it does |
 |---|---|
@@ -107,3 +121,20 @@ Players never see finance jargon. Loan cover is shown in rupees ("₹116 earned 
 ## Rules it follows (from prompt-money.md)
 - **Safety calls never show a price.** The wiring must not call `float` for medical, fuel or MAYDAY events.
 - **Additive only.** The module only appends DOM: one style tag, `#zmmFloat`, `#zmmOv`, and a hidden P&L tab button and body. It doesn't change any existing element. The P&L tab listens on the tab bar in the capture phase and leaves the existing handler alone.
+
+## Construction (E0, years 1–4): `ZMMoney.construction(opts)`
+This is the site progress register, on drafting paper: a schedule of the works for years 1 to 6, with a red playhead at the end of the current year and a dashed **Opening day** line. Under the schedule, the money drawn each year is written on a ledger strip, followed by the year's register entry. A letter from the site, clipped on, asks for the year's decision with tick boxes; the player cannot turn the page until they tick one. "Turn to year N" moves the playhead, then the page turns. After year 4 the register is stamped WORKS COMPLETE and filed. The **DGCA aerodrome licence** then arrives on duty paper, signed by `dgca`. "Open the airport" brings down LICENSED and then a large OPENING DAY stamp, and the promise resolves. The slip shows the three numbers. Try it with `?moneymock=construction` or `money/test_construction.html`.
+
+| opts field | Shape | Notes |
+|---|---|---|
+| `founder, parent` | string | optional; printed on the licence |
+| `signedOn, opensOn` | YYYY-MM-DD | the planned opening, before any slip |
+| `capexCr, debtCr, equityCr, stateLoanCr?, lenderName` | ₹ cr, string | the opening sentence of the register |
+| `works[]` | `{id, name, start, end, note?}` | years after signing (floats); `note` is a tooltip |
+| `years[]` | `{year, drawnCr, cumDrawnCr, line}` | one register page per year; `line` is a plain sentence |
+| `events[]` | `{id, year, title, text, from?, options:[{id, label, effect, slipMonths?, numbers?}]}` | at most one per year. `effect` is one sentence with ₹ and months. New, optional: `slipMonths` moves Opening day and extends the unfinished works in amber; `numbers` (partial) replaces slip numbers once ticked |
+| `numbers` | `{todayCr, light:'green'\|'amber'\|'red', coverWords, stakePct, stakeValueCr}` | `light` shows as Relaxed, Watching closely or Warning you |
+| `atYear?, choices?` | number, `{eventId: optionId}` | resume a construction left with "Not now" |
+
+It resolves `{choices:{[eventId]: optionId}, finishedOn, slipMonths}`. `finishedOn` is Opening day (YYYY-MM-DD) after any slip, and `slipMonths` is the total slip. It resolves `null` for "Not now".
+

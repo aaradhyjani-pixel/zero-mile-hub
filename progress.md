@@ -502,3 +502,14 @@ bill says "This shift was flown by your duty team." Bots: `HUB.flight.auto('smar
   file})`, `letter(o)` (with `stepIn` opts; on refuse hub.js skips its own notice), `stepIn`, `minutes(o)` and
   `debrief(pages, {company, founder, start})` when present (names from the s0b-ui working tree), and falls back to
   frontPage / decision / bill otherwise.
+
+### Engine requests §3: done by lane E, 19 October 2026, 20:25 (s0-engine)
+1. **Cliffhangers** are dated in the year their act ends: Act I in 2032, Act II in 2043. The bridge after an act break starts at the cliffhanger's year (`bridge(st, 4)` 2032→2033; `bridge(st, 6)` 2043→2046, flipping 2044 and 2045).
+2. **Every bridge lands on its chapter's front-page year:** 2033, 2039, 2046, 2059. `bridge(st, 6).toYear` is now 2046.
+3. **`fileCard(state).docs`** is the whole pile: the era papers plus `state.docs` (the opening plan, the network agreement, the partner agreement, the banks' letter, the minutes), oldest first.
+4. **The 2034 budget,** either way:
+   - `ch4.applyShift(st, {…, radar: true|false})` applies it before the shift;
+   - `ch4.applyBudget` after the shift re-files Climb's 2033–38 reports with the radar in.
+
+   Both give the same books (tested).
+5. **`chapter(state)` between chapters** (the last era's report filed, its board pending) returns the next chapter. `fileCard(state, flight)` takes an optional `{n}` override. One existing test expectation changed: '2,2,3,5' became '2,2,4,5', by design.

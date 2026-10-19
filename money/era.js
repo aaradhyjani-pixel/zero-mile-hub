@@ -1281,6 +1281,13 @@
     });
     return docs.map(dw);
   }
+  // the whole pile: the era papers (campaignDocs) and the chapter papers the player signed (state.docs), oldest first
+  function allDocs(state) {
+    var out = campaignDocs(state), ids = {};
+    out.forEach(function (d) { ids[d.id] = true; });
+    (state.docs || []).forEach(function (d) { if (d && d.id && !ids[d.id]) { ids[d.id] = true; out.push(dw(Object.assign({}, d))); } });
+    return out.sort(function (a, b) { return String(a.date || '').localeCompare(String(b.date || '')); });
+  }
   // the seven chapters of the flight (design/chapters.md §1) and which one a concession is in: VSIEra.chapter(state) →
   // {n (1-7, 8 = the Black Box), name, title, act, years: [first, last] game years}
   var CHAPTERS = [null,
@@ -1290,23 +1297,27 @@
     {name: 'Landing', title: 'Hand it back', act: 3, years: [34, 60]}, {name: 'The Black Box', title: 'What really happened', act: 3, years: [60, 60]}];
   function chapter(state) {
     var n = !state || !state.s ? 1 : state.over ? 8 : state.building ? 2 : state.era <= 1 ? 3 : state.era <= 3 ? 4 : state.era === 4 ? 5 : state.era <= 7 ? 6 : 7;
+    // between chapters (the last era's report filed, its board pending) the player is at the next chapter
+    var h = state && state.history && state.history[state.history.length - 1];
+    if (n >= 3 && n <= 6 && h && h.era === state.era && !h.board && !h.construction && state.era === [0, 0, 0, 1, 3, 4, 7][n]) n++;
     var c = CHAPTERS[n];
     return {n: n, name: c.name, title: c.title, act: c.act, years: c.years.slice()};
   }
   // the Concession tab's file card: the three plain numbers and where the concession has got to (ZMMoney.concessionFile)
-  function fileCard(state) {
+  function fileCard(state, flight) {
     ensure();
     if (!state) return null;
     var lr = state.lastReport || {}, h = (state.history || []).filter(function (x) { return x.cashCr != null; }).pop() || {};
     var cov = lr.cover != null ? lr.cover : null;
     var ch = chapter(state), yr = state.building ? 1 : (state.year || 1);
+    if (flight && CHAPTERS[flight.n]) { var fc = CHAPTERS[flight.n]; ch = {n: flight.n, name: fc.name, title: fc.title, act: fc.act, years: fc.years.slice()}; }
     return {company: state.parent || 'Your company', founder: state.founder || '', signature: state.signature || null, signedOn: state.signedOn || null,
       director: (state.founder || 'The founder') + ', director', chapter: ch, resumable: resumable(state).ok,
       line: 'Signed ' + fmtDate(state.signedOn || '2026-04-01') + ' · now year ' + yr + ' of 60 · ' + (ch.n <= 7 ? 'Chapter ' + ch.n + ', ' : '') + ch.name,
       year: state.year || 1, calYear: cal(state.year || 1), era: state.era || 1, building: !!state.building,
       stake: {pct: state.stake || 0, valueCr: lr.stakeValueCr != null ? lr.stakeValueCr : null, inCr: lr.stakeValueCr != null ? null : putIn(state)},
       cover: {words: state.building ? 'No loan payments due until the airport opens' : coverWords(cov), light: lr.light || 'green'},
-      cashCr: h.cashCr != null ? h.cashCr : Math.round(state.cash || 0), docs: campaignDocs(state)};
+      cashCr: h.cashCr != null ? h.cashCr : Math.round(state.cash || 0), docs: allDocs(state)};
   }
   // the player's share of what the shareholders have put in so far (the file card's stake before the first books close)
   function putIn(state) {
@@ -2319,6 +2330,15 @@
       summary: bought ? 'You bought the bird radar for ' + cr(c) + '. It watches the lakes east of runway 3.' : 'You skipped the bird radar and saved ' + cr(c) + '. Nobody watches the lakes east of runway 3.'});
     logDecision(st, {id: 'ch4-radar', group: 'radar', chapter: 4, year: CH5.radarYear, label: 'The bird radar', chosen: st.radar, chosenLabel: bought ? 'Buying the bird radar' : 'Skipping the bird radar',
       'default': 'bought', alt: {extra_pay: others.concat([{year: CH5.radarYear, cr: CH5.radarCr}])}});
+    // ticked on the bill page, after Climb's reports were filed: file them again with the radar in (the engine replays from the start)
+    var eng = null;
+    (st.history || []).forEach(function (h, i) {
+      if (h.board || h.construction || (h.era !== 2 && h.era !== 3)) return;
+      eng = eng || simulate(st.s, eraYears(3)[2]);
+      var rep = eraReport(st, eng, h.era);
+      Object.assign(h, {light: rep.light, cover: rep.coverWorst, cashCr: rep.cashCr, stakeValueCr: rep.stakeValueCr, debtCr: rep.debtCr, sentences: rep.sentences});
+      if (i === st.history.length - 1) { st.cash = rep.cashCr; Object.assign(st.lastReport || (st.lastReport = {}), {light: rep.light, cover: rep.coverWorst, payoutShare: rep.payoutShare, debtCr: rep.debtCr, worstYear: rep.worstYear, stakeValueCr: rep.stakeValueCr, returnPerYear: rep.returnPerYear}); }
+    });
     return st;
   }
   function ch4Incidents(st) {
@@ -2357,6 +2377,7 @@
     ensure();
     if (st.over) return {state: st, bill: null, card: null};
     if (!st.ch4) st = ch4ApplyDecision(st, ch4Def(st));
+    if (result && result.radar != null) st = ch4ApplyBudget(st, result.radar === true || result.radar === 'bought');   // the 2034 budget, decided before the shift
     var prev = clone(st); st = clone(st); result = result || ch4ShiftPlan(st).auto;
     var id = st.s.network || ch4Def(st), made = result.made, missed = result.missed || 0, share = made != null && made + missed > 0 ? made / (made + missed) : 0.94, inc = result.incidents || {};
     applyPatch(st.s, {'streams.network': ch4Patch(id, share)['streams.network']});
@@ -2690,12 +2711,15 @@
   }
   // the year each chapter's shift is played: the years-later pages run from it to the next chapter's first year
   var SHIFT_YEAR = {3: 5, 4: 9, 5: 15, 6: 21, 7: 34};
+  var FRONT_YEAR = {3: 5, 4: 8, 5: 14, 6: 21, 7: 34};   // the year each chapter's front page is dated (the flaps land there)
+  var CLIFF_YEAR = {1: 7, 2: 18};                      // the cliffhanger: the last year of its act (Takeoff ends 2032, Cruise 2043)
   function bridge(state, n) {
     ensure();
-    var y0 = SHIFT_YEAR[n - 1] || state.year || 1, st = advance(state, firstEra(n));
+    // from the last page the player saw: the cliffhanger after an act break, otherwise the previous chapter's shift
+    var y0 = n === 4 ? CLIFF_YEAR[1] : n === 6 ? CLIFF_YEAR[2] : SHIFT_YEAR[n - 1] || state.year || 1, st = advance(state, firstEra(n));
     if (n === 6 && st && !st.over && st.era === firstEra(6) && !st.ch6) ch6Ready(st);
     if (n === 7 && st && !st.over && st.era === firstEra(7) && !st.ch7) ch7Ready(st);
-    var y1 = st.over ? (st.over.year || st.year) : (eraYears(firstEra(n)) || [0, st.year])[1], eng = simulate(st.s, Math.max(1, y1)), years = [];
+    var y1 = st.over ? (st.over.year || st.year) : FRONT_YEAR[n] || (eraYears(firstEra(n)) || [0, st.year])[1], eng = simulate(st.s, Math.max(1, y1)), years = [];
     var ev = {}; eng.events.forEach(function (e) { (ev[e.t + 1] = ev[e.t + 1] || []).push(e); });
     eng.rows.forEach(function (r, i) {
       if (r.year <= y0 || r.year >= y1) return;
@@ -2737,12 +2761,12 @@
     var st = state, lr = st.lastReport || {}, who = st.parent || 'Your company', A = ACTS[act] || ACTS[1], o;
     if (act === 1) {
       var tr = st.s.plateauTrust, otp = st.ch3 && st.ch3.result && st.ch3.result.otp;
-      o = {year: SHIFT_YEAR[3] + 2, lead: 'AIRLINES ASK: WILL VSI BECOME INDIA\'S CONNECTING HUB?',
+      o = {year: CLIFF_YEAR[1], lead: 'AIRLINES ASK: WILL VSI BECOME INDIA\'S CONNECTING HUB?',
         deck: 'Two years after opening day, ' + NM.feeder + ' is drawing up a plan to time twelve cities into one afternoon at Vikram Sarabhai International.',
         sub: {head: 'Opening day, remembered', body: otp != null ? 'VSI ran its first morning at ' + Math.round(otp * 100) + '% on time. ' + (tr != null && tr >= CH3.trustLine ? NM.plateau + ' wants a bigger part in what comes next.' : NM.plateau + ' is keeping its distance.') : 'The airport has found its feet.'}};
     } else {
       var k = ch6Pick(st);
-      o = {year: SHIFT_YEAR[5] + 3, lead: k === 'rupee' ? 'A STORM IS COMING: RUPEE AT RECORD LOW' : k === 'airline' ? NM.feeder.toUpperCase() + ' MISSES ITS FUEL PAYMENTS' : 'A NEW VIRUS SPREADS: AIRLINES WATCH THEIR BOOKINGS',
+      o = {year: CLIFF_YEAR[2], lead: k === 'rupee' ? 'A STORM IS COMING: RUPEE AT RECORD LOW' : k === 'airline' ? NM.feeder.toUpperCase() + ' MISSES ITS FUEL PAYMENTS' : 'A NEW VIRUS SPREADS: AIRLINES WATCH THEIR BOOKINGS',
         deck: k === 'rupee' ? 'Traders expect the rupee to fall further. Every airline that pays for fuel in dollars is nervous.' :
           k === 'airline' ? 'Oil companies say ' + NM.feeder + ' is behind on its bills. It carries ' + Math.round((st.s.anchorShare || 0.74) * 100) + '% of the passengers who change planes at VSI.' :
           'Health officials are tracking a new virus. Airports are drawing up plans for empty terminals.',

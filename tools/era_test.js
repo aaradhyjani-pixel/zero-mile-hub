@@ -345,7 +345,8 @@ let pay0 = [];
   const fc2 = E.fileCard(c5own || own2);
   if (!/^Signed 15 July 2026 · now year 14 of 60 · Chapter 5, Cruise$/.test(fc2.line) || fc2.director !== 'Ravi Menon, director') fail('b: file card line: ' + fc2.line);
   const ch = [E.newCampaign({parent: 'X'}, 1), own2, mine, c5own].map(x => E.chapter(x).n).join();
-  if (ch !== '2,2,3,5' || E.chapter(null).n !== 1 || E.chapter(A.EXPERT.st).n !== 8) fail('chapter(): ' + ch);
+  // (mine has era 1's report filed and its board pending: Takeoff is done, so Climb is next: lane H's request 6)
+  if (ch !== '2,2,4,5' || E.chapter(null).n !== 1 || E.chapter(A.EXPERT.st).n !== 8) fail('chapter(): ' + ch);
   if (pay0.some(t => /Airways's/.test(t))) fail('a: "Airways\'s"');
   const rec = E.recordOf(c5own, 'torn-up');
   if (!rec || rec.company !== 'Kestrel Airports' || rec.yearsRun !== 14 || rec.how !== 'torn-up' || !rec.signature || !/Torn up in year 14/.test(rec.howWords)) fail('b: recordOf: ' + JSON.stringify(rec && {y: rec.yearsRun, w: rec.howWords}));
@@ -435,7 +436,7 @@ function flight(p, stopAt) {
   st = E.ch5.applyDecision(rt(st), p.ch5);
   plan = E.ch5.shiftPlan(rt(st)); log.ch5plan = plan;
   r = E.ch5.applyShift(rt(st), ch5Result(plan, p.hold, p.ch5stars || 3, p.ch5otp || 0.86)); st = r.state; log.ch5 = r.bill; log.afterCh5 = rt(st); pushT(r.bill);
-  b = E.bridge(rt(st), 6); st = b.state;
+  b = E.bridge(rt(st), 6); log.bridge6 = b; st = b.state;
   if (E.chapter(st).n !== 6) { fail('stage 0: bridge to Chapter 6 lands in chapter ' + E.chapter(st).n); return null; }
   log.pick = E.ch6.pick(st); log.ch6fp = E.ch6.frontPage(st); log.ch6dec = E.ch6.decision(st); pushT(log.ch6fp, log.ch6dec);
   st = E.ch6.applyDecision(rt(st), p.ch6);
@@ -582,6 +583,15 @@ else {
   if (P1.ended !== 'handback' || P1.endedYear !== 2085 || pgR.p1.ended !== 'banks' || pgR.p1.endedYear !== 2046 || !/^2046-04-01$/.test(pgR.p1.endedOn) || P1.moneyInCr == null || P1.moneyOutCr == null) fail('debrief.pages p1 names: ' + JSON.stringify([P1.ended, P1.endedYear, pgR.p1.ended, pgR.p1.endedYear, pgR.p1.endedOn]));
   if (!F || !Array.isArray(F.pct) || F.pct.join() !== '12.2,17.5' || typeof pg.p1.benchmarks.find(b => b.id === 'aera').pct !== 'number') fail('debrief.pages p1 benchmarks: pct a number, or [low, high]');
   if (pg.p2.everythingElsePct == null || !pg.p2.closing || pg.p3.frontPages.some(x => !x.year)) fail('debrief.pages p2/p3 names');
+  // engine requests §3 (after the Stage 0 integration)
+  const b4 = E.bridge(SM.log.afterCh3, 4), b6 = SM.log.bridge6;
+  if (b4.fromYear !== 2032 || b4.toYear !== 2033 || b6.fromYear !== 2043 || b6.toYear !== 2046 || b6.years.map(y => y.calYear).join() !== '2044,2045') fail('bridges after an act start at the cliffhanger and land on the front page: ' + [b4.fromYear, b4.toYear, b6.fromYear, b6.toYear, b6.years.map(y => y.calYear)]);
+  if (!/2032/.test(ch1.dateLine) || !/2043/.test(ch2s.dateLine)) fail('cliffhangers dated in the year their act ends: ' + ch1.dateLine + ' / ' + ch2s.dateLine);
+  const fd = E.fileCard(SM.log.ch7start).docs.map(d => d.id);
+  ['opening-2030', 'feeders-2033', 'partner-2039', 'banks-letter-2046'].forEach(id => { if (fd.indexOf(id) < 0) fail('fileCard docs should keep the chapter paper ' + id + ': ' + fd.join()); });
+  if (E.chapter(SM.log.afterCh3).n !== 4 || E.chapter(SM.log.afterCh5).n !== 6 || E.fileCard(SM.log.afterCh3, {n: 4}).chapter.n !== 4) fail('chapter() between chapters is the next one: ' + [E.chapter(SM.log.afterCh3).n, E.chapter(SM.log.afterCh5).n]);
+  const pre = E.ch4.applyDecision(rt(SM.log.ch4start), 'two'), withR = E.ch4.applyShift(rt(pre), Object.assign({}, E.ch4.shiftPlan(pre).auto, {radar: true})).state, after = E.ch4.applyBudget(E.ch4.applyShift(rt(pre)).state, true);
+  if (!(withR.radar === 'bought' && after.history.filter(h => h.era === 2 && !h.board)[0].cashCr === withR.history.filter(h => h.era === 2 && !h.board)[0].cashCr)) fail('the 2034 budget: ticked before the shift (result.radar) or after it (re-filed) should give the same era-2 books');
   // the test agent's four fixes (ported)
   const bo2 = E.boardOptions(SM.log.ch4start);
   if (!/^\d{4}-04-01$/.test(bo2.date) || bo2.pile.some(x => !x.date) || !bo2.pile.some(x => /^Board minutes, \d{4}$/.test(x.title))) fail('boardOptions: the meeting and its pile dated in the game: ' + JSON.stringify(bo2.pile));

@@ -8,7 +8,7 @@
   - The state leases the land at a nominal rent. AAI and MADC pay cash for their 10% each.
   - From the year-14 board you may buy L5 Capital's stake, 4% per era, up to 80%. Dividends follow the stake.
 - **The bid** is a revenue share (10–50%) or a per-passenger fee (₹100–450), placed against three fictional consortia. The highest bid wins. The fee is not a pass-through, so a high bid thins margins for 60 years.
-- **Capex in stages** (`capex.stages`, est.). Each stage is financed at the gearing chosen at close (60–80%), at 9.5% over 20 years after a 1-year moratorium. Repayment is sculpted (the default) or in equal instalments.
+- **Capex in stages** (`capex.stages`, est.). Each stage is financed at the gearing chosen at close (60–75%), at 9.5% over 20 years after a 1-year moratorium. Repayment is sculpted (the default) or in equal instalments.
 
 | Stage | ₹ cr | Built | Capacity | Level |
 |---|---|---|---|---|
@@ -100,7 +100,8 @@ CFADS  = EBITDA − tax 25.17% − renewals;  DSCR = CFADS ÷ debt service
 1. With money off, and with the quick-play ledger on, bots are identical to `research/baseline_bots.txt`.
 2. Expert has the highest shift EBITDA on L3 and L4 (two seeds). Miser and spender earn less. Handler and lazy lose money on L3 and L4.
 3. Quick concession:
-   - Expert: lowest DSCR ≥ 1.30 from E2, debt repaid, highest IRR, IRR within 12.4–17.3% at a winning bid.
+   - Expert: lowest DSCR about 1.10–1.20, with at least one lender warning (below 1.20) around stages 1C/1D (Mumbai and Delhi) and a recovery; debt repaid, highest IRR, IRR within 12.4–17.3% at a winning bid. (The bank still sizes the debt on its own base case at 1.30; the realised path is lower.)
+   - Lazy: triggers lender step-in.
    - Lazy: lenders step in.
 4. Code and data:
    - No console errors in 2D or 3D.

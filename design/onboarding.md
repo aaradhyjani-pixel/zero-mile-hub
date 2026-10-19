@@ -190,21 +190,21 @@ Progress pips run along the top: Company · Partners · Bid · Close · Build ·
 ### S4. Financial close
 
 **Left side: the gearing dial.**
-- A 240° arc covering 60–80% debt (`finance.gearing_range`), with a needle.
+- A 240° arc covering 60–75% debt (`finance.gearing_range`), with a needle.
   - It is draggable; ←/→ move it 1%.
-- **The bank's cap** shows as a red tick on the arc, at min(80%, PV(lender base-case CFADS ÷ 1.30) ÷ cost). The needle cannot pass it.
+- **The bank's cap** shows as a red tick on the arc, at min(75%, PV(lender base-case CFADS ÷ 1.30) ÷ cost). The needle cannot pass it.
   - When the needle hits the cap, it shakes and reads: "The banks won't lend more on these cash flows."
 
 Readouts for Phase 1A, ₹36,000 cr:
 
-| Item | 60% | 70% | 80% |
+| Item | 60% | 70% | 75% |
 |---|---|---|---|
-| Debt | ₹21,600 cr | ₹25,200 cr | ₹28,800 cr |
-| Equity (100%) | ₹14,400 cr | ₹10,800 cr | ₹7,200 cr |
-| Your equity (64%) | ₹9,216 cr | ₹6,912 cr | ₹4,608 cr |
-| L5 Capital (16%) | ₹2,304 cr | ₹1,728 cr | ₹1,152 cr |
-| AAI / MADC (10% each) | ₹1,440 cr | ₹1,080 cr | ₹720 cr |
-| Equal instalment (9.5%, 20 years) | ₹2,451 cr/yr | ₹2,860 cr/yr | ₹3,268 cr/yr |
+| Debt | ₹21,600 cr | ₹25,200 cr | ₹27,000 cr |
+| Equity (100%) | ₹14,400 cr | ₹10,800 cr | ₹9,000 cr |
+| Your equity (64%) | ₹9,216 cr | ₹6,912 cr | ₹5,760 cr |
+| L5 Capital (16%) | ₹2,304 cr | ₹1,728 cr | ₹1,440 cr |
+| AAI / MADC (10% each) | ₹1,440 cr | ₹1,080 cr | ₹900 cr |
+| Equal instalment (9.5%, 20 years) | ₹2,451 cr/yr | ₹2,860 cr/yr | ₹3,064 cr/yr |
 
 - A footnote says that later stages 1B–1D (₹68,000 cr) are financed at the same gearing when they are built.
 - A "Default risk" bar shades from `--go` to `--stop` as the thinnest-year base-case DSCR approaches 1.0.

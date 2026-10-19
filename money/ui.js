@@ -1250,7 +1250,7 @@ M.terms={
   mtow:{t:'Aircraft weight',d:'The heaviest an aircraft may be at take-off. Landing fees are charged per tonne of it, so an A380 (575 t) pays many times an A320 (79 t).'},
   udf:{t:'Passenger fee',d:'A charge on every departing passenger\'s ticket that goes to the airport, set by AERA. New airports get higher UDFs because they still have to pay back the cost of building.'},
   aera:{t:'AERA',d:'The Airports Economic Regulatory Authority of India. Every five years it sets how much a major airport may charge airlines and passengers, from the airport\'s asset base, costs and a fair return.'},
-  rab:{t:'What AERA counts as invested',d:'What the regulator counts as invested in the airport. Charges are set so the airport earns a fair return on it. Build more and the RAB grows; it shrinks as assets depreciate.'},
+  rab:{t:'What AERA counts as invested',d:'What the regulator counts as invested in the airport. Charges are set so the airport earns a fair return on it. Build more and it grows; it shrinks as the buildings and runways wear out.'},
   till:{t:'AERA\'s share of your shop income',d:'Under AERA\'s rules, 30% of an airport\'s non-aeronautical revenue is used to lower what airlines and passengers pay. The other 70% the airport keeps.'},
   trueup:{t:'Money AERA owes you, or you owe it',d:'If AERA lets an airport charge less than it was owed in one five-year period, the shortfall is carried into the next, with interest. Early squeezes can be recovered later.'},
   dscr:{t:'Loan cover',d:'How much the airport earns for every ₹100 of loan repayment due that year. At ₹100 it can only just pay. Below ₹120 the banks warn you. Below ₹110 you break their condition. Below ₹100 they can take control.'},

@@ -2637,13 +2637,13 @@ const CAMP={active:false,st:null,
   // one without the signature, the founder or the signing day, is not resumable: the tab offers only "Start the concession".
   // resumable: VSIEra.resumable (version 2, signed, founder, signing day, not the sample, not over). The sample company
   // (ch5.fixture, ?chapterN= test URLs) can never be loaded from or written to zm_campaign.
-  ok(o){const E=CAMP.E();try{return !!(E&&E.resumable&&E.resumable(o).ok);}catch(e){return false;}},
+  ok(o){if(saveBanned(o))return false;const E=CAMP.E();try{return !!(E&&E.resumable&&E.resumable(o).ok);}catch(e){return false;}},
   load(){const o=store.get('zm_campaign');return o&&CAMP.ok(o)&&typeof o.signature==='string'&&/^data:image\//.test(o.signature)?o:null;},
   // a save on file that can't be continued (an older version, unsigned): shown on the card as "can't be continued"
   stale(){const o=store.get('zm_campaign');return o&&o.s&&!CAMP.cur()&&!(o.sample||o.test)?o:null;},
-  save(){if(!CAMP.st)return;const E=CAMP.E();if(!CAMP.st.over&&!CAMP.ok(CAMP.st))return;CAMP.st.savedAt=Date.now();store.set('zm_campaign',CAMP.st);},   // (st.docs: the chapter papers; the engine's fileCard(st).docs adds the era papers)
+  save(){if(!CAMP.st||saveBanned(CAMP.st))return;const E=CAMP.E();if(!CAMP.st.over&&!CAMP.ok(CAMP.st))return;CAMP.st.savedAt=Date.now();store.set('zm_campaign',CAMP.st);},   // (st.docs: the chapter papers; the engine's fileCard(st).docs adds the era papers)
   // the record (zm_record): finished or torn-up concessions, oldest first (the card shows the last four, newest on top)
-  rec(){const r=store.get('zm_record');return Array.isArray(r)?r:[];},
+  rec(){const r=store.get('zm_record');return Array.isArray(r)?r.filter(x=>!saveBanned(x)):[];},
   record(st,ended){if(!st||st.sample||st.test)return;const E=CAMP.E();let r=null;try{r=E.recordOf(st,ended==='torn'?'torn-up':ended);}catch(e){console.warn('recordOf',e);}
     if(!r)return;const a=CAMP.rec();
     a.push(Object.assign({},r,{years:r.yearsRun,ended:r.how==='torn-up'?'torn':r.how,returnPct:r.finalReturnPct,endedOn:r.endedOn||new Date().toISOString().slice(0,10)}));
@@ -3001,6 +3001,21 @@ function ch5End(){const P=CH5.plan;
   for(const id in CH5.tags)ch5TagOff(id);
   const h=CH5.hooks;try{if(h.onEnd){h.onEnd(res);return;}}catch(e){console.warn('onEnd',e);}
   menu('concession');}
+/* BANNED NAMES in saves: the deal desk refuses them when typed (ZMMoney.nameBlocked), and a save made before the ban, or
+   edited by hand, must never come back either. saveBanned(o) checks every name a save carries; savePurge() runs on every
+   page load and deletes any saved concession, Chapter 5 save or earlier-concession entry that carries one. */
+function saveBanned(o){if(!o||typeof o!=='object')return false;const Z=window.ZMMoney;if(!Z||!Z.nameBlocked)return false;
+  return [o.parent,o.founder,o.company,o.director,o.s&&o.s.parent,o.s&&o.s.founder].some(n=>n&&Z.nameBlocked(String(n).replace(/, director$/i,'')));}
+function savePurge(){if(!window.ZMMoney||!ZMMoney.nameBlocked)return 0;let n=0;
+  for(const k of ['zm_campaign','zm_campaign_last','zm_ch5']){let o=null;try{o=JSON.parse(localStorage.getItem(k)||'null');}catch(e){}if(o&&saveBanned(o)){try{localStorage.removeItem(k);n++;}catch(e){}}}
+  let r=null;try{r=JSON.parse(localStorage.getItem('zm_record')||'null');}catch(e){}
+  if(Array.isArray(r)){const keep=r.filter(x=>!saveBanned(x));if(keep.length!==r.length){try{localStorage.setItem('zm_record',JSON.stringify(keep));n+=r.length-keep.length;}catch(e){}}}
+  if(typeof CAMP!=='undefined'&&CAMP.st&&saveBanned(CAMP.st)){CAMP.st=null;CAMP.active=false;}
+  return n;}
+window.addEventListener('load',()=>{try{if(savePurge()){if(typeof menu==='function'&&!running)menu('concession');
+  const n=document.createElement('div');n.textContent='Your saved concession used a company or director name that can\'t be used in this game, so it was closed. Start the concession again with another name.';
+  n.style.cssText='position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:99999;max-width:640px;background:#1d2024;color:#fff7ea;padding:12px 18px;font:15px Barlow Condensed,sans-serif;letter-spacing:.02em;line-height:1.35;border-radius:3px;box-shadow:0 6px 18px rgba(0,0,0,.4)';
+  document.body.appendChild(n);setTimeout(()=>n.remove(),12000);}}catch(e){console.warn('savePurge',e);}});
 /* LIVE CHAPTERS: Takeoff (3), Climb (4), Turbulence (6) and Landing (7) are played on the map, like Cruise. Each runs its base
    level's airfield and traffic (scaled by the plan's volume, with quick play's set pieces removed) over the plan's window,
    about 9 minutes at 1x. The chapter's incidents fire live at their clock time: a radio call, the incident ring on the map,
@@ -3077,7 +3092,7 @@ function chlEnd(){const P=CHL.plan,st=stars(LV,S),otp=S.dep+S.arr?(S.depOnTime+S
    Test entry: ?chapter5[=lean|big][&radar=bought|skipped][&choice=three|london|decline][&brief=0]; with &choice the
    front page and the decision are skipped (for bots). */
 const CH5F={live:false,
-  load(){const o=store.get('zm_ch5');return o&&o.step&&o.phase1&&(o.test||CAMP.load())?o:null;},
+  load(){const o=store.get('zm_ch5');return o&&!saveBanned(o)&&o.step&&o.phase1&&(o.test||CAMP.load())?o:null;},
   save(o){o.at=Date.now();store.set('zm_ch5',o);},
   clear(){try{localStorage.removeItem('zm_ch5');}catch(e){}},
   C(){const E=CAMP.E();return E&&E.ch5&&window.ZMMoney&&ZMMoney.frontPage&&ZMMoney.bill?E.ch5:null;},
@@ -3166,9 +3181,9 @@ const FL={live:false,busy:false,bot:null,log:[],errors:[],night:null,
   // the player's own concession, resumable; or one that ended inside the flight with pages still to read (the bill, the
   // handover, the Black Box). Never a sample.
   load(){const own=CAMP.load();if(own)return own;const o=store.get('zm_campaign');
-    return o&&o.s&&o.over&&o.flight&&o.flight.step!=='done'&&!o.sample&&!o.test&&o.version>=2&&typeof o.signature==='string'&&/^data:image\//.test(o.signature)?o:null;},
+    return o&&!saveBanned(o)&&o.s&&o.over&&o.flight&&o.flight.step!=='done'&&!o.sample&&!o.test&&o.version>=2&&typeof o.signature==='string'&&/^data:image\//.test(o.signature)?o:null;},
   // save v2 (CAMP.save's rules); a flight that has ended is still written, so its last pages can be read
-  save(){const st=CAMP.st;if(!st||st.sample||st.test)return;if(!st.over&&!CAMP.ok(st))return;st.savedAt=Date.now();store.set('zm_campaign',st);},
+  save(){const st=CAMP.st;if(!st||st.sample||st.test||saveBanned(st))return;if(!st.over&&!CAMP.ok(st))return;st.savedAt=Date.now();store.set('zm_campaign',st);},
   sig(o){return CH5F.sig(o);},
   who(st,o){return FL.sig(Object.assign({founder:st.founder||'Asha Rao',parent:st.parent||'Meridian Infra',company:st.parent,signature:st.signature,pile:undefined},o));},
   pile(st){try{ZMMoney.setPile&&ZMMoney.setPile(CAMP.E().fileCard(st).docs||[]);}catch(e){}},   // the whole pile, as the engine files it

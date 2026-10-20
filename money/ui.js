@@ -1015,11 +1015,20 @@ M.incomeStatement=function(o){o=o||{};const txt=h=>{const d=document.createEleme
 /* ---------- the Certificate of Concession (money/cert.js, window.ZMCert): one button, on the handover and the Black Box ----------
    cert = VSIEra.certificate(state). With no certificate (the banks took control), the button is disabled and the reason
    is written beside it in plain words. */
+/* a certificate is never written for a banned company or director name: the request ends in an error and the game resets
+   (every save carrying a banned name is deleted and the page reloads to the Concession tab) */
+M.certBanned=cert=>!!(cert&&M.nameBlocked&&[cert.company,cert.founder,cert.parent].some(n=>n&&M.nameBlocked(String(n))));
+M.resetBanned=function(msg){try{for(const k of ['zm_campaign','zm_campaign_last','zm_ch5'])localStorage.removeItem(k);
+    const r=JSON.parse(localStorage.getItem('zm_record')||'null');if(Array.isArray(r))localStorage.setItem('zm_record',JSON.stringify(r.filter(x=>![x.company,x.founder,x.parent].some(n=>n&&M.nameBlocked(String(n))))));}catch(e){}
+  const n=document.createElement('div');n.textContent=msg||'Error: no certificate can be made for this name. The game has been reset.';
+  n.style.cssText='position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;background:rgba(20,24,28,.82);color:#fff7ea;font:20px Barlow Condensed,sans-serif;letter-spacing:.02em;padding:40px;text-align:center';
+  document.body.appendChild(n);setTimeout(()=>{try{location.reload();}catch(e){}},4000);};
 function certButton(cert){if(!cert)return '';
   return cert.ok?`<button class="zdk-q cert" data-cert="1">Download your certificate (PDF)</button>`:`<button class="zdk-q cert why" disabled>${esc(cert.why||'No certificate for this concession.')}</button>`;}
 function certWire(root,cert){const b=root.querySelector('.zdk-q.cert[data-cert]');if(!b||!cert||!cert.ok)return;
   const label=b.textContent;
   b.onclick=e=>{e.stopPropagation();if(b.disabled)return;
+    if(M.certBanned(cert)){b.disabled=true;M.resetBanned('Error: no certificate can be made for this company or director name. The game has been reset.');return;}
     if(!window.ZMCert){b.textContent='The certificate writer is missing from this build';return;}
     b.disabled=true;b.textContent='Writing your certificate…';
     ZMCert.download(cert).then(r=>{b.textContent=r&&r.ok?'Saved: '+r.name:(r&&r.why)||'Could not write the certificate';window.__zmmCert=r;})

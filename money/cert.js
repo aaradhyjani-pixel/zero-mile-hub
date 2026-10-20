@@ -266,6 +266,8 @@
   function fileName(cert) { return 'VSI certificate, ' + (ansi((cert && cert.founder) || 'director').replace(/[^\w .-]+/g, '').trim() || 'director') + '.pdf'; }
   function download(cert, opts) {
     if (!cert || !cert.ok) return Promise.resolve({ok: false, why: (cert && cert.why) || 'There is no certificate for this concession.'});
+    var Z = typeof window !== 'undefined' && window.ZMMoney;   // never for a banned company or director name
+    if (Z && Z.certBanned && Z.certBanned(cert)) { if (Z.resetBanned) Z.resetBanned(); return Promise.resolve({ok: false, why: 'Error: no certificate for this name.'}); }
     return pdf(cert, opts).then(function (bytes) {
       var name = fileName(cert), url = URL.createObjectURL(new Blob([bytes], {type: 'application/pdf'})), a = document.createElement('a');
       a.href = url; a.download = name; a.style.display = 'none'; document.body.appendChild(a); a.click();

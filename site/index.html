@@ -248,7 +248,7 @@ body.v3 #toast{right:auto;left:max(14px,env(safe-area-inset-left,0px));width:var
 }
 @media (prefers-reduced-motion:reduce){.inc,#toast.flash{animation:none}}
 </style>
-<script>(function(){var B='0a4edabb3034',K=['zm_campaign','zm_ch5'];window.__BUILD=B;function cancel(){try{K.forEach(function(x){localStorage.removeItem(x);});sessionStorage.setItem('zm_updated','1');}catch(e){}}try{var o=localStorage.getItem('zm_build');if(o&&o!==B)cancel();localStorage.setItem('zm_build',B);}catch(e){}if(location.protocol.indexOf('http')===0)setInterval(function(){fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(v){if(v&&v.build&&v.build!==B){cancel();try{localStorage.setItem('zm_build',v.build);}catch(e){}location.reload();}}).catch(function(){});},30000);document.addEventListener('DOMContentLoaded',function(){try{if(sessionStorage.getItem('zm_updated')){sessionStorage.removeItem('zm_updated');var n=document.createElement('div');n.textContent='A new version of VSI is live. Games in progress were closed; start again from the menu.';n.style.cssText='position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:99999;background:#1d2024;color:#fff7ea;padding:10px 16px;font:14px Barlow Condensed,sans-serif;letter-spacing:.02em;border-radius:3px;box-shadow:0 6px 18px rgba(0,0,0,.4)';document.body.appendChild(n);setTimeout(function(){n.remove();},7000);}}catch(e){}});})();</script>
+<script>(function(){var B='8659eed2c1fa',K=['zm_campaign','zm_ch5'];window.__BUILD=B;function cancel(){try{K.forEach(function(x){localStorage.removeItem(x);});sessionStorage.setItem('zm_updated','1');}catch(e){}}try{var o=localStorage.getItem('zm_build');if(o&&o!==B)cancel();localStorage.setItem('zm_build',B);}catch(e){}if(location.protocol.indexOf('http')===0)setInterval(function(){fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(v){if(v&&v.build&&v.build!==B){cancel();try{localStorage.setItem('zm_build',v.build);}catch(e){}location.reload();}}).catch(function(){});},30000);document.addEventListener('DOMContentLoaded',function(){try{if(sessionStorage.getItem('zm_updated')){sessionStorage.removeItem('zm_updated');var n=document.createElement('div');n.textContent='A new version of VSI is live. Games in progress were closed; start again from the menu.';n.style.cssText='position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:99999;background:#1d2024;color:#fff7ea;padding:10px 16px;font:14px Barlow Condensed,sans-serif;letter-spacing:.02em;border-radius:3px;box-shadow:0 6px 18px rgba(0,0,0,.4)';document.body.appendChild(n);setTimeout(function(){n.remove();},7000);}}catch(e){}});})();</script>
 <div id="app">
   <div id="zoomBox" class="hud panel" role="group" aria-label="Map zoom"><button id="zIn" title="Zoom in (+)">+</button><button id="zOut" title="Zoom out (−)">−</button><button id="zFit" title="Show the whole airport (F)">Fit</button></div>
   <canvas id="map" aria-label="Live map of the hub: six parallel runways, the terminal and concourses, and every aircraft"></canvas>
@@ -4589,6 +4589,15 @@ function ch5End(){const P=CH5.plan;
   for(const id in CH5.tags)ch5TagOff(id);
   const h=CH5.hooks;try{if(h.onEnd){h.onEnd(res);return;}}catch(e){console.warn('onEnd',e);}
   menu('concession');}
+/* ONE-TIME WIPE (21 October 2026, the user's call): every saved concession on every player's browser is deleted once,
+   the next time the page loads (open tabs reload within 30 s of a deploy). Quick-play stars and settings stay. */
+const SAVE_EPOCH='2026-10-21-wipe';
+(function(){try{if(localStorage.getItem('zm_save_epoch')===SAVE_EPOCH)return;let had=false;
+  for(const k of ['zm_campaign','zm_campaign_last','zm_ch5','zm_record'])if(localStorage.getItem(k)!==null){had=true;localStorage.removeItem(k);}
+  localStorage.setItem('zm_save_epoch',SAVE_EPOCH);
+  if(had)window.addEventListener('load',()=>{const n=document.createElement('div');n.textContent='Saved concessions have been reset for everyone. Start the concession again from the Concession tab.';
+    n.style.cssText='position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:99999;max-width:640px;background:#1d2024;color:#fff7ea;padding:12px 18px;font:15px Barlow Condensed,sans-serif;letter-spacing:.02em;border-radius:3px;box-shadow:0 6px 18px rgba(0,0,0,.4)';
+    document.body.appendChild(n);setTimeout(()=>n.remove(),10000);});}catch(e){}})();
 /* BANNED NAMES in saves: the deal desk refuses them when typed (ZMMoney.nameBlocked), and a save made before the ban, or
    edited by hand, must never come back either. saveBanned(o) checks every name a save carries; savePurge() runs on every
    page load and deletes any saved concession, Chapter 5 save or earlier-concession entry that carries one. */

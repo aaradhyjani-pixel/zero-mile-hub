@@ -3001,6 +3001,15 @@ function ch5End(){const P=CH5.plan;
   for(const id in CH5.tags)ch5TagOff(id);
   const h=CH5.hooks;try{if(h.onEnd){h.onEnd(res);return;}}catch(e){console.warn('onEnd',e);}
   menu('concession');}
+/* ONE-TIME WIPE (21 October 2026, the user's call): every saved concession on every player's browser is deleted once,
+   the next time the page loads (open tabs reload within 30 s of a deploy). Quick-play stars and settings stay. */
+const SAVE_EPOCH='2026-10-21-wipe';
+(function(){try{if(localStorage.getItem('zm_save_epoch')===SAVE_EPOCH)return;let had=false;
+  for(const k of ['zm_campaign','zm_campaign_last','zm_ch5','zm_record'])if(localStorage.getItem(k)!==null){had=true;localStorage.removeItem(k);}
+  localStorage.setItem('zm_save_epoch',SAVE_EPOCH);
+  if(had)window.addEventListener('load',()=>{const n=document.createElement('div');n.textContent='Saved concessions have been reset for everyone. Start the concession again from the Concession tab.';
+    n.style.cssText='position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:99999;max-width:640px;background:#1d2024;color:#fff7ea;padding:12px 18px;font:15px Barlow Condensed,sans-serif;letter-spacing:.02em;border-radius:3px;box-shadow:0 6px 18px rgba(0,0,0,.4)';
+    document.body.appendChild(n);setTimeout(()=>n.remove(),10000);});}catch(e){}})();
 /* BANNED NAMES in saves: the deal desk refuses them when typed (ZMMoney.nameBlocked), and a save made before the ban, or
    edited by hand, must never come back either. saveBanned(o) checks every name a save carries; savePurge() runs on every
    page load and deletes any saved concession, Chapter 5 save or earlier-concession entry that carries one. */
